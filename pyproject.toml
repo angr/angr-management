@@ -63,7 +63,6 @@ pyinstaller = [
   "pyinstaller==6.14.1",
   "pillow;platform_system == \"Darwin\"",
   "keystone-engine",
-  "archr==9.2.165.dev0;platform_system == \"Linux\"",
   "angr[pcode,unicorn]",
   "cle[ar,minidump,uefi,xbe,pdb]",
 ]
@@ -101,7 +100,6 @@ pyvex = { git = "https://github.com/angr/pyvex.git", branch = "master" }
 cle = { git = "https://github.com/angr/cle.git", branch = "master" }
 claripy = { git = "https://github.com/angr/claripy.git", branch = "master" }
 angr = { git = "https://github.com/angr/angr.git", branch = "master" }
-archr = { git = "https://github.com/angr/archr.git", branch = "master" }
 bintrace = { git = "https://github.com/mborgerson/bintrace", branch = "master" }
 
 [tool.black]

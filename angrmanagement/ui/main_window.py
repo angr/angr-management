@@ -26,7 +26,7 @@ from angrmanagement.consts import IMG_LOCATION
 from angrmanagement.daemon import daemon_conn, daemon_exists, run_daemon_process
 from angrmanagement.daemon.client import ClientService
 from angrmanagement.data.jobs import DependencyAnalysisJob
-from angrmanagement.data.jobs.loading import LoadAngrDBJob, LoadBinaryJob, LoadTargetJob
+from angrmanagement.data.jobs.loading import LoadAngrDBJob, LoadBinaryJob
 from angrmanagement.data.library_docs import LibraryDocs
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
@@ -55,10 +55,8 @@ from .toolbars import DebugToolbar, FeatureMapToolbar, FileToolbar
 from .workspace import Workspace
 
 try:
-    import archr
     import keystone
 except ImportError:
-    archr = None
     keystone = None
 
 if TYPE_CHECKING:
@@ -504,7 +502,6 @@ class MainWindow(QMainWindow):
                     ("Analyze: Run Analysis...", self.run_analysis),
                     ("File: Exit", self.quit),
                     ("File: Load a new binary...", self.open_file_button),
-                    ("File: Load a new docker target...", self.open_docker_button),
                     ("File: Load a new trace...", self.load_trace),
                     ("File: Load angr database...", self.load_database),
                     ("File: Preferences...", self.preferences),
@@ -622,26 +619,6 @@ class MainWindow(QMainWindow):
         if not file_path:
             return
         self.load_trace_file(file_path)
-
-    def open_docker_button(self) -> None:
-        required = {
-            "archr: git clone https://github.com/angr/archr && cd archr && pip install -e .": archr,
-            "keystone: pip install --no-binary keystone-engine keystone-engine": keystone,
-        }
-        is_missing = [key for key, value in required.items() if value is None]
-        if len(is_missing) > 0:
-            req_msg = "You need to install the following:\n\n\t" + "\n\t".join(is_missing)
-            req_msg += "\n\nInstall them to enable this functionality."
-            req_msg += "\nRelaunch angr-management after install."
-            QMessageBox(self).critical(None, "Dependency error", req_msg)
-            return
-
-        img_name = self._pick_image_dialog()
-        if img_name is None:
-            return
-        target = archr.targets.DockerImageTarget(img_name, target_path=None)
-        self.workspace.job_manager.add_job(LoadTargetJob(self.workspace.main_instance, target))
-        self.workspace.main_instance.img_name = img_name
 
     def load_trace_file(self, file_path) -> None:
         if isurl(file_path):
