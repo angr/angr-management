@@ -62,7 +62,6 @@ from .views import (
     DisassemblyView,
     FunctionsView,
     HexView,
-    InteractionView,
     JobsView,
     LogView,
     PatchesView,
@@ -749,14 +748,6 @@ class Workspace:
         job = LoadBinaryJob(self.main_instance, thing, load_options=load_options, on_finish=on_complete)
         self.job_manager.add_job(job)
 
-    def interact_program(self, img_name: str, view=None) -> None:
-        if view is None or view.category != "interaction":
-            view = self._get_or_create_view("interaction", InteractionView)
-        view.initialize(img_name)
-
-        self.raise_view(view)
-        view.setFocus()
-
     def log(self, msg) -> None:
         if isinstance(msg, BaseException):
             msg = "".join(traceback.format_exception(type(msg), msg, msg.__traceback__))
@@ -820,9 +811,6 @@ class Workspace:
 
     def show_patches_view(self) -> None:
         self.show_view("patches", PatchesView)
-
-    def show_interaction_view(self) -> None:
-        self.show_view("interaction", InteractionView)
 
     def show_types_view(self) -> None:
         self.show_view("types", TypesView)

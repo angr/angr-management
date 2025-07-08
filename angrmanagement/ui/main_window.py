@@ -501,7 +501,6 @@ class MainWindow(QMainWindow):
                 BasicCommand(action.__name__, caption, action)
                 for caption, action in [
                     ("Analyze: Decompile", self.decompile_current_function),
-                    ("Analyze: Interact", self.interact),
                     ("Analyze: Run Analysis...", self.run_analysis),
                     ("File: Exit", self.quit),
                     ("File: Load a new binary...", self.open_file_button),
@@ -521,7 +520,6 @@ class MainWindow(QMainWindow):
                     ("View: Disassembly (Linear)", self.workspace.show_linear_disassembly_view),
                     ("View: Functions", self.workspace.show_functions_view),
                     ("View: Hex", self.workspace.show_hex_view),
-                    ("View: Interaction", self.workspace.show_interaction_view),
                     ("View: Jobs", self.workspace.show_jobs_view),
                     ("View: Log", self.workspace.show_log_view),
                     ("View: New Disassembly (Graph)", self.workspace.create_and_show_graph_disassembly_view),
@@ -831,9 +829,6 @@ class MainWindow(QMainWindow):
     def view_proximity_for_current_function(self) -> None:
         if self.workspace is not None:
             self.workspace.view_proximity_for_current_function()
-
-    def interact(self) -> None:
-        self.workspace.interact_program(self.workspace.main_instance.img_name)
 
     def show_command_palette(self, parent=None) -> None:
         dlg = CommandPaletteDialog(self.workspace, parent=(parent or self))

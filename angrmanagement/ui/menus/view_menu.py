@@ -133,7 +133,6 @@ class ViewMenu(Menu):
                 MenuSeparator(),
                 MenuEntry("Symbolic &Execution", main_window.workspace.show_symexec_view),
                 MenuEntry("S&ymbolic States", main_window.workspace.show_states_view),
-                MenuEntry("&Interaction", main_window.workspace.show_interaction_view),
                 MenuEntry("&Registers", main_window.workspace.show_registers_view),
                 MenuEntry("&Stack", main_window.workspace.show_stack_view),
                 MenuEntry("&Breakpoints", main_window.workspace.show_breakpoints_view),
