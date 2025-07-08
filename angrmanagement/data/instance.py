@@ -38,15 +38,6 @@ class Instance:
     log: list[LogRecord] | ObjectContainer
 
     def __init__(self) -> None:
-        # pylint:disable=import-outside-toplevel
-        # delayed import
-        from angrmanagement.ui.views.interaction_view import (
-            BackslashTextProtocol,
-            PlainTextProtocol,
-            ProtocolInteractor,
-            SavedInteraction,
-        )
-
         self._live = False
         self.variable_recovery_job: VariableRecoveryJob | None = None
         self._analysis_configuration = None
@@ -65,14 +56,6 @@ class Instance:
         self.register_container("patches", lambda: None, None, "Global patches update notifier")  # dummy
         self.register_container("cfg", lambda: None, angr.knowledge_plugins.cfg.CFGModel | None, "The current CFG")
         self.register_container("cfb", lambda: None, angr.analyses.cfg.CFBlanket | None, "The current CFBlanket")
-        self.register_container("interactions", list, list[SavedInteraction], "Saved program interactions")
-        # TODO: the current setup will erase all loaded protocols on a new project load! do we want that?
-        self.register_container(
-            "interaction_protocols",
-            lambda: [PlainTextProtocol, BackslashTextProtocol],
-            list[type[ProtocolInteractor]],
-            "Available interaction protocols",
-        )
         self.register_container("log", list, list[LogRecord], "Saved log messages", logging_permitted=False)
         self.register_container("current_trace", lambda: None, type[Trace], "Currently selected trace")
         self.register_container("traces", list, list[Trace], "Global traces list")

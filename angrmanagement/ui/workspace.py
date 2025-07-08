@@ -821,9 +821,6 @@ class Workspace:
     def show_patches_view(self) -> None:
         self.show_view("patches", PatchesView)
 
-    def show_interaction_view(self) -> None:
-        self.show_view("interaction", InteractionView)
-
     def show_types_view(self) -> None:
         self.show_view("types", TypesView)
 
