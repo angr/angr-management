@@ -54,11 +54,6 @@ from .toolbar_manager import ToolbarManager
 from .toolbars import DebugToolbar, FeatureMapToolbar, FileToolbar
 from .workspace import Workspace
 
-try:
-    import keystone
-except ImportError:
-    keystone = None
-
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QApplication
 
