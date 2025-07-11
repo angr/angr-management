@@ -64,6 +64,7 @@ jobs:
           path: |
             upload/*.tar.gz
             upload/*.zip
+            upload/*.exe
           compression-level: 0
 
   test_ubuntu:
