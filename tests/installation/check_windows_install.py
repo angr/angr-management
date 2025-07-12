@@ -128,7 +128,7 @@ def run_silent_uninstaller():
     assert is_installed()
 
     log.info("Uninstalling...")
-    with subprocess.Popen([UNINSTALLER_EXE_PATH, "/S"]) a process:
+    with subprocess.Popen([UNINSTALLER_EXE_PATH, "/S"]) as process:
         process.wait(MAX_UNINSTALL_SECONDS)
 
     # Uninstaller may exit before the files are actually deleted. Wait a bit
