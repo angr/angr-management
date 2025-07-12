@@ -1,4 +1,4 @@
-# Run with: uv run test_install_windows.py <path to .exe or .zip>
+# Run with: uv run check_windows_install.py <path to .exe or .zip>
 #
 # /// script
 # dependencies = [
