@@ -26,7 +26,6 @@ elif [[ "$OSTYPE" == "msys" ]]; then
 
     # Build Windows installer
     makensis \
-        -DW64 \
         -DVERSION=$(python scripts/get-version.py) \
         -DPRODUCT_VERSION=$(python scripts/get-version.py --format numeric) \
         angr-management.nsi
