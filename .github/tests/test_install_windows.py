@@ -11,12 +11,14 @@ Tests angr-management Windows installation stories.
 """
 from __future__ import annotations
 
+# pylint:disable=import-error
 import argparse
 import logging
 import os
 import os.path
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import winreg
@@ -85,8 +87,8 @@ def run_silent_installer(installer_path: Path):
 
     log.info("Installing...")
     start = time.time()
-    process = subprocess.Popen([installer_path, "/S"])
-    process.wait(MAX_INSTALL_SECONDS)
+    with subprocess.Popen([installer_path, "/S"]) as process:
+        process.wait(MAX_INSTALL_SECONDS)
     end = time.time()
     log.info("Installation took %.3f seconds", end - start)
 
@@ -126,8 +128,8 @@ def run_silent_uninstaller():
     assert is_installed()
 
     log.info("Uninstalling...")
-    process = subprocess.Popen([UNINSTALLER_EXE_PATH, "/S"])
-    process.wait(MAX_UNINSTALL_SECONDS)
+    with subprocess.Popen([UNINSTALLER_EXE_PATH, "/S"]) a process:
+        process.wait(MAX_UNINSTALL_SECONDS)
 
     # Uninstaller may exit before the files are actually deleted. Wait a bit
     # before determining if uninstallation was successful.
@@ -174,7 +176,7 @@ def main():
             check_portable_install_story(file)
         case _:
             log.info("Unhandled target file extension")
-            exit(1)
+            sys.exit(1)
 
 
 if __name__ == "__main__":
