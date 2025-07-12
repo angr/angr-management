@@ -119,7 +119,8 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: angr-management-${{ matrix.os }}
-      - shell: bash
+      - name: Check installation story
+        shell: bash
         run: uv run tests/installation/check_windows_install.py ${{ matrix.artifact }}
 
   test_macos:
