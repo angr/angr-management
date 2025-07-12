@@ -120,7 +120,7 @@ jobs:
         with:
           name: angr-management-${{ matrix.os }}
       - shell: bash
-        run: uv run .github/tests/test_install_windows.py ${{ matrix.artifact }}
+        run: uv run tests/installation/check_windows_install.py ${{ matrix.artifact }}
 
   test_macos:
     strategy:
