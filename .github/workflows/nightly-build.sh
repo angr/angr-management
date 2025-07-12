@@ -25,7 +25,7 @@ elif [[ "$OSTYPE" == "msys" ]]; then
     popd
 
     # Build Windows installer
-    makensis -V4 \
+    makensis \
         -DW64 \
         -DVERSION=$(python scripts/get-version.py) \
         -DPRODUCT_VERSION=$(python scripts/get-version.py --format numeric) \
