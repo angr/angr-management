@@ -119,7 +119,8 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: angr-management-${{ matrix.os }}
-      - run: uv run .github/tests/test_install_windows.py ${{ matrix.artifact }}
+      - shell: bash
+        run: uv run .github/tests/test_install_windows.py ${{ matrix.artifact }}
 
   test_macos:
     strategy:
