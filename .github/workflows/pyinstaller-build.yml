@@ -64,6 +64,7 @@ jobs:
           path: |
             upload/*.tar.gz
             upload/*.zip
+            upload/*.exe
           compression-level: 0
 
   test_ubuntu:
@@ -101,26 +102,26 @@ jobs:
       matrix:
         os:
           - windows-2022
+        artifact:
+          - "angr-management-*-setup.exe"
+          - "angr-management-win64.zip"
       fail-fast: false
-    name: Test on ${{ matrix.os }}
+    name: Test on ${{ matrix.os }} (${{ matrix.artifact }})
     needs: build
     runs-on: ${{ matrix.os }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version }}
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.13
       - uses: actions/download-artifact@v4
         with:
           name: angr-management-${{ matrix.os }}
-      - run: |
-          7z x angr-management-win64.zip
-          .\angr-management\angr-management.exe
-          sleep 30
-          [array]$am_windows = Get-Process |
-            Where-Object {$_.MainWindowTitle -ne ""} |
-            Select-Object MainWindowTitle |
-            where {$_ -match 'angr management'}
-          if ($am_windows.Length -ne 1) {
-            echo "Number of open angr management windows" $am_windows.Length
-            exit 1
-          }
+      - name: Check installation story
+        shell: bash
+        run: uv run tests/installation/check_windows_install.py ${{ matrix.artifact }}
 
   test_macos:
     strategy:
