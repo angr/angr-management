@@ -23,4 +23,11 @@ elif [[ "$OSTYPE" == "msys" ]]; then
     pushd dist
     7z a $OUTDIR/angr-management-win64.zip \*
     popd
+
+    # Build Windows installer
+    makensis \
+        -DVERSION=$(python scripts/get-version.py) \
+        -DPRODUCT_VERSION=$(python scripts/get-version.py --format numeric) \
+        angr-management.nsi
+    mv *.exe $OUTDIR
 fi
