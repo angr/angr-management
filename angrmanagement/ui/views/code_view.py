@@ -263,6 +263,8 @@ class CodeView(FunctionView):
         :return:
         """
         if self.codegen.am_none:
+            self._doc = None
+            self._textedit.clear()
             return
 
         old_blockno: int | None = None
