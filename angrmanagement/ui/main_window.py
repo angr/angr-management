@@ -511,6 +511,7 @@ class MainWindow(QMainWindow):
                     ("View: Disassembly (Graph)", self.workspace.show_graph_disassembly_view),
                     ("View: Disassembly (Linear)", self.workspace.show_linear_disassembly_view),
                     ("View: Functions", self.workspace.show_functions_view),
+                    ("View: Explorer", self.workspace.show_explorer_view),
                     ("View: Hex", self.workspace.show_hex_view),
                     ("View: Jobs", self.workspace.show_jobs_view),
                     ("View: Log", self.workspace.show_log_view),
