@@ -21,6 +21,8 @@ from .object_container import ObjectContainer
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from angr.knowledge_plugins.cfg import CFGModel
+
     from .jobs import VariableRecoveryJob
 
 
@@ -33,7 +35,7 @@ class Instance:
     """
 
     project: ObjectContainer
-    cfg: angr.analyses.cfg.CFGBase | ObjectContainer
+    cfg: CFGModel | ObjectContainer
     cfb: angr.analyses.cfg.CFBlanket | ObjectContainer
     log: list[LogRecord] | ObjectContainer
 
