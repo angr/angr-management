@@ -913,9 +913,12 @@ class Workspace:
             _l.warning("Address %#x is already defined as code", addr)
             return
 
+        function_starts = [addr]
+
         # Attempt flow into preceding function
         func = cfg.find_function_for_reflow_into_addr(addr)
         if func:
+            function_starts.insert(0, func.addr)
             cfg.clear_region_for_reflow(func.addr)
 
         # Truncate existing memory data
@@ -932,7 +935,7 @@ class Workspace:
                 "start_at_entry": False,
                 "force_smart_scan": False,
                 "force_complete_scan": False,
-                "function_starts": [func.addr if func else addr],
+                "function_starts": function_starts,
                 "model": self.main_instance.kb.cfgs.get_most_accurate(),
             }
         )
