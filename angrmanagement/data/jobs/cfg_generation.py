@@ -80,15 +80,15 @@ class CFGGenerationJob(InstanceJob):
             gui_thread_schedule_async(
                 self._refresh,
                 args=(
-                    cfg,
+                    cfg.model,
                     self._cfb,
                 ),
             )
 
-    def _refresh(self, cfg, cfb) -> None:
+    def _refresh(self, cfg_model, cfb) -> None:
         # do not signal events. that will happen on a timer to not overwhelm the renderer
         # instance will exist because _run must be used first
-        self.instance.cfg = cfg
+        self.instance.cfg = cfg_model
         self.instance.cfb = cfb
 
     def _on_cfb_object_added(self, addr: int, obj) -> None:
