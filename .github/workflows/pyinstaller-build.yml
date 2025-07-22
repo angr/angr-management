@@ -15,6 +15,7 @@ jobs:
       matrix:
         os:
           - ubuntu-22.04
+          - ubuntu-24.04-arm
           - ubuntu-24.04
           - windows-2022
           - macos-13
@@ -72,6 +73,7 @@ jobs:
       matrix:
         os:
           - ubuntu-22.04
+          - ubuntu-24.04-arm
           - ubuntu-24.04
       fail-fast: false
     name: Test on ${{ matrix.os }}
@@ -87,7 +89,7 @@ jobs:
           set -x
           . /etc/os-release
 
-          tar -xzf angr-management-ubuntu-$VERSION_ID.tar.gz
+          tar -xzf angr-management-ubuntu-$VERSION_ID-$(uname -m).tar.gz
           export binary="./angr-management/angr-management"
           export QT_DEBUG_PLUGINS=1
           chmod +x $binary
