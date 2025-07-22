@@ -17,7 +17,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     popd
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     source /etc/os-release
-    tar -C dist -czf upload/angr-management-$ID-$VERSION_ID.tar.gz angr-management
+    tar -C dist -czf upload/angr-management-$ID-$VERSION_ID-$(uname -m).tar.gz angr-management
 elif [[ "$OSTYPE" == "msys" ]]; then
     OUTDIR=$(pwd)/upload
     pushd dist
