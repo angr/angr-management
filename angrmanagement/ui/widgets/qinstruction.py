@@ -62,6 +62,20 @@ class QInstruction(QCachedGraphicsItem):
 
         self._init_widgets()
 
+    def setVisible(self, visible):
+        super().setVisible(visible)
+        self._addr_item.setVisible(visible)
+        self._mnemonic_item.setVisible(visible)
+        for op in self._operands:
+            op.setVisible(visible)
+        for comma in self._commas:
+            comma.setVisible(visible)
+        if self._string_item is not None:
+            self._string_item.setVisible(visible)
+        if self._comment_items is not None:
+            for comment in self._comment_items:
+                comment.setVisible(visible)
+
     def contextMenuEvent(self, event: PySide6.QtWidgets.QGraphicsSceneContextMenuEvent) -> None:
         pass
 

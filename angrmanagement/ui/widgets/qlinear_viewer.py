@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 from angr.analyses.cfg.cfb import MemoryRegion, Unknown
 from angr.block import Block
 from angr.knowledge_plugins.cfg.memory_data import MemoryData
+from angr.utils.timing import timethis
+from cachetools import LRUCache
 from PySide6.QtCore import QEvent, QRect, QRectF, Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QAbstractScrollArea, QAbstractSlider, QGraphicsScene, QHBoxLayout
@@ -92,7 +94,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         self._disasms = {}
         self._ail_disasms = {}
-        self.objects = []
+        self.objects = LRUCache(maxsize=1000)
 
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
 
@@ -308,7 +310,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
     def _update_size(self) -> None:
         # ask all objects to update their sizes
-        for obj in self.objects:
+        for obj in self.objects.values():
             obj.clear_cache()
             obj.refresh()
 
@@ -321,6 +323,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.objects.clear()
         self._offset = None
 
+    @timethis
     def prepare_objects(self, offset: int, start_line: int = 0) -> None:
         """
         Prepare objects to print based on offset and start_line. Update self.objects, self._offset, and
@@ -359,7 +362,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
             # Reverse-iterate until we have enough lines to compensate start_line
             for obj_addr, obj in self.cfb.ceiling_items(addr=top_obj_addr, reverse=True, include_first=False):
-                qobject = self._obj_to_paintable(obj_addr, obj)
+                _, qobject = self._obj_to_paintable(obj_addr, obj)
                 if qobject is None:
                     continue
                 object_lines = int(qobject.height // self._line_height)
@@ -382,10 +385,9 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         _l.debug("After adjustment: Address %#x, offset %d, start_line %d.", addr, offset, start_line)
 
         scene = self.scene
-        # remove existing objects
-        for obj in self.objects:
-            scene.removeItem(obj)
-        self.objects = []
+        # mark all cached objects as hidden
+        for obj in self.objects.values():
+            obj.setVisible(False)
 
         viewable_lines = int(self.height() // self._line_height)
         lines = 0
@@ -396,8 +398,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         y = -start_line * self._line_height
 
         for obj_addr, obj in self.cfb.floor_items(addr=addr):
-            qobject = self._obj_to_paintable(obj_addr, obj)
-            _l.debug("Converted %s to %s at %x.", obj, qobject, obj_addr)
+            is_cached, qobject = self._obj_to_paintable(obj_addr, obj)
+            _l.debug("[%#x] %s --> %s.", obj_addr, obj, qobject)
             if qobject is None:
                 # Conversion failed
                 continue
@@ -418,7 +420,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                     offset += obj_addr + obj.size - addr
                 else:
                     offset += obj.size
-                _l.debug("Skipping object %s (size %d). New offset: %d.", obj, obj.size, offset)
+                _l.debug("Skipping %s (size=%d). New offset: %d.", obj, obj.size, offset)
                 y = -start_line * self._line_height
             else:
                 if start_line > 0:
@@ -437,10 +439,19 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                     lines += object_lines - start_line_in_object
                 else:
                     lines += object_lines
-                self.objects.append(qobject)
+                self.objects[obj_addr] = qobject
                 qobject.setPos(x, y)
-                _l.debug("Adding object %s (height %s) at position %d, %d.", qobject, qobject.height, x, y)
-                scene.addItem(qobject)
+                _l.debug(
+                    "Adding %s (%s) (height %s) at (%d, %d).",
+                    qobject,
+                    "cached" if is_cached else "new",
+                    qobject.height,
+                    x,
+                    y,
+                )
+                if not is_cached:
+                    scene.addItem(qobject)
+                qobject.setVisible(True)
                 y += qobject.height + self.OBJECT_PADDING
 
             if lines > viewable_lines:
@@ -452,7 +463,13 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self._offset = offset
         self._start_line_in_object = start_line_in_object
 
-    def _obj_to_paintable(self, obj_addr, obj):
+    def _obj_to_paintable(
+        self, obj_addr, obj, use_cache=True
+    ) -> tuple[bool, None | QLinearBlock | QMemoryDataBlock | QUnknownBlock]:
+        if use_cache and obj_addr in self.objects:
+            # print("Cached!")
+            return True, self.objects[obj_addr]
+
         if isinstance(obj, Block):
             cfg_node = self.cfg.get_any_node(obj_addr, force_fastpath=True)
             if cfg_node is not None:
@@ -508,7 +525,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             qobject = QUnknownBlock(self.instance, obj_addr, obj.bytes)
         else:
             qobject = None
-        return qobject
+        return False, qobject
 
     def _calculate_max_offset(self):
         try:

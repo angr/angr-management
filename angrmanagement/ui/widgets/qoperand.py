@@ -162,6 +162,17 @@ class QOperand(QCachedGraphicsItem):
     # Public methods
     #
 
+    def setVisible(self, visible):
+        super().setVisible(visible)
+        if self._label_item is not None:
+            self._label_item.setVisible(visible)
+        if self._variable_label_item is not None:
+            self._variable_label_item.setVisible(visible)
+        if self._variable_ident_item is not None:
+            self._variable_ident_item.setVisible(visible)
+        if self._branch_targets_item is not None:
+            self._branch_targets_item.setVisible(visible)
+
     def refresh(self) -> None:
         self._init_widgets()
         self.recalculate_size()
@@ -351,7 +362,8 @@ class QOperand(QCachedGraphicsItem):
         # label
         # [rax]
         if self._label_item is not None:
-            self.scene().removeItem(self._label_item)
+            if self.scene() is not None:
+                self.scene().removeItem(self._label_item)
             self._label_item = None
         self._label_item = QGraphicsSimpleTextItem(self._label, self)
         self._label_item.setFont(self._config.disasm_font)
@@ -360,7 +372,8 @@ class QOperand(QCachedGraphicsItem):
         # variable
         # {s_10}
         if self._variable_label_item is not None:
-            self.scene().removeItem(self._variable_label_item)
+            if self.scene() is not None:
+                self.scene().removeItem(self._variable_label_item)
             self._variable_label_item = None
         if self._variable_label:
             self._variable_label_item = QGraphicsSimpleTextItem(self._variable_label, self)
@@ -369,7 +382,8 @@ class QOperand(QCachedGraphicsItem):
 
         # additional branch targets
         if self._branch_targets_item is not None:
-            self.scene().removeItem(self._branch_targets_item)
+            if self.scene() is not None:
+                self.scene().removeItem(self._branch_targets_item)
             self._branch_targets_item = None
         if self._branch_targets_text:
             self._branch_targets_item = QGraphicsSimpleTextItem(self._branch_targets_text, self)
@@ -378,7 +392,8 @@ class QOperand(QCachedGraphicsItem):
 
         # variable identifier
         if self._variable_ident_item is not None:
-            self.scene().removeItem(self._variable_ident_item)
+            if self.scene() is not None:
+                self.scene().removeItem(self._variable_ident_item)
             self._variable_ident_item = None
         if self.variable is not None and self.disasm_view.show_variable_identifier:
             self._variable_ident_item = QGraphicsSimpleTextItem(self._variable_ident, self)
