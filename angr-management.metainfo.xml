@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.angr.angr-management</id>
+
+  <name>angr-management</name>
+  <summary>Open-source graphical binary analysis platform</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <description>
+    <p>
+       angr-management is an open-source, cross-platform graphical binary analysis platform.
+    </p>
+  </description>
+
+  <screenshots>
+    <screenshot type="default"><image>https://github.com/angr/angr-management/blob/master/screenshots/decompilation.png?raw=true</image></screenshot>
+    <screenshot><image>https://github.com/angr/angr-management/blob/master/screenshots/disassembly.png?raw=true</image></screenshot>
+  </screenshots>
+
+  <categories>
+    <category>Game</category>
+  </categories>
+
+  <content_rating type="oars-1.1"/>
+
+  <url type="homepage">https://angr.io</url>
+  <url type="bugtracker">https://github.com/angr/angr-management/issues</url>
+  <url type="help">https://docs.angr.io</url>
+
+  <launchable type="desktop-id">angr-management.desktop</launchable>
+
+  <provides>
+    <binary>angr-management</binary>
+  </provides>
+  <developer id="angr.io">
+    <name>angr Developers</name>
+  </developer>
+</component>
