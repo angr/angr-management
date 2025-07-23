@@ -47,6 +47,14 @@ class QFunctionHeader(QCachedGraphicsItem):
 
         self._init_widgets()
 
+    def setVisible(self, visible):
+        if self._function_name_item is not None:
+            self._function_name_item.setVisible(visible)
+        if self._args_str_item is not None:
+            self._args_str_item.setVisible(visible)
+        if self._prototype_arg_item is not None:
+            self._prototype_arg_item.setVisible(visible)
+
     def refresh(self) -> None:
         pass
 

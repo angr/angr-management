@@ -418,3 +418,8 @@ class QLinearBlock(QBlock):
 
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)
+
+    def setVisible(self, visible):
+        super().setVisible(visible)
+        for obj in self.objects:
+            obj.setVisible(visible)
