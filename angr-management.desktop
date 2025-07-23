@@ -1,0 +1,7 @@
+[Desktop Entry]
+Categories=Utility;
+Type=Application
+Comment=Open-source graphical binary analysis platform
+Icon=angr-management
+Exec=angr-management
+Name=angr-management

@@ -15,8 +15,8 @@ jobs:
       matrix:
         os:
           - ubuntu-22.04
-          - ubuntu-24.04-arm
           - ubuntu-24.04
+          - ubuntu-24.04-arm
           - windows-2022
           - macos-13
           - macos-15
@@ -59,13 +59,15 @@ jobs:
       - name: Run nightly build on Ubuntu/MacOS
         run: bash .github/workflows/nightly-build.sh
         if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
+      - name: Build AppImage
+        if: matrix.os == 'ubuntu-22.04' || matrix.os == 'ubuntu-24.04-arm'
+        run: |
+          ./scripts/build-appimage.sh
+          mv angr-management*.AppImage upload/
       - uses: actions/upload-artifact@v4
         with:
           name: angr-management-${{ matrix.os }}
-          path: |
-            upload/*.tar.gz
-            upload/*.zip
-            upload/*.exe
+          path: upload/*
           compression-level: 0
 
   test_ubuntu:
@@ -73,24 +75,34 @@ jobs:
       matrix:
         os:
           - ubuntu-22.04
-          - ubuntu-24.04-arm
           - ubuntu-24.04
+          - ubuntu-24.04-arm
+        artifact:
+          - onedir
+          - appimage
       fail-fast: false
-    name: Test on ${{ matrix.os }}
+    name: Test ${{ matrix.artifact }} on ${{ matrix.os }}
     needs: build
     runs-on: ${{ matrix.os }}
     steps:
-      - run: sudo apt-get update && sudo apt-get install -y xvfb x11-utils libegl1
-        name: Install X11 app testing utilities
+      - name: Install X11 app testing utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb x11-utils libegl1
       - uses: actions/download-artifact@v4
         with:
-          name: angr-management-${{ matrix.os }}
+          merge-multiple: true
       - run: |
           set -x
           . /etc/os-release
 
-          tar -xzf angr-management-ubuntu-$VERSION_ID-$(uname -m).tar.gz
-          export binary="./angr-management/angr-management"
+          if [[ "${{ matrix.artifact }}" == "onedir" ]]; then
+            tar -xzf angr-management-ubuntu-$VERSION_ID-$(uname -m).tar.gz
+            export binary="./angr-management/angr-management"
+          else
+            export binary=$(find . -name "angr-management*-$(uname -m).AppImage")
+          fi
+
           export QT_DEBUG_PLUGINS=1
           chmod +x $binary
           xvfb-run bash -x -c '
