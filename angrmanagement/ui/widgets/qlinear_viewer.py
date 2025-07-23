@@ -324,7 +324,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self._offset = None
 
     @timethis
-    def prepare_objects(self, offset: int, start_line: int = 0) -> None:
+    def prepare_objects(self, offset: int, start_line: int = 0) -> int | None:
         """
         Prepare objects to print based on offset and start_line. Update self.objects, self._offset, and
         self._start_line_in_object.
@@ -350,6 +350,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             return
 
         addr = self._addr_from_offset(mr, base_offset, offset)
+        _l.debug("=== prepare_objects begins ===")
         _l.debug("Address %#x, offset %d, start_line %d.", addr, offset, start_line)
 
         self._insaddr_to_block.clear()
@@ -360,8 +361,12 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             except KeyError:
                 top_obj_addr = addr
 
+            _l.debug("... top_obj_addr = %#x", top_obj_addr)
             # Reverse-iterate until we have enough lines to compensate start_line
-            for obj_addr, obj in self.cfb.ceiling_items(addr=top_obj_addr, reverse=True, include_first=False):
+            for obj_addr, obj in self.cfb.ceiling_items(addr=top_obj_addr, reverse=True):
+                _l.debug("... got %s @ %#x", obj, obj_addr)
+                if obj_addr >= top_obj_addr:
+                    continue
                 _, qobject = self._obj_to_paintable(obj_addr, obj)
                 if qobject is None:
                     continue
@@ -371,12 +376,15 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 if start_line >= 0:
                     addr = obj_addr
                     # Update offset
-                    new_region_addr = next(self._addr_to_region_offset.irange(maximum=addr, reverse=True))
+                    new_region_addr = next(self._addr_to_region_offset.irange(maximum=addr, reverse=True), None)
+                    if new_region_addr is None:
+                        break
                     new_region_offset = self._addr_to_region_offset[new_region_addr]
                     offset = (addr - new_region_addr) + new_region_offset
                     break
             else:
                 # umm we don't have enough objects to compensate the negative start_line
+                _l.debug("Insufficient objects to compensate the negative start_line (%d).", start_line)
                 start_line = 0
                 # update addr and offset to their minimal values
                 addr = next(self._addr_to_region_offset.irange())
@@ -398,6 +406,10 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         y = -start_line * self._line_height
 
         for obj_addr, obj in self.cfb.floor_items(addr=addr):
+            if obj_addr + obj.size <= addr:
+                # top_obj_addr lands after the current object; let's move on to the next object instead
+                continue
+
             is_cached, qobject = self._obj_to_paintable(obj_addr, obj)
             _l.debug("[%#x] %s --> %s.", obj_addr, obj, qobject)
             if qobject is None:
@@ -409,8 +421,12 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                     self._insaddr_to_block[insn_addr] = qobject
 
             # qobject.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
+            if obj_addr >= mr.addr + mr.size:
+                base_offset, mr = self._region_from_addr(obj_addr)
+                assert base_offset is not None and mr is not None
 
             object_lines = int(qobject.height // self._line_height)
+            _l.debug("... object lines: %d", object_lines)
 
             if start_line > 0 and start_line >= object_lines:
                 # this object should be skipped. ignore it
@@ -419,7 +435,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 if obj_addr <= addr < obj_addr + obj.size:
                     offset += obj_addr + obj.size - addr
                 else:
-                    offset += obj.size
+                    offset = base_offset + (obj_addr + obj.size - mr.addr)
                 _l.debug("Skipping %s (size=%d). New offset: %d.", obj, obj.size, offset)
                 y = -start_line * self._line_height
             else:
@@ -458,6 +474,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 break
 
         _l.debug("Final offset %d, start_line_in_object %d.", offset, start_line_in_object)
+        _l.debug("=== prepare_objects completes ===")
 
         # Update properties
         self._offset = offset
@@ -538,6 +555,14 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     def _region_from_offset(self, offset: int):
         try:
             off = next(self._offset_to_region.irange(maximum=offset, reverse=True))
+            return off, self._offset_to_region[off]
+        except StopIteration:
+            return None, None
+
+    def _region_from_addr(self, addr: int):
+        try:
+            addr = next(self._addr_to_region_offset.irange(maximum=addr, reverse=True))
+            off = self._addr_to_region_offset[addr]
             return off, self._offset_to_region[off]
         except StopIteration:
             return None, None
