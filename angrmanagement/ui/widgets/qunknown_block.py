@@ -48,10 +48,15 @@ class QUnknownBlock(QCachedGraphicsItem):
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)
 
-    def remove_from_scene(self, scene):
+    def remove_children_from_scene(self):
         """
         Remove this item and all its children from the scene.
         """
+
+        scene = self.scene()
+        if scene is None:
+            return
+
         if self._addr_item is not None:
             scene.removeItem(self._addr_item)
             self._addr_item = None

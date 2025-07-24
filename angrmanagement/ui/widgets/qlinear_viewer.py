@@ -1,3 +1,4 @@
+# pylint:disable=missing-class-docstring
 from __future__ import annotations
 
 import logging
@@ -101,7 +102,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self._init_widgets()
         self.initialize()
 
-    def reload(self, old_infodock: InfoDock | None = None) -> None:
+    def reload(self, old_infodock: InfoDock | None = None) -> None:  # pylint:disable=unused-argument
         curr_offset = self._offset
         self.initialize()
         self._offset = None  # force a re-generation of objects
@@ -209,10 +210,10 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             self.prepare_objects(new_offset)
             self.viewport().update()
 
-    def _on_object_eviction(
+    def _on_object_eviction(  # pylint:disable=unused-argument
         self, key: int, obj: QLinearBlock | QMemoryDataBlock | QUnknownBlock
-    ) -> None:  # pylint:disable=unused-argument
-        obj.remove_from_scene(self.scene)
+    ) -> None:
+        obj.remove_children_from_scene()
         self.scene.removeItem(obj)
 
     #
@@ -401,7 +402,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         scene = self.scene
         # mark all cached objects as hidden
         for obj in self.objects.values():
-            obj.setVisible(False)
+            if obj.isVisible():
+                obj.setVisible(False)
 
         viewable_lines = int(self.height() // self._line_height)
         lines = 0
@@ -575,7 +577,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         except StopIteration:
             return None, None
 
-    def _addr_from_offset(self, mr, base_offset, offset: int):
+    @staticmethod
+    def _addr_from_offset(mr, base_offset, offset: int):
         return mr.addr + (offset - base_offset)
 
     def _get_disasm(self, func: Function) -> Clinic | Disassembly | None:

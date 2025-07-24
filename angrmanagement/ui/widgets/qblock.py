@@ -111,11 +111,16 @@ class QBlock(QCachedGraphicsItem):
         for obj in self.objects:
             obj.clear_cache()
 
-    def remove_from_scene(self, scene) -> None:
+    def remove_children_from_scene(self) -> None:
         """
         Remove this block and its objects from the scene. Note that it does not remove this block itself from the
         scene; you need to do it once returning from this method.
         """
+
+        scene = self.scene
+        if scene is None:
+            return
+
         if self._block_item_obj is not None:
             scene.removeItem(self._block_item_obj)
             self._block_item_obj = None
