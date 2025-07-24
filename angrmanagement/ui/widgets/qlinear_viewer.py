@@ -7,13 +7,13 @@ from angr.analyses.cfg.cfb import MemoryRegion, Unknown
 from angr.block import Block
 from angr.knowledge_plugins.cfg.memory_data import MemoryData
 from angr.utils.timing import timethis
-from cachetools import LRUCache
 from PySide6.QtCore import QEvent, QRect, QRectF, Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QAbstractScrollArea, QAbstractSlider, QGraphicsScene, QHBoxLayout
 from sortedcontainers import SortedDict
 
 from angrmanagement.config import Conf
+from angrmanagement.utils.cache import SmartLRUCache
 
 from .qblock import QLinearBlock
 from .qdisasm_base_control import DisassemblyLevel, QDisassemblyBaseControl
@@ -94,7 +94,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         self._disasms = {}
         self._ail_disasms = {}
-        self.objects = LRUCache(maxsize=1000)
+        self.objects = SmartLRUCache(maxsize=1024, evict=self._on_object_eviction)
 
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
 
@@ -208,6 +208,12 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             new_offset = int(self.verticalScrollBar().value() // self._line_height)
             self.prepare_objects(new_offset)
             self.viewport().update()
+
+    def _on_object_eviction(
+        self, key: int, obj: QLinearBlock | QMemoryDataBlock | QUnknownBlock
+    ) -> None:  # pylint:disable=unused-argument
+        obj.remove_from_scene(self.scene)
+        self.scene.removeItem(obj)
 
     #
     # Public methods
@@ -474,6 +480,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 break
 
         _l.debug("Final offset %d, start_line_in_object %d.", offset, start_line_in_object)
+        _l.debug("Object dict has %d objects.", len(self.objects))
+        # _l.debug("Scene has %d objects.", len(scene.items()))
         _l.debug("=== prepare_objects completes ===")
 
         # Update properties

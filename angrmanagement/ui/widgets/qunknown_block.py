@@ -28,8 +28,8 @@ class QUnknownBlock(QCachedGraphicsItem):
         self._height = 0
 
         self._addr_text = None
-        self._addr_item: QGraphicsSimpleTextItem = None
-        self._byte_lines: list[QGraphicsSimpleTextItem] = None
+        self._addr_item: QGraphicsSimpleTextItem | None = None
+        self._byte_lines: list[QGraphicsSimpleTextItem] = []
 
         self._config = Conf
 
@@ -47,6 +47,19 @@ class QUnknownBlock(QCachedGraphicsItem):
 
     def _boundingRect(self):
         return QRectF(0, 0, self._width, self._height)
+
+    def remove_from_scene(self, scene):
+        """
+        Remove this item and all its children from the scene.
+        """
+        if self._addr_item is not None:
+            scene.removeItem(self._addr_item)
+            self._addr_item = None
+
+        if self._byte_lines:
+            for byte_line in self._byte_lines:
+                scene.removeItem(byte_line)
+            self._byte_lines = []
 
     #
     # Private methods

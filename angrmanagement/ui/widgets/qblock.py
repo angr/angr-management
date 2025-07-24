@@ -111,6 +111,23 @@ class QBlock(QCachedGraphicsItem):
         for obj in self.objects:
             obj.clear_cache()
 
+    def remove_from_scene(self, scene) -> None:
+        """
+        Remove this block and its objects from the scene. Note that it does not remove this block itself from the
+        scene; you need to do it once returning from this method.
+        """
+        if self._block_item_obj is not None:
+            scene.removeItem(self._block_item_obj)
+            self._block_item_obj = None
+
+        for obj in self.objects:
+            scene.removeItem(obj)
+
+        self.objects.clear()
+        self.addr_to_insns.clear()
+        self.addr_to_labels.clear()
+        self.qblock_annotations.clear()
+
     def _update_block_code_options(self) -> None:
         self._block_code_options.show_conditional_jump_targets = self.AIL_SHOW_CONDITIONAL_JUMP_TARGETS
         self._block_code_options.show_variables = self.disasm_view.show_variable

@@ -67,6 +67,27 @@ class QMemoryDataBlock(QCachedGraphicsItem):
             painter.setPen(highlight_color)
             painter.drawRect(0, 0, self.width, self.height)
 
+    def remove_from_scene(self, scene):
+        """
+        Remove this item and all its children from the scene.
+        """
+        if self._addr_item is not None:
+            scene.removeItem(self._addr_item)
+            self._addr_item = None
+
+        if self._label_item is not None:
+            scene.removeItem(self._label_item)
+            self._label_item = None
+
+        if self._line_items:
+            for _, addr_item, bytes_line, characters_line in self._line_items:
+                for byte_item in bytes_line:
+                    scene.removeItem(byte_item)
+                for char_item in characters_line:
+                    scene.removeItem(char_item)
+                scene.removeItem(addr_item)
+            self._line_items = []
+
     #
     # Event handlers
     #
