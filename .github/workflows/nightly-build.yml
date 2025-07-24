@@ -40,13 +40,14 @@ jobs:
             $(find . -type f)
         env:
           RELEASE_NOTES: >
-            This release is an automatically generated pre-release. We do our
+            This is a nightly release preview. We do our
             best to make sure everything works, but please be advised that
             features may break or change without notice.
 
-            Mac users: Make sure to select the build that matches your CPU
-            archetecture. Both are currently not signed, so you will need to
-            right-click and select "Open" the first time you run them.
+            macOS users: Make sure to select the build that matches your CPU
+            architecture. Both are currently not signed, so you may need to
+            permit angr-management to run in your Privacy & Security settings
+            (more info here: https://support.apple.com/en-us/102445#openanyway).
 
           GH_TOKEN: ${{ github.token }}
 
