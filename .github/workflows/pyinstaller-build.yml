@@ -97,7 +97,7 @@ jobs:
           . /etc/os-release
 
           if [[ "${{ matrix.artifact }}" == "onedir" ]]; then
-            tar -xzf angr-management-ubuntu-$VERSION_ID-$(uname -m).tar.gz
+            tar xf angr-management-*-ubuntu-$VERSION_ID-$(uname -m).tar.gz
             export binary="./angr-management/angr-management"
           else
             export binary=$(find . -name "angr-management*-$(uname -m).AppImage")
@@ -117,8 +117,8 @@ jobs:
         os:
           - windows-2022
         artifact:
-          - "angr-management-*-setup.exe"
-          - "angr-management-win64.zip"
+          - "angr-management-*-win64-x86_64-setup.exe"
+          - "angr-management-*-win64-x86_64.zip"
       fail-fast: false
     name: Test on ${{ matrix.os }} (${{ matrix.artifact }})
     needs: build
@@ -153,7 +153,7 @@ jobs:
           name: angr-management-${{ matrix.os }}
       - run: |
           set -x
-          unzip -o ./angr-management-macOS-$(uname -m).zip
+          unzip -o ./angr-management-*-macOS-$(uname -m).zip
           open *.app
           for i in {0..7}; do
             sleep 15

@@ -24,7 +24,7 @@
 !define COPYRIGHT "Copyright © ${PRODUCT} Contributors"
 !define SOURCE_DIR "dist\angr-management"
 !define INST_KEY "Software\${PRODUCT}"
-!define INST_EXE "${PRODUCT}-v${VERSION}-setup.exe"
+!define INST_EXE "${PRODUCT}-v${VERSION}-win64-x86_64-setup.exe"
 !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT}"
 !define UNINST_EXE "uninstall.exe"
 
