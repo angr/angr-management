@@ -8,7 +8,6 @@ from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, QSize, Qt, QTimeLine
 from PySide6.QtWidgets import QFrame
 
 from angrmanagement.config import Conf
-from angrmanagement.ui.views import ConsoleView
 from angrmanagement.utils import get_out_branches
 from angrmanagement.utils.cfg import categorize_edges
 from angrmanagement.utils.graph_layouter import GraphLayouter
@@ -155,6 +154,8 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             )
             view = self.disasm_view.workspace.view_manager.first_view_in_category("console")
             if view is not None:
+                from angrmanagement.ui.views import ConsoleView  # pylint: disable=import-outside-toplevel
+
                 assert isinstance(view, ConsoleView)
                 view.push_namespace(
                     {
