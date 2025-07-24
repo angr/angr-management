@@ -8,6 +8,7 @@ from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, QSize, Qt, QTimeLine
 from PySide6.QtWidgets import QFrame
 
 from angrmanagement.config import Conf
+from angrmanagement.ui.views import ConsoleView
 from angrmanagement.utils import get_out_branches
 from angrmanagement.utils.cfg import categorize_edges
 from angrmanagement.utils.graph_layouter import GraphLayouter
@@ -128,6 +129,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             return
 
         scene = self.scene()
+        assert self.instance.kb is not None
 
         if self._disassembly_level is DisassemblyLevel.AIL:
             func = self._function_graph.function
@@ -142,7 +144,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             def nodefunc(n):
                 return n
 
-            def branchfunc(n):
+            def branchfunc(supernode):
                 return None
 
             has_idx = True
@@ -153,6 +155,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             )
             view = self.disasm_view.workspace.view_manager.first_view_in_category("console")
             if view is not None:
+                assert isinstance(view, ConsoleView)
                 view.push_namespace(
                     {
                         "disasm": self.disasm,
@@ -193,6 +196,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         self._reset_view()
 
         # select the old instructions
+        assert selected_insns is not None
         for insn_addr in selected_insns:
             self.infodock.select_instruction(insn_addr, unique=False, use_animation=False)
 
@@ -245,7 +249,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         else:
             super().mousePressEvent(event)
 
-    def changeEvent(self, event: QEvent) -> None:
+    def changeEvent(self, event: QEvent) -> None:  # type:ignore
         """
         Redraw on color scheme update.
         """
@@ -271,6 +275,8 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         return QSize(width, height)
 
     def _layout_graph(self):
+        assert self._supergraph is not None
+
         node_sizes = {}
         node_map = {}
         for block in self.blocks:
