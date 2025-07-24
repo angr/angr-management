@@ -23,6 +23,8 @@ def main():
         version = list(version.split("."))
         if version[-1].startswith("dev"):
             version[-1] = str(9000 + int(version[-1].removeprefix("dev")))
+        while len(version) < 4:
+            version.append("0")
         version = ".".join(version)
 
     print(version)
