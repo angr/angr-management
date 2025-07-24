@@ -93,8 +93,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         # The first line that is rendered of the first object in self.objects. Start from 0.
         self._start_line_in_object = 0
 
-        self._disasms = {}
-        self._ail_disasms = {}
+        self._disasms = SmartLRUCache(maxsize=1024)
+        self._ail_disasms = SmartLRUCache(maxsize=1024)
         self.objects = SmartLRUCache(maxsize=1024, evict=self._on_object_eviction)
 
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
@@ -523,7 +523,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                                     obj.addr,
                                     ail_obj,
                                     None,
-                                    None,
                                 )
                     else:
                         qobject = QLinearBlock(
@@ -535,7 +534,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                             obj.addr,
                             [obj],
                             {},
-                            None,
                         )
                 else:
                     # TODO: Get disassembly even if the function does not exist

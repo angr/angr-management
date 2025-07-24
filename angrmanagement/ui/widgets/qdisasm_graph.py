@@ -176,7 +176,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
                 n.addr,
                 nodefunc(n),
                 branchfunc(n),
-                scene,
                 idx=n.idx if has_idx else None,
             )
             if n.addr == self._function_graph.function.addr:

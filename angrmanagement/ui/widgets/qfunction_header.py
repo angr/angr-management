@@ -15,16 +15,11 @@ from .qgraph_object import QCachedGraphicsItem
 if TYPE_CHECKING:
     from angr.sim_type import SimTypeFunction
 
-    from angrmanagement.ui.workspace import Workspace
-
 
 class QFunctionHeader(QCachedGraphicsItem):
-    def __init__(
-        self, addr: int, name: str, prototype, args, config, disasm_view, workspace: Workspace, infodock, parent=None
-    ) -> None:
+    def __init__(self, addr: int, name: str, prototype, args, config, disasm_view, infodock, parent=None) -> None:
         super().__init__(parent=parent)
 
-        self.workspace = workspace
         self.addr = addr
         self.name = name
         self.prototype: SimTypeFunction = prototype
@@ -41,8 +36,8 @@ class QFunctionHeader(QCachedGraphicsItem):
         self._arg_str_list = None
         self._args_str = None
 
-        self._function_name_item: QGraphicsSimpleTextItem = None
-        self._args_str_item: QGraphicsSimpleTextItem = None
+        self._function_name_item: QGraphicsSimpleTextItem | None = None
+        self._args_str_item: QGraphicsSimpleTextItem | None = None
         self._prototype_arg_item: QGraphicsSimpleTextItem | None = None
 
         self._init_widgets()
@@ -58,7 +53,7 @@ class QFunctionHeader(QCachedGraphicsItem):
     def refresh(self) -> None:
         pass
 
-    def paint(self, painter, option, widget) -> None:
+    def paint(self, painter, option, widget=None) -> None:
         painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
 
         if self.infodock.is_label_selected(self.addr):
