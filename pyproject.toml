@@ -25,16 +25,7 @@ dependencies = [
   "thefuzz[speedup]",
   "binsync==5.2.2",
   "rpyc",
-
-  # requirements for vendorized qtconsole package
-  "traitlets!=5.2.1,!=5.2.2",
-  "jupyter_core",
-  "jupyter_client>=4.1",
-  "pygments",
-  "ipykernel>=4.1",  # not a real dependency, but require the reference kernel
-  "qtpy>=2.4.0",
-  "pyzmq>=26.1.0",
-  "packaging",
+  "qtconsole",
 ]
 classifiers = [
   "License :: OSI Approved :: BSD License",
