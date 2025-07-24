@@ -15,6 +15,7 @@ from angrmanagement.utils.block_objects import FunctionHeader, Label, PhiVariabl
 from .qblock_code import QAilObj, QBlockCode, QBlockCodeOptions, QIROpObj
 from .qblock_label import QBlockLabel
 from .qfunction_header import QFunctionHeader
+from .qgraph import QSaveableGraphicsView
 from .qgraph_object import QCachedGraphicsItem
 from .qinstruction import QInstruction
 from .qphivariable import QPhiVariable
@@ -46,7 +47,6 @@ class QBlock(QCachedGraphicsItem):
         addr: int,
         cfg_nodes,
         out_branches,
-        scene,
         parent=None,
         idx: int | None = None,
     ) -> None:
@@ -62,7 +62,6 @@ class QBlock(QCachedGraphicsItem):
         self.addr = addr
         self.cfg_nodes = cfg_nodes
         self.out_branches = out_branches
-        self.scene = scene
         self.idx = idx
 
         self._config = Conf
@@ -111,6 +110,28 @@ class QBlock(QCachedGraphicsItem):
         for obj in self.objects:
             obj.clear_cache()
 
+    def remove_children_from_scene(self) -> None:
+        """
+        Remove this block and its objects from the scene. Note that it does not remove this block itself from the
+        scene; you need to do it once returning from this method.
+        """
+
+        scene = self.scene()
+        if scene is None:
+            return
+
+        if self._block_item_obj is not None:
+            scene.removeItem(self._block_item_obj)
+            self._block_item_obj = None
+
+        for obj in self.objects:
+            scene.removeItem(obj)
+
+        self.objects.clear()
+        self.addr_to_insns.clear()
+        self.addr_to_labels.clear()
+        self.qblock_annotations.clear()
+
     def _update_block_code_options(self) -> None:
         self._block_code_options.show_conditional_jump_targets = self.AIL_SHOW_CONDITIONAL_JUMP_TARGETS
         self._block_code_options.show_variables = self.disasm_view.show_variable
@@ -148,8 +169,8 @@ class QBlock(QCachedGraphicsItem):
         """
         Create the block background and border.
         """
-        if self._block_item_obj is not None and self.scene is not None:
-            self.scene.removeItem(self._block_item_obj)
+        if self._block_item_obj is not None and (scene := self.scene()) is not None:
+            scene.removeItem(self._block_item_obj)
             self._block_item = None
             self._block_item_obj = None
 
@@ -241,16 +262,15 @@ class QBlock(QCachedGraphicsItem):
                         obj.args,
                         self._config,
                         self.disasm_view,
-                        self.instance,
                         self.infodock,
                         parent=self,
                     )
                 )
 
     def _init_widgets(self) -> None:
-        if self.scene is not None:
+        if (scene := self.scene()) is not None:
             for obj in self.objects:
-                self.scene.removeItem(obj)
+                scene.removeItem(obj)
 
         self.objects.clear()
 
@@ -334,12 +354,13 @@ class QGraphBlock(QBlock):
             self._set_block_objects_visibility(not self._objects_are_hidden)
             self._objects_are_temporarily_hidden = self._objects_are_hidden
 
-    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget=None) -> None:  # pylint: disable=unused-argument
         lod = option.levelOfDetailFromTransform(painter.worldTransform())
         should_omit_text = lod < QGraphBlock.MINIMUM_DETAIL_LEVEL
 
         painter.setBrush(self._config.disasm_view_node_shadow_color)
         painter.setPen(self._config.disasm_view_node_shadow_color)
+        assert self._block_item is not None
         shadow_path = QPainterPath(self._block_item)
         shadow_path.translate(self.SHADOW_OFFSET_X, self.SHADOW_OFFSET_Y)
         painter.drawPath(shadow_path)
@@ -358,7 +379,8 @@ class QGraphBlock(QBlock):
         # if we are too far zoomed out, do not draw the text
         if self._objects_are_hidden != should_omit_text:
             self._set_block_objects_visibility(not should_omit_text)
-            view = self.scene.parent()
+            view = self.scene().parent()
+            assert isinstance(view, QSaveableGraphicsView)
             if view.is_extra_render_pass:
                 self._objects_are_temporarily_hidden = should_omit_text
             else:
@@ -413,7 +435,7 @@ class QLinearBlock(QBlock):
         self._height = y_offset
         self._width = max_width
 
-    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget=None) -> None:  # pylint: disable=unused-argument
         painter.setFont(self._config.disasm_font)
 
     def _boundingRect(self):

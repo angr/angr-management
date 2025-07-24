@@ -128,6 +128,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             return
 
         scene = self.scene()
+        assert self.instance.kb is not None
 
         if self._disassembly_level is DisassemblyLevel.AIL:
             func = self._function_graph.function
@@ -142,7 +143,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             def nodefunc(n):
                 return n
 
-            def branchfunc(n):
+            def branchfunc(supernode):
                 return None
 
             has_idx = True
@@ -153,6 +154,9 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             )
             view = self.disasm_view.workspace.view_manager.first_view_in_category("console")
             if view is not None:
+                from angrmanagement.ui.views import ConsoleView  # pylint: disable=import-outside-toplevel
+
+                assert isinstance(view, ConsoleView)
                 view.push_namespace(
                     {
                         "disasm": self.disasm,
@@ -176,7 +180,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
                 n.addr,
                 nodefunc(n),
                 branchfunc(n),
-                scene,
                 idx=n.idx if has_idx else None,
             )
             if n.addr == self._function_graph.function.addr:
@@ -194,6 +197,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         self._reset_view()
 
         # select the old instructions
+        assert selected_insns is not None
         for insn_addr in selected_insns:
             self.infodock.select_instruction(insn_addr, unique=False, use_animation=False)
 
@@ -246,7 +250,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         else:
             super().mousePressEvent(event)
 
-    def changeEvent(self, event: QEvent) -> None:
+    def changeEvent(self, event: QEvent) -> None:  # type:ignore
         """
         Redraw on color scheme update.
         """
@@ -272,6 +276,8 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         return QSize(width, height)
 
     def _layout_graph(self):
+        assert self._supergraph is not None
+
         node_sizes = {}
         node_map = {}
         for block in self.blocks:

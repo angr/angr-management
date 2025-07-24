@@ -32,17 +32,17 @@ class QMemoryDataBlock(QCachedGraphicsItem):
         self.bytes_per_line: int = bytes_per_line  # TODO: Move it to Conf
 
         self._addr_text = None
-        self._width = None
-        self._height = None
+        self._width: float = 0.0
+        self._height: float = 0.0
 
         self._bytes = []
 
         # widgets
-        self._addr_item: QGraphicsSimpleTextItem = None
+        self._addr_item: QGraphicsSimpleTextItem | None = None
         self._label_item: QGraphicsSimpleTextItem | None = None
         self._line_items: list[
             tuple[int, QGraphicsSimpleTextItem, list[QGraphicsSimpleTextItem], list[QGraphicsSimpleTextItem]]
-        ] = None
+        ] = []
 
         self._init_widgets()
 
@@ -58,7 +58,7 @@ class QMemoryDataBlock(QCachedGraphicsItem):
     def height(self):
         return self.boundingRect().height()
 
-    def paint(self, painter, option, widget) -> None:
+    def paint(self, painter, option, widget=None) -> None:
         should_highlight = self.infodock.is_label_selected(self.addr)
 
         highlight_color = Conf.disasm_view_label_highlight_color
@@ -66,6 +66,31 @@ class QMemoryDataBlock(QCachedGraphicsItem):
             painter.setBrush(highlight_color)
             painter.setPen(highlight_color)
             painter.drawRect(0, 0, self.width, self.height)
+
+    def remove_children_from_scene(self):
+        """
+        Remove this item and all its children from the scene.
+        """
+        scene = self.scene()
+        if scene is None:
+            return
+
+        if self._addr_item is not None:
+            scene.removeItem(self._addr_item)
+            self._addr_item = None
+
+        if self._label_item is not None:
+            scene.removeItem(self._label_item)
+            self._label_item = None
+
+        if self._line_items:
+            for _, addr_item, bytes_line, characters_line in self._line_items:
+                for byte_item in bytes_line:
+                    scene.removeItem(byte_item)
+                for char_item in characters_line:
+                    scene.removeItem(char_item)
+                scene.removeItem(addr_item)
+            self._line_items = []
 
     #
     # Event handlers
@@ -121,17 +146,20 @@ class QMemoryDataBlock(QCachedGraphicsItem):
             self._label_item.setFont(Conf.code_font)
             self._label_item.setBrush(Conf.disasm_view_label_color)
         else:
-            if self._label_item is not None:
-                self._label_item.setParentItem(None)
+            if self._label_item is not None and (scene := self.scene()) is not None:
+                scene.removeItem(self._label_item)
                 self._label_item = None
 
     def _init_bytes(self) -> None:
-        if self._line_items:
+        if self._line_items and (scene := self.scene()) is not None:
             # remove existing items
-            for line in self._line_items:
-                for item in line:
-                    item.setParentItem(None)
-            self._line_items = None
+            for _, addr_item, bytes_list, character_list in self._line_items:
+                scene.removeItem(addr_item)
+                for item in bytes_list:
+                    scene.removeItem(item)
+                for line in character_list:
+                    scene.removeItem(line)
+            self._line_items = []
 
         addr = self.addr
         i = 0
@@ -208,6 +236,8 @@ class QMemoryDataBlock(QCachedGraphicsItem):
 
     def _layout_items_and_update_size(self) -> None:
         x, y = 0, 0
+
+        assert self._addr_item is not None
 
         #
         # first line

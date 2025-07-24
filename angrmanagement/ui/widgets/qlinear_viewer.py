@@ -1,3 +1,4 @@
+# pylint:disable=missing-class-docstring
 from __future__ import annotations
 
 import logging
@@ -7,13 +8,13 @@ from angr.analyses.cfg.cfb import MemoryRegion, Unknown
 from angr.block import Block
 from angr.knowledge_plugins.cfg.memory_data import MemoryData
 from angr.utils.timing import timethis
-from cachetools import LRUCache
 from PySide6.QtCore import QEvent, QRect, QRectF, Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QAbstractScrollArea, QAbstractSlider, QGraphicsScene, QHBoxLayout
 from sortedcontainers import SortedDict
 
 from angrmanagement.config import Conf
+from angrmanagement.utils.cache import SmartLRUCache
 
 from .qblock import QLinearBlock
 from .qdisasm_base_control import DisassemblyLevel, QDisassemblyBaseControl
@@ -92,16 +93,16 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         # The first line that is rendered of the first object in self.objects. Start from 0.
         self._start_line_in_object = 0
 
-        self._disasms = {}
-        self._ail_disasms = {}
-        self.objects = LRUCache(maxsize=1000)
+        self._disasms = SmartLRUCache(maxsize=1024)
+        self._ail_disasms = SmartLRUCache(maxsize=1024)
+        self.objects = SmartLRUCache(maxsize=1024, evict=self._on_object_eviction)
 
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
 
         self._init_widgets()
         self.initialize()
 
-    def reload(self, old_infodock: InfoDock | None = None) -> None:
+    def reload(self, old_infodock: InfoDock | None = None) -> None:  # pylint:disable=unused-argument
         curr_offset = self._offset
         self.initialize()
         self._offset = None  # force a re-generation of objects
@@ -208,6 +209,12 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             new_offset = int(self.verticalScrollBar().value() // self._line_height)
             self.prepare_objects(new_offset)
             self.viewport().update()
+
+    def _on_object_eviction(  # pylint:disable=unused-argument
+        self, key: int, obj: QLinearBlock | QMemoryDataBlock | QUnknownBlock
+    ) -> None:
+        obj.remove_children_from_scene()
+        self.scene.removeItem(obj)
 
     #
     # Public methods
@@ -395,7 +402,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         scene = self.scene
         # mark all cached objects as hidden
         for obj in self.objects.values():
-            obj.setVisible(False)
+            if obj.isVisible():
+                obj.setVisible(False)
 
         viewable_lines = int(self.height() // self._line_height)
         lines = 0
@@ -474,6 +482,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 break
 
         _l.debug("Final offset %d, start_line_in_object %d.", offset, start_line_in_object)
+        _l.debug("Object dict has %d objects.", len(self.objects))
+        # _l.debug("Scene has %d objects.", len(scene.items()))
         _l.debug("=== prepare_objects completes ===")
 
         # Update properties
@@ -513,7 +523,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                                     obj.addr,
                                     ail_obj,
                                     None,
-                                    None,
                                 )
                     else:
                         qobject = QLinearBlock(
@@ -525,7 +534,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                             obj.addr,
                             [obj],
                             {},
-                            None,
                         )
                 else:
                     # TODO: Get disassembly even if the function does not exist
@@ -567,7 +575,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         except StopIteration:
             return None, None
 
-    def _addr_from_offset(self, mr, base_offset, offset: int):
+    @staticmethod
+    def _addr_from_offset(mr, base_offset, offset: int):
         return mr.addr + (offset - base_offset)
 
     def _get_disasm(self, func: Function) -> Clinic | Disassembly | None:
