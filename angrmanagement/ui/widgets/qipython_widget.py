@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from IPython.lib import guisupport
+from qtconsole.inprocess import QtInProcessKernelManager
+from qtconsole.rich_jupyter_widget import RichJupyterWidget
 
 from angrmanagement.ui.css import CSS
-from angrmanagement.vendor.qtconsole.inprocess import QtInProcessKernelManager
-from angrmanagement.vendor.qtconsole.rich_jupyter_widget import RichJupyterWidget
 
 
 class QIPythonWidget(RichJupyterWidget):
