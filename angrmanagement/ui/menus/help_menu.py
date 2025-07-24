@@ -27,7 +27,10 @@ class HelpMenu(Menu):
                 ),
                 MenuSeparator(),
                 MenuEntry(
-                    "About angr...", main_window.open_about_dialog, role=QAction.MenuRole.AboutRole, icon=icon("about")
+                    "&About angr-management",
+                    main_window.open_about_dialog,
+                    role=QAction.MenuRole.AboutRole,
+                    icon=icon("about"),
                 ),
             ]
         )
