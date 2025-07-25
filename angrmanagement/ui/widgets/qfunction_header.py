@@ -17,11 +17,39 @@ if TYPE_CHECKING:
 
 
 class QFunctionHeader(QCachedGraphicsItem):
-    def __init__(self, addr: int, name: str, prototype, args, config, disasm_view, infodock, parent=None) -> None:
+    """
+    Function header item in the disassembly view.
+
+    A function header item includes the following items:
+    - Function name, or demangled function name if available
+    - Original function name if there is a demangled function name available
+    - Function prototype: return type, argument type, and arguments
+    - Calling convention
+    - A list of arguments in terms of registers and memory allocations
+    - Number of callers
+    - Number of callees
+    """
+
+    TOP_MARGIN_LINES = 1
+    BOTTOM_MARGIN_LINES = 1
+
+    def __init__(
+        self,
+        addr: int,
+        name: str,
+        demangled_name: str | None,
+        prototype,
+        args,
+        config,
+        disasm_view,
+        infodock,
+        parent=None,
+    ) -> None:
         super().__init__(parent=parent)
 
         self.addr = addr
         self.name = name
+        self.demangled_name = demangled_name
         self.prototype: SimTypeFunction = prototype
         self.args = args
         self.infodock = infodock
@@ -36,19 +64,40 @@ class QFunctionHeader(QCachedGraphicsItem):
         self._arg_str_list = None
         self._args_str = None
 
+        # function name
         self._function_name_item: QGraphicsSimpleTextItem | None = None
-        self._args_str_item: QGraphicsSimpleTextItem | None = None
-        self._prototype_arg_item: QGraphicsSimpleTextItem | None = None
+        # demangled function name
+        self._demangled_function_name_item: QGraphicsSimpleTextItem | None = None
+        # function prototype
+        self._proto_left_paren_item: QGraphicsSimpleTextItem | None = None
+        self._proto_return_type_item: QGraphicsSimpleTextItem | None = None
+        self._proto_param_items: list[
+            tuple[QGraphicsSimpleTextItem, QGraphicsSimpleTextItem, QGraphicsSimpleTextItem | None]
+        ] = []
+        self._proto_right_paren_item: QGraphicsSimpleTextItem | None = None
+        # arguments
+        self._arg_items: list[QGraphicsSimpleTextItem] = []
 
         self._init_widgets()
 
     def setVisible(self, visible):
         if self._function_name_item is not None:
             self._function_name_item.setVisible(visible)
-        if self._args_str_item is not None:
-            self._args_str_item.setVisible(visible)
-        if self._prototype_arg_item is not None:
-            self._prototype_arg_item.setVisible(visible)
+        if self._demangled_function_name_item is not None:
+            self._demangled_function_name_item.setVisible(visible)
+        if self._proto_return_type_item is not None:
+            self._proto_return_type_item.setVisible(visible)
+        if self._proto_left_paren_item is not None:
+            self._proto_left_paren_item.setVisible(visible)
+        for param_type, param_name, comma_item in self._proto_param_items:
+            param_type.setVisible(visible)
+            param_name.setVisible(visible)
+            if comma_item is not None:
+                comma_item.setVisible(visible)
+        if self._proto_right_paren_item is not None:
+            self._proto_right_paren_item.setVisible(visible)
+        for arg in self._arg_items:
+            arg.setVisible(visible)
 
     def refresh(self) -> None:
         pass
@@ -95,90 +144,133 @@ class QFunctionHeader(QCachedGraphicsItem):
             self._args_str = ""
 
         #
-        # prototype
+        # function name
         #
 
-        if self.prototype is None:
-            # Just print the function name
-            self._function_name_item = QGraphicsSimpleTextItem(self.name, self)
-            self._function_name_item.setFont(self._config.code_font)
-            self._function_name_item.setBrush(self._config.disasm_view_function_color)
+        if self.demangled_name and self.demangled_name != self.name:
+            self._demangled_function_name_item = QGraphicsSimpleTextItem(self.demangled_name, self)
+            self._demangled_function_name_item.setFont(self._config.disasm_font)
+            self._demangled_function_name_item.setBrush(self._config.disasm_view_function_color)
+        self._function_name_item = QGraphicsSimpleTextItem(self.name, self)
+        self._function_name_item.setFont(self._config.disasm_font)
+        self._function_name_item.setBrush(self._config.disasm_view_function_color)
 
-        else:
-            # print the prototype
+        #
+        # function prototype
+        #
 
-            proto_str = ""
-
-            # Type of the return value
+        if self.prototype is not None:
+            # function return type
             rt = type2str(self.prototype.returnty)
-            proto_str += rt
-
-            # space
-            proto_str += " "
-
-            # function name
-            proto_str += self.name
+            self._proto_return_type_item = QGraphicsSimpleTextItem(rt, self)
+            self._proto_return_type_item.setFont(self._config.disasm_font)
+            self._proto_return_type_item.setBrush(self._config.disasm_view_function_arg_type_color)
 
             # left parenthesis
-            proto_str += "("
+            self._proto_left_paren_item = QGraphicsSimpleTextItem("(", self)
+            self._proto_left_paren_item.setFont(self._config.disasm_font)
+            self._proto_left_paren_item.setBrush(self._config.disasm_view_function_color)
 
-            # arguments
+            # function parameters
+            self._proto_param_items = []
             for i, arg_type in enumerate(self.prototype.args):
                 type_str = type2str(arg_type)
-                proto_str += type_str + " "
+                type_item = QGraphicsSimpleTextItem(type_str, self)
+                type_item.setFont(self._config.disasm_font)
+                type_item.setBrush(self._config.disasm_view_function_arg_type_color)
 
                 if self.prototype.arg_names and i < len(self.prototype.arg_names):
-                    arg_name = self.prototype.arg_names[i]
+                    param_name = self.prototype.arg_names[i]
                 else:
-                    arg_name = f"arg_{i}"
-                proto_str += arg_name
-
+                    param_name = f"arg_{i}"
+                param_item = QGraphicsSimpleTextItem(param_name, self)
+                param_item.setFont(self._config.disasm_font)
+                param_item.setBrush(self._config.disasm_view_function_arg_name_color)
                 if i < len(self.prototype.args) - 1:
-                    # splitter
-                    proto_str += ", "
+                    comma_item = QGraphicsSimpleTextItem(",", self)
+                    comma_item.setFont(self._config.disasm_font)
+                    comma_item.setBrush(self._config.disasm_view_function_color)
+                else:
+                    comma_item = None
+                self._proto_param_items.append((type_item, param_item, comma_item))
 
             # right parenthesis
-            proto_str += ")"
-
-            self._prototype_arg_item = QGraphicsSimpleTextItem(proto_str, self)
-            self._prototype_arg_item.setFont(self._config.code_font)
-            self._prototype_arg_item.setBrush(self._config.disasm_view_function_color)
+            self._proto_right_paren_item = QGraphicsSimpleTextItem(")", self)
+            self._proto_right_paren_item.setFont(self._config.disasm_font)
+            self._proto_right_paren_item.setBrush(self._config.disasm_view_function_color)
 
         # arguments
         if self._arg_str_list is not None:
-            s = "Args: (" + ", ".join(self._arg_str_list) + ")"
-            self._args_str_item = QGraphicsSimpleTextItem(s, self)
-            self._args_str_item.setFont(self._config.code_font)
-            self._args_str_item.setBrush(self._config.disasm_view_function_color)
+            self._arg_items = []
+            for arg_str in self._arg_str_list:
+                item = QGraphicsSimpleTextItem(arg_str, self)
+                item.setFont(self._config.disasm_font)
+                item.setBrush(self._config.disasm_view_function_color)
+                self._arg_items.append(item)
 
         self._layout_items_and_update_size()
 
     def _layout_items_and_update_size(self) -> None:
-        x, y = 0, 0
+        x, y = 0, self.TOP_MARGIN_LINES * Conf.disasm_font_height
 
-        if self._function_name_item is not None:
-            # function anme
+        if self.prototype is None:
+            # function name only
+            if self._demangled_function_name_item is not None:
+                # demangled function name
+                self._demangled_function_name_item.setPos(x, y)
+                height = self._demangled_function_name_item.boundingRect().height()
+                y += height
+                x = 0
+            # normal function name
             self._function_name_item.setPos(x, y)
-            x += self._function_name_item.boundingRect().width()
             height = self._function_name_item.boundingRect().height()
-        elif self._prototype_arg_item is not None:
-            # prototype
-            self._prototype_arg_item.setPos(x, y)
-            x += self._prototype_arg_item.boundingRect().width()
-            height = self._prototype_arg_item.boundingRect().height()
+            y += height
         else:
-            height = 0
+            # prototype and function name
+            self._proto_return_type_item.setPos(x, y)
+            x += self._proto_return_type_item.boundingRect().width() + Conf.disasm_font_width
 
-        # new line
+            # function name
+            if self._demangled_function_name_item is not None:
+                self._demangled_function_name_item.setPos(x, y)
+                x += self._demangled_function_name_item.boundingRect().width()
+            else:
+                self._function_name_item.setPos(x, y)
+                x += self._function_name_item.boundingRect().width()
+
+            # left parenthesis
+            self._proto_left_paren_item.setPos(x, y)
+            x += self._proto_left_paren_item.boundingRect().width()
+            # parameters
+            for type_item, param_item, comma_item in self._proto_param_items:
+                # param type
+                type_item.setPos(x, y)
+                x += type_item.boundingRect().width() + Conf.disasm_font_width
+                # name
+                param_item.setPos(x, y)
+                x += param_item.boundingRect().width()
+                # comma
+                if comma_item is not None:
+                    comma_item.setPos(x, y)
+                    x += comma_item.boundingRect().width() + Conf.disasm_font_width
+            # right parenthesis
+            self._proto_right_paren_item.setPos(x, y)
+            x += self._proto_right_paren_item.boundingRect().width()
+            height = self._function_name_item.boundingRect().height()
+            y += height
+
         max_x = x
-        x = 0
-        y += height
 
-        # arguments
-        if self._args_str_item is not None:
-            self._args_str_item.setPos(x, y)
-            x += self._args_str_item.boundingRect().width()
-            y += self._args_str_item.boundingRect().height()
+        if self._arg_items:
+            # new line
+            x = 0
+            y += height
+            # arguments
+            for arg_item in self._arg_items:
+                arg_item.setPos(x, y)
+                y += arg_item.boundingRect().height()
+
+        y += self.BOTTOM_MARGIN_LINES * Conf.disasm_font_height
 
         max_x = max(x, max_x)
         self._width = max_x

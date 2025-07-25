@@ -4,12 +4,14 @@ from __future__ import annotations
 class FunctionHeader:
     __slots__ = (
         "name",
+        "demangled_name",
         "prototype",
         "args",
     )
 
-    def __init__(self, name: str, prototype=None, args=None) -> None:
+    def __init__(self, name: str, demangled_name: str | None, prototype=None, args=None) -> None:
         self.name = name
+        self.demangled_name = demangled_name
         self.prototype = prototype
         self.args = args
 

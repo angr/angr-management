@@ -22,7 +22,7 @@ def type2str(ty: SimType | None) -> str:
         return f"{type2str(ty.pts_to)}*"
     if ty.label:
         return ty.label
-    return repr(ty)
+    return ty.c_repr()
 
 
 def function_prototype_str(func: Function) -> str:
