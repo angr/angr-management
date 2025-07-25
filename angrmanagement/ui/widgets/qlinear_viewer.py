@@ -74,7 +74,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.horizontalScrollBar().setSingleStep(Conf.disasm_font_width)
-        self.verticalScrollBar().setSingleStep(16)
+        self.verticalScrollBar().setSingleStep(1)
 
         # self.setTransformationAnchor(QGraphicsView.NoAnchor)
         # self.setResizeAnchor(QGraphicsView.NoAnchor)
@@ -172,7 +172,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             lines = min(int(delta // self._line_height), 3)
             self.prepare_objects(self.offset, start_line=self._start_line_in_object - lines)
 
-        self.verticalScrollBar().setValue(self.offset * self._line_height)
+        self.verticalScrollBar().setValue(self.offset)
         event.accept()
         self.viewport().update()
 
@@ -206,8 +206,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             self.viewport().update()
         elif action == QAbstractSlider.SliderAction.SliderMove:
             # Setting a new offset
-            new_offset = int(self.verticalScrollBar().value() // self._line_height)
-            self.prepare_objects(new_offset)
+            new_offset = max(0, self.verticalScrollBar().value())
+            self.prepare_objects(new_offset, adjust_start_line=True)
             self.viewport().update()
 
     def _on_object_eviction(  # pylint:disable=unused-argument
@@ -299,7 +299,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.navigate_to(floor_region_offset + offset_into_region)
 
     def navigate_to(self, offset: int) -> None:
-        self.verticalScrollBar().setValue(offset * self._line_height)
+        self.verticalScrollBar().setValue(offset)
         self.prepare_objects(offset, start_line=0)
 
     #
@@ -322,16 +322,16 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             obj.refresh()
 
         # update vertical scrollbar
-        self.verticalScrollBar().setRange(0, self.max_offset * self._line_height - self.height() // 2)
+        self.verticalScrollBar().setRange(-120, self.max_offset - (self.height() // self._line_height) // 2)
         offset = 0 if self.offset is None else self.offset
-        self.verticalScrollBar().setValue(offset * self._line_height)
+        self.verticalScrollBar().setValue(offset)
 
     def clear_objects(self) -> None:
         self.objects.clear()
         self._offset = None
 
     @timethis
-    def prepare_objects(self, offset: int, start_line: int = 0) -> int | None:
+    def prepare_objects(self, offset: int, start_line: int = 0, adjust_start_line: bool = False) -> int | None:
         """
         Prepare objects to print based on offset and start_line. Update self.objects, self._offset, and
         self._start_line_in_object.
@@ -427,6 +427,13 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             if isinstance(qobject, QLinearBlock):
                 for insn_addr in qobject.addr_to_insns:
                     self._insaddr_to_block[insn_addr] = qobject
+            elif isinstance(qobject, QMemoryDataBlock) and adjust_start_line and obj_addr < addr and start_line == 0:
+                # we need to adjust start_line and y so that we can display the expected line of the object
+                byte_per_line = 16
+                aligned_line_0_addr = obj_addr // byte_per_line * byte_per_line
+                aligned_start_addr = addr // byte_per_line * byte_per_line
+                start_line = (aligned_start_addr - aligned_line_0_addr) // byte_per_line
+                y = -start_line * self._line_height
 
             # qobject.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
             if obj_addr >= mr.addr + mr.size:
