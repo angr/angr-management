@@ -80,7 +80,7 @@ def get_block_objects(disasm, nodes, func_addr):
             func = None
         if func is not None and func.calling_convention is not None and func.prototype is not None:
             args = func.calling_convention.arg_locs(func.prototype)
-            func_header = FunctionHeader(func.demangled_name, func.prototype, args)
+            func_header = FunctionHeader(func.name, func.demangled_name, func.prototype, args)
             lst.append(func_header)
 
         # stack variables

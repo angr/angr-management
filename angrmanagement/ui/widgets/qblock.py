@@ -258,6 +258,7 @@ class QBlock(QCachedGraphicsItem):
                     QFunctionHeader(
                         self.func_addr,
                         obj.name,
+                        obj.demangled_name,
                         obj.prototype,
                         obj.args,
                         self._config,
