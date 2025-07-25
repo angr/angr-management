@@ -186,6 +186,8 @@ ENTRIES = [
     CE("disasm_view_operand_highlight_color", QColor, QColor(0xFC, 0xEF, 0x00)),
     CE("disasm_view_operand_select_color", QColor, QColor(0xFF, 0xFF, 0x00)),
     CE("disasm_view_function_color", QColor, QColor(0x00, 0x00, 0xFF)),
+    CE("disasm_view_function_arg_name_color", QColor, QColor(0x00, 0x00, 0x00)),
+    CE("disasm_view_function_arg_type_color", QColor, QColor(0x00, 0x00, 0x80)),
     CE("disasm_view_string_color", QColor, QColor(0xA0, 0xA0, 0xA4)),
     CE("disasm_view_variable_ident_color", QColor, QColor(0xAA, 0x25, 0xDA)),
     CE("disasm_view_variable_offset_color", QColor, QColor(0x80, 0x80, 0x00)),
