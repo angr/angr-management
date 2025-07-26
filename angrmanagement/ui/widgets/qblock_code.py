@@ -10,7 +10,7 @@ except ImportError:
     pypcode = None
 
 import pyvex
-from PySide6.QtCore import QObject, QPointF, QRectF, Qt
+from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QFont, QMouseEvent, QPainter, QTextCharFormat, QTextCursor, QTextDocument
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
@@ -39,7 +39,7 @@ class QBlockCodeOptions:
     show_variable_identifiers: bool = True
 
 
-class QBlockCodeObj(QObject):
+class QBlockCodeObj:
     """
     Renders a generic "code" object and handles display related events.
     Instances of this class mirror an AST structure, with references in the
@@ -57,7 +57,6 @@ class QBlockCodeObj(QObject):
     _fmt_current: QTextCharFormat
 
     def __init__(self, obj: Any, infodock: InfoDock, parent: Any, options: QBlockCodeOptions = None) -> None:
-        super().__init__()
         self.obj = obj
         self.infodock = infodock
         self.parent = parent
