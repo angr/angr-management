@@ -39,7 +39,7 @@ from angrmanagement.ui.widgets import (
     QLinearDisassembly,
     QLinearDisassemblyView,
 )
-from angrmanagement.ui.widgets.qblock_code import QVariableObj
+from angrmanagement.ui.widgets.block_code_objects import QVariableObj
 from angrmanagement.ui.widgets.qinst_annotation import QBreakAnnotation, QHookAnnotation
 from angrmanagement.utils import locate_function
 

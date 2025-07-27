@@ -12,7 +12,8 @@ from angrmanagement.config import Conf
 from angrmanagement.utils import get_block_objects, get_label_text, get_out_branches_for_insn
 from angrmanagement.utils.block_objects import FunctionHeader, Label, PhiVariable, Variables
 
-from .qblock_code import QAilObj, QBlockCode, QBlockCodeOptions, QIROpObj
+from .block_code_objects import QAilObj, QBlockCodeOptions, QIROpObj
+from .qblock_code import QBlockCode
 from .qblock_label import QBlockLabel
 from .qfunction_header import QFunctionHeader
 from .qgraph import QSaveableGraphicsView
