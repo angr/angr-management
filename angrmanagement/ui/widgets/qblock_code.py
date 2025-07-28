@@ -2,14 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-try:
-    import pypcode
-except ImportError:
-    pypcode = None
-
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QMouseEvent, QPainter, QTextCursor, QTextDocument
-from PySide6.QtWidgets import QGraphicsSimpleTextItem
+from PySide6.QtGui import QPainter, QTextCursor, QTextDocument
+from PySide6.QtWidgets import QGraphicsSceneMouseEvent, QGraphicsSimpleTextItem
 
 from angrmanagement.config import Conf, ConfigurationManager
 
@@ -18,7 +13,7 @@ from .qgraph_object import QCachedGraphicsItem
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
     from angrmanagement.logic.disassembly.info_dock import InfoDock
-    from angrmanagement.ui.widgets.qdisasm_base_control import QDisassemblyBaseControl
+    from angrmanagement.ui.views import DisassemblyView
 
     from .block_code_objects import QBlockCodeObj
 
@@ -38,7 +33,7 @@ class QBlockCode(QCachedGraphicsItem):
     _addr_str: str
     obj: QBlockCodeObj
     _config: ConfigurationManager
-    disasm_view: QDisassemblyBaseControl
+    disasm_view: DisassemblyView
     infodock: InfoDock
     parent: Any
 
@@ -47,7 +42,7 @@ class QBlockCode(QCachedGraphicsItem):
         addr: int,
         obj: QBlockCodeObj,
         config: ConfigurationManager,
-        disasm_view: QDisassemblyBaseControl,
+        disasm_view: DisassemblyView,
         instance: Instance,
         infodock: InfoDock,
         parent: Any = None,
@@ -55,7 +50,6 @@ class QBlockCode(QCachedGraphicsItem):
         super().__init__(parent=parent)
         self.addr = addr
         self._addr_str = f"{self.addr:08x}"
-        self._addr_item: QGraphicsSimpleTextItem = None
         self.obj = obj
         self._width = 0
         self._height = 0
@@ -86,7 +80,7 @@ class QBlockCode(QCachedGraphicsItem):
         cur = QTextCursor(self._qtextdoc)
         self.obj.render_to_doc(cur)
 
-    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget=None) -> None:  # pylint: disable=unused-argument
         self.update_document()
         painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
         painter.setFont(self._config.disasm_font)
@@ -109,7 +103,7 @@ class QBlockCode(QCachedGraphicsItem):
     # Event handlers
     #
 
-    def get_obj_for_mouse_event(self, event: QMouseEvent) -> QBlockCodeObj | None:
+    def get_obj_for_mouse_event(self, event: QGraphicsSceneMouseEvent) -> QBlockCodeObj | None:
         p = event.pos()
 
         if self._disasm_view.show_address:
@@ -123,7 +117,7 @@ class QBlockCode(QCachedGraphicsItem):
 
         return None
 
-    def mousePressEvent(self, event) -> None:
+    def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self.infodock.select_instruction(self.addr)
 
@@ -131,7 +125,7 @@ class QBlockCode(QCachedGraphicsItem):
         if obj is not None:
             obj.mousePressEvent(event)
 
-    def mouseDoubleClickEvent(self, event) -> None:
+    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         obj = self.get_obj_for_mouse_event(event)
         if obj is not None:
             obj.mouseDoubleClickEvent(event)

@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont, QMouseEvent, QTextCharFormat
+from PySide6.QtGui import QFont, QTextCharFormat
 
 from angrmanagement.config import Conf
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from PySide6.QtWidgets import QGraphicsSceneMouseEvent
 
     from angrmanagement.logic.disassembly import InfoDock
 
@@ -37,17 +37,17 @@ class QBlockCodeObj:
     parent: Any
     options: QBlockCodeOptions
     span: tuple[int, int] | None
-    subobjs: Sequence[QBlockCodeObj]
+    subobjs: list[QBlockCodeObj | str]
     _fmt_current: QTextCharFormat
 
-    def __init__(self, obj: Any, infodock: InfoDock, parent: Any, options: QBlockCodeOptions = None) -> None:
+    def __init__(self, obj: Any, infodock: InfoDock, parent: Any, options: QBlockCodeOptions | None = None) -> None:
         self.obj = obj
         self.infodock = infodock
         self.parent = parent
         self.options = options or QBlockCodeOptions()
         self.span = None
         self.subobjs = []
-        self._fmt_current = None
+        self._fmt_current = None  # type:ignore
         self.update_style()
         self.create_subobjs(obj)
 
@@ -110,9 +110,11 @@ class QBlockCodeObj:
         """
         Determine whether a character offset falls within the span of this object
         """
+        if self.span is None:
+            return False
         return self.span[0] <= pos < self.span[1]
 
-    def get_hit_obj(self, pos: int) -> QBlockCodeObj:
+    def get_hit_obj(self, pos: int) -> QBlockCodeObj | None:
         """
         Find the leaf node for a given character offset
         """
@@ -125,7 +127,7 @@ class QBlockCodeObj:
                     return hit
         return self
 
-    def _add_subobj(self, obj: QBlockCodeObj) -> None:
+    def _add_subobj(self, obj: QBlockCodeObj | str) -> None:
         """
         Add display object `obj` to the list of subobjects
         """
@@ -140,12 +142,12 @@ class QBlockCodeObj:
     def add_variable(self, var) -> None:
         self._add_subobj(QVariableObj(var, self.infodock, parent=self, options=self.options))
 
-    def mousePressEvent(self, event: QMouseEvent) -> None:  # pylint: disable=unused-argument
+    def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:  # pylint: disable=unused-argument
         self.infodock.select_qblock_code_obj(self)
         if event.button() == Qt.MouseButton.RightButton:
             self.infodock.disasm_view.show_context_menu_for_selected_object()
 
-    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         pass
 
     @property

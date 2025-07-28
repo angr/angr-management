@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from angr import ailment
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QMouseEvent, QTextCharFormat
+from PySide6.QtGui import QTextCharFormat
 
 from angrmanagement.config import Conf
 from angrmanagement.utils import string_at_addr
@@ -12,6 +12,8 @@ from angrmanagement.utils import string_at_addr
 from .base_objects import QBlockCodeObj
 
 if TYPE_CHECKING:
+    from PySide6.QtWidgets import QGraphicsSceneMouseEvent
+
     from angrmanagement.data.instance import Instance
 
 
@@ -57,7 +59,7 @@ class QAilObj(QBlockCodeObj):
             return True
         return super().should_highlight_line
 
-    def mousePressEvent(self, event: QMouseEvent) -> None:  # pylint: disable=unused-argument
+    def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:  # pylint: disable=unused-argument
         super().mousePressEvent(event)
         button = event.button()
         if button == Qt.MouseButton.LeftButton:
@@ -171,6 +173,9 @@ class QAilConstObj(QAilTextObj):
         return fmt
 
     def create_subobjs(self, obj: ailment.expression.Const) -> None:
+        if not isinstance(obj.value, int):
+            return
+
         # take care of labels first
         kb = self.infodock.disasm_view.disasm.kb
         if obj.value in kb.labels:
@@ -180,7 +185,7 @@ class QAilConstObj(QAilTextObj):
         data_str = string_at_addr(
             self.instance.cfg,
             obj.value,
-            self.instance.project,
+            self.instance.project,  # type:ignore
         )
         if data_str:
             self.add_text(data_str)
@@ -193,7 +198,7 @@ class QAilConstObj(QAilTextObj):
             and self.infodock.selected_qblock_code_obj.obj.value == self.obj.value
         )
 
-    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         super().mouseDoubleClickEvent(event)
         button = event.button()
         if button == Qt.MouseButton.LeftButton:
