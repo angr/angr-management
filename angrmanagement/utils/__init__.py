@@ -51,6 +51,18 @@ def get_label_text(addr: int, kb, function=None):
         return f"loc_{addr:#x}:"
 
 
+def get_function_header(functions, func_addr: int) -> FunctionHeader | None:
+    try:
+        func = functions.get_by_addr(func_addr)
+    except KeyError:
+        func = None
+    if func is not None and func.calling_convention is not None and func.prototype is not None:
+        args = func.calling_convention.arg_locs(func.prototype)
+        func_header = FunctionHeader(func.name, func.demangled_name, func.prototype, args)
+        return func_header
+    return None
+
+
 def get_block_objects(disasm, nodes, func_addr):
     """
     Get a list of objects to be displayed in a block in disassembly view. Objects may include instructions, stack
@@ -73,14 +85,8 @@ def get_block_objects(disasm, nodes, func_addr):
 
     # function beginning
     if block_addr == func_addr:
-        # function header
-        try:
-            func = disasm.kb.functions.get_by_addr(func_addr)
-        except KeyError:
-            func = None
-        if func is not None and func.calling_convention is not None and func.prototype is not None:
-            args = func.calling_convention.arg_locs(func.prototype)
-            func_header = FunctionHeader(func.name, func.demangled_name, func.prototype, args)
+        func_header = get_function_header(disasm.kb.functions, func_addr)
+        if func_header is not None:
             lst.append(func_header)
 
         # stack variables
