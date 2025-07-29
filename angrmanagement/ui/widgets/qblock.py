@@ -12,10 +12,9 @@ from angrmanagement.config import Conf
 from angrmanagement.utils import get_block_objects, get_label_text, get_out_branches_for_insn
 from angrmanagement.utils.block_objects import FunctionHeader, Label, PhiVariable, Variables
 
-from .block_code_objects import QAilObj, QBlockCodeOptions, QIROpObj
+from .block_code_objects import QAilObj, QBlockCodeOptions, QFunctionHeader, QIROpObj
 from .qblock_code import QBlockCode
 from .qblock_label import QBlockLabel
-from .qfunction_header import QFunctionHeader
 from .qgraph import QSaveableGraphicsView
 from .qgraph_object import QCachedGraphicsItem
 from .qinstruction import QInstruction
@@ -255,19 +254,25 @@ class QBlock(QCachedGraphicsItem):
                     variable = QVariable(self.instance, self.disasm_view, var, self._config, self.infodock, parent=self)
                     self.objects.append(variable)
             elif isinstance(obj, FunctionHeader):
-                self.objects.append(
-                    QFunctionHeader(
-                        self.func_addr,
-                        obj.name,
-                        obj.demangled_name,
-                        obj.prototype,
-                        obj.args,
-                        self._config,
-                        self.disasm_view,
-                        self.infodock,
-                        parent=self,
-                    )
+                func_header = QFunctionHeader(
+                    self.func_addr,
+                    obj.name,
+                    obj.demangled_name,
+                    obj.prototype,
+                    obj.args,
+                    self.infodock,
+                    parent=self,
                 )
+                obj = QBlockCode(
+                    self.func_addr,
+                    func_header,
+                    self._config,
+                    self.disasm_view,
+                    self.instance,
+                    self.infodock,
+                    parent=self,
+                )
+                self.objects.append(obj)
 
     def _init_widgets(self) -> None:
         if (scene := self.scene()) is not None:
