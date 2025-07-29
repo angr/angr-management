@@ -350,6 +350,20 @@ class InfoDock(QObject):
         self.selected_qblock_code_obj = obj
         self.qblock_code_obj_selection_changed.emit()
 
+    def toggle_qblock_code_obj_selection(self, obj) -> None:
+        """
+        Toggle the selection state of a QBlockCodeObj in the disassembly view.
+
+        :param obj:    The QBlockCodeObj to toggle.
+        """
+
+        if self.selected_qblock_code_obj == obj:
+            self.selected_qblock_code_obj = None
+        else:
+            self.selected_qblock_code_obj = obj
+
+        self.qblock_code_obj_selection_changed.emit()
+
     def _update_published_view_state(self) -> None:
         self.disasm_view.published_view_state.cursors = self.selected_insns.union(self.selected_labels)
         self.disasm_view.notify_view_state_updated()
