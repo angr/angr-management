@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-uv sync --python "3.12" --extra pyinstaller --extra binharness
+uv sync --extra pyinstaller --extra binharness
 
 # Bundle!
 uv run pyinstaller angr-management.spec
