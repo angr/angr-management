@@ -62,9 +62,11 @@ class QBlockCode(QCachedGraphicsItem):
         self._qtextdoc.setDefaultFont(self._config.disasm_font)
         self._qtextdoc.setDocumentMargin(0)
 
-        self._addr_item = QGraphicsSimpleTextItem(self._addr_str, self)
-        self._addr_item.setBrush(Conf.disasm_view_node_address_color)
-        self._addr_item.setFont(Conf.disasm_font)
+        self._addr_item = None
+        if self.obj.show_address:
+            self._addr_item = QGraphicsSimpleTextItem(self._addr_str, self)
+            self._addr_item.setBrush(Conf.disasm_view_node_address_color)
+            self._addr_item.setFont(Conf.disasm_font)
 
         self.update_document()
         self.setToolTip("Address: " + self._addr_str)
@@ -72,7 +74,8 @@ class QBlockCode(QCachedGraphicsItem):
         self.refresh()
 
     def refresh(self) -> None:
-        self._addr_item.setVisible(self._disasm_view.show_address)
+        if self._addr_item is not None:
+            self._addr_item.setVisible(self._disasm_view.show_address)
         self._layout_items_and_update_size()
 
     def update_document(self) -> None:
@@ -91,12 +94,12 @@ class QBlockCode(QCachedGraphicsItem):
             painter.setPen(highlight_color)
             painter.drawRect(0, 0, self.width, self.height)
 
+        y = self.obj.top_margin_lines * Conf.disasm_font_height
         x = 0
-
-        if self._disasm_view.show_address:
+        if self._disasm_view.show_address and self.obj.show_address:
             x += self._addr_item.boundingRect().width() + self.GRAPH_ADDR_SPACING
 
-        painter.translate(QPointF(x, 0))
+        painter.translate(QPointF(x, y))
         self._qtextdoc.drawContents(painter)
 
     #
@@ -106,9 +109,12 @@ class QBlockCode(QCachedGraphicsItem):
     def get_obj_for_mouse_event(self, event: QGraphicsSceneMouseEvent) -> QBlockCodeObj | None:
         p = event.pos()
 
-        if self._disasm_view.show_address:
+        if self._disasm_view.show_address and self.obj.show_address:
             offset = self._addr_item.boundingRect().width() + self.GRAPH_ADDR_SPACING
             p.setX(p.x() - offset)
+
+        if self.obj.top_margin_lines > 0:
+            p.setY(p.y() - self.obj.top_margin_lines * Conf.disasm_font_height)
 
         if p.x() >= 0:
             hitpos = self._qtextdoc.documentLayout().hitTest(p, Qt.HitTestAccuracy.ExactHit)
@@ -137,13 +143,14 @@ class QBlockCode(QCachedGraphicsItem):
     def _layout_items_and_update_size(self) -> None:
         self.update_document()
 
-        x, y = 0, 0
-        if self._disasm_view.show_address:
+        x, y = 0, self.obj.top_margin_lines * Conf.disasm_font_height
+        if self._disasm_view.show_address and self.obj.show_address:
             self._addr_item.setPos(x, y)
             x += self._addr_item.boundingRect().width() + self.GRAPH_ADDR_SPACING
 
         x += self._qtextdoc.size().width()
         y += self._qtextdoc.size().height()
+        y += self.obj.bottom_margin_lines * Conf.disasm_font_height
         self._width = x
         self._height = y
         self.recalculate_size()
