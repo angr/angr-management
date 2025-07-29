@@ -27,7 +27,7 @@ class QFunctionHeaderFuncNameItem(QBlockCodeObj):
 
     @property
     def selection_key(self) -> Any:
-        return "func_name"
+        return "func_name", self.addr
 
     @staticmethod
     def fmt() -> QTextCharFormat:
@@ -49,7 +49,7 @@ class QFunctionHeaderFuncTypeItem(QBlockCodeObj):
 
     @property
     def selection_key(self) -> Any:
-        return ("param_type", self.arg_id) if self.arg_id >= 0 else ("return_type", 0)
+        return ("param_type", self.addr, self.arg_id) if self.arg_id >= 0 else ("return_type", 0)
 
     @staticmethod
     def fmt() -> QTextCharFormat:
@@ -71,7 +71,7 @@ class QFunctionHeaderFuncParamItem(QBlockCodeObj):
 
     @property
     def selection_key(self) -> Any:
-        return "param_item", self.arg_id
+        return "param_item", self.addr, self.arg_id
 
     @staticmethod
     def fmt() -> QTextCharFormat:
@@ -93,7 +93,7 @@ class QFunctionHeaderFuncArgItem(QBlockCodeObj):
 
     @property
     def selection_key(self) -> Any:
-        return "arg_item", self.arg_id
+        return "arg_item", self.addr, self.arg_id
 
     @staticmethod
     def fmt() -> QTextCharFormat:
@@ -197,10 +197,9 @@ class QFunctionHeader(QBlockCodeObj):
 
         # arguments
         if self._arg_str_list is not None:
-            self.add_text("Argument locations:")
-            self.add_newline()
             for i, arg_str in enumerate(self._arg_str_list):
                 sub_obj = QFunctionHeaderFuncArgItem(self.addr, i, arg_str, self.infodock, self)
+                self.add_text(f"arg_{i} @ ")
                 self._add_subobj(sub_obj)
                 self.add_newline()
 

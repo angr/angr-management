@@ -42,7 +42,6 @@ class QBlockCode(QCachedGraphicsItem):
         addr: int,
         obj: QBlockCodeObj,
         config: ConfigurationManager,
-        disasm_view: DisassemblyView,
         instance: Instance,
         infodock: InfoDock,
         parent: Any = None,
@@ -57,7 +56,7 @@ class QBlockCode(QCachedGraphicsItem):
         self.parent = parent
         self.instance = instance
         self.infodock = infodock
-        self._disasm_view = disasm_view
+        self._disasm_view = infodock.disasm_view
         self._qtextdoc = QTextDocument()
         self._qtextdoc.setDefaultFont(self._config.disasm_font)
         self._qtextdoc.setDocumentMargin(0)
