@@ -986,6 +986,13 @@ class DisassemblyView(SynchronizedFunctionView):
             return "insn", next(iter(self.infodock.selected_insns))
         if len(self.infodock.selected_labels) == 1:
             return "insn", next(iter(self.infodock.selected_labels))
+        if (
+            isinstance(self.infodock.selected_qblock_code_obj, tuple)
+            and len(self.infodock.selected_qblock_code_obj) == 2
+        ):
+            ty, addr = self.infodock.selected_qblock_code_obj
+            if ty == "func_name":
+                return ty, addr
         return None
 
     def _instruction_address_in_selection(self) -> int | None:
