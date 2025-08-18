@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QPointF, QRectF, Qt
@@ -16,6 +17,16 @@ if TYPE_CHECKING:
     from angrmanagement.ui.views import DisassemblyView
 
     from .block_code_objects import QBlockCodeObj
+
+
+class QBlockCodeSelectionMode(Enum):
+    """
+    Defines the selection mode of this QBlockCode object.
+    """
+
+    SELECT_INSTRUCTION = 1
+    INVOKE_OBJ = 2
+    NOOP = 3
 
 
 class QBlockCode(QCachedGraphicsItem):
@@ -45,6 +56,7 @@ class QBlockCode(QCachedGraphicsItem):
         instance: Instance,
         infodock: InfoDock,
         parent: Any = None,
+        selection_mode: QBlockCodeSelectionMode = QBlockCodeSelectionMode.SELECT_INSTRUCTION,
     ) -> None:
         super().__init__(parent=parent)
         self.addr = addr
@@ -56,6 +68,7 @@ class QBlockCode(QCachedGraphicsItem):
         self.parent = parent
         self.instance = instance
         self.infodock = infodock
+        self._selection_mode = selection_mode
         self._disasm_view = infodock.disasm_view
         self._qtextdoc = QTextDocument()
         self._qtextdoc.setDefaultFont(self._config.disasm_font)
@@ -87,7 +100,7 @@ class QBlockCode(QCachedGraphicsItem):
         painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
         painter.setFont(self._config.disasm_font)
 
-        if self.infodock.is_instruction_selected(self.addr) or self.obj.should_highlight_line:
+        if self.should_highlight():
             highlight_color = Conf.disasm_view_node_instruction_selected_background_color
             painter.setBrush(highlight_color)
             painter.setPen(highlight_color)
@@ -123,7 +136,10 @@ class QBlockCode(QCachedGraphicsItem):
         return None
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
+        if (
+            event.button() == Qt.MouseButton.LeftButton
+            and self._selection_mode == QBlockCodeSelectionMode.SELECT_INSTRUCTION
+        ):
             self.infodock.select_instruction(self.addr)
 
         obj = self.get_obj_for_mouse_event(event)
@@ -134,6 +150,20 @@ class QBlockCode(QCachedGraphicsItem):
         obj = self.get_obj_for_mouse_event(event)
         if obj is not None:
             obj.mouseDoubleClickEvent(event)
+
+    def should_highlight(self) -> bool:
+        match self._selection_mode:
+            case QBlockCodeSelectionMode.SELECT_INSTRUCTION:
+                if self.infodock.is_instruction_selected(self.addr):
+                    return True
+                if self.obj is not None:
+                    return self.obj.should_highlight() or self.obj.should_highlight_line
+            case QBlockCodeSelectionMode.INVOKE_OBJ:
+                if self.obj is not None:
+                    return self.obj.should_highlight() or self.obj.should_highlight_line
+            case QBlockCodeSelectionMode.NOOP:
+                return False
+        return False
 
     #
     # Private methods

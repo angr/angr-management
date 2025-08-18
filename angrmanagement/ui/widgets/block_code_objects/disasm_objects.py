@@ -213,6 +213,8 @@ class QFunctionHeader(QBlockCodeObj):
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         # do not handle left click events; individual items will handle them
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.infodock.toggle_label_selection(self.addr)
         if (
             event.button() == Qt.MouseButton.RightButton
             and QApplication.keyboardModifiers() == Qt.KeyboardModifier.NoModifier

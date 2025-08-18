@@ -13,7 +13,7 @@ from angrmanagement.utils import get_block_objects, get_function_header, get_lab
 from angrmanagement.utils.block_objects import FunctionHeader, Label, PhiVariable, Variables
 
 from .block_code_objects import QAilObj, QBlockCodeOptions, QFunctionHeader, QIROpObj
-from .qblock_code import QBlockCode
+from .qblock_code import QBlockCode, QBlockCodeSelectionMode
 from .qblock_label import QBlockLabel
 from .qgraph import QSaveableGraphicsView
 from .qgraph_object import QCachedGraphicsItem
@@ -200,7 +200,15 @@ class QBlock(QCachedGraphicsItem):
                     self.infodock,
                     parent=self,
                 )
-                obj = QBlockCode(self.func_addr, func_header, self._config, self.instance, self.infodock, parent=self)
+                obj = QBlockCode(
+                    self.func_addr,
+                    func_header,
+                    self._config,
+                    self.instance,
+                    self.infodock,
+                    parent=self,
+                    selection_mode=QBlockCodeSelectionMode.INVOKE_OBJ,
+                )
                 self.objects.append(obj)
 
         if bn.addr in self.disasm.kb.labels:
@@ -283,6 +291,7 @@ class QBlock(QCachedGraphicsItem):
                     self.instance,
                     self.infodock,
                     parent=self,
+                    selection_mode=QBlockCodeSelectionMode.INVOKE_OBJ,
                 )
                 self.objects.append(obj)
 
