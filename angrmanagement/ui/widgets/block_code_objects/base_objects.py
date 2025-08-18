@@ -180,8 +180,11 @@ class QBlockCodeObj:
         selection_key = self.selection_key
         if selection_key is None:
             selection_key = self
-        self.infodock.toggle_qblock_code_obj_selection(selection_key)
-        if event.button() == Qt.MouseButton.RightButton:
+
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.infodock.toggle_qblock_code_obj_selection(selection_key)
+        elif event.button() == Qt.MouseButton.RightButton:
+            self.infodock.select_qblock_code_obj(selection_key)
             self.infodock.disasm_view.show_context_menu_for_selected_object()
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:

@@ -3,9 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from angr.calling_conventions import SimRegArg
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QCursor, QTextCharFormat
-from PySide6.QtWidgets import QApplication, QGraphicsSceneMouseEvent
+from PySide6.QtGui import QTextCharFormat
 
 from angrmanagement.config import Conf
 from angrmanagement.utils.func import type2str
@@ -206,21 +204,6 @@ class QFunctionHeader(QBlockCodeObj):
     def should_highlight(self) -> bool:
         #  we don't highlight the entire function header
         return False
-
-    #
-    # Event handlers
-    #
-
-    def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.infodock.toggle_label_selection(self.addr)
-        if (
-            event.button() == Qt.MouseButton.RightButton
-            and QApplication.keyboardModifiers() == Qt.KeyboardModifier.NoModifier
-        ):
-            if self.addr not in self.infodock.selected_labels:
-                self.infodock.select_label(self.addr)
-            self.infodock.disasm_view.label_context_menu(self.addr, QCursor.pos())
 
     #
     # Private methods

@@ -26,6 +26,7 @@ from angrmanagement.ui.dialogs.rename import RenameDialog
 from angrmanagement.ui.dialogs.rename_label import RenameLabel
 from angrmanagement.ui.dialogs.set_comment import SetComment
 from angrmanagement.ui.dialogs.xref import XRefDialog
+from angrmanagement.ui.menus import Menu
 from angrmanagement.ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from angrmanagement.ui.menus.disasm_label_context_menu import DisasmLabelContextMenu
 from angrmanagement.ui.views.symexec_view import SymexecView
@@ -412,11 +413,16 @@ class DisassemblyView(SynchronizedFunctionView):
         if self.infodock.selected_insns:
             self.workspace.undefine_code(next(iter(self.infodock.selected_insns)))
 
-    def get_context_menu_for_selected_object(self) -> QMenu | None:
+    def get_context_menu_for_selected_object(self) -> Menu | QMenu | None:
         """
         Returns a QMenu object for the currently selected QBlockCodeObj
         """
         obj = self.infodock.selected_qblock_code_obj
+        if isinstance(obj, tuple) and len(obj) == 2:
+            ty, addr = obj
+            if ty == "func_name":
+                self._label_menu.addr = addr
+                return self._label_menu
         if isinstance(obj, QVariableObj):
             rename_act = QAction("Re&name", self)
             rename_act.triggered.connect(self.rename_selected_object)
@@ -432,6 +438,8 @@ class DisassemblyView(SynchronizedFunctionView):
         """
         mnu = self.get_context_menu_for_selected_object()
         if mnu is not None:
+            if isinstance(mnu, Menu):
+                mnu = mnu.qmenu(cached=False)
             self.append_view_menu_actions(mnu)
             mnu.exec_(QCursor.pos())
 
