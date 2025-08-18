@@ -64,7 +64,7 @@ class QInstruction(QCachedGraphicsItem):
 
     def setVisible(self, visible):
         super().setVisible(visible)
-        self._addr_item.setVisible(visible)
+        self._addr_item.setVisible(visible and self.disasm_view.show_address)
         self._mnemonic_item.setVisible(visible)
         for op in self._operands:
             op.setVisible(visible)
