@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from angrmanagement.logic.disassembly import InfoDock
 
 
-class QBlockCodeOptions:
+class BlockTreeNodeOptions:
     """
     Various options to control display of QBlockCodeObj's
     """
@@ -23,7 +23,7 @@ class QBlockCodeOptions:
     show_variable_identifiers: bool = True
 
 
-class QBlockCodeObj:
+class BlockTreeNode:
     """
     Renders a generic "code" object and handles display related events.
     Instances of this class mirror an AST structure, with references in the
@@ -35,9 +35,9 @@ class QBlockCodeObj:
     obj: Any
     infodock: InfoDock
     parent: Any
-    options: QBlockCodeOptions
+    options: BlockTreeNodeOptions
     span: tuple[int, int] | None
-    subobjs: list[QBlockCodeObj | str]
+    subobjs: list[BlockTreeNode | str]
     _fmt_current: QTextCharFormat
     display_address: bool
     top_margin_lines: int
@@ -48,7 +48,7 @@ class QBlockCodeObj:
         obj: Any,
         infodock: InfoDock,
         parent: Any,
-        options: QBlockCodeOptions | None = None,
+        options: BlockTreeNodeOptions | None = None,
         display_address: bool = True,
         top_margin_lines: int = 0,
         bottom_margin_lines: int = 0,
@@ -56,7 +56,7 @@ class QBlockCodeObj:
         self.obj = obj
         self.infodock = infodock
         self.parent = parent
-        self.options = options or QBlockCodeOptions()
+        self.options = options or BlockTreeNodeOptions()
         self.span = None
         self.subobjs = []
         self.display_address = display_address
@@ -100,7 +100,7 @@ class QBlockCodeObj:
         r = (selected is not None) and (
             (selection_key is not None and selected == selection_key)
             or selected is self
-            or (isinstance(selected, QBlockCodeObj) and selected.obj is self.obj)
+            or (isinstance(selected, BlockTreeNode) and selected.obj is self.obj)
         )
         return r
 
@@ -142,7 +142,7 @@ class QBlockCodeObj:
             return False
         return self.span[0] <= pos < self.span[1]
 
-    def get_hit_obj(self, pos: int) -> QBlockCodeObj | None:
+    def get_hit_obj(self, pos: int) -> BlockTreeNode | None:
         """
         Find the leaf node for a given character offset
         """
@@ -155,7 +155,7 @@ class QBlockCodeObj:
                     return hit
         return self
 
-    def _add_subobj(self, obj: QBlockCodeObj | str) -> None:
+    def _add_subobj(self, obj: BlockTreeNode | str) -> None:
         """
         Add display object `obj` to the list of subobjects
         """
@@ -192,10 +192,10 @@ class QBlockCodeObj:
 
     @property
     def should_highlight_line(self):
-        return any(obj.should_highlight_line for obj in self.subobjs if isinstance(obj, QBlockCodeObj))
+        return any(obj.should_highlight_line for obj in self.subobjs if isinstance(obj, BlockTreeNode))
 
 
-class QVariableObj(QBlockCodeObj):
+class QVariableObj(BlockTreeNode):
     """
     Renders a variable
     """

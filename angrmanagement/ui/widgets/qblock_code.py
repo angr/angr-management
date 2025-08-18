@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from angrmanagement.logic.disassembly.info_dock import InfoDock
     from angrmanagement.ui.views import DisassemblyView
 
-    from .block_code_objects import QBlockCodeObj
+    from .block_code_objects import BlockTreeNode
 
 
 class QBlockCodeSelectionMode(Enum):
@@ -42,7 +42,7 @@ class QBlockCode(QCachedGraphicsItem):
 
     addr: int
     _addr_str: str
-    obj: QBlockCodeObj
+    obj: BlockTreeNode
     _config: ConfigurationManager
     disasm_view: DisassemblyView
     infodock: InfoDock
@@ -51,7 +51,7 @@ class QBlockCode(QCachedGraphicsItem):
     def __init__(
         self,
         addr: int,
-        obj: QBlockCodeObj,
+        obj: BlockTreeNode,
         config: ConfigurationManager,
         instance: Instance,
         infodock: InfoDock,
@@ -118,7 +118,7 @@ class QBlockCode(QCachedGraphicsItem):
     # Event handlers
     #
 
-    def get_obj_for_mouse_event(self, event: QGraphicsSceneMouseEvent) -> QBlockCodeObj | None:
+    def get_obj_for_mouse_event(self, event: QGraphicsSceneMouseEvent) -> BlockTreeNode | None:
         p = event.pos()
 
         if self._disasm_view.show_address and self.obj.display_address:

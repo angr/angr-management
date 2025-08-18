@@ -8,13 +8,13 @@ from PySide6.QtGui import QTextCharFormat
 from angrmanagement.config import Conf
 from angrmanagement.utils.func import type2str
 
-from .base_objects import QBlockCodeObj
+from .base_objects import BlockTreeNode
 
 if TYPE_CHECKING:
     from angr.sim_type import SimTypeFunction
 
 
-class QFunctionHeaderFuncNameItem(QBlockCodeObj):
+class QFunctionHeaderFuncNameItem(BlockTreeNode):
     def __init__(self, addr: int, name: str, infodock, parent=None):
         self.addr = addr
         self.name = name
@@ -35,7 +35,7 @@ class QFunctionHeaderFuncNameItem(QBlockCodeObj):
         return fmt
 
 
-class QFunctionHeaderFuncTypeItem(QBlockCodeObj):
+class QFunctionHeaderFuncTypeItem(BlockTreeNode):
     def __init__(self, addr: int, arg_id: int, type_str: str, infodock, parent=None):
         self.addr = addr
         self.arg_id = arg_id
@@ -57,7 +57,7 @@ class QFunctionHeaderFuncTypeItem(QBlockCodeObj):
         return fmt
 
 
-class QFunctionHeaderFuncParamItem(QBlockCodeObj):
+class QFunctionHeaderFuncParamItem(BlockTreeNode):
     def __init__(self, addr: int, arg_id: int, param_str: str, infodock, parent=None):
         self.addr = addr
         self.arg_id = arg_id
@@ -79,7 +79,7 @@ class QFunctionHeaderFuncParamItem(QBlockCodeObj):
         return fmt
 
 
-class QFunctionHeaderFuncArgItem(QBlockCodeObj):
+class QFunctionHeaderFuncArgItem(BlockTreeNode):
     def __init__(self, addr: int, arg_id: int, arg_str: str, infodock, parent=None):
         self.addr = addr
         self.arg_id = arg_id
@@ -101,7 +101,7 @@ class QFunctionHeaderFuncArgItem(QBlockCodeObj):
         return fmt
 
 
-class QFunctionHeader(QBlockCodeObj):
+class QFunctionHeader(BlockTreeNode):
     """
     Function header item in the disassembly view.
 

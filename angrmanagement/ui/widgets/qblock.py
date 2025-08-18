@@ -12,7 +12,7 @@ from angrmanagement.config import Conf
 from angrmanagement.utils import get_block_objects, get_function_header, get_label_text, get_out_branches_for_insn
 from angrmanagement.utils.block_objects import FunctionHeader, Label, PhiVariable, Variables
 
-from .block_code_objects import QAilObj, QBlockCodeOptions, QFunctionHeader, QIROpObj
+from .block_code_objects import BlockTreeNodeOptions, QAilObj, QFunctionHeader, QIROpObj
 from .qblock_code import QBlockCode, QBlockCodeSelectionMode
 from .qblock_label import QBlockLabel
 from .qgraph import QSaveableGraphicsView
@@ -73,7 +73,7 @@ class QBlock(QCachedGraphicsItem):
         self.addr_to_labels = {}
         self.qblock_annotations = {}
 
-        self._block_code_options: QBlockCodeOptions = QBlockCodeOptions()
+        self._block_code_options: BlockTreeNodeOptions = BlockTreeNodeOptions()
         self._update_block_code_options()
 
         self._init_widgets()

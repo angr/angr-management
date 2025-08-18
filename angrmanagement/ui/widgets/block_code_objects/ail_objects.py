@@ -9,7 +9,7 @@ from PySide6.QtGui import QTextCharFormat
 from angrmanagement.config import Conf
 from angrmanagement.utils import string_at_addr
 
-from .base_objects import QBlockCodeObj
+from .base_objects import BlockTreeNode
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QGraphicsSceneMouseEvent
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
 
 
-class QAilObj(QBlockCodeObj):
+class QAilObj(BlockTreeNode):
     """
     Renders an AIL object
     """

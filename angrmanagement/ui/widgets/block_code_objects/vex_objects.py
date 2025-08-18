@@ -13,7 +13,7 @@ from PySide6.QtGui import QTextCharFormat
 
 from angrmanagement.config import Conf
 
-from .base_objects import QBlockCodeObj
+from .base_objects import BlockTreeNode
 
 if TYPE_CHECKING:
     from archinfo import RegisterOffset, TmpVar
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 OBJ_CLASS_TO_QBLOCKCODE_CLASS = {}
 
 
-class QIROpObj(QBlockCodeObj):
+class QIROpObj(BlockTreeNode):
     """
     Renders a Lifter IR object
     """
