@@ -39,7 +39,7 @@ class QBlockCodeObj:
     span: tuple[int, int] | None
     subobjs: list[QBlockCodeObj | str]
     _fmt_current: QTextCharFormat
-    show_address: bool
+    display_address: bool
     top_margin_lines: int
     bottom_margin_lines: int
 
@@ -49,7 +49,7 @@ class QBlockCodeObj:
         infodock: InfoDock,
         parent: Any,
         options: QBlockCodeOptions | None = None,
-        show_address: bool = True,
+        display_address: bool = True,
         top_margin_lines: int = 0,
         bottom_margin_lines: int = 0,
     ) -> None:
@@ -59,7 +59,7 @@ class QBlockCodeObj:
         self.options = options or QBlockCodeOptions()
         self.span = None
         self.subobjs = []
-        self.show_address = show_address
+        self.display_address = display_address
         self._fmt_current = None  # type:ignore
         self.top_margin_lines = top_margin_lines
         self.bottom_margin_lines = bottom_margin_lines

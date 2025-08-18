@@ -139,7 +139,7 @@ class QFunctionHeader(QBlockCodeObj):
         self._init_items()
 
         super().__init__(
-            None, infodock, parent, options=options, show_address=False, top_margin_lines=1, bottom_margin_lines=1
+            None, infodock, parent, options=options, display_address=False, top_margin_lines=1, bottom_margin_lines=1
         )
 
     def create_subobjs(self, obj) -> None:
@@ -212,7 +212,6 @@ class QFunctionHeader(QBlockCodeObj):
     #
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
-        # do not handle left click events; individual items will handle them
         if event.button() == Qt.MouseButton.LeftButton:
             self.infodock.toggle_label_selection(self.addr)
         if (

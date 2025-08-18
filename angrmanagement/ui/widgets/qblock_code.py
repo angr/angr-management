@@ -75,7 +75,7 @@ class QBlockCode(QCachedGraphicsItem):
         self._qtextdoc.setDocumentMargin(0)
 
         self._addr_item = None
-        if self.obj.show_address:
+        if self.obj.display_address:
             self._addr_item = QGraphicsSimpleTextItem(self._addr_str, self)
             self._addr_item.setBrush(Conf.disasm_view_node_address_color)
             self._addr_item.setFont(Conf.disasm_font)
@@ -108,7 +108,7 @@ class QBlockCode(QCachedGraphicsItem):
 
         y = self.obj.top_margin_lines * Conf.disasm_font_height
         x = 0
-        if self._disasm_view.show_address and self.obj.show_address:
+        if self._disasm_view.show_address and self.obj.display_address:
             x += self._addr_item.boundingRect().width() + self.GRAPH_ADDR_SPACING
 
         painter.translate(QPointF(x, y))
@@ -121,7 +121,7 @@ class QBlockCode(QCachedGraphicsItem):
     def get_obj_for_mouse_event(self, event: QGraphicsSceneMouseEvent) -> QBlockCodeObj | None:
         p = event.pos()
 
-        if self._disasm_view.show_address and self.obj.show_address:
+        if self._disasm_view.show_address and self.obj.display_address:
             offset = self._addr_item.boundingRect().width() + self.GRAPH_ADDR_SPACING
             p.setX(p.x() - offset)
 
@@ -173,7 +173,7 @@ class QBlockCode(QCachedGraphicsItem):
         self.update_document()
 
         x, y = 0, self.obj.top_margin_lines * Conf.disasm_font_height
-        if self._disasm_view.show_address and self.obj.show_address:
+        if self._disasm_view.show_address and self.obj.display_address:
             self._addr_item.setPos(x, y)
             x += self._addr_item.boundingRect().width() + self.GRAPH_ADDR_SPACING
 
