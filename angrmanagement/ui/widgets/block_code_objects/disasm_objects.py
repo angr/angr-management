@@ -15,6 +15,10 @@ if TYPE_CHECKING:
 
 
 class QFunctionHeaderFuncNameItem(BlockTreeNode):
+    """
+    The function name in a function header.
+    """
+
     def __init__(self, addr: int, name: str, infodock, parent=None):
         self.addr = addr
         self.name = name
@@ -36,6 +40,10 @@ class QFunctionHeaderFuncNameItem(BlockTreeNode):
 
 
 class QFunctionHeaderFuncTypeItem(BlockTreeNode):
+    """
+    Return type and argument types in a function header.
+    """
+
     def __init__(self, addr: int, arg_id: int, type_str: str, infodock, parent=None):
         self.addr = addr
         self.arg_id = arg_id
@@ -58,6 +66,10 @@ class QFunctionHeaderFuncTypeItem(BlockTreeNode):
 
 
 class QFunctionHeaderFuncParamItem(BlockTreeNode):
+    """
+    Function parameters in a function header.
+    """
+
     def __init__(self, addr: int, arg_id: int, param_str: str, infodock, parent=None):
         self.addr = addr
         self.arg_id = arg_id
@@ -80,6 +92,10 @@ class QFunctionHeaderFuncParamItem(BlockTreeNode):
 
 
 class QFunctionHeaderFuncArgItem(BlockTreeNode):
+    """
+    Raw function arguments (in terms of registers and stack slots) in a function header.
+    """
+
     def __init__(self, addr: int, arg_id: int, arg_str: str, infodock, parent=None):
         self.addr = addr
         self.arg_id = arg_id
