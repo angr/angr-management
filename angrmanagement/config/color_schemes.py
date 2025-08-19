@@ -17,6 +17,8 @@ COLOR_SCHEMES = {
         "disasm_view_operand_highlight_color": QColor(0xFC, 0xEF, 0x00),
         "disasm_view_operand_select_color": QColor(0xFF, 0xFF, 0x00),
         "disasm_view_function_color": QColor(0x00, 0x00, 0xFF),
+        "disasm_view_function_arg_name_color": QColor(0x00, 0x00, 0x00),
+        "disasm_view_function_arg_type_color": QColor(0x00, 0x00, 0x80),
         "disasm_view_string_color": QColor(0xA0, 0xA0, 0xA4),
         "disasm_view_comment_color": QColor(0x37, 0x3D, 0x3F),
         "disasm_view_variable_ident_color": QColor(0xAA, 0x25, 0xDA),
@@ -118,6 +120,8 @@ COLOR_SCHEMES = {
         "disasm_view_operand_highlight_color": QColor(0x05, 0x2F, 0x50),
         "disasm_view_operand_select_color": QColor(0x09, 0x50, 0x8D),
         "disasm_view_function_color": QColor(0xC8, 0xC8, 0xC8),
+        "disasm_view_function_arg_name_color": QColor(0xF0, 0xF0, 0x5A),
+        "disasm_view_function_arg_type_color": QColor(0x34, 0xD4, 0xF0),
         "disasm_view_string_color": QColor(0xA0, 0xA0, 0xA4),
         "disasm_view_comment_color": QColor(0xF5, 0xC2, 0x42, 0xBB),
         "disasm_view_variable_ident_color": QColor(0xF1, 0xA7, 0xFA),
@@ -219,6 +223,8 @@ COLOR_SCHEMES = {
         "disasm_view_operand_highlight_color": QColor(0x05, 0x2F, 0x50),
         "disasm_view_operand_select_color": QColor(0x09, 0x50, 0x8D),
         "disasm_view_function_color": QColor(0xF8, 0xF8, 0xF2),
+        "disasm_view_function_arg_name_color": QColor(0xF0, 0xF0, 0x5A),
+        "disasm_view_function_arg_type_color": QColor(0x34, 0xD4, 0xF0),
         "disasm_view_string_color": QColor(0xFF, 0xB8, 0x6C),
         "disasm_view_comment_color": QColor(0x5B, 0x65, 0x8E),
         "disasm_view_variable_ident_color": QColor(0xBD, 0x93, 0xF9),
@@ -316,6 +322,8 @@ COLOR_SCHEMES = {
         "disasm_view_variable_label_color": QColor(166, 227, 161),  # green
         "disasm_view_background_color": QColor(30, 30, 46),  # base
         "disasm_view_function_color": QColor(166, 227, 161),  # green
+        "disasm_view_function_arg_name_color": QColor(137, 220, 235),
+        "disasm_view_function_arg_type_color": QColor(0x34, 0xD4, 0xF0),
         "disasm_view_string_color": QColor(249, 226, 175),  # yellow
         "disasm_view_comment_color": QColor(205, 214, 244),  # text
         "disasm_view_variable_ident_color": QColor(180, 190, 254),  # lavender
