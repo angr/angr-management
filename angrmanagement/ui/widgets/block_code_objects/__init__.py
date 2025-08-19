@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from .ail_objects import QAilObj
-from .base_objects import QBlockCodeObj, QBlockCodeOptions, QVariableObj
+from .base_objects import BlockTreeNode, BlockTreeNodeOptions, QVariableObj
+from .disasm_objects import QFunctionHeader
 from .vex_objects import QIROpObj
 
 __all__ = [
-    "QBlockCodeObj",
-    "QBlockCodeOptions",
+    "BlockTreeNode",
+    "BlockTreeNodeOptions",
     "QAilObj",
     "QIROpObj",
     "QVariableObj",
+    "QFunctionHeader",
 ]

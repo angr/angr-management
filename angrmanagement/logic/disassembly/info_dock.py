@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QObject, Signal
-
 from angrmanagement.data.object_container import ObjectContainer
 
 if TYPE_CHECKING:
@@ -30,13 +28,11 @@ class OperandDescriptor:
         self.variable_ident = variable_ident
 
 
-class InfoDock(QObject):
+class InfoDock:
     """
     Stores information associated to a disassembly view. Such information will be shared between the graph view and the
     linear view.
     """
-
-    qblock_code_obj_selection_changed = Signal()
 
     def __init__(self, disasm_view) -> None:
         super().__init__()
@@ -54,7 +50,7 @@ class InfoDock(QObject):
         self.hovered_edge = ObjectContainer(None, "The currently hovered edge")
         self.selected_labels = ObjectContainer(set(), "The currently selected labels")
         self.selected_variables = ObjectContainer(set(), "The currently selected variables")
-        self.selected_qblock_code_obj = None
+        self.selected_block_tree_node = ObjectContainer(None, "The currently selected BlockTreeNode object")
 
     @property
     def smart_highlighting(self):
@@ -123,6 +119,7 @@ class InfoDock(QObject):
         self.disasm_view.set_synchronized_cursor_address(insn_addr)
 
         self.unselect_all_labels()
+        self.unselect_block_tree_node()
         if insn_addr not in self.selected_insns:
             if unique:
                 # unselect existing ones
@@ -184,6 +181,7 @@ class InfoDock(QObject):
         # also, clear selection of instructions and operands
         self.unselect_all_instructions()
         self.unselect_all_operands()
+        self.unselect_block_tree_node()
 
         self.selected_labels.clear()
         self.selected_labels.add(label_addr)
@@ -289,6 +287,9 @@ class InfoDock(QObject):
         self.selected_variables.clear()
         self.selected_variables.am_event()
 
+        self.selected_block_tree_node.am_obj = None
+        self.selected_block_tree_node.am_event()
+
         self._update_published_view_state()
 
     def is_edge_hovered(self, src_addr, dst_addr):
@@ -342,13 +343,33 @@ class InfoDock(QObject):
 
         return False
 
-    def select_qblock_code_obj(self, obj) -> None:
+    def select_block_tree_node(self, obj) -> None:
         """
         For QBlockCodeObj, we simply track selected state for now and handle
         matching in object handlers
         """
-        self.selected_qblock_code_obj = obj
-        self.qblock_code_obj_selection_changed.emit()
+
+        self.unselect_all_instructions()
+        self.unselect_all_labels()
+
+        self.selected_block_tree_node.am_obj = obj
+        self.selected_block_tree_node.am_event()
+
+    def unselect_block_tree_node(self):
+        self.selected_block_tree_node.am_obj = None
+        self.selected_block_tree_node.am_event()
+
+    def toggle_block_tree_node_selection(self, obj) -> None:
+        """
+        Toggle the selection state of a QBlockCodeObj in the disassembly view.
+
+        :param obj:    The QBlockCodeObj to toggle.
+        """
+
+        if self.selected_block_tree_node.am_obj == obj:
+            self.unselect_block_tree_node()
+        else:
+            self.select_block_tree_node(obj)
 
     def _update_published_view_state(self) -> None:
         self.disasm_view.published_view_state.cursors = self.selected_insns.union(self.selected_labels)

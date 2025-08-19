@@ -9,7 +9,7 @@ from PySide6.QtGui import QTextCharFormat
 from angrmanagement.config import Conf
 from angrmanagement.utils import string_at_addr
 
-from .base_objects import QBlockCodeObj
+from .base_objects import BlockTreeNode
 
 if TYPE_CHECKING:
     from PySide6.QtWidgets import QGraphicsSceneMouseEvent
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
 
 
-class QAilObj(QBlockCodeObj):
+class QAilObj(BlockTreeNode):
     """
     Renders an AIL object
     """
@@ -194,8 +194,8 @@ class QAilConstObj(QAilTextObj):
 
     def should_highlight(self) -> bool:
         return (
-            isinstance(self.infodock.selected_qblock_code_obj, QAilConstObj)
-            and self.infodock.selected_qblock_code_obj.obj.value == self.obj.value
+            isinstance(self.infodock.selected_block_tree_node, QAilConstObj)
+            and self.infodock.selected_block_tree_node.obj.value == self.obj.value
         )
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
@@ -237,7 +237,7 @@ class QAilRegisterObj(QAilTextObj):
             self.add_text(s)
 
     def should_highlight(self) -> bool:
-        sel = self.infodock.selected_qblock_code_obj
+        sel = self.infodock.selected_block_tree_node
         return isinstance(sel, QAilRegisterObj) and sel.obj == self.obj
 
 

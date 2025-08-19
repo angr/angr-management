@@ -26,6 +26,7 @@ from angrmanagement.ui.dialogs.rename import RenameDialog
 from angrmanagement.ui.dialogs.rename_label import RenameLabel
 from angrmanagement.ui.dialogs.set_comment import SetComment
 from angrmanagement.ui.dialogs.xref import XRefDialog
+from angrmanagement.ui.menus import Menu
 from angrmanagement.ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from angrmanagement.ui.menus.disasm_label_context_menu import DisasmLabelContextMenu
 from angrmanagement.ui.views.symexec_view import SymexecView
@@ -390,7 +391,7 @@ class DisassemblyView(SynchronizedFunctionView):
         """
         Opens dialog for renaming the currently selected QBlockCodeObj
         """
-        obj = self.infodock.selected_qblock_code_obj
+        obj = self.infodock.selected_block_tree_node
         if isinstance(obj, QVariableObj):
             dlg = RenameDialog("Rename Variable", obj.obj.name, self)
             dlg.exec_()
@@ -412,11 +413,16 @@ class DisassemblyView(SynchronizedFunctionView):
         if self.infodock.selected_insns:
             self.workspace.undefine_code(next(iter(self.infodock.selected_insns)))
 
-    def get_context_menu_for_selected_object(self) -> QMenu | None:
+    def get_context_menu_for_selected_object(self) -> Menu | QMenu | None:
         """
         Returns a QMenu object for the currently selected QBlockCodeObj
         """
-        obj = self.infodock.selected_qblock_code_obj
+        obj = self.infodock.selected_block_tree_node
+        if isinstance(obj, tuple) and len(obj) == 2:
+            ty, addr = obj
+            if ty == "func_name":
+                self._label_menu.addr = addr
+                return self._label_menu
         if isinstance(obj, QVariableObj):
             rename_act = QAction("Re&name", self)
             rename_act.triggered.connect(self.rename_selected_object)
@@ -432,6 +438,8 @@ class DisassemblyView(SynchronizedFunctionView):
         """
         mnu = self.get_context_menu_for_selected_object()
         if mnu is not None:
+            if isinstance(mnu, Menu):
+                mnu = mnu.qmenu(cached=False)
             self.append_view_menu_actions(mnu)
             mnu.exec_(QCursor.pos())
 
@@ -873,7 +881,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self.infodock.hovered_edge.am_subscribe(self.redraw_current_graph)
         self.infodock.selected_labels.am_subscribe(self.redraw_current_graph)
         self.infodock.selected_variables.am_subscribe(self.redraw_current_graph)
-        self.infodock.qblock_code_obj_selection_changed.connect(self.redraw_current_graph)
+        self.infodock.selected_block_tree_node.am_subscribe(self.redraw_current_graph)
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
         self.instance.cfb.am_subscribe(self._on_cfb_event)
@@ -891,7 +899,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self.infodock.hovered_edge.am_unsubscribe(self.redraw_current_graph)
         self.infodock.selected_labels.am_unsubscribe(self.redraw_current_graph)
         self.infodock.selected_variables.am_unsubscribe(self.redraw_current_graph)
-        self.infodock.qblock_code_obj_selection_changed.disconnect(self.redraw_current_graph)
+        self.infodock.selected_block_tree_node.am_unsubscribe(self.redraw_current_graph)
         self.workspace.current_screen.am_unsubscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_unsubscribe(self._on_breakpoints_updated)
         self.instance.cfb.am_unsubscribe(self._on_cfb_event)
@@ -986,6 +994,13 @@ class DisassemblyView(SynchronizedFunctionView):
             return "insn", next(iter(self.infodock.selected_insns))
         if len(self.infodock.selected_labels) == 1:
             return "insn", next(iter(self.infodock.selected_labels))
+        if (
+            isinstance(self.infodock.selected_block_tree_node.am_obj, tuple)
+            and len(self.infodock.selected_block_tree_node.am_obj) == 2
+        ):
+            ty, addr = self.infodock.selected_block_tree_node.am_obj
+            if ty == "func_name":
+                return ty, addr
         return None
 
     def _instruction_address_in_selection(self) -> int | None:

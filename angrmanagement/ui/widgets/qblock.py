@@ -9,13 +9,12 @@ from PySide6.QtCore import QMarginsF, QRectF
 from PySide6.QtGui import QPainterPath, QPen
 
 from angrmanagement.config import Conf
-from angrmanagement.utils import get_block_objects, get_label_text, get_out_branches_for_insn
+from angrmanagement.utils import get_block_objects, get_function_header, get_label_text, get_out_branches_for_insn
 from angrmanagement.utils.block_objects import FunctionHeader, Label, PhiVariable, Variables
 
-from .block_code_objects import QAilObj, QBlockCodeOptions, QIROpObj
-from .qblock_code import QBlockCode
+from .block_code_objects import BlockTreeNodeOptions, QAilObj, QFunctionHeader, QIROpObj
+from .qblock_code import QBlockCode, QBlockCodeSelectionMode
 from .qblock_label import QBlockLabel
-from .qfunction_header import QFunctionHeader
 from .qgraph import QSaveableGraphicsView
 from .qgraph_object import QCachedGraphicsItem
 from .qinstruction import QInstruction
@@ -74,7 +73,7 @@ class QBlock(QCachedGraphicsItem):
         self.addr_to_labels = {}
         self.qblock_annotations = {}
 
-        self._block_code_options: QBlockCodeOptions = QBlockCodeOptions()
+        self._block_code_options: BlockTreeNodeOptions = BlockTreeNodeOptions()
         self._update_block_code_options()
 
         self._init_widgets()
@@ -187,6 +186,31 @@ class QBlock(QCachedGraphicsItem):
 
     def _init_ail_block_widgets(self) -> None:
         bn = self.cfg_nodes
+
+        if bn.addr == self.func_addr:
+            func_header = get_function_header(self.instance.kb.functions, self.func_addr)
+            if func_header is not None:
+                # this is the function header block
+                func_header = QFunctionHeader(
+                    self.func_addr,
+                    func_header.name,
+                    func_header.demangled_name,
+                    func_header.prototype,
+                    func_header.args,
+                    self.infodock,
+                    parent=self,
+                )
+                obj = QBlockCode(
+                    self.func_addr,
+                    func_header,
+                    self._config,
+                    self.instance,
+                    self.infodock,
+                    parent=self,
+                    selection_mode=QBlockCodeSelectionMode.INVOKE_OBJ,
+                )
+                self.objects.append(obj)
+
         if bn.addr in self.disasm.kb.labels:
             label = QBlockLabel(
                 bn.addr,
@@ -209,9 +233,7 @@ class QBlock(QCachedGraphicsItem):
 
         for stmt in bn.statements:
             code_obj = QAilObj(stmt, self.instance, self.infodock, parent=None, options=self._block_code_options)
-            obj = QBlockCode(
-                stmt.ins_addr, code_obj, self._config, self.disasm_view, self.instance, self.infodock, parent=self
-            )
+            obj = QBlockCode(stmt.ins_addr, code_obj, self._config, self.instance, self.infodock, parent=self)
             code_obj.parent = obj  # Reparent
             self.objects.append(obj)
             self.addr_to_insns[bn.addr] = obj
@@ -241,9 +263,7 @@ class QBlock(QCachedGraphicsItem):
                 self.addr_to_labels[obj.addr] = label
             elif isinstance(obj, IROp):
                 code_obj = QIROpObj(obj, self.infodock, parent=None)
-                disp_obj = QBlockCode(
-                    obj.addr, code_obj, self._config, self.disasm_view, self.instance, self.infodock, parent=self
-                )
+                disp_obj = QBlockCode(obj.addr, code_obj, self._config, self.instance, self.infodock, parent=self)
                 code_obj.parent = disp_obj  # Reparent
                 self.objects.append(disp_obj)
             elif isinstance(obj, PhiVariable):
@@ -255,18 +275,25 @@ class QBlock(QCachedGraphicsItem):
                     variable = QVariable(self.instance, self.disasm_view, var, self._config, self.infodock, parent=self)
                     self.objects.append(variable)
             elif isinstance(obj, FunctionHeader):
-                self.objects.append(
-                    QFunctionHeader(
-                        self.func_addr,
-                        obj.name,
-                        obj.prototype,
-                        obj.args,
-                        self._config,
-                        self.disasm_view,
-                        self.infodock,
-                        parent=self,
-                    )
+                func_header = QFunctionHeader(
+                    self.func_addr,
+                    obj.name,
+                    obj.demangled_name,
+                    obj.prototype,
+                    obj.args,
+                    self.infodock,
+                    parent=self,
                 )
+                obj = QBlockCode(
+                    self.func_addr,
+                    func_header,
+                    self._config,
+                    self.instance,
+                    self.infodock,
+                    parent=self,
+                    selection_mode=QBlockCodeSelectionMode.INVOKE_OBJ,
+                )
+                self.objects.append(obj)
 
     def _init_widgets(self) -> None:
         if (scene := self.scene()) is not None:
