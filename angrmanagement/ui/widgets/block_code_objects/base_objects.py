@@ -95,7 +95,7 @@ class BlockTreeNode:
         """
         Determine whether this object should be drawn with highlight
         """
-        selected = self.infodock.selected_qblock_code_obj
+        selected = self.infodock.selected_block_tree_node
         selection_key = self.selection_key
         r = (selected is not None) and (
             (selection_key is not None and selected == selection_key)
@@ -182,9 +182,9 @@ class BlockTreeNode:
             selection_key = self
 
         if event.button() == Qt.MouseButton.LeftButton:
-            self.infodock.toggle_qblock_code_obj_selection(selection_key)
+            self.infodock.toggle_block_tree_node_selection(selection_key)
         elif event.button() == Qt.MouseButton.RightButton:
-            self.infodock.select_qblock_code_obj(selection_key)
+            self.infodock.select_block_tree_node(selection_key)
             self.infodock.disasm_view.show_context_menu_for_selected_object()
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:

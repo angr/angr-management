@@ -391,7 +391,7 @@ class DisassemblyView(SynchronizedFunctionView):
         """
         Opens dialog for renaming the currently selected QBlockCodeObj
         """
-        obj = self.infodock.selected_qblock_code_obj
+        obj = self.infodock.selected_block_tree_node
         if isinstance(obj, QVariableObj):
             dlg = RenameDialog("Rename Variable", obj.obj.name, self)
             dlg.exec_()
@@ -417,7 +417,7 @@ class DisassemblyView(SynchronizedFunctionView):
         """
         Returns a QMenu object for the currently selected QBlockCodeObj
         """
-        obj = self.infodock.selected_qblock_code_obj
+        obj = self.infodock.selected_block_tree_node
         if isinstance(obj, tuple) and len(obj) == 2:
             ty, addr = obj
             if ty == "func_name":
@@ -881,7 +881,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self.infodock.hovered_edge.am_subscribe(self.redraw_current_graph)
         self.infodock.selected_labels.am_subscribe(self.redraw_current_graph)
         self.infodock.selected_variables.am_subscribe(self.redraw_current_graph)
-        self.infodock.qblock_code_obj_selection_changed.connect(self.redraw_current_graph)
+        self.infodock.selected_block_tree_node.am_subscribe(self.redraw_current_graph)
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
         self.instance.cfb.am_subscribe(self._on_cfb_event)
@@ -899,7 +899,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self.infodock.hovered_edge.am_unsubscribe(self.redraw_current_graph)
         self.infodock.selected_labels.am_unsubscribe(self.redraw_current_graph)
         self.infodock.selected_variables.am_unsubscribe(self.redraw_current_graph)
-        self.infodock.qblock_code_obj_selection_changed.disconnect(self.redraw_current_graph)
+        self.infodock.selected_block_tree_node.am_unsubscribe(self.redraw_current_graph)
         self.workspace.current_screen.am_unsubscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_unsubscribe(self._on_breakpoints_updated)
         self.instance.cfb.am_unsubscribe(self._on_cfb_event)
@@ -995,10 +995,10 @@ class DisassemblyView(SynchronizedFunctionView):
         if len(self.infodock.selected_labels) == 1:
             return "insn", next(iter(self.infodock.selected_labels))
         if (
-            isinstance(self.infodock.selected_qblock_code_obj, tuple)
-            and len(self.infodock.selected_qblock_code_obj) == 2
+            isinstance(self.infodock.selected_block_tree_node.am_obj, tuple)
+            and len(self.infodock.selected_block_tree_node.am_obj) == 2
         ):
-            ty, addr = self.infodock.selected_qblock_code_obj
+            ty, addr = self.infodock.selected_block_tree_node.am_obj
             if ty == "func_name":
                 return ty, addr
         return None

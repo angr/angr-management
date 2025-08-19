@@ -85,8 +85,8 @@ class QIROpVexConstObj(QIROpTextObj):
 
     def should_highlight(self) -> bool:
         return (
-            isinstance(self.infodock.selected_qblock_code_obj, QIROpVexConstObj)
-            and self.infodock.selected_qblock_code_obj.obj._con == self.obj._con
+            isinstance(self.infodock.selected_block_tree_node, QIROpVexConstObj)
+            and self.infodock.selected_block_tree_node.obj._con == self.obj._con
         )
 
 
@@ -170,8 +170,8 @@ class QIROpVexTmpObj(QIROpTextObj):
 
     def should_highlight(self) -> bool:
         return (
-            isinstance(self.infodock.selected_qblock_code_obj, QIROpVexTmpObj)
-            and self.infodock.selected_qblock_code_obj.obj.tid == self.obj.tid
+            isinstance(self.infodock.selected_block_tree_node, QIROpVexTmpObj)
+            and self.infodock.selected_block_tree_node.obj.tid == self.obj.tid
         )
 
 
@@ -188,8 +188,8 @@ class QIROpVexRegObj(QIROpTextObj):
 
     def should_highlight(self) -> bool:
         return (
-            isinstance(self.infodock.selected_qblock_code_obj, QIROpVexRegObj)
-            and self.infodock.selected_qblock_code_obj.obj.offset == self.obj.offset
+            isinstance(self.infodock.selected_block_tree_node, QIROpVexRegObj)
+            and self.infodock.selected_block_tree_node.obj.offset == self.obj.offset
         )
 
 

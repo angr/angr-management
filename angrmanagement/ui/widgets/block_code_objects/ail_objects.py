@@ -194,8 +194,8 @@ class QAilConstObj(QAilTextObj):
 
     def should_highlight(self) -> bool:
         return (
-            isinstance(self.infodock.selected_qblock_code_obj, QAilConstObj)
-            and self.infodock.selected_qblock_code_obj.obj.value == self.obj.value
+            isinstance(self.infodock.selected_block_tree_node, QAilConstObj)
+            and self.infodock.selected_block_tree_node.obj.value == self.obj.value
         )
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
@@ -237,7 +237,7 @@ class QAilRegisterObj(QAilTextObj):
             self.add_text(s)
 
     def should_highlight(self) -> bool:
-        sel = self.infodock.selected_qblock_code_obj
+        sel = self.infodock.selected_block_tree_node
         return isinstance(sel, QAilRegisterObj) and sel.obj == self.obj
 
 
