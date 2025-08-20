@@ -158,6 +158,7 @@ class CodeView(FunctionView):
                         self.jump_history.record_address(focus_addr)
                     else:
                         self.jump_history.record_address(self._function.am_obj.addr)
+                    self._last_function = self._function.am_obj
 
         def decomp(*_) -> None:
             job = DecompileFunctionJob(
@@ -371,10 +372,10 @@ class CodeView(FunctionView):
                 self.codegen.am_obj = cached
                 self.codegen.am_event()
                 self._focus_core(focus, focus_addr)
+                self._last_function = self._function.am_obj
 
         if should_decompile:
             self.decompile(focus=focus, focus_addr=focus_addr, flavor=flavor)
-        self._last_function = self._function.am_obj
 
         console_view = self.workspace.view_manager.first_view_in_category("console")
         if console_view is not None:
