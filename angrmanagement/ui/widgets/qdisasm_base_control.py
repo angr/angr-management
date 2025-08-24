@@ -111,6 +111,12 @@ class QDisassemblyBaseControl:
                 self.disasm_view.popup_xref_dialog(addr=0, variable=variable)
                 return
 
+            if not self.infodock.selected_block_tree_node.am_none:
+                ty, node = self.infodock.selected_block_tree_node.am_obj
+                if ty == "func_name":
+                    self.disasm_view.popup_xref_dialog(addr=node, dst_addr=node)
+                    return
+
             # message the user
             QMessageBox.critical(
                 None,
