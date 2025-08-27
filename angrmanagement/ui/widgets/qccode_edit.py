@@ -206,11 +206,13 @@ class QCCodeEdit(api.CodeEdit):
                 addr = self.get_src_to_inst()
             else:
                 pos = self.textCursor().position()
+                # find until the next newline
                 while (
                     self.document().characterAt(pos) not in ("\n", "\u2029") and pos < self.document().characterCount()
                 ):  # qt WHAT are you doing
                     pos += 1
-                node = self.document().get_stmt_node_at_position(pos)
+                prior_pos = pos - 1  # use the location before the newline, otherwise we get the node of the next line
+                node = self.document().get_stmt_node_at_position(prior_pos)
                 addr = (getattr(node, "tags", None) or {}).get("ins_addr", None)
 
         return addr

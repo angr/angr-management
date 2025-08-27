@@ -66,7 +66,7 @@ class QCodeDocument(QTextDocument):
     def get_stmt_node_at_position(self, pos):
         """
         Iteratively finds the first valid node inside the GUI display that is not None.
-        Finds the node based on the postion given (usually related to the mouse location).
+        Finds the node based on the position given (usually related to the mouse location).
         The function can return any valid Cxxx class inside the angr decompiler.
 
         Algorithm: O(n)
