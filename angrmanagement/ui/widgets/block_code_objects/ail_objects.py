@@ -22,8 +22,11 @@ class QAilObj(BlockTreeNode):
     Renders an AIL object
     """
 
-    def __init__(self, obj: Any, instance: Instance, *args, stmt=None, **kwargs) -> None:
+    def __init__(self, obj: Any, instance: Instance, *args, stmt=None, block_addr=None, block_idx=None, stmt_idx=None, **kwargs) -> None:
         self.stmt = stmt or obj
+        self.block_addr = block_addr
+        self.block_idx = block_idx
+        self.stmt_idx = stmt_idx
         self.instance = instance
         super().__init__(obj, *args, **kwargs)
 
@@ -54,18 +57,19 @@ class QAilObj(BlockTreeNode):
 
     @property
     def should_highlight_line(self):
-        ail_obj_ins_addr = getattr(self.obj, "ins_addr", None)
-        if ail_obj_ins_addr is not None and self.infodock.is_instruction_selected(ail_obj_ins_addr):
-            return True
+        if self.block_addr is not None:
+            stmt_addr = (self.block_addr, self.block_idx, self.stmt_idx)
+            if stmt_addr in self.infodock.selected_ail_statements:
+                return True
         return super().should_highlight_line
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:  # pylint: disable=unused-argument
         super().mousePressEvent(event)
         button = event.button()
         if button == Qt.MouseButton.LeftButton:
-            ail_obj_ins_addr = getattr(self.obj, "ins_addr", None)
-            if ail_obj_ins_addr is not None:
-                self.infodock.select_instruction(ail_obj_ins_addr)
+            if self.block_addr is not None:
+                stmt_addr = (self.block_addr, self.block_idx, self.stmt_idx)
+                self.infodock.select_ail_statement(stmt_addr)
 
 
 class QAilTextObj(QAilObj):

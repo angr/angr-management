@@ -8,7 +8,9 @@ from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, Qt, QTimeLine
 from PySide6.QtWidgets import QFrame
 
 from angrmanagement.config import Conf
+from angrmanagement.logic.threads import needs_gui_thread
 from angrmanagement.utils import get_out_branches
+from angrmanagement.utils.cache import SmartLRUCache
 from angrmanagement.utils.cfg import categorize_edges
 from angrmanagement.utils.graph_layouter import GraphLayouter
 
@@ -76,6 +78,8 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         self._arrows = []  # A list of references to QGraphArrow objects
 
         self.blocks = []
+        self._ail_disasms = SmartLRUCache(maxsize=1024)
+        self._disasms = SmartLRUCache(maxsize=1024)
 
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
@@ -136,12 +140,15 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
                 # always check if decompiler has cached a clinic object first
                 self.disasm = self.instance.kb.decompilations[(func.addr, "pseudocode")].clinic
             except (KeyError, AttributeError):
-                self.disasm = self.instance.project.analyses.Clinic(func)
+                try:
+                    self.disasm = self._ail_disasms[func.addr]
+                except KeyError:
+                    self.disasm = self._ail_disasms[func.addr] = self.instance.project.analyses.Clinic(func)
 
             self._supergraph = to_ail_supergraph(self.disasm.cc_graph)
 
             def nodefunc(n):
-                return n
+                return self._supergraph.nodes[n]['original_nodes']
 
             def branchfunc(supernode):
                 return None
@@ -149,9 +156,13 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             has_idx = True
         else:
             include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
-            self.disasm = self.instance.project.analyses.Disassembly(
-                function=self._function_graph.function, include_ir=include_ir
-            )
+            addr = self._function_graph.function.addr
+            try:
+                self.disasm = self._disasms[addr]
+            except KeyError:
+                self.disasm = self._disasms[addr] = self.instance.project.analyses.Disassembly(
+                    function=self._function_graph.function, include_ir=include_ir
+                )
             view = self.disasm_view.workspace.view_manager.first_view_in_category("console")
             if view is not None:
                 from angrmanagement.ui.views import ConsoleView  # pylint: disable=import-outside-toplevel
@@ -203,6 +214,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         self._minimap.reload_target_scene()
 
+    @needs_gui_thread
     def refresh(self) -> None:
         if not self.blocks:
             return

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from angr.ailment.statement import Jump
 from angr.analyses.decompiler.clinic import Clinic
 from angr.analyses.disassembly import Instruction, IROp
 from angr.sim_variable import SimRegisterVariable
@@ -185,9 +186,9 @@ class QBlock(QCachedGraphicsItem):
         )
 
     def _init_ail_block_widgets(self) -> None:
-        bn = self.cfg_nodes
+        addr = self.cfg_nodes[0].addr
 
-        if bn.addr == self.func_addr:
+        if addr == self.func_addr:
             func_header = get_function_header(self.instance.kb.functions, self.func_addr)
             if func_header is not None:
                 # this is the function header block
@@ -211,10 +212,10 @@ class QBlock(QCachedGraphicsItem):
                 )
                 self.objects.append(obj)
 
-        if bn.addr in self.disasm.kb.labels:
+        if addr in self.disasm.kb.labels:
             label = QBlockLabel(
-                bn.addr,
-                get_label_text(bn.addr, self.disasm.kb),
+                addr,
+                get_label_text(addr, self.disasm.kb),
                 self._config,
                 self.disasm_view,
                 self.instance,
@@ -222,21 +223,31 @@ class QBlock(QCachedGraphicsItem):
                 parent=self,
             )
             self.objects.append(label)
-            self.addr_to_labels[bn.addr] = label
+            self.addr_to_labels[addr] = label
 
         # always add the block name as a label and instruction:
         block_name_label = QBlockLabel(
-            bn.addr, f"loc_{hex(bn.addr)}:", self._config, self.disasm_view, self.instance, self.infodock, parent=self
+            addr, f"loc_{hex(addr)}:", self._config, self.disasm_view, self.instance, self.infodock, parent=self
         )
         self.objects.append(block_name_label)
-        self.addr_to_labels[bn.addr] = block_name_label
+        self.addr_to_labels[addr] = block_name_label
 
-        for stmt in bn.statements:
-            code_obj = QAilObj(stmt, self.instance, self.infodock, parent=None, options=self._block_code_options)
-            obj = QBlockCode(stmt.ins_addr, code_obj, self._config, self.instance, self.infodock, parent=self)
-            code_obj.parent = obj  # Reparent
-            self.objects.append(obj)
-            self.addr_to_insns[bn.addr] = obj
+        for bi, block in enumerate(self.cfg_nodes):
+            for i, stmt in enumerate(block.statements):
+                if i == len(block.statements) - 1 and bi != len(self.cfg_nodes) - 1 and isinstance(stmt, Jump):
+                    continue
+                code_obj = QAilObj(stmt, self.instance, self.infodock, block_addr=block.addr, block_idx=block.idx, stmt_idx=i, parent=None, options=self._block_code_options)
+                obj = QBlockCode(
+                    addr=stmt.ins_addr,
+                    obj=code_obj,
+                    config=self._config,
+                    parent=self,
+                    instance=self.instance,
+                    infodock=self.infodock,
+                )
+                code_obj.parent = obj  # Reparent
+                self.objects.append(obj)
+                self.addr_to_insns[addr] = obj
 
     def _init_disassembly_block_widgets(self) -> None:
         for obj in get_block_objects(self.disasm, self.cfg_nodes, self.func_addr):
@@ -320,6 +331,10 @@ class QGraphBlock(QBlock):
     SHADOW_OFFSET_Y = 5
     BLOCK_ANNOTATIONS_LEFT_PADDING = 2
 
+    def __init__(self, *args, **kwargs):
+        self.color_override = None
+        super().__init__(*args, **kwargs)
+
     @property
     def mode(self) -> str:
         return "graph"
@@ -363,6 +378,9 @@ class QGraphBlock(QBlock):
         super().mousePressEvent(event)
 
     def _calc_backcolor(self, should_omit_text):
+        if self.color_override is not None:
+            return self.color_override
+
         color = self.disasm_view.workspace.plugins.color_block(self.addr)
         if color is not None:
             return color

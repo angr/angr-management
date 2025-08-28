@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QAbstractScrollArea, QAbstractSlider, QGraphicsSce
 from sortedcontainers import SortedDict
 
 from angrmanagement.config import Conf
+from angrmanagement.logic.threads import needs_gui_thread
 from angrmanagement.utils.cache import SmartLRUCache
 from angrmanagement.utils.graph import get_out_branches
 
@@ -225,6 +226,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         if self._viewer is not None:
             self._viewer.redraw()
 
+    @needs_gui_thread
     def refresh(self) -> None:
         self._update_size()
         self.redraw()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import functools
 import threading
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
@@ -51,6 +52,11 @@ def is_gui_thread() -> bool:
     """
     return QThread.currentThread() == GlobalInfo.gui_thread
 
+def needs_gui_thread(f):
+    @functools.wraps(f)
+    def inner(*args, **kwargs):
+        return gui_thread_schedule(f, args=args, kwargs=kwargs)
+    return inner
 
 def gui_thread_schedule(
     func: Callable[..., T],
