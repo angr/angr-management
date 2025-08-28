@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import traceback
 
+from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.utils.namegen import NameGenerator
 
 log = logging.getLogger(__name__)
@@ -38,6 +39,9 @@ class EventSentinel:
                 else:
                     print("Error raised from event")  # No f-string in case str uses logging
                     traceback.print_exc()
+
+    def am_event_gui(self, **kwargs) -> None:
+        gui_thread_schedule(self.am_event, kwargs=kwargs)
 
 
 class ObjectContainer(EventSentinel):
