@@ -207,7 +207,7 @@ class CodeView(FunctionView):
         if func_addr is None:
             return None
         kb = self.codegen._variable_kb
-        return kb.variables.get(func_addr, None)
+        return kb.variables[func_addr] if func_addr in kb.variables else None  # noqa:SIM401
 
     #
     # Event callbacks
