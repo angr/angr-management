@@ -156,6 +156,9 @@ class BasePlugin:
     def build_context_menu_functions(self, funcs) -> Iterable[None | tuple[str, Callable]]:
         return []
 
+    def build_context_menu_label(self, addr: int) -> Iterable[None | tuple[str, Callable]]:
+        return []
+
     def build_qblock_annotations(self, qblock: QBlock) -> Iterable[QInstructionAnnotation]:
         return []
 
