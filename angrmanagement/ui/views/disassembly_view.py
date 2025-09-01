@@ -382,7 +382,9 @@ class DisassemblyView(SynchronizedFunctionView):
     def label_context_menu(self, addr: int, pos) -> None:
         self._label_addr_on_context_menu = addr
         self._label_menu.addr = addr
-        mnu = self._label_menu.qmenu(cached=False)
+        mnu = self._label_menu.qmenu(
+            extra_entries=list(self.workspace.plugins.build_context_menu_label(addr)), cached=False
+        )
         self.append_view_menu_actions(mnu)
         mnu.exec_(pos)
         self._label_addr_on_context_menu = None
