@@ -154,11 +154,19 @@ class IntPropertyItem(ValuePropertyItem[int]):
     type: ClassVar[PropertyType] = PropertyType.INT
 
     def __init__(
-        self, name: str, value: int, minimum: int = -(2**31), maximum: int = 2**31 - 1, description: str = "", **kwargs
+        self,
+        name: str,
+        value: int,
+        minimum: int = -(2**31),
+        maximum: int = 2**31 - 1,
+        description: str = "",
+        show_hex: bool = False,
+        **kwargs,
     ):
         super().__init__(name, value, description=description, **kwargs)
         self.minimum = minimum
         self.maximum = maximum
+        self.show_hex = show_hex
 
 
 class FloatPropertyItem(ValuePropertyItem[float]):
@@ -277,7 +285,9 @@ class PropertyModel(QAbstractItemModel):
                         return ""
                     case PropertyType.TEXT:
                         return item.value
-                    case PropertyType.INT | PropertyType.FLOAT:
+                    case PropertyType.INT:
+                        return str(item.value) if getattr(item, "show_hex", False) is False else hex(item.value)
+                    case PropertyType.FLOAT:
                         return str(item.value)
                     case PropertyType.BOOL:
                         return ""  # Checkbox is rendered.
