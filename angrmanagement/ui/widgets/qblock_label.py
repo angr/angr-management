@@ -54,6 +54,13 @@ class QBlockLabel(QCachedGraphicsItem):
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self.infodock.select_label(self.addr)
+        elif event.button() == Qt.MouseButton.RightButton:
+            # unselect all other labels
+            self.infodock.unselect_all_labels()
+            # select this label
+            self.infodock.select_label(self.addr)
+            # show context menu
+            self.infodock.disasm_view.label_context_menu(self.addr, event.screenPos())
 
     #
     # Private methods
