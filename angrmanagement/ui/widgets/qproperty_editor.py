@@ -286,7 +286,7 @@ class PropertyModel(QAbstractItemModel):
                     case PropertyType.TEXT:
                         return item.value
                     case PropertyType.INT:
-                        return str(item.value) if getattr(item, "show_hex", False) is False else hex(item.value)
+                        return str(item.value) if item.show_hex is False else hex(item.value)
                     case PropertyType.FLOAT:
                         return str(item.value)
                     case PropertyType.BOOL:
@@ -430,8 +430,11 @@ class PropertyDelegate(QStyledItemDelegate):
         item = self._get_source_item(index)
         match item.type:
             case PropertyType.INT:
-                editor = QSpinBox(parent)
-                editor.setRange(item.minimum, item.maximum)
+                if item.show_hex:
+                    editor = QLineEdit(parent)
+                else:
+                    editor = QSpinBox(parent)
+                    editor.setRange(item.minimum, item.maximum)
                 return editor
             case PropertyType.FLOAT:
                 editor = QDoubleSpinBox(parent)
@@ -456,7 +459,12 @@ class PropertyDelegate(QStyledItemDelegate):
         value = item.value
         match item.type:
             case PropertyType.INT:
-                editor.setValue(int(value))
+                if item.show_hex:
+                    assert isinstance(editor, QLineEdit)
+                    editor.setText(hex(value))
+                else:
+                    assert isinstance(editor, QSpinBox)
+                    editor.setValue(int(value))
             case PropertyType.FLOAT:
                 editor.setValue(float(value))
             case PropertyType.TEXT:
@@ -471,7 +479,18 @@ class PropertyDelegate(QStyledItemDelegate):
     def setModelData(self, editor, model, index):
         item = self._get_source_item(index)
         match item.type:
-            case PropertyType.INT | PropertyType.FLOAT:
+            case PropertyType.INT:
+                if item.show_hex:
+                    assert isinstance(editor, QLineEdit)
+                    try:
+                        int_value = int(editor.text(), 16)
+                    except ValueError:
+                        int_value = item.value
+                    model.setData(index, int_value, Qt.ItemDataRole.EditRole)
+                else:
+                    assert isinstance(editor, QSpinBox)
+                    model.setData(index, editor.value(), Qt.ItemDataRole.EditRole)
+            case PropertyType.FLOAT:
                 model.setData(index, editor.value(), Qt.ItemDataRole.EditRole)
             case PropertyType.TEXT:
                 model.setData(index, editor.text(), Qt.ItemDataRole.EditRole)
