@@ -366,8 +366,10 @@ class CodeView(FunctionView):
         should_decompile = True
         if available:
             chosen_flavor = flavor if flavor in available else available[0]
-            cached = self.instance.kb.decompilations[(self._function.addr, chosen_flavor)].codegen
-            if not isinstance(cached, DummyStructuredCodeGenerator):
+            dec_key = self._function.addr, chosen_flavor
+            dec = self.instance.kb.decompilations[dec_key]
+            cached = dec.codegen if dec is not None else None
+            if cached is not None and not isinstance(cached, DummyStructuredCodeGenerator):
                 should_decompile = False
                 self.codegen.am_obj = cached
                 self.codegen.am_event()
