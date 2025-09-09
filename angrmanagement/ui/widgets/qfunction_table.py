@@ -360,6 +360,7 @@ class QFunctionTableView(QTableView):
         self.verticalHeader().setVisible(False)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        self.setWordWrap(False)
 
         self.show_alignment_functions = False
         self.filter_text = ""
