@@ -6,6 +6,7 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from angr.analyses.code_tagging import CodeTags
+from angr.utils.library import get_cpp_function_name
 from cle.backends.uefi_firmware import UefiPE
 from PySide6.QtCore import SIGNAL, QAbstractTableModel, QEvent, Qt
 from PySide6.QtGui import QAction, QBrush, QCursor, QPalette
@@ -225,7 +226,11 @@ class QFunctionTableModel(QAbstractTableModel):
         if idx == self.INLINE_COL:
             return func in self.instance.functions_to_inline
         elif idx == self.NAME_COL:
-            return func.demangled_name
+            name = func.demangled_name
+            if name != func.name and " " in name:
+                # the name is demangled and potentially includes return types and arguments
+                name = get_cpp_function_name(name)
+            return name
         elif idx == self.TAGS_COL:
             return func.tags
         elif idx == self.ADDRESS_COL:
