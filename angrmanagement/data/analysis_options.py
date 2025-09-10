@@ -211,6 +211,16 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
                     },
                     CFGForceScanMode.SmartScan,
                 ),
+                ChoiceAnalysisOption(
+                    "function_prologues",
+                    "Scan for function prologues",
+                    {
+                        None: "Auto",
+                        True: "Enabled",
+                        False: "Disabled",
+                    },
+                    None,
+                ),
                 StringAnalysisOption(
                     "regions",
                     "Regions for analysis",
