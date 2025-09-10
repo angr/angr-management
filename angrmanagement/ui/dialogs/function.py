@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.dialogs.xref import XRefDialog
+from angrmanagement.ui.views.strings_view import StringsView
 from angrmanagement.ui.widgets.qproperty_editor import (
     BoolPropertyItem,
     GroupPropertyItem,
@@ -131,6 +132,6 @@ class FunctionDialog(QDialog):
     def _show_strings(self) -> None:
         self.workspace.show_strings_view()
         view = self.workspace.view_manager.first_view_in_category("strings")
-        if view is not None:
+        if isinstance(view, StringsView):
             view.select_function(self.function)
         self.accept()
