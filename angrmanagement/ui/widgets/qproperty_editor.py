@@ -111,10 +111,11 @@ class ValuePropertyItem(PropertyItem, Generic[T]):
     initial_value: T
     value: T
 
-    def __init__(self, name: str, value: T, description: str = "", **kwargs):
+    def __init__(self, name: str, value: T, description: str = "", readonly: bool = False, **kwargs):
         super().__init__(name, description=description, **kwargs)
         self.initial_value = value
         self.value = value
+        self.readonly = readonly
 
     @property
     def is_value_modified(self) -> bool:
@@ -345,6 +346,8 @@ class PropertyModel(QAbstractItemModel):
         if not index.isValid():
             return False
         item = index.internalPointer()
+        if getattr(item, "readonly", False):
+            return False
         if index.column() == 1:
             match item.type:
                 case PropertyType.INT:
@@ -435,14 +438,21 @@ class PropertyDelegate(QStyledItemDelegate):
                 else:
                     editor = QSpinBox(parent)
                     editor.setRange(item.minimum, item.maximum)
+                if item.readonly:
+                    editor.setReadOnly(True)
                 return editor
             case PropertyType.FLOAT:
                 editor = QDoubleSpinBox(parent)
                 editor.setDecimals(item.extra.get("decimals", 2))
                 editor.setRange(item.minimum, item.maximum)
+                if item.readonly:
+                    editor.setReadOnly(True)
                 return editor
             case PropertyType.TEXT:
-                return QLineEdit(parent)
+                editor = QLineEdit(parent)
+                if item.readonly:
+                    editor.setReadOnly(True)
+                return editor
             case PropertyType.COMBO:
                 editor = QComboBox(parent)
                 for data, text in item.choices.items():
