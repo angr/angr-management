@@ -1,24 +1,22 @@
 from __future__ import annotations
 
-from pygments.lexers.c_cpp import CLexer
-from pyqodeng.core.api import CodeEdit
-from pyqodeng.core.modes import PygmentsSyntaxHighlighter
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
-    QCheckBox,
     QDialog,
     QGridLayout,
     QGroupBox,
-    QLabel,
-    QLineEdit,
     QPushButton,
 )
 
-from angrmanagement.config import Conf
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.dialogs.xref import XRefDialog
-from angrmanagement.ui.widgets.qccode_edit import ColorSchemeIDA
+from angrmanagement.ui.widgets.qproperty_editor import (
+    BoolPropertyItem,
+    GroupPropertyItem,
+    PropertyModel,
+    QPropertyEditor,
+    TextPropertyItem,
+)
 from angrmanagement.utils.layout import add_to_grid
 
 
@@ -38,48 +36,32 @@ class FunctionDialog(QDialog):
         self.adjustSize()
 
     def _init_widgets(self) -> None:
-        font = QFont(Conf.disasm_font)
-
         main_layout = QGridLayout()
         self.setLayout(main_layout)
 
-        r = 0
-
+        root = GroupPropertyItem("root")
         for label, text in [
-            ("Name:", self.function.name),
-            ("Address:", f"{self.function.addr:x}"),
-            ("Binary:", f"{self.function.binary}"),
-            ("Offset:", f"{self.function.offset:x}"),
+            ("Name", self.function.name),
+            ("Address", f"{self.function.addr:x}"),
+            ("Binary", f"{self.function.binary}"),
+            ("Offset", f"{self.function.offset:x}"),
             (
-                "Calling Convention:",
+                "Calling Convention",
                 "<Unknown>" if self.function.calling_convention is None else f"{self.function.calling_convention}",
             ),
-            ("Tags:", ", ".join(self.function.tags)),
-            ("Cyclomatic Complexity:", str(self.function.cyclomatic_complexity)),
+            ("Tags", ", ".join(self.function.tags)),
+            ("Cyclomatic Complexity", str(self.function.cyclomatic_complexity)),
+            (
+                "C Prototype",
+                (
+                    (self.function.prototype.c_repr(full=True).replace("()", self.function.name, 1) + ";")
+                    if self.function.prototype
+                    else ""
+                ),
+            ),
         ]:
-            main_layout.addWidget(QLabel(label), r, 0)
-            le = QLineEdit(text, self)
-            le.setFont(font)
-            le.setReadOnly(True)  # FIXME: Support editing
-            main_layout.addWidget(le, r, 1)
-            r += 1
+            root.addChild(TextPropertyItem(label, text, readonly=True))  # FIXME: Support editing
 
-        main_layout.addWidget(QLabel("C Prototype:"), r, 0)
-        ce = CodeEdit(self)
-        if self.function.prototype is not None:
-            decl = self.function.prototype.c_repr(full=True).replace("()", self.function.name, 1) + ";"
-            ce.document().setPlainText(decl)
-        ce.modes.append(PygmentsSyntaxHighlighter(ce.document(), CLexer(), ColorSchemeIDA()))
-        ce.setFixedHeight(ce.fontMetrics().height() * 2)
-        ce.setReadOnly(True)  # FIXME: Support editing
-        main_layout.addWidget(ce, r, 1)
-        r += 1
-
-        attrs_group_box = QGroupBox("Attributes")
-        attrs_layout = QGridLayout()
-        attrs_group_box.setLayout(attrs_layout)
-        main_layout.addWidget(attrs_group_box, r, 0, 1, 2)
-        attrs = []
         for label, checked in [
             ("Alignment", self.function.is_alignment),
             ("PLT", self.function.is_plt),
@@ -88,11 +70,15 @@ class FunctionDialog(QDialog):
             ("Prototype Guessed", self.function.is_prototype_guessed),
             ("Variadic", self.function.prototype is not None and self.function.prototype.variadic),
         ]:
-            cb = QCheckBox(label, self)
-            cb.setChecked(checked)
-            cb.setEnabled(False)  # FIXME: Support editing
-            attrs.append(cb)
-        add_to_grid(attrs_layout, 3, attrs)
+            root.addChild(BoolPropertyItem(label, checked, readonly=True))  # FIXME: Support editing
+
+        r = 0
+
+        self._model = PropertyModel(root)
+        self._tree = QPropertyEditor()
+        self._tree.set_description_visible(False)
+        self._tree.setModel(self._model)
+        main_layout.addWidget(self._tree, r, 0, 1, 2)
         r += 1
 
         actions_group_box = QGroupBox("Actions")
@@ -117,8 +103,10 @@ class FunctionDialog(QDialog):
         add_to_grid(actions_layout, 4, action_buttons)
         r += 1
 
-        main_layout.setRowStretch(r, 1)
-        r += 1
+        main_layout.setRowStretch(r, 0)
+
+    def sizeHint(self):  # pylint:disable=no-self-use
+        return QSize(700, 500)
 
     def _decompile(self) -> None:
         self.workspace.decompile_function(self.function)
