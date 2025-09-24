@@ -80,7 +80,7 @@ class ViewManager:
         """
         self._update_view_index_in_category(view)
         self.views_by_category[view.category].append(view)
-        self.views_by_activation.insert(0, view)
+        self.views_by_activation.append(view)
 
         dw = QtAds.CDockWidget(view.caption)
         dw.setFeature(QtAds.CDockWidget.DockWidgetDeleteOnClose, True)
