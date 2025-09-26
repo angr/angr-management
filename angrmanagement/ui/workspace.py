@@ -67,6 +67,7 @@ from .views import (
     PatchesView,
     ProximityView,
     RegistersView,
+    SignaturesView,
     StackView,
     StatesView,
     StringsView,
@@ -820,6 +821,9 @@ class Workspace:
 
     def show_traces_view(self) -> None:
         self.show_view("traces", TracesView)
+
+    def show_signatures_view(self) -> None:
+        self.show_view("signatures", SignaturesView)
 
     def show_trace_map_view(self) -> None:
         self.show_view("tracemap", TraceMapView, position="top")
