@@ -14,6 +14,7 @@ from .log_view import LogView
 from .patches_view import PatchesView
 from .proximity_view import ProximityView
 from .registers_view import RegistersView
+from .signatures_view import SignaturesView
 from .stack_view import StackView
 from .states_view import StatesView
 from .strings_view import StringsView
@@ -42,6 +43,7 @@ __all__ = [
     "StatesView",
     "StringsView",
     "SymexecView",
+    "SignaturesView",
     "TraceMapView",
     "TracesView",
     "TypesView",

@@ -11,6 +11,7 @@ from angr.knowledge_plugins import Function
 from cle import SymbolType
 
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, BreakpointType
+from angrmanagement.data.signatures import SignatureManager
 from angrmanagement.data.trace import Trace
 from angrmanagement.errors import ContainerAlreadyRegisteredError
 from angrmanagement.logic.debugger import DebuggerListManager, DebuggerManager
@@ -65,6 +66,7 @@ class Instance:
         self.register_container("active_view_state", lambda: None, "ViewState", "Currently focused view state")
 
         self.breakpoint_mgr = BreakpointManager()
+        self.signature_mgr = SignatureManager(self)
         self.debugger_list_mgr = DebuggerListManager()
         self.debugger_mgr = DebuggerManager(self.debugger_list_mgr)
 
