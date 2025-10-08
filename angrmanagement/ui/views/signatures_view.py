@@ -54,9 +54,8 @@ class QSignatureTableModel(QAbstractTableModel):
     def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
-    def headerData(
-        self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
-    ) -> Any:  # pylint:disable=unused-argument
+    # pylint:disable=unused-argument
+    def headerData(self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...) -> Any:
         if role != Qt.ItemDataRole.DisplayRole:
             return None
         if section < len(self.Headers):
@@ -136,12 +135,15 @@ class QSignatureTableWidget(QTableView):
         sigs = [self.signature_mgr.signatures[r] for r in selected_rows]
         menu = QMenu("", self)
         if len(sigs):
-            menu.addAction("Try applying signature(s)", lambda: self.signature_mgr.apply_signatures(sigs, dry_run=True))
-            menu.addAction("Apply signature(s)", lambda: self.signature_mgr.apply_signatures(sigs, dry_run=False))
+            menu.addAction(
+                "&Try applying signature(s)", lambda: self.signature_mgr.apply_signatures(sigs, dry_run=True)
+            )
+            menu.addAction("&Apply signature(s)", lambda: self.signature_mgr.apply_signatures(sigs, dry_run=False))
             menu.addSeparator()
-        # menu.addAction("Load signature file", self.signature_mgr.load_signature)
+        menu.addAction("&Load signature files...", self.signature_mgr.load_signatures)
         menu.exec_(event.globalPos())
 
+    # pylint:disable=unused-argument,no-self-use
     def _on_cell_double_click(self, index) -> None:
         return
 
@@ -161,6 +163,7 @@ class SignaturesView(InstanceView):
     def reload(self) -> None:
         self.instance.signature_mgr.sync_from_angr()
 
+    # pylint:disable=no-self-use
     def minimumSizeHint(self):
         return QSize(200, 200)
 

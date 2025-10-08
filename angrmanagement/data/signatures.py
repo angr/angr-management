@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import angr
 import angr.flirt
 from angr.flirt import FLIRT_SIGNATURES_BY_ARCH, FlirtSignature
+from PySide6.QtWidgets import QFileDialog
 
 from angrmanagement.config import Conf
 from angrmanagement.utils.env import app_root, is_pyinstaller
@@ -72,6 +73,24 @@ class SignatureManager:
             fl = self.instance.project.analyses.Flirt(sig.sig_path, dry_run=dry_run)
             if dry_run:
                 self.dryrun_results[sig.sig_path] = next(iter(fl.matched_suggestions.values()))[1]
+
+    def load_signatures(self) -> None:
+        # open a dialog to select signatures files
+        filenames, _ = QFileDialog.getOpenFileNames(
+            None,
+            "Load FLIRT signature files",
+            "",
+            "FLIRT signature files (*.sig);;All files (*)",
+        )
+        for filename in filenames:
+            basename = os.path.basename(filename)
+            meta_path = filename[: filename.rindex(".")] + ".meta" if "." in basename else None
+            r = angr.flirt.load_signature(filename, meta_path=meta_path)
+            if r is not None:
+                arch, sig = r
+                self.add_signature(sig)
+            else:
+                _l.error("Failed to load signature file %s.", filename)
 
     def get_match_count(self, sig: FlirtSignature) -> int | None:
         if sig.sig_path in self.dryrun_results:
