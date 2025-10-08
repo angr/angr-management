@@ -8,8 +8,6 @@ import time
 from functools import partial
 from typing import TYPE_CHECKING
 
-import angr
-import angr.flirt
 import PySide6QtAds as QtAds
 from angr.angrdb import AngrDB
 from PySide6.QtCore import QEvent, QObject, QSize, Qt, QUrl
@@ -28,6 +26,7 @@ from angrmanagement.daemon.client import ClientService
 from angrmanagement.data.jobs import DependencyAnalysisJob
 from angrmanagement.data.jobs.loading import LoadAngrDBJob, LoadBinaryJob
 from angrmanagement.data.library_docs import LibraryDocs
+from angrmanagement.data.signatures import init_flirt_signatures
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import BasicCommand
@@ -35,7 +34,6 @@ from angrmanagement.logic.threads import ExecuteCodeEvent
 from angrmanagement.ui.dialogs.progress_dialog import ProgressDialog
 from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.ui.widgets.qam_status_bar import QAmStatusBar
-from angrmanagement.utils.env import app_root, is_pyinstaller
 from angrmanagement.utils.io import download_url, isurl
 
 from .dialogs.about import LoadAboutDialog
@@ -181,7 +179,7 @@ class MainWindow(QMainWindow):
         self.workspace.plugins.on_workspace_initialized(self)
 
         self._init_shortcuts()
-        self._init_flirt_signatures()
+        init_flirt_signatures()
 
         self._run_daemon(use_daemon=use_daemon)
 
@@ -380,26 +378,6 @@ class MainWindow(QMainWindow):
         self.workspace.plugins.discover_and_initialize_plugins()
 
     #
-    # FLIRT Signatures
-    #
-
-    def _init_flirt_signatures(self) -> None:
-        if Conf.flirt_signatures_root:
-            # if it's a relative path, it's relative to the angr-management package
-            if os.path.isabs(Conf.flirt_signatures_root):
-                flirt_signatures_root = Conf.flirt_signatures_root
-            else:
-                if is_pyinstaller():
-                    flirt_signatures_root = os.path.join(app_root(), Conf.flirt_signatures_root)
-                else:
-                    # when running as a Python package, we should use the git submodule, which is on the same level
-                    # with (instead of inside) the angrmanagement module directory.
-                    flirt_signatures_root = os.path.join(app_root(), "..", Conf.flirt_signatures_root)
-            flirt_signatures_root = os.path.normpath(flirt_signatures_root)
-            _l.info("Loading FLIRT signatures from %s.", flirt_signatures_root)
-            angr.flirt.load_signatures(flirt_signatures_root)
-
-    #
     # Library docs
     #
 
@@ -512,6 +490,7 @@ class MainWindow(QMainWindow):
                     ("View: Disassembly (Linear)", self.workspace.show_linear_disassembly_view),
                     ("View: Functions", self.workspace.show_functions_view),
                     ("View: Hex", self.workspace.show_hex_view),
+                    ("View: Function Signatures", self.workspace.show_signatures_view),
                     ("View: Jobs", self.workspace.show_jobs_view),
                     ("View: Log", self.workspace.show_log_view),
                     ("View: New Disassembly (Graph)", self.workspace.create_and_show_graph_disassembly_view),
