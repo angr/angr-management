@@ -14,3 +14,5 @@ jobs:
     uses: ./.github/workflows/pyinstaller-build.yml
   windows:
     uses: ./.github/workflows/windows.yml
+  macos:
+    uses: ./.github/workflows/macos.yml
