@@ -18,6 +18,7 @@ jobs:
           - ubuntu-24.04
           - ubuntu-24.04-arm
           - windows-2022
+          - windows-11-arm
           - macos-13
           - macos-15
       fail-fast: false
@@ -29,6 +30,10 @@ jobs:
           ref: ${{ github.event.inputs.version }}
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Install dependencies (Ubuntu)
@@ -49,13 +54,17 @@ jobs:
       - name: Install dependencies (macOS)
         run: brew install flatcc flatbuffers
         if: startsWith(matrix.os, 'macos')
+      - name: Setup MSVC toolchain
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
+        if: runner.os == 'Windows'
+        with:
+          arch: ${{ endsWith(matrix.os, '-arm') && 'arm64' || 'amd64' }}
       - name: Run nightly build on Windows
+        if: startsWith(matrix.os, 'windows')
+        shell: cmd
         run: |
           del "C:\Program Files\Git\usr\bin\link.exe"
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           bash .github\workflows\nightly-build.sh ${{ inputs.version }}
-        shell: cmd
-        if: startsWith(matrix.os, 'windows')
       - name: Run nightly build on Ubuntu/MacOS
         run: bash .github/workflows/nightly-build.sh
         if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
