@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from angr.block import Block
 from angr.knowledge_plugins.cfg import MemoryData
+from archinfo.arch_arm import is_arm_arch
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QAction, QCursor
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QMenu, QMessageBox, QVBoxLayout
@@ -345,6 +346,19 @@ class DisassemblyView(SynchronizedFunctionView):
         if not kwargs:
             self._reload_current_function_if_changed()
             self._linear_viewer.reload()
+
+    def on_synchronized_cursor_address_changed(self) -> None:
+        """
+        Handle synchronized cursor address change event. Note that other views use real addresses while jump_to() uses
+        odd addresses for ARM-THUMB mode instructions. We process the address here in case it's ARM.
+        """
+        assert not self._processing_synchronized_cursor_update
+        self._processing_synchronized_cursor_update = True
+        try:
+            if self.sync_state.cursor_address is not None:
+                self.jump_to(self.sync_state.cursor_address, is_real_addr=True)
+        finally:
+            self._processing_synchronized_cursor_update = False
 
     #
     # UI
@@ -731,13 +745,13 @@ class DisassemblyView(SynchronizedFunctionView):
                 self._flow_graph.function_graph.clear_cache()
                 self._flow_graph.reload()
 
-    def jump_to(self, addr: int, src_ins_addr=None, use_animation: bool = False) -> bool:
+    def jump_to(self, addr: int, src_ins_addr=None, use_animation: bool = False, is_real_addr: bool = False) -> bool:
         # Record the current instruction address first
         if src_ins_addr is not None:
             self.jump_history.record_address(src_ins_addr)
 
         self.jump_history.jump_to(addr)
-        self._jump_to(addr, use_animation=use_animation)
+        self._jump_to(addr, use_animation=use_animation, is_real_addr=is_real_addr)
 
         return True
 
@@ -832,10 +846,12 @@ class DisassemblyView(SynchronizedFunctionView):
         Highlight each selected instruction in synchronized views.
         """
         regions = []
+        is_arm = is_arm_arch(self.instance.project.arch) if not self.instance.project.am_none else False
         for addr in self.infodock.selected_insns:
             s = self._get_instruction_size(addr)
             if s is not None:
-                regions.append(SynchronizedHighlightRegion(addr, s))
+                real_addr = addr & 0xFFFF_FFFE if is_arm else addr
+                regions.append(SynchronizedHighlightRegion(real_addr, s))
         self.set_synchronized_highlight_regions(regions)
 
     #
@@ -949,17 +965,25 @@ class DisassemblyView(SynchronizedFunctionView):
         if console_view is not None:
             console_view.set_current_function(the_func)
 
-    def _jump_to(self, addr: int, use_animation: bool = False) -> bool:
+    def _jump_to(self, addr: int, use_animation: bool = False, is_real_addr: bool = False) -> bool:
         if self._prefer_graph and self._current_view is self._linear_viewer:
             self.display_disasm_graph(prefer=False)
 
+        # real_addr is the address in RAM regardless of the ARM/THUMB mode
+        # code_addr is an address that guarantees to hit the correct instruction
+        real_addr = addr
+        code_addr = addr
+        is_arm = is_arm_arch(self.instance.project.arch) if not self.instance.project.am_none else False
+        if is_arm and is_real_addr and code_addr & 1 == 0:
+            code_addr = addr + 1  # ensures we always hit the middle of an instruction regardless of ARM/THUMB
+
         if self._current_view is not self._linear_viewer:
-            function = locate_function(self.instance, addr)
+            function = locate_function(self.instance, code_addr)
             if function is not None:
                 self._display_function(function)
-                instr_addr = function.addr_to_instruction_addr(addr)
+                instr_addr = function.addr_to_instruction_addr(code_addr)
                 if instr_addr is None:
-                    instr_addr = addr
+                    instr_addr = code_addr
                 self.infodock.select_instruction(instr_addr, unique=True, use_animation=use_animation)
                 return True
 
@@ -967,12 +991,19 @@ class DisassemblyView(SynchronizedFunctionView):
             self.display_linear_viewer(prefer=False)
 
         try:
-            item = self.instance.cfb.floor_item(addr)
-            _, item = item
+            _, item = self.instance.cfb.floor_item(code_addr)
+            if (
+                code_addr != real_addr
+                and isinstance(item, MemoryData)
+                and (code_addr < item.addr or code_addr >= item.addr + item.size)
+            ):
+                # expect code but found memory data - try the real address instead
+                _, item = self.instance.cfb.floor_item(real_addr)
+
             if isinstance(item, MemoryData) and addr < (item.addr + item.size):
                 self.infodock.select_label(item.addr)
-            elif isinstance(item, Block) and item.size and addr < (item.addr + item.size):
-                addr = max(a for a in item.instruction_addrs if a <= addr)
+            elif isinstance(item, Block) and item.size and code_addr < (item.addr + item.size):
+                addr = max(a for a in item.instruction_addrs if a <= code_addr)
                 self.infodock.select_instruction(addr, unique=True, use_animation=use_animation)
                 return True  # select_instruction will navigate
         except KeyError:

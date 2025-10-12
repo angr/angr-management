@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from archinfo.arch_arm import get_real_address_if_arm
+
 from angrmanagement.data.object_container import ObjectContainer
 
 if TYPE_CHECKING:
@@ -116,7 +118,9 @@ class InfoDock:
         self._update_published_view_state()
 
     def select_instruction(self, insn_addr, unique: bool = True, insn_pos=None, use_animation: bool = True) -> None:
-        self.disasm_view.set_synchronized_cursor_address(insn_addr)
+        arch = self.disasm_view.instance.project.arch
+        real_addr = get_real_address_if_arm(arch, insn_addr)
+        self.disasm_view.set_synchronized_cursor_address(real_addr)
 
         self.unselect_all_labels()
         self.unselect_block_tree_node()
@@ -175,7 +179,9 @@ class InfoDock:
             self.selected_operands.am_event()
 
     def select_label(self, label_addr) -> None:
-        self.disasm_view.set_synchronized_cursor_address(label_addr)
+        arch = self.disasm_view.instance.project.arch
+        real_addr = get_real_address_if_arm(arch, label_addr)
+        self.disasm_view.set_synchronized_cursor_address(real_addr)
 
         # only one label can be selected at a time
         # also, clear selection of instructions and operands
