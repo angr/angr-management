@@ -45,6 +45,13 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
         self._node = node
 
+        addr = 0
+        if isinstance(node, (StringProxiNode, VariableProxiNode)):
+            addr = node.addr
+        elif isinstance(node, FunctionProxiNode):
+            addr = node.func.addr
+        self.addr = addr  # so that the block is sortable by GraphUtils._sort_node
+
         #
         # Colors
         #
