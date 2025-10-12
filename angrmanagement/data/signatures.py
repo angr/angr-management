@@ -68,11 +68,25 @@ class SignatureManager:
         self.signatures.remove(sig)
         self.signatures.am_event(removed=sig)
 
-    def apply_signatures(self, sigs: list[FlirtSignature], dry_run: bool = True):
+    def apply_signatures(self, sigs: list[FlirtSignature], dry_run: bool = True, ignore_addresses: set[int] = set()):
         for sig in sigs:
-            fl = self.instance.project.analyses.Flirt(sig.sig_path, dry_run=dry_run)
-            if dry_run:
-                self.dryrun_results[sig.sig_path] = next(iter(fl.matched_suggestions.values()))[1]
+            fl = self.instance.project.analyses.Flirt(sig.sig_path, dry_run=dry_run or len(ignore_addresses) > 0)
+            if dry_run or len(ignore_addresses) > 0:
+                sig_name, dryrun_results = next(iter(fl.matched_suggestions.values()))
+                if dry_run:
+                    self.dryrun_results[sig.sig_path] = dryrun_results
+                elif len(ignore_addresses) > 0:
+                    # Manually apply the changes with a reduced set of addresses
+                    matched_with_ignore = {
+                        addr: v for addr, v in dryrun_results.items()
+                        if addr not in ignore_addresses
+                    }
+                    _l.info("Applying %s/%s signatures", len(matched_with_ignore), len(dryrun_results))
+                    fl._apply_changes(
+                        sig_name if not fl._temporary_sig else None,
+                        matched_with_ignore,
+                    )
+
 
     def load_signatures(self) -> None:
         # open a dialog to select signatures files

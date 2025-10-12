@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QAbstractTableModel, QSize, Qt
-from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableView, QVBoxLayout
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QHBoxLayout, QMenu, QPushButton, QTableView, QVBoxLayout
 
 from .view import InstanceView
 
@@ -25,7 +25,7 @@ class QSignatureTableModel(QAbstractTableModel):
     Headers = [
         "Type",
         "Name",
-        "Architecturex",
+        "Architecture",
         "Platform",
         "Compiler",
         "OS Name",
@@ -168,7 +168,7 @@ class QSignatureTableWidget(QTableView):
         """Show dialog displaying matched functions for a signature."""
         from angrmanagement.ui.dialogs.signature_matches import SignatureMatchesDialog
 
-        dialog = SignatureMatchesDialog(sig, matches, self.workspace.main_instance, self)
+        dialog = SignatureMatchesDialog(sig, matches, self.workspace.main_instance, self.signature_mgr, self)
         dialog.exec()
 
 
@@ -192,7 +192,28 @@ class SignaturesView(InstanceView):
         return QSize(200, 200)
 
     def _init_widgets(self) -> None:
+        # Header with buttons
+        header_layout = QHBoxLayout()
+
+        load_btn = QPushButton("Load Signature Files...")
+        load_btn.clicked.connect(self.instance.signature_mgr.load_signatures)
+
+        try_all_btn = QPushButton("Try Applying All Signatures")
+        try_all_btn.clicked.connect(self._try_apply_all_signatures)
+
+        header_layout.addWidget(load_btn)
+        header_layout.addWidget(try_all_btn)
+        header_layout.addStretch()
+
+        # Main layout
         vlayout = QVBoxLayout()
+        vlayout.addLayout(header_layout)
         self._tbl_widget = QSignatureTableWidget(self.instance.signature_mgr, self.workspace)
         vlayout.addWidget(self._tbl_widget)
         self.setLayout(vlayout)
+
+    def _try_apply_all_signatures(self) -> None:
+        """Try applying all signatures in the view."""
+        all_sigs = list(self.instance.signature_mgr.signatures)
+        if all_sigs:
+            self.instance.signature_mgr.apply_signatures(all_sigs, dry_run=True)
