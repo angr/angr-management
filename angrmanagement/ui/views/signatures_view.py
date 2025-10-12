@@ -4,8 +4,10 @@ from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QAbstractTableModel, QSize, Qt
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QHBoxLayout, QMenu, QPushButton, QTableView, QVBoxLayout
-
 from .view import InstanceView
+
+import logging
+_l = logging.getLogger(name=__name__)
 
 if TYPE_CHECKING:
 
@@ -13,7 +15,7 @@ if TYPE_CHECKING:
     from angr.flirt import FlirtSignature
 
     from angrmanagement.data.instance import Instance
-    from angrmanagement.data.signatures import SignatureManager
+    from angrmanagement.data.signatures import SignatureManager, Signature
     from angrmanagement.ui.workspace import Workspace
 
 
@@ -74,9 +76,9 @@ class QSignatureTableModel(QAbstractTableModel):
         else:
             return None
 
-    def _get_column_text(self, sig: FlirtSignature, column: int) -> str:
+    def _get_column_text(self, sig: Signature, column: int) -> str:
         if column == self.COL_TYPE:
-            return "FLIRT"
+            return sig.type_name
         elif column == self.COL_NAME:
             return sig.sig_name
         elif column == self.COL_ARCH:
@@ -201,8 +203,12 @@ class SignaturesView(InstanceView):
         try_all_btn = QPushButton("Try Applying All Signatures")
         try_all_btn.clicked.connect(self._try_apply_all_signatures)
 
+        bindiff_btn = QPushButton("Find Matches Via Bindiff")
+        bindiff_btn.clicked.connect(self._find_matches_via_bindiff)
+
         header_layout.addWidget(load_btn)
         header_layout.addWidget(try_all_btn)
+        header_layout.addWidget(bindiff_btn)
         header_layout.addStretch()
 
         # Main layout
@@ -217,3 +223,18 @@ class SignaturesView(InstanceView):
         all_sigs = list(self.instance.signature_mgr.signatures)
         if all_sigs:
             self.instance.signature_mgr.apply_signatures(all_sigs, dry_run=True)
+
+    def _on_bindiff_matches_finished(self, matches_per_file: dict[str, dict[int, str]]) -> None:
+        for filename, matches in matches_per_file.items():
+            self.instance.signature_mgr.add_precomputed_signature('Bindif', filename, matches)
+
+    def _find_matches_via_bindiff(self) -> None:
+        """Launch a background job to find matches via bindiff."""
+        from angrmanagement.data.jobs.bindiff_matching import BindiffMatchingJob
+
+        # Show the file dialog to select binaries
+        filenames = self.instance.signature_mgr.select_bindiff_base_files()
+        if filenames:
+            # Create and launch the background job
+            job = BindiffMatchingJob(self.instance, filenames, on_results=self._on_bindiff_matches_finished)
+            self.workspace.job_manager.add_job(job)
