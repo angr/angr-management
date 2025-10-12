@@ -25,7 +25,7 @@ class QSignatureTableModel(QAbstractTableModel):
     Headers = [
         "Type",
         "Name",
-        "Architecture",
+        "Architecturex",
         "Platform",
         "Compiler",
         "OS Name",
@@ -139,13 +139,37 @@ class QSignatureTableWidget(QTableView):
                 "&Try applying signature(s)", lambda: self.signature_mgr.apply_signatures(sigs, dry_run=True)
             )
             menu.addAction("&Apply signature(s)", lambda: self.signature_mgr.apply_signatures(sigs, dry_run=False))
+            # Add "View Matches" option if there's exactly one signature selected and it has matches
+            if len(sigs) == 1:
+                sig = sigs[0]
+                matches = self.signature_mgr.get_matches(sig)
+                if matches:
+                    menu.addAction("&View Matches...", lambda: self._show_matches_dialog(sig, matches))
             menu.addSeparator()
         menu.addAction("&Load signature files...", self.signature_mgr.load_signatures)
         menu.exec_(event.globalPos())
 
-    # pylint:disable=unused-argument,no-self-use
+    # pylint:disable=unused-argument
     def _on_cell_double_click(self, index) -> None:
-        return
+        """Double-click: try applying signature if not yet applied, otherwise show matches dialog."""
+        row = index.row()
+        if row >= len(self.signature_mgr.signatures):
+            return
+        sig = self.signature_mgr.signatures[row]
+        matches = self.signature_mgr.get_matches(sig)
+        if matches:
+            # Already has matches, show the dialog
+            self._show_matches_dialog(sig, matches)
+        else:
+            # No matches yet, try applying the signature
+            self.signature_mgr.apply_signatures([sig], dry_run=True)
+
+    def _show_matches_dialog(self, sig, matches) -> None:
+        """Show dialog displaying matched functions for a signature."""
+        from angrmanagement.ui.dialogs.signature_matches import SignatureMatchesDialog
+
+        dialog = SignatureMatchesDialog(sig, matches, self.workspace.main_instance, self)
+        dialog.exec()
 
 
 class SignaturesView(InstanceView):

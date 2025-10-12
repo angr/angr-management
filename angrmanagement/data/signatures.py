@@ -96,3 +96,9 @@ class SignatureManager:
         if sig.sig_path in self.dryrun_results:
             return len(self.dryrun_results[sig.sig_path])
         return None
+
+    def get_matches(self, sig: FlirtSignature) -> dict[int, str] | None:
+        """Get the matched functions for a signature as a dict of {address: name}."""
+        if sig.sig_path in self.dryrun_results:
+            return self.dryrun_results[sig.sig_path]
+        return None
