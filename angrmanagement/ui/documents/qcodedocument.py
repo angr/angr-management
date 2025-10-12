@@ -30,12 +30,14 @@ class QCodeDocument(QTextDocument):
         super().__init__()
 
         self._codegen: BaseStructuredCodeGenerator = codegen
+        self._doclayout = QPlainTextDocumentLayout(self)
+        self._doclayout.setCursorWidth(2)
 
         # default font
         self.setDefaultFont(Conf.code_font)
 
         self.setPlainText(self._codegen.text)
-        self.setDocumentLayout(QPlainTextDocumentLayout(self))
+        self.setDocumentLayout(self._doclayout)
 
     @property
     def posmap(self):
