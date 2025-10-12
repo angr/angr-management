@@ -11,6 +11,7 @@ import PySide6
 from angr import Block
 from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
 from angr.knowledge_plugins.patches import Patch
+from archinfo.arch_arm import is_arm_arch
 from PySide6.QtCore import QEvent, QMarginsF, QPointF, QRectF, QSizeF, Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QColor, QCursor, QFont, QPainterPath, QPen, QWheelEvent
 from PySide6.QtWidgets import (
@@ -1848,6 +1849,7 @@ class HexView(SynchronizedInstanceView):
         """
         regions = []
         cfb = self.instance.cfb
+        is_arm = is_arm_arch(self.instance.project.arch) if not self.instance.project.am_none else False
         if self.smart_highlighting_enabled and not cfb.am_none:
             for item in cfb.floor_items(self.inner_widget.hex.display_start_addr):
                 item_addr, item = item
@@ -1865,9 +1867,8 @@ class HexView(SynchronizedInstanceView):
                     try:
                         for insn in item.disassembly.insns:
                             s = f"{insn} in {item}"
-                            regions.append(
-                                HexHighlightRegion(Conf.hex_view_instruction_color, insn.address, insn.size, s)
-                            )
+                            insn_addr = insn.address & 0xFFFF_FFFE if is_arm else insn.address
+                            regions.append(HexHighlightRegion(Conf.hex_view_instruction_color, insn_addr, insn.size, s))
                     except angr.errors.SimEngineError:
                         pass  # We may get a node in CFB to a non-decodeable address
         self._cfb_highlights = regions
