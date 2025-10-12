@@ -23,7 +23,7 @@ dependencies = [
   "tomlkit",
   "pyobjc-framework-Cocoa;platform_system == \"Darwin\"",
   "thefuzz[speedup]",
-  "binsync==5.2.2",
+  "binsync>=5.7.11",
   "rpyc",
   "qtconsole",
 ]
