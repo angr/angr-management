@@ -156,7 +156,7 @@ class BindiffMatchingJob(InstanceJob):
                     ctx.set_progress(
                         progress,
                         f"{completed + failed}/{total_binaries} binaries ({failed} failed); "
-                        + f"Found {num_found_matches} matched functions; {num_conflicts} conflicts",
+                        f"Found {num_found_matches} matched functions; {num_conflicts} conflicts",
                     )
 
         finally:

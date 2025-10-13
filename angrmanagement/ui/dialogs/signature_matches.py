@@ -74,9 +74,7 @@ class QSignatureMatchesTableModel(QAbstractTableModel):
                         return ""
                     # Check if the name is actually a "generic" name that shouldn't count as a conflict
                     name_lower = func.name.lower()
-                    if not name_lower.startswith((
-                        "unknown", "unresolved", "sub_"
-                    )):
+                    if not name_lower.startswith(("unknown", "unresolved", "sub_")):
                         return "✓"
                 return ""
         return None
