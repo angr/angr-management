@@ -264,6 +264,10 @@ class DisassemblyView(SynchronizedFunctionView):
     def set_comment_callback(self, v) -> None:
         self.instance.set_comment_callback = v
 
+    def on_cc_recovered(self, func_addr: int) -> None:
+        if not self.function.am_none and self.function.addr == func_addr:
+            self.reload()
+
     def on_variable_recovered(self, func_addr: int) -> None:
         if not self.function.am_none and self.function.addr == func_addr:
             self.reload()

@@ -24,8 +24,7 @@ if TYPE_CHECKING:
 
     from angr.knowledge_plugins.cfg import CFGModel
 
-    from .jobs import VariableRecoveryJob
-
+    from .jobs import CallingConventionRecoveryJob, VariableRecoveryJob
 
 _l = logging.getLogger(__name__)
 
@@ -43,6 +42,7 @@ class Instance:
     def __init__(self) -> None:
         self._live = False
         self.variable_recovery_job: VariableRecoveryJob | None = None
+        self.calling_convention_recovery_job: CallingConventionRecoveryJob | None = None
         self._analysis_configuration = None
 
         self.extra_containers = {}
@@ -85,6 +85,7 @@ class Instance:
 
         self.cfg_args = None
         self.variable_recovery_args = None
+        self.calling_convention_recovery_args = None
         self._disassembly = {}
         self.pseudocode_variable_kb = None
 
