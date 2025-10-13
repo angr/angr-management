@@ -1,19 +1,21 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QAbstractTableModel, QSize, Qt
-from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableView, QVBoxLayout
+from PySide6.QtWidgets import QAbstractItemView, QHBoxLayout, QHeaderView, QMenu, QPushButton, QTableView, QVBoxLayout
 
 from .view import InstanceView
+
+_l = logging.getLogger(name=__name__)
 
 if TYPE_CHECKING:
 
     import PySide6
-    from angr.flirt import FlirtSignature
 
     from angrmanagement.data.instance import Instance
-    from angrmanagement.data.signatures import SignatureManager
+    from angrmanagement.data.signatures import Signature, SignatureManager
     from angrmanagement.ui.workspace import Workspace
 
 
@@ -74,9 +76,9 @@ class QSignatureTableModel(QAbstractTableModel):
         else:
             return None
 
-    def _get_column_text(self, sig: FlirtSignature, column: int) -> str:
+    def _get_column_text(self, sig: Signature, column: int) -> str:
         if column == self.COL_TYPE:
-            return "FLIRT"
+            return sig.type_name
         elif column == self.COL_NAME:
             return sig.sig_name
         elif column == self.COL_ARCH:
@@ -139,13 +141,37 @@ class QSignatureTableWidget(QTableView):
                 "&Try applying signature(s)", lambda: self.signature_mgr.apply_signatures(sigs, dry_run=True)
             )
             menu.addAction("&Apply signature(s)", lambda: self.signature_mgr.apply_signatures(sigs, dry_run=False))
+            # Add "View Matches" option if there's exactly one signature selected and it has matches
+            if len(sigs) == 1:
+                sig = sigs[0]
+                matches = self.signature_mgr.get_matches(sig)
+                if matches:
+                    menu.addAction("&View Matches...", lambda: self._show_matches_dialog(sig, matches))
             menu.addSeparator()
         menu.addAction("&Load signature files...", self.signature_mgr.load_signatures)
         menu.exec_(event.globalPos())
 
-    # pylint:disable=unused-argument,no-self-use
+    # pylint:disable=unused-argument
     def _on_cell_double_click(self, index) -> None:
-        return
+        """Double-click: try applying signature if not yet applied, otherwise show matches dialog."""
+        row = index.row()
+        if row >= len(self.signature_mgr.signatures):
+            return
+        sig = self.signature_mgr.signatures[row]
+        matches = self.signature_mgr.get_matches(sig)
+        if matches:
+            # Already has matches, show the dialog
+            self._show_matches_dialog(sig, matches)
+        else:
+            # No matches yet, try applying the signature
+            self.signature_mgr.apply_signatures([sig], dry_run=True)
+
+    def _show_matches_dialog(self, sig, matches) -> None:
+        """Show dialog displaying matched functions for a signature."""
+        from angrmanagement.ui.dialogs.signature_matches import SignatureMatchesDialog
+
+        dialog = SignatureMatchesDialog(sig, matches, self.workspace.main_instance, self.signature_mgr, self)
+        dialog.exec()
 
 
 class SignaturesView(InstanceView):
@@ -168,7 +194,47 @@ class SignaturesView(InstanceView):
         return QSize(200, 200)
 
     def _init_widgets(self) -> None:
+        # Header with buttons
+        header_layout = QHBoxLayout()
+
+        load_btn = QPushButton("Load Signature Files...")
+        load_btn.clicked.connect(self.instance.signature_mgr.load_signatures)
+
+        try_all_btn = QPushButton("Try Applying All Signatures")
+        try_all_btn.clicked.connect(self._try_apply_all_signatures)
+
+        bindiff_btn = QPushButton("Find Matches Via Bindiff")
+        bindiff_btn.clicked.connect(self._find_matches_via_bindiff)
+
+        header_layout.addWidget(load_btn)
+        header_layout.addWidget(try_all_btn)
+        header_layout.addWidget(bindiff_btn)
+        header_layout.addStretch()
+
+        # Main layout
         vlayout = QVBoxLayout()
+        vlayout.addLayout(header_layout)
         self._tbl_widget = QSignatureTableWidget(self.instance.signature_mgr, self.workspace)
         vlayout.addWidget(self._tbl_widget)
         self.setLayout(vlayout)
+
+    def _try_apply_all_signatures(self) -> None:
+        """Try applying all signatures in the view."""
+        all_sigs = list(self.instance.signature_mgr.signatures)
+        if all_sigs:
+            self.instance.signature_mgr.apply_signatures(all_sigs, dry_run=True)
+
+    def _on_bindiff_matches_finished(self, matches_per_file: dict[str, dict[int, str]]) -> None:
+        for filename, matches in matches_per_file.items():
+            self.instance.signature_mgr.add_precomputed_signature("Bindif", filename, matches)
+
+    def _find_matches_via_bindiff(self) -> None:
+        """Launch a background job to find matches via bindiff."""
+        from angrmanagement.data.jobs.bindiff_matching import BindiffMatchingJob
+
+        # Show the file dialog to select binaries
+        filenames = self.instance.signature_mgr.select_bindiff_base_files()
+        if filenames:
+            # Create and launch the background job
+            job = BindiffMatchingJob(self.instance, filenames, on_results=self._on_bindiff_matches_finished)
+            self.workspace.job_manager.add_job(job)
