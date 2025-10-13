@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import defaultdict
 import logging
 import multiprocessing
 import subprocess
@@ -20,7 +19,9 @@ from .job import InstanceJob
 _l = logging.getLogger(name=__name__)
 
 
-def _process_binary(target_project: angr.Project, binary_path: str, arch_name: str, instruction_endness: str) -> tuple[str, bool, str | None, dict]:
+def _process_binary(
+    target_project: angr.Project, binary_path: str, arch_name: str, instruction_endness: str
+) -> tuple[str, bool, str | None, dict]:
     """
     Process a single binary file for bindiff analysis.
     Returns tuple of (binary_path, success, error_message, matches)
@@ -45,13 +46,13 @@ def _process_binary(target_project: angr.Project, binary_path: str, arch_name: s
 
         out = {}
         for a0, a1 in bindiff.function_matches:
-            #func_0 = target_project.kb.functions.get_by_addr(a0)
+            # func_0 = target_project.kb.functions.get_by_addr(a0)
             func_1 = base_project.kb.functions.get_by_addr(a1)
             if (
                 func_1.is_default_name
-                or func_1.name.startswith('sub_')
-                or 'unknown' in func_1.name.lower()
-                or 'unresolve' in func_1.name.lower()
+                or func_1.name.startswith("sub_")
+                or "unknown" in func_1.name.lower()
+                or "unresolve" in func_1.name.lower()
             ):
                 continue
             out[a0] = func_1.name
@@ -83,17 +84,17 @@ class BindiffMatchingJob(InstanceJob):
         matches_per_file = {}
 
         for filename in self.filenames:
-            if filename.endswith('.a'):
+            if filename.endswith(".a"):
                 tmpdir = tempfile.mkdtemp()
                 temp_dirs.append(tmpdir)
                 try:
                     subprocess.check_call(
-                        ['ar', 'x', Path(filename).absolute()],
+                        ["ar", "x", Path(filename).absolute()],
                         cwd=tmpdir,
                     )
                     tmpdir_path = Path(tmpdir)
                     object_files = list(tmpdir_path.glob("*.o"))
-                    binaries_to_process.extend([(filename,str(f)) for f in object_files])
+                    binaries_to_process.extend([(filename, str(f)) for f in object_files])
                     matches_per_file[filename] = {}
                     _l.info("Extracted %d object files from %s", len(object_files), filename)
                 except Exception:
@@ -119,13 +120,13 @@ class BindiffMatchingJob(InstanceJob):
         num_found_matches = 0
         num_conflicts = 0
 
-
-
         try:
             # Process binaries in parallel
             with ProcessPoolExecutor(max_workers=max_workers) as executor:
                 future_to_binary = {
-                    executor.submit(_process_binary, self.instance.project.am_obj, binary, arch_name, instruction_endness): (original_file, binary)
+                    executor.submit(
+                        _process_binary, self.instance.project.am_obj, binary, arch_name, instruction_endness
+                    ): (original_file, binary)
                     for original_file, binary in binaries_to_process
                 }
 
@@ -154,12 +155,13 @@ class BindiffMatchingJob(InstanceJob):
                     progress = (completed + failed) / total_binaries * 100.0
                     ctx.set_progress(
                         progress,
-                        f"{completed + failed}/{total_binaries} binaries ({failed} failed); Found {num_found_matches} matched functions; {num_conflicts} conflicts"
+                        f"{completed + failed}/{total_binaries} binaries ({failed} failed); Found {num_found_matches} matched functions; {num_conflicts} conflicts",
                     )
 
         finally:
             # Clean up temporary directories
             import shutil
+
             for tmpdir in temp_dirs:
                 try:
                     shutil.rmtree(tmpdir)

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import abc
 import logging
 import os
-import abc
-from typing import TYPE_CHECKING, Union
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import angr
 import angr.flirt
@@ -42,24 +42,26 @@ def init_flirt_signatures() -> None:
         _l.info("Loading FLIRT signatures from %s.", flirt_signatures_root)
         angr.flirt.load_signatures(flirt_signatures_root)
 
+
 class Signature(abc.ABC):
-    def __init__(self, type_name: str, filename: str, name: str=None):
+    def __init__(self, type_name: str, filename: str, name: str = None):
         self.type_name = type_name
         self.sig_path = filename
         if not name:
             name = Path(self.sig_path).stem
         self.sig_name = name
-        self.arch = ''
-        self.platform = ''
-        self.compiler = ''
-        self.os_name = ''
+        self.arch = ""
+        self.platform = ""
+        self.compiler = ""
+        self.os_name = ""
 
     @abc.abstractmethod
     def apply_signature(self, mgr: SignatureManager, dry_run: bool = True, ignore_addresses: set[int] = set()) -> None:
         pass
 
+
 class PrecomputedSignature(Signature):
-    def __init__(self, type_name: str, filename: str, matches: dict[int, str], name: str=None):
+    def __init__(self, type_name: str, filename: str, matches: dict[int, str], name: str = None):
         super().__init__(type_name, filename=filename, name=name)
         self.matches = matches
 
@@ -74,13 +76,14 @@ class PrecomputedSignature(Signature):
             func = mgr.instance.project.kb.functions.get_by_addr(func_addr)
             if not func:
                 continue
-            func.name = name 
+            func.name = name
             func.is_default_name = False
             func.from_signature = "bindiff"
 
+
 class WrappedFlirtSignature(Signature):
     def __init__(self, flirt: FlirtSignature):
-        super().__init__('FLIRT', flirt.sig_path, name=flirt.sig_name)
+        super().__init__("FLIRT", flirt.sig_path, name=flirt.sig_name)
         self.arch = flirt.arch
         self.platform = flirt.platform
         self.compiler = flirt.compiler
@@ -98,10 +101,7 @@ class WrappedFlirtSignature(Signature):
             return
 
         # Manually apply the changes with a reduced set of addresses
-        matched_with_ignore = {
-            addr: v for addr, v in dryrun_results.items()
-            if addr not in ignore_addresses
-        }
+        matched_with_ignore = {addr: v for addr, v in dryrun_results.items() if addr not in ignore_addresses}
         _l.info("Applying %s/%s signatures", len(matched_with_ignore), len(dryrun_results))
         fl._apply_changes(
             sig_name if not fl._temporary_sig else None,

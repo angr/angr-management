@@ -1,21 +1,21 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QAbstractTableModel, QSize, Qt
-from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QHBoxLayout, QMenu, QPushButton, QTableView, QVBoxLayout
+from PySide6.QtWidgets import QAbstractItemView, QHBoxLayout, QHeaderView, QMenu, QPushButton, QTableView, QVBoxLayout
+
 from .view import InstanceView
 
-import logging
 _l = logging.getLogger(name=__name__)
 
 if TYPE_CHECKING:
 
     import PySide6
-    from angr.flirt import FlirtSignature
 
     from angrmanagement.data.instance import Instance
-    from angrmanagement.data.signatures import SignatureManager, Signature
+    from angrmanagement.data.signatures import Signature, SignatureManager
     from angrmanagement.ui.workspace import Workspace
 
 
@@ -226,7 +226,7 @@ class SignaturesView(InstanceView):
 
     def _on_bindiff_matches_finished(self, matches_per_file: dict[str, dict[int, str]]) -> None:
         for filename, matches in matches_per_file.items():
-            self.instance.signature_mgr.add_precomputed_signature('Bindif', filename, matches)
+            self.instance.signature_mgr.add_precomputed_signature("Bindif", filename, matches)
 
     def _find_matches_via_bindiff(self) -> None:
         """Launch a background job to find matches via bindiff."""

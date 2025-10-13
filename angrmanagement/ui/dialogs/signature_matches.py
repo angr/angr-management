@@ -8,8 +8,8 @@ from PySide6.QtWidgets import (
     QButtonGroup,
     QDialog,
     QGroupBox,
-    QHeaderView,
     QHBoxLayout,
+    QHeaderView,
     QPushButton,
     QRadioButton,
     QTableView,
@@ -74,7 +74,11 @@ class QSignatureMatchesTableModel(QAbstractTableModel):
                         return ""
                     # Check if the name is actually a "generic" name that shouldn't count as a conflict
                     name_lower = func.name.lower()
-                    if not (name_lower.startswith("unknown") or name_lower.startswith("unresolved") or name_lower.startswith("sub_")):
+                    if not (
+                        name_lower.startswith("unknown")
+                        or name_lower.startswith("unresolved")
+                        or name_lower.startswith("sub_")
+                    ):
                         return "✓"
                 return ""
         return None
@@ -152,7 +156,9 @@ class SignatureMatchesDialog(QDialog):
             if func.name == name:
                 return False
             name_lower = func.name.lower()
-            return not (name_lower.startswith("unknown") or name_lower.startswith("unresolved") or name_lower.startswith("sub_"))
+            return not (
+                name_lower.startswith("unknown") or name_lower.startswith("unresolved") or name_lower.startswith("sub_")
+            )
         return False
 
     def _init_widgets(self) -> None:
@@ -163,7 +169,7 @@ class SignatureMatchesDialog(QDialog):
         total_matches = len(self.matches)
         for addr, name in self.matches.items():
             if self.is_conflict(addr, name):
-                    conflict_count += 1
+                conflict_count += 1
 
         # Conflict resolution radio buttons
         conflict_group = QGroupBox(f"Conflict Resolution ({conflict_count}/{total_matches} conflicts)")
