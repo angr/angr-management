@@ -74,11 +74,9 @@ class QSignatureMatchesTableModel(QAbstractTableModel):
                         return ""
                     # Check if the name is actually a "generic" name that shouldn't count as a conflict
                     name_lower = func.name.lower()
-                    if not (
-                        name_lower.startswith("unknown")
-                        or name_lower.startswith("unresolved")
-                        or name_lower.startswith("sub_")
-                    ):
+                    if not name_lower.startswith((
+                        "unknown", "unresolved", "sub_"
+                    )):
                         return "✓"
                 return ""
         return None
@@ -156,9 +154,7 @@ class SignatureMatchesDialog(QDialog):
             if func.name == name:
                 return False
             name_lower = func.name.lower()
-            return not (
-                name_lower.startswith("unknown") or name_lower.startswith("unresolved") or name_lower.startswith("sub_")
-            )
+            return not name_lower.startswith(("unknown", "unresolved", "sub_"))
         return False
 
     def _init_widgets(self) -> None:

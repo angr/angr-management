@@ -56,7 +56,7 @@ class Signature(abc.ABC):
         self.os_name = ""
 
     @abc.abstractmethod
-    def apply_signature(self, mgr: SignatureManager, dry_run: bool = True, ignore_addresses: set[int] = set()) -> None:
+    def apply_signature(self, mgr: SignatureManager, dry_run: bool = True, ignore_addresses: set[int] = None) -> None:
         pass
 
 
@@ -65,7 +65,9 @@ class PrecomputedSignature(Signature):
         super().__init__(type_name, filename=filename, name=name)
         self.matches = matches
 
-    def apply_signature(self, mgr: SignatureManager, dry_run: bool = True, ignore_addresses: set[int] = set()) -> None:
+    def apply_signature(self, mgr: SignatureManager, dry_run: bool = True, ignore_addresses: set[int] = None) -> None:
+        if ignore_addresses is None:
+            ignore_addresses = set()
         if dry_run:
             mgr.dryrun_results[self.sig_path] = self.matches
             return
@@ -90,7 +92,9 @@ class WrappedFlirtSignature(Signature):
         self.os_name = flirt.os_name
         self.flirt = flirt
 
-    def apply_signature(self, mgr: SignatureManager, dry_run: bool = True, ignore_addresses: set[int] = set()) -> None:
+    def apply_signature(self, mgr: SignatureManager, dry_run: bool = True, ignore_addresses: set[int] = None) -> None:
+        if ignore_addresses is None:
+            ignore_addresses = set()
         fl = mgr.instance.project.analyses.Flirt(self.sig_path, dry_run=dry_run or len(ignore_addresses) > 0)
         if not dry_run and not len(ignore_addresses) > 0:
             return
@@ -142,7 +146,7 @@ class SignatureManager:
         self.signatures.remove(sig)
         self.signatures.am_event(removed=sig)
 
-    def apply_signatures(self, sigs: list[Signature], dry_run: bool = True, ignore_addresses: set[int] = set()):
+    def apply_signatures(self, sigs: list[Signature], dry_run: bool = True, ignore_addresses: set[int] = None):
         for sig in sigs:
             sig.apply_signature(self, dry_run, ignore_addresses)
 

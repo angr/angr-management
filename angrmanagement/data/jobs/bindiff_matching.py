@@ -31,7 +31,7 @@ def _process_binary(
         main_opts = {"arch": arch_name, "endness": instruction_endness}
         base_project = angr.Project(binary_path, main_opts=main_opts)
 
-        cfg = base_project.analyses.CFG(
+        base_project.analyses.CFG(
             show_progressbar=False,
             normalize=True,
             resolve_indirect_jumps=True,
@@ -155,7 +155,8 @@ class BindiffMatchingJob(InstanceJob):
                     progress = (completed + failed) / total_binaries * 100.0
                     ctx.set_progress(
                         progress,
-                        f"{completed + failed}/{total_binaries} binaries ({failed} failed); Found {num_found_matches} matched functions; {num_conflicts} conflicts",
+                        f"{completed + failed}/{total_binaries} binaries ({failed} failed); "
+                        + f"Found {num_found_matches} matched functions; {num_conflicts} conflicts",
                     )
 
         finally:
