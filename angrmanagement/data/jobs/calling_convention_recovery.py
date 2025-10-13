@@ -11,25 +11,25 @@ if TYPE_CHECKING:
     from angrmanagement.logic.jobmanager import JobContext
 
 
-class VariableRecoveryJob(InstanceJob):
+class CallingConventionRecoveryJob(InstanceJob):
     """
-    Identify variables and recover calling convention for a specific, or all function if no function is specified.
+    Recover calling conventions for functions without recovering variables.
     """
 
     def __init__(
         self,
         instance: Instance,
         on_finish=None,
-        on_variable_recovered=None,
+        on_cc_recovered=None,
         workers: int | None = None,
         func_addr: int | None = None,
         auto_start: bool = False,
         **kwargs,
     ) -> None:
-        super().__init__("Variable Recovery", instance, on_finish=on_finish)
+        super().__init__("Calling Convention Recovery", instance, on_finish=on_finish)
 
-        self.variable_recovery_args = kwargs
-        self.on_variable_recovered = on_variable_recovered
+        self.cc_recovery_args = kwargs
+        self.on_cc_recovered = on_cc_recovered
         self.workers = workers
         self.ccc = None
         self.started = False
@@ -62,7 +62,7 @@ class VariableRecoveryJob(InstanceJob):
     def run(self, ctx: JobContext) -> None:
         self.started = True
 
-        cc_callback = self._cc_callback if self.on_variable_recovered is not None else None
+        cc_callback = self._cc_callback if self.on_cc_recovered is not None else None
 
         # update addrs to prioritize with their callees
         func_addrs_to_prioritize = set()
@@ -73,25 +73,25 @@ class VariableRecoveryJob(InstanceJob):
                     func_addrs_to_prioritize |= {func_addr} | callees
 
         self.ccc = self.instance.project.analyses.CompleteCallingConventions(
-            recover_variables=True,
+            recover_variables=False,
             low_priority=True,
             cfg=self.instance.cfg.am_obj,
             progress_callback=ctx.set_progress,
             cc_callback=cc_callback,
-            max_function_blocks=300,
-            max_function_size=4096,
+            max_function_blocks=2000,
+            max_function_size=16384,
             workers=0 if self.workers is None else self.workers,
             prioritize_func_addrs=func_addrs_to_prioritize,
             skip_other_funcs=self.func_addr is not None,
             auto_start=self.auto_start,
-            **self.variable_recovery_args,
+            **self.cc_recovery_args,
         )
         self.ccc.work()
 
         self.ccc = None
 
     def _cc_callback(self, func_addr: int) -> None:
-        gui_thread_schedule_async(self.on_variable_recovered, args=(func_addr,))
+        gui_thread_schedule_async(self.on_cc_recovered, args=(func_addr,))
 
     def __repr__(self) -> str:
-        return "<Variable Recovery Job>"
+        return "<Calling Convention Recovery Job>"

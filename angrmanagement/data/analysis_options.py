@@ -81,6 +81,21 @@ class AnalysisConfiguration:
                 continue
             o.update_dict(out)
 
+    def get_main_obj_size(self) -> int:
+        main_obj_size = 0
+        if self.instance.project.loader.main_object is not None:
+            main_obj = self.instance.project.loader.main_object
+            if main_obj.segments:
+                for seg in main_obj.segments:
+                    if seg.is_executable:
+                        main_obj_size += seg.memsize
+            if main_obj_size == 0 and main_obj.sections:
+                # fall back to sections
+                for sec in main_obj.sections:
+                    if sec.is_executable:
+                        main_obj_size += sec.memsize
+        return main_obj_size
+
 
 class AnalysisOption:
     """
@@ -264,6 +279,60 @@ class CodeTaggingConfiguration(AnalysisConfiguration):
         self.enabled = False
 
 
+class CallingConventionRecoveryConfiguration(AnalysisConfiguration):
+    """
+    Configuration for CCCA.
+    """
+
+    MAX_BINARY_SIZE = 5_120_000
+
+    def __init__(self, instance: Instance) -> None:
+        super().__init__(instance)
+        self.name = "cca"
+        self.display_name = "Recover Prototypes on All Functions"
+        self.description = "Perform a full-project calling-convention and prototype recovery analysis. "
+        self.enabled = self.get_main_obj_size() <= self.MAX_BINARY_SIZE
+        self.options = {
+            o.name: o
+            for o in [
+                IntAnalysisOption(
+                    "workers",
+                    "Number of parallel workers",
+                    tooltip="0 to disable parallel analysis. Default to the number of available cores "
+                    "minus one in the local system. Automatically default to 0 for small binaries "
+                    "on all platforms, and small- to medium-sized binaries on Windows and MacOS "
+                    "(to avoid the cost of spawning new angr-management processes).",
+                    default=self.get_default_workers(),
+                    minimum=0,
+                ),
+                BoolAnalysisOption(
+                    "skip_signature_matched_functions",
+                    "Skip variable recovery for signature-matched functions",
+                    True,
+                ),
+                BoolAnalysisOption(
+                    "analyze_callsites",
+                    "Analyze callsites of each function to improve prototype recovery",
+                    False,
+                ),
+            ]
+        }
+
+    def get_default_workers(self) -> int:
+        main_obj_size = self.get_main_obj_size()
+
+        default_workers = max(multiprocessing.cpu_count() - 1, 1)
+        if default_workers == 1:
+            return 0
+
+        if platform.system() in {"Windows", "Darwin"}:
+            if main_obj_size <= self.MAX_BINARY_SIZE:
+                return 0
+            return default_workers
+
+        return default_workers
+
+
 class VariableRecoveryConfiguration(AnalysisConfiguration):
     """
     Configuration for VariableRecovery analysis.
@@ -301,23 +370,13 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
                     "Skip variable recovery for signature-matched functions",
                     True,
                 ),
+                BoolAnalysisOption(
+                    "analyze_callsites",
+                    "Analyze callsites of each function to improve prototype recovery",
+                    False,
+                ),
             ]
         }
-
-    def get_main_obj_size(self) -> int:
-        main_obj_size = 0
-        if self.instance.project.loader.main_object is not None:
-            main_obj = self.instance.project.loader.main_object
-            if main_obj.segments:
-                for seg in main_obj.segments:
-                    if seg.is_executable:
-                        main_obj_size += seg.memsize
-            if main_obj_size == 0 and main_obj.sections:
-                # fall back to sections
-                for sec in main_obj.sections:
-                    if sec.is_executable:
-                        main_obj_size += sec.memsize
-        return main_obj_size
 
     def get_default_workers(self) -> int:
         main_obj_size = self.get_main_obj_size()

@@ -19,6 +19,7 @@ from angrmanagement.config import Conf
 from angrmanagement.data.analysis_options import (
     AnalysesConfiguration,
     APIDeobfuscationConfiguration,
+    CallingConventionRecoveryConfiguration,
     CFGAnalysisConfiguration,
     CodeTaggingConfiguration,
     FlirtAnalysisConfiguration,
@@ -28,6 +29,7 @@ from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
 from angrmanagement.data.instance import Instance, ObjectContainer
 from angrmanagement.data.jobs import (
     APIDeobfuscationJob,
+    CallingConventionRecoveryJob,
     CFGGenerationJob,
     CodeTaggingJob,
     FlirtSignatureRecognitionJob,
@@ -211,13 +213,23 @@ class Workspace:
         if view is not None and view.current_function.am_obj is not None:
             view.reload()
 
+    def on_cc_recovered(self, func_addr: int) -> None:
+        """
+        Called when the calling convention of a given function is available.
+
+        :param int func_addr:   Address of the function whose calling convention information is available.
+        """
+        disassembly_view: DisassemblyView | None = self.view_manager.first_view_in_category("disassembly")
+        if disassembly_view is not None:
+            disassembly_view.on_cc_recovered(func_addr)
+
     def on_variable_recovered(self, func_addr: int) -> None:
         """
         Called when variable information of the given function is available.
 
         :param int func_addr:   Address of the function whose variable information is available.
         """
-        disassembly_view = self.view_manager.first_view_in_category("disassembly")
+        disassembly_view: DisassemblyView | None = self.view_manager.first_view_in_category("disassembly")
         if disassembly_view is not None:
             disassembly_view.on_variable_recovered(func_addr)
 
@@ -316,6 +328,22 @@ class Workspace:
                     on_finish=self.on_function_tagged,
                 )
             )
+
+        if self.main_instance._analysis_configuration["cca"].enabled:
+            options = self.main_instance._analysis_configuration["cca"].to_dict()
+            if is_testing:
+                # disable multiprocessing on angr CI
+                options["workers"] = 0
+            self.main_instance.calling_convention_recovery_job = CallingConventionRecoveryJob(
+                self.main_instance,
+                **self.main_instance._analysis_configuration["cca"].to_dict(),
+                on_cc_recovered=self.on_cc_recovered,
+            )
+            # prioritize the current function in display
+            disassembly_view = self.view_manager.first_view_in_category("disassembly")
+            if disassembly_view is not None and not disassembly_view.function.am_none:
+                self.main_instance.calling_convention_recovery_job.prioritize_function(disassembly_view.function.addr)
+            self.job_manager.add_job(self.main_instance.calling_convention_recovery_job)
 
         if self.main_instance._analysis_configuration["varec"].enabled:
             options = self.main_instance._analysis_configuration["varec"].to_dict()
@@ -532,6 +560,7 @@ class Workspace:
                         APIDeobfuscationConfiguration,
                         FlirtAnalysisConfiguration,
                         CodeTaggingConfiguration,
+                        CallingConventionRecoveryConfiguration,
                         VariableRecoveryConfiguration,
                     ]
                 ],
