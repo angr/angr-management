@@ -364,8 +364,9 @@ class Workspace:
                 self.main_instance.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
             self.job_manager.add_job(self.main_instance.variable_recovery_job)
 
-        self.main_instance.add_job(
+        self.job_manager.add_job(
             InsightsJob(
+                self.main_instance,
                 on_finish=self.on_insights_collected,
             )
         )
@@ -393,7 +394,7 @@ class Workspace:
                 }
             )
 
-    def on_insights_collected(self):
+    def on_insights_collected(self, _: Any):
         # reload insights view
         view: InsightsView | None = self.view_manager.first_view_in_category("insights")
         if view is not None:

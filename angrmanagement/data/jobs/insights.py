@@ -1,38 +1,26 @@
-from typing import TYPE_CHECKING
-import time
+from __future__ import annotations
 
-from .job import Job
+from typing import TYPE_CHECKING
+
+from .job import InstanceJob
 
 if TYPE_CHECKING:
+    from ...logic.jobmanager import JobContext
     from ..instance import Instance
 
 
-class InsightsJob(Job):
+class InsightsJob(InstanceJob):
     """
     Use some magic to gain insights on the current binary.
     """
 
-    def __init__(self, on_finish=None):
-        super().__init__(name="Insights collection", on_finish=on_finish)
+    def __init__(self, instance: Instance, on_finish=None):
+        super().__init__("Insights collection", instance, on_finish=on_finish)
 
         self._last_progress_callback_triggered = None
 
-    def run(self, inst: 'Instance'):
-        inst.project.analyses.Insights(cfg=inst.cfg.am_obj)
-
-    def _progress_callback(self, percentage, text=None, cfg=None):
-
-        t = time.time()
-        if self._last_progress_callback_triggered is not None and t - self._last_progress_callback_triggered < 0.2:
-            return
-        self._last_progress_callback_triggered = t
-
-        text = "%.02f%%" % percentage
-
-        super()._progress_callback(percentage, text=text)
-
-    def finish(self, inst, result):
-        super().finish(inst, result)
+    def run(self, ctx: JobContext):
+        self.instance.project.analyses.Insights(cfg=self.instance.cfg.am_obj)
 
     def __repr__(self):
         return "<Insights Collection Job>"
