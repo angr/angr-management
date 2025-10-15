@@ -7,6 +7,8 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 import angr
+from angr.misc.testing import is_testing
+
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -319,6 +321,9 @@ class CallingConventionRecoveryConfiguration(AnalysisConfiguration):
         }
 
     def get_default_workers(self) -> int:
+        if is_testing:
+            return 0
+
         main_obj_size = self.get_main_obj_size()
 
         default_workers = max(multiprocessing.cpu_count() - 1, 1)
