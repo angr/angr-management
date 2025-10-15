@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any
 import angr
 from angr.misc.testing import is_testing
 
-
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
