@@ -8,9 +8,13 @@ import parso
 import pypcode
 import pyvex
 import pyxdia
-import unicorn
 import z3
 import zmq
+
+try:
+    import unicorn
+except ImportError:
+    unicorn = None
 
 sys.setrecursionlimit(sys.getrecursionlimit() * 5)
 
@@ -25,9 +29,10 @@ PARSO_BASE = pathlib.Path(parso.__file__).parent
 PYPCODE_BASE = pathlib.Path(pypcode.__file__).parent
 PYVEX_BASE = pathlib.Path(pyvex.__file__).parent
 PYXDIA_BASE = pathlib.Path(pyxdia.__file__).parent
-UNICORN_BASE = pathlib.Path(unicorn.__file__).parent
 Z3_BASE = pathlib.Path(z3.__file__).parent
 ZMQ_BASE = pathlib.Path(zmq.__file__).parent
+if unicorn:
+    UNICORN_BASE = pathlib.Path(unicorn.__file__).parent
 
 block_cipher = None
 icon = str(AM_BASE / "angrmanagement" / "resources" / "images" / "angr.ico")
@@ -46,12 +51,13 @@ included_data = [
     (str(PYPCODE_BASE / "processors"), "pypcode/processors"),
     (str(ANGR_BASE), "angr"),
     (str(PYVEX_BASE / "lib"), "pyvex/lib"),
-    (str(UNICORN_BASE / "lib"), "unicorn/lib"),
     (str(CAPSTONE_BASE / "lib"), "capstone/lib"),
     (str(Z3_BASE / "lib"), "z3/lib"),
     (str(PYXDIA_BASE / "bin"), "pyxdia/bin"),
     (str(ZMQ_BASE / "backend" / "cffi"), "zmq/backend/cffi"),
 ]
+if unicorn:
+    included_data.append((str(UNICORN_BASE / "lib"), "unicorn/lib"))
 
 
 if sys.platform == "linux":
