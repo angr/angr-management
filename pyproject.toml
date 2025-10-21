@@ -54,7 +54,7 @@ pyinstaller = [
   "pyinstaller==6.14.1",
   "pillow;platform_system == \"Darwin\"",
   "keystone-engine",
-  "angr[unicorn]",
+  "angr[unicorn];platform_system != \"Darwin\"",
   "cle[ar,minidump,uefi,xbe,pdb]",
 ]
 testing = [
