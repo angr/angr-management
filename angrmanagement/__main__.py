@@ -129,6 +129,7 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
 
     splash.setProgress(0.2, "Importing modules")
     import angr
+    import angr_stm32  # pylint: disable=unused-import
 
     from .logic import GlobalInfo
     from .ui.awesome_tooltip_event_filter import QAwesomeTooltipEventFilter
