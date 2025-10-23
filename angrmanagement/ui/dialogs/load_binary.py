@@ -431,6 +431,21 @@ class LoadBinary(QDialog):
             else:
                 raise TypeError(f"Unknown architecture type {type(arch)}")
 
+        # Sort the architecture lists for consistent display
+        # VEX architectures first, then P-code, each sorted by their display string
+        def arch_sort_key(arch):
+            if isinstance(arch, archinfo.Arch):
+                display_str = f"{arch.bits}b {arch.name} ({arch.memory_endness[-2:]})"
+                return (0, display_str.lower())
+            elif pypcode and isinstance(arch, pypcode.ArchLanguage):
+                display_str = f"{arch.id} (P-code Engine)"
+                return (1, display_str.lower())
+            else:
+                return (2, str(arch).lower())
+
+        recommended_arches.sort(key=arch_sort_key)
+        other_arches.sort(key=arch_sort_key)
+
         return the_arch, recommended_arches, other_arches
 
     def _toggle_base_addr_textbox(self, enabled: bool) -> None:
