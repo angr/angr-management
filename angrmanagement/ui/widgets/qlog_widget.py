@@ -5,7 +5,7 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any
 
-from PySide6.QtCore import QAbstractTableModel, Qt
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PySide6.QtGui import QClipboard, QCursor, QGuiApplication, QIcon, QKeySequence
 from PySide6.QtWidgets import QAbstractItemView, QTableView
 
@@ -132,6 +132,12 @@ class QLogTableModel(QAbstractTableModel):
         }
         return mapping.get(loglevel, "")
 
+    def add_record(self, log_record: LogRecord) -> None:
+        num_records = len(self._log)
+        self.beginInsertRows(QModelIndex(), num_records, num_records)
+        self._log.append(log_record)
+        self.endInsertRows()
+
 
 class QLogWidget(QTableView):
     """
@@ -233,10 +239,7 @@ class QLogWidget(QTableView):
             self.model._log = self.log_view.instance.log[::]
             self.model.layoutChanged.emit()
         else:
-            log_records = len(self.model.log)
-            self.model.rowsAboutToBeInserted.emit(self, log_records, log_records)
-            self.model.log.append(log_record)
-            self.model.rowsInserted.emit(self, log_records, log_records)
+            self.model.add_record(log_record)
 
         self._after_row_insert()
 
