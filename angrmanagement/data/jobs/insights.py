@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 from .job import InstanceJob
 
 if TYPE_CHECKING:
-    from ...logic.jobmanager import JobContext
-    from ..instance import Instance
+    from angrmanagement.data.instance import Instance
+    from angrmanagement.logic.jobmanager import JobContext
 
 
 class InsightsJob(InstanceJob):
@@ -21,6 +21,7 @@ class InsightsJob(InstanceJob):
 
     def run(self, ctx: JobContext):
         self.instance.project.analyses.Insights(cfg=self.instance.cfg.am_obj)
+        return self.instance.kb.insights.insights
 
     def __repr__(self):
         return "<Insights Collection Job>"

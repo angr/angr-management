@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from typing import Any
+
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, QSize, Qt
-from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QHBoxLayout, QHeaderView, QTreeView
+from PySide6.QtGui import QAction, QFont
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QHeaderView, QMenu, QPushButton, QTreeView, QVBoxLayout
+
+from angrmanagement.data.jobs.insights import InsightsJob
 
 from .view import BaseView
 
@@ -12,11 +16,11 @@ class InsightsTreeItem:
     Tree item for the insights tree model.
     """
 
-    def __init__(self, item_name: str, count: int, parent=None):
+    def __init__(self, item_name: str, parent=None):
         self.item_name = item_name
-        self.count = count
         self.parent = parent
         self.children = []
+        self.data = ""
 
         if parent:
             parent.add_child(self)
@@ -43,6 +47,78 @@ class InsightsTreeItem:
         return 0
 
 
+class AddressItem(InsightsTreeItem):
+    def __init__(self, item_name: str, addr: int, parent=None):
+        super().__init__(item_name, parent)
+        self.addr = addr
+
+    def __repr__(self):
+        return f"AddressItem(item_name={self.item_name}, addr={hex(self.addr)})"
+
+
+class DataItem(InsightsTreeItem):
+    def __init__(self, item_name: str, data: str, parent=None):
+        super().__init__(item_name, parent)
+        self.data = data
+
+
+class SwitchItem(InsightsTreeItem):
+    def __init__(self, description: str, func_addr: int, func_name: str, ref_at: int, parent=None):
+        super().__init__(f"Switch @ {func_name} ({hex(func_addr)})", parent)
+        self.description = description
+        self.func_addr = func_addr
+        self.func_name = func_name
+        self.ref_at = ref_at
+
+        # setup children
+        self.add_child(DataItem("Description", self.description))
+        self.add_child(AddressItem(f"Function Name: {self.func_name}", self.func_addr))
+        self.add_child(AddressItem(f"Function Address: {hex(self.func_addr)}", self.func_addr))
+        self.add_child(AddressItem(f"Referenced at: {hex(self.ref_at)}", self.ref_at))
+
+    def __repr__(self):
+        return f"SwitchItem(func_addr={hex(self.func_addr)}, func_name={self.func_name}, ref_at={hex(self.ref_at)})"
+
+
+class FeatureItem(InsightsTreeItem):
+    def __init__(self, feature: str, evidence: list[tuple[int, str]], functions: list[int], parent=None):
+        super().__init__(feature, parent)
+        self.feature = feature
+        self.evidence = evidence
+        self.functions = functions
+
+        # setup children
+        self.add_child(FeatureEvidenceCollectionItem(evidence))
+        self.add_child(FeatureFunctionsCollectionItem(functions))
+
+    def __repr__(self):
+        return f"FeatureItem(feature={self.feature})"
+
+
+class FeatureEvidenceCollectionItem(InsightsTreeItem):
+    def __init__(self, evidence: list[tuple[int, str]], parent=None):
+        super().__init__(f"Data Evidence ({len(evidence)})", parent)
+        self.evidence = evidence
+        # setup children
+        for md_addr, md_str in evidence:
+            self.add_child(FeatureEvidenceItem(md_addr, md_str))
+
+
+class FeatureEvidenceItem(AddressItem):
+    def __init__(self, md_addr: int, md_str: str, parent=None):
+        super().__init__(f"String @ {hex(md_addr)}", md_addr, parent)
+        self.data = md_str
+
+
+class FeatureFunctionsCollectionItem(InsightsTreeItem):
+    def __init__(self, functions: list[int], parent=None):
+        super().__init__(f"Related Functions ({len(functions)})", parent)
+        self.functions = functions
+        # setup children
+        for func_addr in functions:
+            self.add_child(AddressItem(f"Function: {hex(func_addr)}", func_addr))
+
+
 class InsightsTreeModel(QAbstractItemModel):
     """
     Tree model for the insights view with Item and Count columns.
@@ -50,64 +126,67 @@ class InsightsTreeModel(QAbstractItemModel):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.root_item = InsightsTreeItem("Root")
+
+    def set_insights(self, insights: dict[str, list[dict[str, Any]]]) -> None:
+        self.clear_insights()
+        self.beginResetModel()
+        for category, items in insights.items():
+            match category:
+                case "Switches":
+                    # - description
+                    # - func_addr
+                    # - func_name
+                    # - ref_at
+                    category_item = InsightsTreeItem(category)
+                    for item in items:
+                        item_item = SwitchItem(
+                            item["description"], item["func_addr"], item["func_name"], item["ref_at"]
+                        )
+                        category_item.add_child(item_item)
+                case "Sockets":
+                    continue
+                case "Features":
+                    # - feature
+                    # - evidence
+                    # - functions
+                    category_item = InsightsTreeItem(category)
+                    for item in items:
+                        item_item = FeatureItem(item["feature"], item["evidence"], item["functions"])
+                        category_item.add_child(item_item)
+                case _:
+                    continue
+            self.root_item.add_child(category_item)
+        self.endResetModel()
+
+    def clear_insights(self) -> None:
+        self.beginResetModel()
         self.root_item = InsightsTreeItem("Root", 0)
-        self._setup_example_data()
+        self.endResetModel()
 
-    def _setup_example_data(self):
-        """Set up example data for the tree model."""
-        # Create some example categories and items
-        functions = InsightsTreeItem("Functions", 0)
-        functions.add_child(InsightsTreeItem("main", 1))
-        functions.add_child(InsightsTreeItem("printf", 15))
-        functions.add_child(InsightsTreeItem("malloc", 8))
-        functions.add_child(InsightsTreeItem("free", 7))
-
-        variables = InsightsTreeItem("Variables", 0)
-        variables.add_child(InsightsTreeItem("global_var", 3))
-        variables.add_child(InsightsTreeItem("local_var", 12))
-        variables.add_child(InsightsTreeItem("temp_var", 5))
-
-        strings = InsightsTreeItem("Strings", 0)
-        strings.add_child(InsightsTreeItem("Hello World", 2))
-        strings.add_child(InsightsTreeItem("Error: %s", 4))
-        strings.add_child(InsightsTreeItem("Success", 1))
-
-        calls = InsightsTreeItem("Function Calls", 0)
-        calls.add_child(InsightsTreeItem("Direct Calls", 25))
-        calls.add_child(InsightsTreeItem("Indirect Calls", 3))
-        calls.add_child(InsightsTreeItem("System Calls", 12))
-
-        # Add all categories to root
-        self.root_item.add_child(functions)
-        self.root_item.add_child(variables)
-        self.root_item.add_child(strings)
-        self.root_item.add_child(calls)
-
-    def columnCount(self, parent=QModelIndex()):
+    def columnCount(self, parent=None):
         """Return the number of columns."""
-        return 2  # Item and Count
+        return 2  # Item and Description
 
-    def rowCount(self, parent=QModelIndex()):
+    def rowCount(self, parent=None):
         """Return the number of rows under the given parent."""
         if parent.column() > 0:
             return 0
 
-        if not parent.isValid():
-            parent_item = self.root_item
-        else:
-            parent_item = parent.internalPointer()
+        if parent is None:
+            parent = QModelIndex()
+        parent_item = parent.internalPointer() if parent.isValid() else self.root_item
 
         return parent_item.child_count()
 
-    def index(self, row, column, parent=QModelIndex()):
+    def index(self, row, column, parent=None):
         """Create an index for the given row, column, and parent."""
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
 
-        if not parent.isValid():
-            parent_item = self.root_item
-        else:
-            parent_item = parent.internalPointer()
+        if parent is None:
+            parent = QModelIndex()
+        parent_item = parent.internalPointer() if parent.isValid() else self.root_item
 
         child_item = parent_item.child(row)
         if child_item:
@@ -139,13 +218,12 @@ class InsightsTreeModel(QAbstractItemModel):
             if column == 0:
                 return item.item_name
             elif column == 1:
-                return str(item.count)
-        elif role == Qt.FontRole:
-            if column == 0 and item.child_count() > 0:
-                # Make parent items bold
-                font = QFont()
-                font.setBold(True)
-                return font
+                return item.data
+        elif role == Qt.FontRole and column == 0 and item.child_count() > 0:
+            # Make parent items bold
+            font = QFont()
+            font.setBold(True)
+            return font
 
         return None
 
@@ -155,7 +233,7 @@ class InsightsTreeModel(QAbstractItemModel):
             if section == 0:
                 return "Item"
             elif section == 1:
-                return "Count"
+                return "Description"
         return None
 
 
@@ -179,6 +257,59 @@ class QInsightsTreeView(QTreeView):
         header.setSectionResizeMode(0, QHeaderView.Stretch)
         header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
 
+        # Enable context menu
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._show_context_menu)
+
+    def _show_context_menu(self, position):
+        """Show the context menu at the given position."""
+        menu = QMenu(self)
+
+        # Collapse all action
+        collapse_action = QAction("Collapse All", self)
+        collapse_action.triggered.connect(self._collapse_all)
+        menu.addAction(collapse_action)
+
+        # Expand all action
+        expand_action = QAction("Expand All", self)
+        expand_action.triggered.connect(self._expand_all)
+        menu.addAction(expand_action)
+
+        # separator
+        menu.addSeparator()
+
+        # Copy current item action
+        copy_action = QAction("&Copy", self)
+        copy_action.triggered.connect(self._copy_current_item)
+        menu.addAction(copy_action)
+
+        # Show the menu
+        menu.exec(self.mapToGlobal(position))
+
+    def _collapse_all(self):
+        """Collapse all items in the tree."""
+        self.collapseAll()
+
+    def _expand_all(self):
+        """Expand all items in the tree."""
+        self.expandAll()
+
+    def _copy_current_item(self):
+        """Copy the current selected item to clipboard."""
+        current_index = self.currentIndex()
+        if not current_index.isValid():
+            return
+
+        item = current_index.internalPointer()
+        if item is None:
+            return
+
+        # Get the item text from the first column
+        item_text = self.model.data(current_index, Qt.DisplayRole)
+        if item_text:
+            clipboard = QApplication.clipboard()
+            clipboard.setText(str(item_text))
+
 
 class InsightsView(BaseView):
     def __init__(self, workspace, default_docking_position, instance):
@@ -186,11 +317,14 @@ class InsightsView(BaseView):
 
         self.instance = instance
         self.base_caption = "Insights"
+        self.tree = None
 
         self._init_widgets()
 
     def reload(self):
-        self._init_widgets()
+        if self.workspace.main_instance.project.am_none:
+            return
+        self.tree.model.set_insights(self.workspace.main_instance.kb.insights.insights)
 
     def sizeHint(self):
         return QSize(400, 800)
@@ -199,24 +333,59 @@ class InsightsView(BaseView):
     # Event handlers
     #
 
+    def _on_make_insights_clicked(self):
+        if self.workspace.main_instance.project.am_none:
+            return
+        self.workspace.job_manager.add_job(
+            InsightsJob(
+                self.workspace.main_instance,
+                on_finish=self._on_insights_collected,
+            )
+        )
+
+    def _on_insights_collected(self, *args, **kwargs):
+        if self.tree is None:
+            return
+        self.reload()
+
+    def _on_clear_clicked(self):
+        if self.tree is None:
+            return
+        self.tree.model.clear_insights()
+
+    def _on_tree_double_clicked(self, index: QModelIndex):
+        if self.tree is None:
+            return
+        item = index.internalPointer()
+        if item is None:
+            return
+        if isinstance(item, AddressItem):
+            self.workspace.jump_to(item.addr)
+
     #
     # Private methods
     #
 
     def _init_widgets(self):
+        layout = QVBoxLayout()
 
-        if self.workspace.main_instance.project.am_none:
-            return
+        # buttons
+        buttons_layout = QHBoxLayout()
+        make_insights_btn = QPushButton("Make Insights")
+        make_insights_btn.clicked.connect(self._on_make_insights_clicked)
+        buttons_layout.addWidget(make_insights_btn)
+        clear_btn = QPushButton("Clear")
+        clear_btn.clicked.connect(self._on_clear_clicked)
+        buttons_layout.addWidget(clear_btn)
 
-        layout = QHBoxLayout()
-
-        tree = QInsightsTreeView()
-        layout.addWidget(tree)
-
-        # for name, insight in self.workspace.main_instance.kb.insights.items():
-        #     control = QInsightGeneric(name, insight)
-        #     layout.addWidget(control)
-
+        # tree
+        self.tree = QInsightsTreeView()
+        # make tree view columns auto resize
+        self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.tree.header().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.tree.doubleClicked.connect(self._on_tree_double_clicked)
+        layout.addLayout(buttons_layout)
+        layout.addWidget(self.tree)
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)
