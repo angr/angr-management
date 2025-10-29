@@ -13,6 +13,7 @@ from .deobfuscation import (
 )
 from .dependency_analysis import DependencyAnalysisJob
 from .flirt_signature_recognition import FlirtAnalysisConfiguration, FlirtSignatureRecognitionJob
+from .fuzzer import FuzzerJob
 from .job import Job
 from .prototype_finding import PrototypeFindingJob
 from .simgr_explore import SimgrExploreJob
@@ -36,6 +37,7 @@ __all__ = [
     "DependencyAnalysisJob",
     "FlirtAnalysisConfiguration",
     "FlirtSignatureRecognitionJob",
+    "FuzzerJob",
     "Job",
     "PrototypeFindingJob",
     "SimgrExploreJob",

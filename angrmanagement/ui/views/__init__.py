@@ -8,6 +8,8 @@ from .data_dep_view import DataDepView
 from .dep_view import DependencyView
 from .disassembly_view import DisassemblyView
 from .functions_view import FunctionsView
+from .fuzzer_results_view import FuzzerResultsView
+from .fuzzer_view import FuzzerView
 from .hex_view import HexView
 from .jobs_view import JobsView
 from .log_view import LogView
@@ -33,6 +35,8 @@ __all__ = [
     "DependencyView",
     "DisassemblyView",
     "FunctionsView",
+    "FuzzerResultsView",
+    "FuzzerView",
     "HexView",
     "JobsView",
     "LogView",

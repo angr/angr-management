@@ -496,6 +496,7 @@ class MainWindow(QMainWindow):
                     ("View: States", self.workspace.show_states_view),
                     ("View: Strings", self.workspace.show_strings_view),
                     ("View: Symbolic Execution", self.workspace.show_symexec_view),
+                    ("View: Fuzz Testing", self.workspace.show_fuzzer_view),
                     ("View: Trace map", self.workspace.show_trace_map_view),
                     ("View: Traces", self.workspace.show_traces_view),
                     ("View: Types", self.workspace.show_types_view),

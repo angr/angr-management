@@ -49,6 +49,7 @@ from .views import (
     DependencyView,
     DisassemblyView,
     FunctionsView,
+    FuzzerView,
     HexView,
     JobsView,
     LogView,
@@ -666,6 +667,9 @@ class Workspace:
 
     def show_symexec_view(self) -> None:
         self.show_view("symexec", SymexecView)
+
+    def show_fuzzer_view(self) -> None:
+        self.show_view("fuzzer", FuzzerView)
 
     def show_states_view(self) -> None:
         self.show_view("states", StatesView)
