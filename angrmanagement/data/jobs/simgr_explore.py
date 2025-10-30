@@ -35,11 +35,6 @@ class SimgrExploreJob(InstanceJob):
     def __repr__(self) -> str:
         return f"Exploring {self._simgr!r}"
 
-    def cancel(self) -> None:
-        """Called from GUI thread. Worker thread will check self._interrupted periodically and exit the job early if
-        needed."""
-        self._interrupted = True
-
     @classmethod
     def create(cls, instance: Instance, simgr, **kwargs):
         def callback(result) -> None:
