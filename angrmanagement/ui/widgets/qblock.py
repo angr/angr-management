@@ -441,10 +441,6 @@ class QLinearBlock(QBlock):
     def mode(self) -> str:
         return "linear"
 
-    @staticmethod
-    def format_address(addr: int) -> str:
-        return f"{addr:08x}"
-
     def layout_widgets(self) -> None:
         y_offset = 0
 
