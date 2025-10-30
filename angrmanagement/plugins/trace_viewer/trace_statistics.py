@@ -49,8 +49,6 @@ class ObjectAndBase:
 
 
 class TraceStatistics:
-    BBL_FILL_COLOR = QColor(0, 0xF0, 0xF0, 0xF)
-    BBL_BORDER_COLOR = QColor(0, 0xF0, 0xF0)
     BBL_EMPTY_COLOR = QColor("white")
 
     def __init__(self, workspace: Workspace, trace, baddr) -> None:
