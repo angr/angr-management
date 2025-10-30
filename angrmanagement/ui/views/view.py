@@ -36,16 +36,12 @@ class BaseView(QFrame):
         self.category = category
         self.default_docking_position = default_docking_position
 
-        self.old_width = None
         self.old_height = None
         self.width_hint = -1
         self.height_hint = -1
         self.index: int = 1
         self.base_caption: str = "View"
         self.icon = icon(category + "-view")
-
-    def is_shown(self) -> bool:
-        return self.visibleRegion().isEmpty() is False
 
     def focus(self) -> None:
         self.workspace.view_manager.raise_view(self)
@@ -61,7 +57,6 @@ class BaseView(QFrame):
 
     def resizeEvent(self, event) -> None:
         # Update current width
-        self.old_width = event.oldSize().width()
         self.old_height = event.oldSize().height()
 
     def closeEvent(self, event: PySide6.QtGui.QCloseEvent) -> None:
