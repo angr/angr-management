@@ -28,7 +28,6 @@ class VaRec(BasePlugin):
     def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
 
-        self.transitions: set[tuple[int, int]] = set()
         self.covered_blocks = SortedDict()
 
         self.sink_color = Qt.GlobalColor.yellow
