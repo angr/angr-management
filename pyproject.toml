@@ -54,7 +54,13 @@ pyinstaller = [
 
 [dependency-groups]
 testing = [
+  "coverage",
   "pytest",
+  "pytest-cov",
+  "pytest-durations",
+  "pytest-profiling",
+  "pytest-split",
+  "pytest-timeout",
   "pytest-xdist",
 ]
 docs = [
@@ -144,3 +150,15 @@ exclude = [
 ]
 follow_imports = "silent"
 
+[tool.coverage.run]
+branch = true
+source = [ "angrmanagement" ]
+parallel = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+  "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:"
+]
