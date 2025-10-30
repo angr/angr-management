@@ -27,7 +27,6 @@ class NavToolButton(QToolButton):
 
     def __init__(self, jump_history: JumpHistory, direction_forward: bool = False, parent=None) -> None:
         super().__init__(parent)
-        self._dir_fwd = direction_forward
         self._jump_history = jump_history
         self.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
         self._init_menu()
