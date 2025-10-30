@@ -32,8 +32,6 @@ class FunctionsView(InstanceView):
         self.height_hint = 0
         self.updateGeometry()
 
-        self.function_count = None
-
         self.reload()
 
     #
