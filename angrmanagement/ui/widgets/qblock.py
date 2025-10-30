@@ -432,8 +432,6 @@ class QGraphBlock(QBlock):
 
 
 class QLinearBlock(QBlock):
-    ADDRESS_PADDING = 10
-
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._height = 0
