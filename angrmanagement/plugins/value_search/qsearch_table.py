@@ -26,7 +26,6 @@ class SearchItem:
 
     addr: int
     search_value: int | float | bytes
-    search_value_as_bytes: bytes
 
 
 class QSearchModel(QAbstractTableModel):
