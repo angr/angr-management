@@ -225,7 +225,6 @@ class TraceViewer(BasePlugin):
     OPEN_AFL_BITMAP_ID = 2
     OPEN_AFL_BITMAP_INVERTED_ID = 3
     RESET_AFL_BITMAP = 4
-    OPEN_TRACES_FROM_CHECRS = 5
 
     def handle_click_menu(self, idx: int) -> None:
         if idx < 0 or idx >= len(self.MENU_BUTTONS):
