@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from angr import KnowledgeBase, Project
 from angr.analyses.reaching_definitions.call_trace import CallTrace
 from angr.analyses.reaching_definitions.dep_graph import DepGraph
 from angr.calling_conventions import DEFAULT_CC, SimCC, SimRegArg
@@ -30,6 +29,7 @@ except ImportError:
 if TYPE_CHECKING:
     from collections.abc import Generator
 
+    from angr import Project
     from angr.analyses.reaching_definitions import ReachingDefinitionsAnalysis
     from angr.knowledge_plugins.key_definitions.atoms import Atom
 
@@ -235,18 +235,6 @@ class DependencyAnalysisJob(InstanceJob):
                 log.warning("Failed to compute dependencies for function %s.", start, exc_info=True)
                 continue
             yield idx, len(starts), rda
-
-    @staticmethod
-    def _get_new_kb_with_cfgs_and_functions(project: Project, kb):
-        new_kb = KnowledgeBase(project)
-
-        new_kb.cfgs = kb.cfgs.copy()
-        new_kb.functions = kb.functions.copy()
-        new_kb.labels = kb.labels.copy()
-        new_kb.resolved_indirect_jumps = kb.resolved_indirect_jumps.copy()
-        new_kb.unresolved_indirect_jumps = kb.unresolved_indirect_jumps.copy()
-
-        return new_kb
 
     @staticmethod
     def _display_import_error() -> None:
