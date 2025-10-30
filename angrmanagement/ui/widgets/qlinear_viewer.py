@@ -326,10 +326,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         offset = 0 if self.offset is None else self.offset
         self.verticalScrollBar().setValue(offset)
 
-    def clear_objects(self) -> None:
-        self.objects.clear()
-        self._offset = None
-
     @timethis
     def prepare_objects(self, offset: int, start_line: int = 0, adjust_start_line: bool = False) -> int | None:
         """
