@@ -123,7 +123,6 @@ class QMemoryViewer(QFrame):
         super().__init__(parent)
         self.workspace = workspace
 
-        self._scrollarea: QScrollArea
         self._txt_addr: QLineEdit
         self._view: QMemoryView
 
@@ -202,7 +201,6 @@ class QMemoryViewer(QFrame):
         self._view = QMemoryView(self.state, self.workspace)
 
         area = QScrollArea()
-        self._scrollarea = area
         area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         area.setWidgetResizable(True)
