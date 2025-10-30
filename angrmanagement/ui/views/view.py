@@ -196,12 +196,6 @@ class SynchronizedView(BaseView):
         self.sync_state.register_view(self)
         self.sync_from_state()
 
-    def sync_with_view(self, view: SynchronizedView) -> None:
-        """
-        Synchronize with another view.
-        """
-        self.sync_with_state_object(view.sync_state)
-
     def sync_from_state(self) -> None:
         """
         Update this view to reflect the synchronized view state.
