@@ -58,7 +58,6 @@ class PreciseDiffPlugin(BasePlugin):
         self.del_color = QColor(0xFF7F7F)
         self.decomp_del_color = QColor(237, 141, 141, int(0.5 * 255))
         self.chg_color = QColor(0xF4ECC2)
-        self.decomp_chg_color = QColor(247, 247, 138, int(0.5 * 255))
 
         self._differing_funcs = set()
 
