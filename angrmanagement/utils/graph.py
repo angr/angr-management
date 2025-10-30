@@ -1,16 +1,9 @@
 from __future__ import annotations
 
-import itertools
 from collections import defaultdict
 
 import networkx
 from angr.knowledge_plugins import Function
-
-
-def grouper(iterable, n, fillvalue=None):
-    "Collect data into fixed-length chunks or blocks"
-    args = [iter(iterable)] * n
-    return itertools.izip_longest(*args, fillvalue=fillvalue)
 
 
 def to_supergraph(transition_graph):
