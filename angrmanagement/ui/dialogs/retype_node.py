@@ -177,7 +177,7 @@ class RetypeNode(QDialog):
     # Event handlers
     #
 
-    def _on_type_changed(self, new_text) -> None:  # pylint:disable=unused-argument
+    def _on_type_changed(self, _) -> None:
         if self._type_box is None:
             # initialization is not done yet
             return
