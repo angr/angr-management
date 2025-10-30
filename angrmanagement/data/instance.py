@@ -40,7 +40,6 @@ class Instance:
     log: list[LogRecord] | ObjectContainer
 
     def __init__(self) -> None:
-        self._live = False
         self.variable_recovery_job: VariableRecoveryJob | None = None
         self.calling_convention_recovery_job: CallingConventionRecoveryJob | None = None
         self._analysis_configuration = None
@@ -85,16 +84,9 @@ class Instance:
 
         self.cfg_args = None
         self.variable_recovery_args = None
-        self.calling_convention_recovery_args = None
-        self._disassembly = {}
         self.pseudocode_variable_kb = None
 
         self.database_path = None
-
-        # The image name when loading image
-        self.img_name = None
-
-        self._live = True
 
     #
     # Properties
