@@ -27,14 +27,12 @@ class TypeBox(QLineEdit):
     def __init__(self, textchanged_callback, predefined_types=None, parent=None) -> None:
         super().__init__(parent)
 
-        self._cvariable: CVariable | None = None
         self._predefined_types = predefined_types
 
         self.textChanged.connect(textchanged_callback)
         self.setFont(QFont(Conf.disasm_font))
 
     def set_type(self, type_: SimType, cvariable: CVariable = None) -> None:
-        self._cvariable = cvariable
         if cvariable is not None and isinstance(cvariable.unified_variable, SimVariable):
             type_str = type_.c_repr(name=cvariable.unified_variable.name)
         else:
