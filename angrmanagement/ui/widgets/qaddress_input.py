@@ -31,11 +31,6 @@ class QAddressInput(QLineEdit):
             return self._convert_to_addr(text)
         return None
 
-    @property
-    def raw_target(self):
-        text = self.text()
-        return self._convert_to_addr(text)
-
     def _is_valid_addr_or_label(self, input) -> bool:
         r = self._convert_to_addr(input)
         return r is not None
