@@ -42,8 +42,6 @@ class QGraphArrow(QGraphicsItem):
         self.style = EDGE_STYLES.get(self.edge.sort, EDGE_STYLES[EdgeSort.DIRECT_JUMP])
         self.path = self._make_path()
 
-        self._hovered = False
-
         self.setAcceptHoverEvents(True)
 
     @staticmethod
