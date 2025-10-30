@@ -5,16 +5,12 @@ import subprocess
 import sys
 import threading
 import time
-from typing import TYPE_CHECKING
 
 import rpyc
 from rpyc.utils.server import ThreadedServer
 
 from angrmanagement.logic.singleton import SingleInstance, SingleInstanceException
 from angrmanagement.utils.env import app_path
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 DEFAULT_PORT = 64000
 
@@ -162,7 +158,3 @@ def run_daemon_process() -> None:
 
 def daemon_conn(port: int = DEFAULT_PORT, service=rpyc.VoidService):
     return rpyc.connect("localhost", port, service=service, config={"allow_public_attrs": True})
-
-
-def register_server_exposed_method(method_name: str, method: Callable) -> None:
-    setattr(ManagementService, f"exposed_{method_name}", method)
