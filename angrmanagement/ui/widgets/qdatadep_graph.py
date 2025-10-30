@@ -214,12 +214,6 @@ class QDataDepGraph(QZoomableDraggableGraphicsView):
             return scene.itemsBoundingRect().center()
         return QtCore.QPointF(0, 0)
 
-    def _is_on_screen(self, item: QtWidgets.QGraphicsItem) -> bool:
-        screen_rect = self.mapToScene(self.viewport().geometry()).boundingRect()
-        tl = screen_rect.topLeft()
-        br = screen_rect.bottomRight()
-        return tl.x() <= item.x() <= br.x() and tl.y() <= item.y() <= br.y()
-
     def handle_preview_request(self, arrow: QDataDepGraphArrow, jump_to_dst: bool) -> None:
         self._node_preview.preview_graph.setScene(self.scene())
         dst_node: QtWidgets.QGraphicsItem = arrow.edge.dst
