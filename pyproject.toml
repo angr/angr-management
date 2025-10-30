@@ -44,12 +44,6 @@ binharness = [
 bintrace = [
   "bintrace"
 ]
-docs = [
-  "furo",
-  "myst-parser",
-  "sphinx",
-  "sphinx-autodoc-typehints",
-]
 pyinstaller = [
   "pyinstaller==6.16.0",
   "pillow;platform_system == \"Darwin\"",
@@ -57,9 +51,17 @@ pyinstaller = [
   "angr[unicorn];platform_system != \"Darwin\"",
   "cle[ar,minidump,uefi,xbe,pdb]",
 ]
+
+[dependency-groups]
 testing = [
   "pytest",
   "pytest-xdist",
+]
+docs = [
+  "furo",
+  "myst-parser",
+  "sphinx",
+  "sphinx-autodoc-typehints"
 ]
 
 [project.scripts]
