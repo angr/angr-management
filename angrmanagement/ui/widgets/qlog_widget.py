@@ -224,7 +224,7 @@ class QLogWidget(QTableView):
         self.log_view.instance.log.am_unsubscribe(self._on_new_logrecord)
         super().closeEvent(event)
 
-    def contextMenuEvent(self, arg__1: PySide6.QtGui.QContextMenuEvent) -> None:
+    def contextMenuEvent(self, _: PySide6.QtGui.QContextMenuEvent) -> None:
         self._context_menu.popup(QCursor.pos())
 
     def _on_new_logrecord(self, log_record: LogRecord = None) -> None:
