@@ -131,16 +131,6 @@ class TraceMapItem(QGraphicsItem):
         offset = int(pos * self._total_size // self._width)
         return offset
 
-    def _get_offset_size_rect(self, offset: int, size: int) -> QRectF:
-        """
-        Given a byte offset `offset` and number of bytes `size`, get a rect to draw.
-        """
-        if self._total_size == 0:
-            return None
-        x = offset / self._total_size * self._width
-        width = size / self._total_size * self._width
-        return QRectF(x, 0, width, self._height)
-
     def _create_line_indicator(
         self, addr: int, item_map, color=Qt.GlobalColor.yellow, show_frontier: bool = False, z=None, z_frontier=None
     ) -> None:
