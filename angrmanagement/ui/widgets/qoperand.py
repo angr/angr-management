@@ -58,8 +58,6 @@ class QOperand(QCachedGraphicsItem):
         # the variable involved
         self.variable = None
 
-        self._cachy = None
-
         self._config = config
 
         # "widgets"
