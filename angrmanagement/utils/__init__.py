@@ -133,22 +133,6 @@ def get_out_branches(supernode):
     return supernode.out_branches
 
 
-def address_to_text(addr: int, kb):
-    """
-    Properly convert an address to text for a label.
-
-    :param int addr: The address to convert.
-    :param angr.KnowledgeBase kb: The knowledgebase in use.
-    :return: Text representation of the address.
-    :rtype: str
-    """
-
-    if addr in kb.labels:
-        return kb.labels[addr]
-
-    return f"loc_{addr:#x}"
-
-
 def get_out_branches_for_insn(out_branch_dict, ins_addr):
     if ins_addr not in out_branch_dict:
         return None
