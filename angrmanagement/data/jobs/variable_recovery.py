@@ -37,8 +37,6 @@ class VariableRecoveryJob(InstanceJob):
         self.func_addr = func_addr
         self.func_addrs_to_prioritize = set() if func_addr is None else {func_addr}
 
-        self._last_progress_callback_triggered = None
-
     def prioritize_function(self, func_addr: int) -> None:
         """
         Prioritize the specified function and its callee functions.
