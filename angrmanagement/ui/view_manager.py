@@ -11,7 +11,6 @@ from PySide6.QtWidgets import QSizePolicy
 from angrmanagement.ui.views.view import InstanceView
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
 
     from angrmanagement.ui.workspace import Workspace
 
@@ -169,16 +168,6 @@ class ViewManager:
             dock.show()
         dock.raise_()
         view.focusWidget()
-
-    def get_center_docks(self) -> Sequence[QtAds.CDockWidget]:
-        """
-        Get the center dockable views
-        """
-        return [
-            dock
-            for dock in self.docks
-            if dock.widget() is not None and dock.widget().default_docking_position == "center"
-        ]
 
     def first_view_in_category(self, category: str) -> BaseView | None:
         """
