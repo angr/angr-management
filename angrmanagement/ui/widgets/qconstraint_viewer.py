@@ -40,7 +40,7 @@ class QConstraintViewer(QFrame):
             self.table.setItem(count, 0, QTableWidgetItem(constraint.shallow_repr()))
             self.table.setItem(count, 1, QTableWidgetItem(str(constraint.cardinality)))
             self.table.setItem(count, 2, QTableWidgetItem(str(constraint.depth)))
-            self.table.setItem(count, 3, QTableWidgetItem(str(len(list(constraint.recursive_leaf_asts)))))
+            self.table.setItem(count, 3, QTableWidgetItem(str(len(list(constraint.leaf_asts())))))
 
     #
     # Private methods
