@@ -50,12 +50,6 @@ class QCodeDocument(QTextDocument):
             return None
         return self._codegen.map_pos_to_node
 
-    @property
-    def nodemap(self):
-        if self._codegen is None:
-            return None
-        return self._codegen.map_ast_to_pos
-
     def get_node_at_position(self, pos):
         if self._codegen is not None and self._codegen.map_pos_to_node is not None:
             n = self._codegen.map_pos_to_node.get_node(pos)
