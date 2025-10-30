@@ -4,7 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.utils import to_ail_supergraph
-from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, QSize, Qt, QTimeLine
+from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, Qt, QTimeLine
 from PySide6.QtWidgets import QFrame
 
 from angrmanagement.config import Conf
@@ -261,19 +261,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     #
     # Layout
     #
-
-    def _graph_size(self):
-        width, height = 0, 0
-
-        for block in self.blocks:
-            if block.x + block.width > width:
-                width = block.x + block.width
-            if block.y + block.height > height:
-                height = block.y + block.height
-
-        # TODO: Check all edges as well
-
-        return QSize(width, height)
 
     def _layout_graph(self):
         assert self._supergraph is not None
