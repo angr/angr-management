@@ -163,7 +163,7 @@ class AssemblePatchDialog(QDialog):
     # Event handlers
     #
 
-    def _on_text_changed(self, new_text) -> None:  # pylint: disable=unused-argument
+    def _on_text_changed(self, _) -> None:
         self._assemble()
 
     def _on_checkbox_changed(self, state) -> None:  # pylint: disable=unused-argument
