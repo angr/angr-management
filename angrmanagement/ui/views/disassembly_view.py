@@ -93,9 +93,6 @@ class DisassemblyView(SynchronizedFunctionView):
         self._label_menu: DisasmLabelContextMenu | None = None
 
         self._insn_addr_on_context_menu = None
-        self._label_addr_on_context_menu = None
-
-        self._annotation_callbacks = []
 
         self.width_hint = 800
         self.height_hint = 800
@@ -398,14 +395,12 @@ class DisassemblyView(SynchronizedFunctionView):
         self._insn_addr_on_context_menu = None
 
     def label_context_menu(self, addr: int, pos) -> None:
-        self._label_addr_on_context_menu = addr
         self._label_menu.addr = addr
         mnu = self._label_menu.qmenu(
             extra_entries=list(self.workspace.plugins.build_context_menu_label(addr)), cached=False
         )
         self.append_view_menu_actions(mnu)
         mnu.exec_(pos)
-        self._label_addr_on_context_menu = None
 
     def rename_selected_object(self) -> None:
         """
