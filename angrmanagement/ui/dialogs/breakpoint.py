@@ -121,10 +121,10 @@ class BreakpointDialog(QDialog):
     def _validate(self) -> None:
         self._set_valid(bool(self._address_box.target is not None and self._get_size()))
 
-    def _on_address_changed(self, new_text) -> None:  # pylint: disable=unused-argument
+    def _on_address_changed(self, _) -> None:
         self._validate()
 
-    def _on_size_changed(self, new_text) -> None:  # pylint: disable=unused-argument
+    def _on_size_changed(self, _) -> None:
         self._validate()
 
     def _on_ok_clicked(self) -> None:
