@@ -542,7 +542,7 @@ class GraphLayouter:
 
                 # ideally, this node appears in between its predecessors
                 col = (min_col + max_col) // 2
-                overlap, col = self._detect_overlap(node, col, row_idx, min_col)
+                _, col = self._detect_overlap(node, col, row_idx, min_col)
 
                 # now assign a column ID to the current node
                 self._cols[node] = col
@@ -711,7 +711,7 @@ class GraphLayouter:
             src_node_width, src_node_height = self._node_sizes[edge.src]
 
             dst_node_x, dst_node_y = self.node_coordinates[edge.dst]
-            dst_node_width, dst_node_height = self._node_sizes[edge.dst]
+            dst_node_width, _ = self._node_sizes[edge.dst]
 
             # dst_node_col, dst_node_row = self._locations[edge.dst]
 
@@ -728,7 +728,7 @@ class GraphLayouter:
             x, y_base = start_point[0], start_point[1] + self.row_margin
 
             if len(edge.points) > 1:
-                next_col, next_row, next_idx = edge.points[1]
+                next_col, _, next_idx = edge.points[1]
                 starting_col, starting_row = self._locations[edge.src]
                 y_base = self._nointersecting_y(starting_row, starting_col, next_col, default=y_base) + self.row_margin
                 y = self._indexed_y(y_base, next_idx)
@@ -753,7 +753,7 @@ class GraphLayouter:
                     if point_id + 1 == len(edge.points) - 2:
                         y = base_y
                     else:
-                        next_col, next_row, next_idx = edge.points[point_id + 1 + 1]
+                        next_col, _, next_idx = edge.points[point_id + 1 + 1]
                         y = self._indexed_y(base_y, next_idx)
 
                 elif row == prev_row:
@@ -763,7 +763,7 @@ class GraphLayouter:
                         base_x = dst_node_x + dst_node_width // 2
                         x = self._indexed_x(base_x, edge.end_index)
                     else:
-                        next_col, next_row, next_idx = edge.points[point_id + 1 + 1]
+                        next_col, _, next_idx = edge.points[point_id + 1 + 1]
                         base_x = self._grid_coordinates[(col, row)][0]
                         x = self._indexed_x(base_x, next_idx)
 
