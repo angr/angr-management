@@ -12,32 +12,6 @@ from .edge import EdgeSort
 log = logging.getLogger("utils.cfg")
 
 
-def _get_branch_instr(disassembly, node):
-    if len(node.out_branches) > 1:
-        log.warning(
-            "_get_branch_instr(): %s has more than one out_branches. Only the first one is considered for now. "
-            "Report it to GitHub and it will be fixed.",
-            node,
-        )
-    if not node.out_branches:
-        # huh, why is it empty?
-        log.error("_get_branch_instr(): %s does not have any out branches. Please report to GitHub.", node)
-        return None
-
-    # Get the instruction address that contains the jump
-    ins_addr = next(iter(node.out_branches.keys()))
-
-    # Get the Instruction
-    try:
-        instr = disassembly["instructions"][ins_addr]
-    except KeyError:
-        # the instruction is not found
-        log.error("_get_branch_instr(): Branch instruction %#x is not found in the Disassembly instance.", ins_addr)
-        return None
-
-    return instr
-
-
 def categorize_edges(disassembly, edges) -> None:
     """
     Categorize each edge.
