@@ -156,8 +156,6 @@ class MainWindow(QMainWindow):
 
         self.toolbar_manager: ToolbarManager = ToolbarManager(self)
 
-        self.defaultWindowFlags = None
-
         # menus
         self._file_menu = None  # FileMenu
         self._analyze_menu = None
