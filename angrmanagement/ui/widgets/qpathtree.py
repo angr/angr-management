@@ -74,30 +74,6 @@ class QPathTree(QFrame):
     #
 
     @staticmethod
-    def _all_paths(paths, hierarchy):
-        work = set(paths)
-        seen = set()
-        while len(work) > 0:
-            path = work.pop()
-            if (
-                not hierarchy.history_contains(path.history)
-                or len(hierarchy.history_successors(path.history)) == 0
-                and path.path_id not in seen
-            ):
-                yield path
-                seen.add(path.path_id)
-            # get parents
-            if hierarchy.history_contains(path.history):
-                parents = hierarchy.history_predecessors(path.history)
-                for parent_history in parents:
-                    # assume _path_mapping always has the path
-                    parent_path = hierarchy._path_mapping[parent_history]
-                    work.add(parent_path)
-                    if len(hierarchy.history_successors(parent_history)) > 1 and parent_path.path_id not in seen:
-                        yield parent_path
-                        seen.add(parent_path.path_id)
-
-    @staticmethod
     def _all_edges_gen(state_histories, hierarchy):
         # TODO: reduce duplication with above function
         work = set(state_histories)
