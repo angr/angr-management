@@ -214,6 +214,3 @@ class ViewManager:
     @property
     def current_tab(self) -> BaseView | None:
         return self.get_most_recently_focused_view_by_docking_area("center")
-
-    def _handle_raise_view(self, view: BaseView) -> None:
-        self.workspace.plugins.handle_raise_view(view)
