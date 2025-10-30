@@ -38,7 +38,6 @@ from angrmanagement.utils.io import download_url, isurl
 
 from .dialogs.about import LoadAboutDialog
 from .dialogs.command_palette import CommandPaletteDialog, GotoPaletteDialog
-from .dialogs.load_docker_prompt import LoadDockerPrompt, LoadDockerPromptError
 from .dialogs.load_plugins import LoadPlugins
 from .dialogs.new_state import NewState
 from .dialogs.preferences import Preferences
@@ -223,15 +222,6 @@ class MainWindow(QMainWindow):
             "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
         )
         return file_path
-
-    def _pick_image_dialog(self):
-        try:
-            prompt = LoadDockerPrompt(parent=self)
-        except LoadDockerPromptError:
-            return None
-        if prompt.exec_() == 0:
-            return None  # User canceled
-        return prompt.textValue()
 
     def open_load_plugins_dialog(self) -> None:
         dlg = LoadPlugins(self.workspace.plugins)
