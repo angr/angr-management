@@ -72,13 +72,6 @@ class QPatchTable(QTableWidget):
             self.items[row].patch.comment = comment_text
             self.instance.patches.am_event()
 
-    def current_patch(self):
-        selected_index = self.currentRow()
-        if 0 <= selected_index < len(self.items):
-            return self.items[selected_index]
-        else:
-            return None
-
     def reload(self) -> None:
         self._reloading = True
         self.clearContents()
