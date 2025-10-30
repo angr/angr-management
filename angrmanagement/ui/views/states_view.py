@@ -23,9 +23,6 @@ class StatesView(InstanceView):
 
         self._init_widgets()
 
-    def reload(self) -> None:
-        self._state_table.state_manager = self.instance.states
-
     def closeEvent(self, event) -> None:
         """
         Close children before exiting
