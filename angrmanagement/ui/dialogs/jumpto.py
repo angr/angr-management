@@ -66,7 +66,7 @@ class JumpTo(QDialog):
     # Event handlers
     #
 
-    def _on_address_changed(self, new_text) -> None:  # pylint: disable=unused-argument
+    def _on_address_changed(self, _) -> None:
         if self._address_box.target is None:
             # the address is invalid
 
