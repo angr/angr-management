@@ -79,7 +79,7 @@ class RenameDialog(QDialog):
     # Event handlers
     #
 
-    def _on_name_changed(self, new_text) -> None:  # pylint:disable=unused-argument
+    def _on_name_changed(self, _) -> None:
         if self._name_box is None:
             # initialization is not done yet
             return
