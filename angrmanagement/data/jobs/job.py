@@ -55,7 +55,6 @@ class Job:
 
     name: str
     progress_percentage: float
-    last_text: str | None
     start_at: float
     blocking: bool
     state: JobState = JobState.PENDING
@@ -65,7 +64,6 @@ class Job:
     def __init__(self, name: str, on_finish: Callable[[Any], None] | None = None, blocking: bool = False) -> None:
         self.name = name
         self.progress_percentage = 0.0
-        self.last_text = None
         self.start_at = 0.0
         self.blocking = blocking
         self.cancelled = False
