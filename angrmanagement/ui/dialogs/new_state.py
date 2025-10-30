@@ -43,7 +43,7 @@ class StateMetadata(angr.SimStatePlugin):
         self.is_original = False  # is this the original instantiation of this name?
         self.is_base = False  # is this state created with nothing else as a base?
 
-    def copy(self, memo=None):  # pylint: disable=unused-argument
+    def copy(self, _=None):
         c = StateMetadata()
         c.name = self.name
         c.base_name = self.base_name
