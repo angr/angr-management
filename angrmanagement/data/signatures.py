@@ -142,10 +142,6 @@ class SignatureManager:
         self.add_signature(sig)
         return sig
 
-    def remove_signature(self, sig: Signature) -> None:
-        self.signatures.remove(sig)
-        self.signatures.am_event(removed=sig)
-
     def apply_signatures(self, sigs: list[Signature], dry_run: bool = True, ignore_addresses: set[int] = None):
         for sig in sigs:
             sig.apply_signature(self, dry_run, ignore_addresses)
