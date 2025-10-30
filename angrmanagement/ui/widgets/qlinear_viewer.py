@@ -253,14 +253,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         self.refresh()
 
-    def goto_function(self, func) -> None:
-        if func.addr not in self._block_addr_map:
-            _l.error("Unable to find entry block for function %s", func)
-        view_height = self.viewport().height()
-        desired_center_y = self._block_addr_map[func.addr].pos().y()
-        _l.debug("Going to function at 0x%x by scrolling to %s", func.addr, desired_center_y)
-        self.verticalScrollBar().setValue(desired_center_y - (view_height / 3))
-
     def show_instruction(
         self,
         insn_addr,
