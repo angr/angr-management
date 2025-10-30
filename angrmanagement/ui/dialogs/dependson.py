@@ -27,8 +27,6 @@ class DependsOn(QDialog):
         super().__init__(parent)
 
         self._addr = addr
-        self._operand = operand
-        self._instruction = instr
         self._function = func
 
         # output
@@ -44,10 +42,8 @@ class DependsOn(QDialog):
 
         self._before_radio: QRadioButton = None
         self._after_radio: QRadioButton = None
-        self._arg_layout: QVBoxLayout = None
         self._arg_radiobox: QRadioButton = None
         self._arg_box: QLineEdit = None
-        self._reg_layout: QVBoxLayout = None
         self._reg_radiobox: QRadioButton = None
         self._reg_box: QLineEdit = None
 
