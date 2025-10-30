@@ -57,7 +57,6 @@ class ArchTreeWidgetItem(QTreeWidgetItem):
         self.setText(0, name)
 
 
-OPTIONS_TAB_INDEX = 0
 DEPENDENCIES_TAB_INDEX = 1
 
 
