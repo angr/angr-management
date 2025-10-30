@@ -88,9 +88,6 @@ class NewState(QDialog):
         # Shall we push the new state to instance.stats and call states.am_event(src="new", state=self.state)
         self._push_to_instance = push_to_instance
 
-        self._name_edit: QLineEdit | None = None
-        self._base_state_combo: QStateComboBox | None = None
-        self._mode_combo: QComboBox | None = None
         self._editor: QTextEdit | None = None
         self._ok_button = None
 
@@ -207,7 +204,6 @@ class NewState(QDialog):
         base_state_label.setText("Base state")
 
         base_state_combo = QStateComboBox(self.instance, self)
-        self._base_state_combo = base_state_combo
 
         layout.addWidget(base_state_label, row, 0)
         layout.addWidget(base_state_combo, row, 1)
@@ -220,7 +216,6 @@ class NewState(QDialog):
         args_edit = QTextEdit(self)
         args_edit.setAcceptRichText(False)
         args_edit.setFixedHeight(60)
-        self._args_edit = args_edit
 
         def handle_args() -> None:
             self._args = [self.instance.project.filename.encode() or b"dummy_filename"] + [
@@ -300,7 +295,6 @@ class NewState(QDialog):
         mode_combo.addItem("Static", "static")
         mode_combo.addItem("Fast-path", "fastpath")
         mode_combo.addItem("Tracing", "tracing")
-        self._mode_combo = mode_combo
 
         def mode_changed() -> None:
             self._options.clear()
