@@ -1,14 +1,8 @@
 from __future__ import annotations
 
-from functools import partial
-from typing import TYPE_CHECKING
-
 from angrmanagement.config import Conf
 
 from .menu import Menu, MenuEntry, MenuSeparator
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 
 class DisasmLabelContextMenu(Menu):
@@ -63,23 +57,3 @@ class DisasmLabelContextMenu(Menu):
         if self._disasm_view is None or self._disasm_view._flow_graph is None:
             return
         self._disasm_view.popup_xref_dialog(addr=self.addr, variable=None, dst_addr=self.addr, async_=True)
-
-    #
-    # Public Methods
-    #
-
-    def add_menu_entry(
-        self, text: str, callback: Callable[[DisasmLabelContextMenu], None], add_separator_first: bool = True
-    ) -> None:
-        if add_separator_first:
-            self.entries.append(MenuSeparator())
-        self.entries.append(MenuEntry(text, partial(callback, self)))
-
-    def remove_menu_entry(self, text: str, remove_preceding_separator: bool = True) -> None:
-        for idx, m in enumerate(self.entries):
-            if not isinstance(m, MenuEntry):
-                continue
-            if m.caption == text:
-                self.entries.remove(m)
-                if remove_preceding_separator:
-                    self.entries.pop(idx - 1)
