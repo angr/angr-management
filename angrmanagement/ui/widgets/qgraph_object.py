@@ -7,12 +7,10 @@ class QCachedGraphicsItem(QGraphicsItem):
     def __init__(self, parent=None) -> None:
         super().__init__(parent=parent)
         self._cached_bounding_rect = None
-        self._cached_device_pixel_ratio = None
 
     def clear_cache(self) -> None:
         self.prepareGeometryChange()
         self._cached_bounding_rect = None
-        self._cached_device_pixel_ratio = None
 
     def refresh(self) -> None:
         pass
@@ -27,7 +25,6 @@ class QCachedGraphicsItem(QGraphicsItem):
 
     def recalculate_size(self) -> None:
         self.prepareGeometryChange()
-        self._cached_device_pixel_ratio = None
         self._cached_bounding_rect = self._boundingRect()
 
     def boundingRect(self):
