@@ -14,7 +14,6 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
-    QVBoxLayout,
     QWidget,
 )
 
@@ -111,9 +110,6 @@ class QJobs(QTableWidget):
     """QJobs displays all the jobs and their status/progression."""
 
     workspace: Workspace
-    content_widget: QWidget
-    content_layout: QVBoxLayout
-
     row_map: dict[Job, int]
     status_map: dict[Job, QWidget]
     progress_bar_map: dict[Job, ProgressWidget]
@@ -122,8 +118,6 @@ class QJobs(QTableWidget):
     def __init__(self, workspace: Workspace, parent=None):
         super().__init__(0, 4, parent)  # 0 rows and 4 columns
         self.workspace = workspace
-        self.content_widget = QWidget()
-        self.content_layout = QVBoxLayout(self.content_widget)
         self.row_map = {}
         self.status_map = {}
         self.progress_bar_map = {}
