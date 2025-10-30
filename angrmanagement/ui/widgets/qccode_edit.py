@@ -76,7 +76,6 @@ class QCCodeEdit(api.CodeEdit):
         self.constant_actions = []
         self.operator_actions = []
         self.variable_actions = []
-        self.selected_actions = []
         self.call_actions = []
         self.default_actions = []
         self.function_name_actions = []
@@ -705,5 +704,4 @@ class QCCodeEdit(api.CodeEdit):
         self.variable_actions += base_actions + expr_actions
         self.function_name_actions += base_actions
         self.call_actions += base_actions + expr_actions
-        self.selected_actions += base_actions
         self.default_actions += base_actions
