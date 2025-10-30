@@ -118,7 +118,7 @@ class QStackTableWidget(QTableView):
         self.model.state = None if dbg.am_none else dbg.simstate
         self.model.layoutChanged.emit()
 
-    def contextMenuEvent(self, arg__1: PySide6.QtGui.QContextMenuEvent) -> None:  # pylint:disable=unused-argument
+    def contextMenuEvent(self, _: PySide6.QtGui.QContextMenuEvent) -> None:
         if not self.selectedIndexes():
             return
 
