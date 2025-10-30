@@ -147,9 +147,6 @@ class TraceStatistics:
     def get_bbl_from_position(self, position):
         return self.trace_func[position].bbl_addr
 
-    def get_func_name_from_position(self, position):
-        return self.trace_func[position].func_name
-
     def get_func_from_position(self, position):
         return self.trace_func[position].func
 
