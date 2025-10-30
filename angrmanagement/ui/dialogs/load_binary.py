@@ -541,11 +541,6 @@ class LoadBinary(QDialog):
         return None, None
 
     @staticmethod
-    def binary_arch_detect_failed(filename: str, archinfo_msg: str) -> None:
-        # TODO: Normalize the path for Windows
-        QMessageBox.warning(None, "Architecture selection failed", f"{archinfo_msg} for binary:\n\n{filename}")
-
-    @staticmethod
     def binary_loading_failed(filename) -> None:
         # TODO: Normalize the path for Windows
         QMessageBox.critical(None, "Failed to load binary", f"angr failed to load binary {filename}.")
