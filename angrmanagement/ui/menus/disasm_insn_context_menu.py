@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from functools import partial
 from typing import TYPE_CHECKING
 
 from angrmanagement.config import Conf
@@ -8,7 +7,6 @@ from angrmanagement.config import Conf
 from .menu import Menu, MenuEntry, MenuSeparator
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
 
     from angrmanagement.ui.views.disassembly_view import DisassemblyView
 
@@ -98,23 +96,3 @@ class DisasmInsnContextMenu(Menu):
 
     def _popup_patch_dialog(self) -> None:
         self._disasm_view.popup_patch_dialog()
-
-    #
-    # Public Methods
-    #
-
-    def add_menu_entry(
-        self, text: str, callback: Callable[[DisasmInsnContextMenu], None], add_separator_first: bool = True
-    ) -> None:
-        if add_separator_first:
-            self.entries.append(MenuSeparator())
-        self.entries.append(MenuEntry(text, partial(callback, self)))
-
-    def remove_menu_entry(self, text: str, remove_preceding_separator: bool = True) -> None:
-        for idx, m in enumerate(self.entries):
-            if not isinstance(m, MenuEntry):
-                continue
-            if m.caption == text:
-                self.entries.remove(m)
-                if remove_preceding_separator:
-                    self.entries.pop(idx - 1)
