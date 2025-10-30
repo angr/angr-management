@@ -323,22 +323,6 @@ class InfoDock:
     def is_variable_selected(self, unique_variable_ident: str) -> bool:
         return unique_variable_ident in self.selected_variables
 
-    def should_highlight_operand(self, selected, operand):
-        if selected is None:
-            return False
-
-        if self.highlight_mode == OperandHighlightMode.SAME_TEXT or selected.variable is None:
-            # when there is no related variable, we highlight as long as they have the same text
-            return operand.text == selected.text
-        elif (
-            self.highlight_mode == OperandHighlightMode.SAME_IDENT
-            and selected.variable is not None
-            and operand.variable is not None
-        ):
-            return selected.variable.ident == operand.variable.ident
-
-        return False
-
     def select_block_tree_node(self, obj) -> None:
         """
         For QBlockCodeObj, we simply track selected state for now and handle
