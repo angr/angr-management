@@ -101,20 +101,10 @@ class InfoDock:
             self.hovered_block.am_obj = None
             self.hovered_block.am_event()
 
-    def clear_hovered_block(self) -> None:
-        self.hovered_block.am_obj = None
-        self.hovered_block.am_event()
-
     def select_block(self, block_addr) -> None:
         self.selected_blocks.clear()  # selecting one block at a time
         self.selected_blocks.add(block_addr)
         self.selected_blocks.am_event()
-        self._update_published_view_state()
-
-    def unselect_block(self, block_addr) -> None:
-        if block_addr in self.selected_blocks:
-            self.selected_blocks.remove(block_addr)
-            self.selected_blocks.am_event()
         self._update_published_view_state()
 
     def select_instruction(self, insn_addr, unique: bool = True, insn_pos=None, use_animation: bool = True) -> None:
