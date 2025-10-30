@@ -24,8 +24,5 @@ class CommandManager:
         for command in commands:
             self.register_command(command)
 
-    def unregister_command(self, command: Command) -> None:
-        self._commands.pop(command.name, None)
-
     def get_commands(self):
         return self._commands.values()
