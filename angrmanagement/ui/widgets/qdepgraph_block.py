@@ -46,7 +46,6 @@ class QDepGraphBlock(QCachedGraphicsItem):
         self._instruction_str: str = None
         self._instruction_item: QGraphicsSimpleTextItem = None
         self._function_str: str = None
-        self._function_item: QGraphicsSimpleTextItem = None
         self._text: str | None = None
         self._text_item: QGraphicsSimpleTextItem | None = None
 
