@@ -42,7 +42,6 @@ class SearchView(InstanceView):
         self.base_caption = "Search"
         self.plugin = plugin
 
-        self._search_table: QSearchTable
         self._type_list: QComboBox
         self._alignment_input: QSpinBox
 
