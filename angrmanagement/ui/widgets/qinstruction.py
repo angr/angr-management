@@ -55,7 +55,6 @@ class QInstruction(QCachedGraphicsItem):
         self._string_item: QGraphicsSimpleTextItem | None = None
         self._comment = None
         self._comment_items: list[QGraphicsSimpleTextItem] | None = None  # one comment per line
-        self._legend = None
         self._width = 0
         self._height = 0
 
