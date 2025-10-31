@@ -89,6 +89,7 @@ angrmanagement = [
   "resources/images/*",
   "resources/themes/**/*",
   "resources/flirt_signatures/**/*",
+  "resources/library_docs/**/*",
 ]
 
 [tool.setuptools.dynamic]

@@ -293,7 +293,7 @@ ENTRIES = [
     # FLIRT signatures
     CE("flirt_signatures_root", str, "./angrmanagement/resources/flirt_signatures/"),
     # Library documentation
-    CE("library_docs_root", str, "./library_docs/"),
+    CE("library_docs_root", str, "./angrmanagement/resources/library_docs/"),
     # feature map
     CE("feature_map_regular_function_color", QColor, QColor(0x00, 0xA0, 0xE8)),
     CE("feature_map_unknown_color", QColor, QColor(0x0A, 0x0A, 0x0A)),

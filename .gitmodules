@@ -1,5 +1,5 @@
 [submodule "library_docs"]
-	path = library_docs
+	path = angrmanagement/resources/library_docs
 	url = https://github.com/angr/library_docs
 [submodule "flirt_signatures"]
 	path = angrmanagement/resources/flirt_signatures
