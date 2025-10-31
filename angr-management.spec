@@ -39,13 +39,13 @@ icon = str(AM_BASE / "angrmanagement" / "resources" / "images" / "angr.ico")
 
 included_data = [
     (str(AM_BASE / "angrmanagement" / "resources"), "angrmanagement/resources"),
+    (str(AM_BASE / "angrmanagement" / "resources" / "flirt_signatures"), "angrmanagement/resources/flirt_signatures"),
     (str(AM_BASE / "angrmanagement" / "resources" / "images"), "angrmanagement/resources/images"),
     (str(AM_BASE / "angrmanagement" / "plugins"), "angrmanagement/plugins"),
     (str(AM_BASE / "angrmanagement" / "config"), "angrmanagement/config"),
     (str(ANGR_BASE / "analyses" / "identifier" / "functions"), "angr/analyses/identifier/functions"),
     (str(ANGR_BASE / "procedures"), "angr/procedures"),
     (str(PARSO_BASE / "python"), "parso/python"),
-    (str(AM_BASE / "flirt_signatures"), "flirt_signatures"),
     (str(AM_BASE / "library_docs"), "library_docs"),
     (str(DEBUGPY_BASE / "_vendored"), "debugpy/_vendored"),
     (str(PYPCODE_BASE / "processors"), "pypcode/processors"),
