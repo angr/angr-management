@@ -4,7 +4,7 @@ Testing
 Coverage
 ^^^^^^^^
 
-.. image:: https://codecov.io/github/angr/angr-management/graph/badge.svg?token=H4QwMNfjb2 
+.. image:: https://codecov.io/github/angr/angr-management/graph/badge.svg?token=H4QwMNfjb2
  :target: https://codecov.io/github/angr/angr-management
 
 Writing tests
