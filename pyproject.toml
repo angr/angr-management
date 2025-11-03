@@ -9,6 +9,7 @@ description = "The official GUI for angr"
 requires-python = ">=3.10"
 readme = "README.md"
 license = "BSD-2-Clause"
+license-files = ["LICENSE"]
 dependencies = [
   "PySide6-Essentials>=6.4.2,!=6.7.0",
   "PySide6-QtAds>=4.2.1",
@@ -76,7 +77,6 @@ angr-management = "angrmanagement.__main__:main"
 
 [tool.setuptools]
 include-package-data = true
-license-files = ["LICENSE"]
 
 [tool.setuptools.packages.find]
 exclude = ["screenshots", "flirt_signatures", "library_docs", "tests"]
