@@ -68,12 +68,16 @@ class ManagementService(rpyc.Service):
         conn = self._get_conn(target_id)
         conn.root.jumpto(addr, symbol)
 
-    def exposed_register_binary(self, bin_path, target_id: str) -> None:
+    def exposed_register_client(self, target_id: str) -> None:
         TargetIDtoCONN[target_id] = self._conn
 
     def exposed_commentat(self, addr: int, comment: str, target_id: str) -> None:
         conn = self._get_conn(target_id)
         conn.root.commentat(addr, comment)
+
+    def exposed_select_insns(self, addrs: list[int] | None, target_id: str):
+        conn = self._get_conn(target_id)
+        conn.root.select_insns(addrs)
 
     def exposed_exit(self) -> None:
         pass

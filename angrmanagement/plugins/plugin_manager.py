@@ -10,8 +10,6 @@ from angrmanagement.config import Conf, save_config
 from angrmanagement.config.config_manager import ENTRIES
 from angrmanagement.daemon.client import DaemonClient
 from angrmanagement.daemon.url_handler import UrlActionBinaryAware, register_url_action
-from angrmanagement.ui.menus.menu import MenuEntry, MenuSeparator
-from angrmanagement.ui.toolbars.toolbar_action import ToolbarAction
 
 from .base_plugin import BasePlugin
 from .load import load_plugin_descriptions_from_dir, load_plugins_from_file
@@ -167,6 +165,7 @@ class PluginManager:
 
     def _register_toolbar_actions(self, plugin_cls: type[BasePlugin], plugin: BasePlugin) -> None:
         for idx, (icon, tooltip) in enumerate(plugin_cls.TOOLBAR_BUTTONS):
+            from angrmanagement.ui.toolbars.toolbar_action import ToolbarAction
             action = ToolbarAction(
                 icon,
                 f"plugin {plugin_cls} toolbar {idx}",
@@ -177,6 +176,7 @@ class PluginManager:
             self.workspace._main_window._file_toolbar.add(action)
 
     def _register_menu_buttons(self, plugin_cls: type[BasePlugin], plugin: BasePlugin) -> None:
+        from angrmanagement.ui.menus.menu import MenuEntry, MenuSeparator
         if plugin_cls.MENU_BUTTONS:
             self.workspace._main_window._plugin_menu.add(MenuSeparator())
         for idx, text in enumerate(plugin_cls.MENU_BUTTONS):
@@ -499,3 +499,4 @@ class PluginManager:
     def optimization_passes(self):
         for plugin in self.active_plugins.values():
             yield from plugin.OPTIMIZATION_PASSES
+

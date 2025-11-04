@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
 from angrmanagement.config import Conf, save_config
 from angrmanagement.config.color_schemes import BASE_SCHEME, COLOR_SCHEMES
 from angrmanagement.config.config_manager import ENTRIES
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.url_scheme import AngrUrlScheme
 from angrmanagement.ui.css import refresh_theme
 from angrmanagement.ui.widgets.qfont_option import QFontOption
@@ -80,10 +81,12 @@ class Integration(Page):
         self._url_scheme_chk = QCheckBox("Register angr URL scheme (angr://).")
         self._url_scheme_text = QLineEdit()
         self._url_scheme_text.setReadOnly(True)
+        self._daemon_chk = QCheckBox("Always use local RPC daemon")
         url_scheme_lbl = QLabel("Currently registered to:")
 
         os_layout = QVBoxLayout()
         os_layout.addWidget(self._url_scheme_chk)
+        os_layout.addWidget(self._daemon_chk)
         os_layout.addWidget(url_scheme_lbl)
         os_layout.addWidget(self._url_scheme_text)
 
@@ -104,6 +107,8 @@ class Integration(Page):
             # the current OS is not supported
             self._url_scheme_chk.setDisabled(True)
 
+        self._daemon_chk.setChecked(Conf.use_daemon)
+
     def save_config(self) -> None:
         scheme = AngrUrlScheme()
         try:
@@ -117,6 +122,11 @@ class Integration(Page):
         except NotImplementedError:
             # the current OS is not supported
             pass
+
+        Conf.use_daemon = self._daemon_chk.isChecked()
+        if Conf.use_daemon and not GlobalInfo.client_id and GlobalInfo.main_window is not None:
+            GlobalInfo.main_window._run_daemon()
+
 
 
 CUSTOM_SCHEME_NAME = "Custom"
