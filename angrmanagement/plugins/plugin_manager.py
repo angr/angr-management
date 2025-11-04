@@ -1,4 +1,4 @@
-# pylint:disable=unused-private-member
+# pylint:disable=unused-private-member,import-outside-toplevel
 from __future__ import annotations
 
 import functools
