@@ -166,6 +166,7 @@ class PluginManager:
     def _register_toolbar_actions(self, plugin_cls: type[BasePlugin], plugin: BasePlugin) -> None:
         for idx, (icon, tooltip) in enumerate(plugin_cls.TOOLBAR_BUTTONS):
             from angrmanagement.ui.toolbars.toolbar_action import ToolbarAction
+
             action = ToolbarAction(
                 icon,
                 f"plugin {plugin_cls} toolbar {idx}",
@@ -177,6 +178,7 @@ class PluginManager:
 
     def _register_menu_buttons(self, plugin_cls: type[BasePlugin], plugin: BasePlugin) -> None:
         from angrmanagement.ui.menus.menu import MenuEntry, MenuSeparator
+
         if plugin_cls.MENU_BUTTONS:
             self.workspace._main_window._plugin_menu.add(MenuSeparator())
         for idx, text in enumerate(plugin_cls.MENU_BUTTONS):
@@ -499,4 +501,3 @@ class PluginManager:
     def optimization_passes(self):
         for plugin in self.active_plugins.values():
             yield from plugin.OPTIMIZATION_PASSES
-

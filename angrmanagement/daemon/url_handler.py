@@ -53,7 +53,7 @@ class UrlActionBase:
     def str2addrs(addr_str):
         if addr_str is None:
             return []
-        return [UrlActionBase.str2addr(elem) for elem in addr_str.split(',')]
+        return [UrlActionBase.str2addr(elem) for elem in addr_str.split(",")]
 
 
 class UrlActionOpen(UrlActionBase):
@@ -103,6 +103,7 @@ class UrlActionJumpTo(UrlActionBase):
             symbol=cls._one_param(params, "symbol"),
             target_id=cls._one_param(params, "target_id"),
         )
+
 
 class UrlActionSelectInsns(UrlActionBase):
     """

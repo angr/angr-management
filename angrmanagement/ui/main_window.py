@@ -5,8 +5,8 @@ import logging
 import os
 import pickle
 import time
-from functools import partial
 import uuid
+from functools import partial
 from typing import TYPE_CHECKING
 
 import PySide6QtAds as QtAds

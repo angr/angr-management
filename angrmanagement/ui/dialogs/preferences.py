@@ -128,7 +128,6 @@ class Integration(Page):
             GlobalInfo.main_window._run_daemon()
 
 
-
 CUSTOM_SCHEME_NAME = "Custom"
 
 
