@@ -19,6 +19,7 @@ class GlobalInfo:
     main_window: MainWindow | None = None
     daemon_inst = None
     daemon_conn = None
+    client_id: str | None = None
     headless_plugin_manager: PluginManager | None = None
     library_docs: LibraryDocs = None
     autoreload = False

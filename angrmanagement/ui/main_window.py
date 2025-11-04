@@ -5,6 +5,7 @@ import logging
 import os
 import pickle
 import time
+import uuid
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -169,7 +170,7 @@ class MainWindow(QMainWindow):
         self._init_menus()
         self._init_plugins()
         self._init_library_docs()
-        # self._init_url_scheme_handler()
+        self._init_url_scheme_handler()
 
         self._register_commands()
 
@@ -407,6 +408,9 @@ class MainWindow(QMainWindow):
         from rpyc import BgServingThread  # pylint:disable=import-outside-toplevel
 
         _ = BgServingThread(GlobalInfo.daemon_conn)
+
+        GlobalInfo.client_id = str(uuid.uuid4())
+        GlobalInfo.daemon_conn.root.register_client(GlobalInfo.client_id)
 
     #
     # URL scheme handler setup

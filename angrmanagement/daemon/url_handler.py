@@ -49,6 +49,12 @@ class UrlActionBase:
             addr = int(addr_str, 16)
         return addr
 
+    @staticmethod
+    def str2addrs(addr_str):
+        if addr_str is None:
+            return []
+        return [UrlActionBase.str2addr(elem) for elem in addr_str.split(",")]
+
 
 class UrlActionOpen(UrlActionBase):
     """
@@ -95,6 +101,28 @@ class UrlActionJumpTo(UrlActionBase):
         return cls(
             addr=addr,
             symbol=cls._one_param(params, "symbol"),
+            target_id=cls._one_param(params, "target_id"),
+        )
+
+
+class UrlActionSelectInsns(UrlActionBase):
+    """
+    Implements the jump-to action.
+    """
+
+    def __init__(self, addrs: list[int] | None = None, target_id=None) -> None:
+        super().__init__(target_id=target_id)
+        self.addrs = addrs
+
+    def act(self, daemon_conn=None) -> None:
+        daemon_conn.root.select_insns(self.addrs, self.target_id)
+
+    @classmethod
+    def _from_params(cls, params):
+        addrs = cls.str2addrs(cls._one_param(params, "addrs"))
+
+        return cls(
+            addrs=addrs,
             target_id=cls._one_param(params, "target_id"),
         )
 
@@ -164,6 +192,7 @@ class UrlActionBinaryAware(UrlActionBase):
 _ACT2CLS: dict[str, type[UrlActionBase]] = {
     "open": UrlActionOpen,
     "jumpto": UrlActionJumpTo,
+    "selectinsns": UrlActionSelectInsns,
     "commentat": UrlActionCommentAt,
 }
 

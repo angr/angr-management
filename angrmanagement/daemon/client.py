@@ -39,6 +39,15 @@ class ClientService(rpyc.Service):
                 # TODO: Support it
                 gui_thread_schedule_async(self.workspace.jump_to, args=(symbol,))
 
+    def exposed_select_insns(self, addrs: list[int] | None):
+        if self.workspace is not None:
+            gui_thread_schedule_async(GlobalInfo.main_window.bring_to_front)
+            gui_thread_schedule_async(self.workspace.jump_to, args=(addrs[0],))
+            if addrs is not None:
+                insns = self.workspace.view_manager.first_view_in_category("disassembly").infodock.selected_insns
+                insns.am_obj = set(addrs)
+                gui_thread_schedule_async(insns.am_event)
+
     def exposed_commentat(self, addr: int, comment: str) -> None:
         if self.workspace is not None and addr is not None:
             gui_thread_schedule_async(GlobalInfo.main_window.bring_to_front)
@@ -71,8 +80,8 @@ class DaemonClientCls:
         return GlobalInfo.daemon_conn
 
     @requires_daemon_conn
-    def register_binary(self, binary_name: str, target_id: str) -> None:
-        self.conn.root.register_binary(binary_name, target_id)
+    def register_client(self, target_id: str) -> None:
+        self.conn.root.register_client(target_id)
 
     @requires_daemon_conn
     def exit(self) -> None:
