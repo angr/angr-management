@@ -44,6 +44,19 @@ binharness = [
 bintrace = [
   "bintrace"
 ]
+
+[dependency-groups]
+dev = [
+  {include-group = "docs"},
+  {include-group = "pyinstaller"},
+  {include-group = "testing"},
+]
+docs = [
+  "furo",
+  "myst-parser",
+  "sphinx",
+  "sphinx-autodoc-typehints"
+]
 pyinstaller = [
   "pyinstaller==6.16.0",
   "pillow;platform_system == \"Darwin\"",
@@ -51,8 +64,6 @@ pyinstaller = [
   "angr[unicorn];platform_system != \"Darwin\"",
   "cle[ar,minidump,uefi,xbe,pdb]",
 ]
-
-[dependency-groups]
 testing = [
   "coverage",
   "pytest",
@@ -62,12 +73,6 @@ testing = [
   "pytest-split",
   "pytest-timeout",
   "pytest-xdist",
-]
-docs = [
-  "furo",
-  "myst-parser",
-  "sphinx",
-  "sphinx-autodoc-typehints"
 ]
 
 [project.scripts]
@@ -140,7 +145,6 @@ ignore = [
 
 [tool.ruff.lint.isort]
 required-imports = ["from __future__ import annotations"]
-
 
 [tool.mypy]
 packages = ["angrmanagement", "tests"]
