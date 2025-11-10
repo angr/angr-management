@@ -89,7 +89,6 @@ a = Analysis(
         "charset_normalizer.md__mypyc",
         "PySide6.support.deprecated",
         "binsync.interface_overrides.angr",
-        "binharness",
     ],
     hookspath=[],
     hooksconfig={},
