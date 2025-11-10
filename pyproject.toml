@@ -38,9 +38,6 @@ Homepage = "https://angr.io"
 Repository = "https://github.com/angr/angr-management"
 
 [project.optional-dependencies]
-binharness = [
-  "binharness~=0.1.0"
-]
 bintrace = [
   "bintrace"
 ]
