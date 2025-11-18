@@ -23,6 +23,7 @@ from angrmanagement.data.analysis_options import (
     CFGAnalysisConfiguration,
     CodeTaggingConfiguration,
     FlirtAnalysisConfiguration,
+    StringDeobfuscationConfiguration,
     VariableRecoveryConfiguration,
 )
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
@@ -35,6 +36,7 @@ from angrmanagement.data.jobs import (
     FlirtSignatureRecognitionJob,
     Job,
     PrototypeFindingJob,
+    StringDeobfuscationJob,
     VariableRecoveryJob,
 )
 from angrmanagement.data.jobs.loading import LoadBinaryJob
@@ -287,6 +289,9 @@ class Workspace:
 
         if self.main_instance._analysis_configuration["api_deobfuscation"].enabled:
             self.job_manager.add_job(APIDeobfuscationJob(self.main_instance))
+
+        if self.main_instance._analysis_configuration["string_deobfuscation"].enabled:
+            self.job_manager.add_job(StringDeobfuscationJob(self.main_instance))
 
         if not self.main_instance.cfg.am_none:
             if not self._first_cfg_generation_callback_completed:
@@ -558,6 +563,7 @@ class Workspace:
                     for a in [
                         CFGAnalysisConfiguration,
                         APIDeobfuscationConfiguration,
+                        StringDeobfuscationConfiguration,
                         FlirtAnalysisConfiguration,
                         CodeTaggingConfiguration,
                         CallingConventionRecoveryConfiguration,

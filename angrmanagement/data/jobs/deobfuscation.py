@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from angr.analyses.deobfuscator import APIObfuscationFinder
+from angr.analyses.deobfuscator import APIObfuscationFinder, StringObfuscationFinder
 
 from .job import InstanceJob
 
@@ -26,3 +26,18 @@ class APIDeobfuscationJob(InstanceJob):
 
     def __repr__(self) -> str:
         return "APIDeobfuscationJob"
+
+
+class StringDeobfuscationJob(InstanceJob):
+    """
+    Job for deobfuscating strings.
+    """
+
+    def __init__(self, instance: Instance, on_finish=None) -> None:
+        super().__init__("String Deobfuscation", instance, on_finish=on_finish)
+
+    def run(self, ctx: JobContext) -> None:
+        self.instance.project.analyses[StringObfuscationFinder].prep(progress_callback=ctx.set_progress)()
+
+    def __repr__(self) -> str:
+        return "StringDeobfuscationJob"
