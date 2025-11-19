@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import multiprocessing
-import platform
 import textwrap
 from typing import TYPE_CHECKING, Any
 
@@ -178,68 +176,6 @@ class ChoiceAnalysisOption(PrimitiveAnalysisOption):
     ) -> None:
         super().__init__(name, description, default, tooltip)
         self.choices = choices
-
-
-class VariableRecoveryConfiguration(AnalysisConfiguration):
-    """
-    Configuration for VariableRecovery analysis.
-    """
-
-    SMALL_BINARY_SIZE = 65536
-    MEDIUM_BINARY_SIZE = 400000
-
-    def __init__(self, instance: Instance) -> None:
-        super().__init__(instance)
-        self.name = "varec"
-        self.display_name = "Recover Variables on All Functions"
-        self.description = (
-            "Perform a full-project variable recovery and calling-convention recovery analysis. "
-            "Recommended for small- to medium-sized binaries. This analysis takes a long time to "
-            "finish on large binaries. You can manually perform a variable recovery and "
-            "calling-convention recovery analysis on an individual basis after loading the project."
-        )
-        self.enabled = self.get_main_obj_size() <= self.MEDIUM_BINARY_SIZE
-        self.options = {
-            o.name: o
-            for o in [
-                IntAnalysisOption(
-                    "workers",
-                    "Number of parallel workers",
-                    tooltip="0 to disable parallel analysis. Default to the number of available cores "
-                    "minus one in the local system. Automatically default to 0 for small binaries "
-                    "on all platforms, and small- to medium-sized binaries on Windows and MacOS "
-                    "(to avoid the cost of spawning new angr-management processes).",
-                    default=self.get_default_workers(),
-                    minimum=0,
-                ),
-                BoolAnalysisOption(
-                    "skip_signature_matched_functions",
-                    "Skip variable recovery for signature-matched functions",
-                    True,
-                ),
-                BoolAnalysisOption(
-                    "analyze_callsites",
-                    "Analyze callsites of each function to improve prototype recovery",
-                    False,
-                ),
-            ]
-        }
-
-    def get_default_workers(self) -> int:
-        main_obj_size = self.get_main_obj_size()
-
-        default_workers = max(multiprocessing.cpu_count() - 1, 1)
-        if default_workers == 1:
-            return 0
-
-        if platform.system() in {"Windows", "Darwin"}:
-            if main_obj_size <= self.MEDIUM_BINARY_SIZE:
-                return 0
-            return default_workers
-
-        if main_obj_size <= self.SMALL_BINARY_SIZE:
-            return 0
-        return default_workers
 
 
 class APIDeobfuscationConfiguration(AnalysisConfiguration):
