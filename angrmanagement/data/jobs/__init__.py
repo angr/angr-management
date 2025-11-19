@@ -5,7 +5,12 @@ from .cfg_generation import CFGAnalysisConfiguration, CFGGenerationJob
 from .code_tagging import CodeTaggingConfiguration, CodeTaggingJob
 from .ddg_generation import DDGGenerationJob
 from .decompile_function import DecompileFunctionJob
-from .deobfuscation import APIDeobfuscationJob, StringDeobfuscationJob
+from .deobfuscation import (
+    APIDeobfuscationConfiguration,
+    APIDeobfuscationJob,
+    StringDeobfuscationConfiguration,
+    StringDeobfuscationJob,
+)
 from .dependency_analysis import DependencyAnalysisJob
 from .flirt_signature_recognition import FlirtAnalysisConfiguration, FlirtSignatureRecognitionJob
 from .job import Job
@@ -16,7 +21,9 @@ from .variable_recovery import VariableRecoveryConfiguration, VariableRecoveryJo
 from .vfg_generation import VFGGenerationJob
 
 __all__ = [
+    "APIDeobfuscationConfiguration",
     "APIDeobfuscationJob",
+    "StringDeobfuscationConfiguration",
     "StringDeobfuscationJob",
     "CallingConventionRecoveryConfiguration",
     "CallingConventionRecoveryJob",

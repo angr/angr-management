@@ -16,14 +16,11 @@ from PySide6.QtWidgets import QMessageBox
 from PySide6QtAds import SideBarBottom
 
 from angrmanagement.config import Conf
-from angrmanagement.data.analysis_options import (
-    AnalysesConfiguration,
-    APIDeobfuscationConfiguration,
-    StringDeobfuscationConfiguration,
-)
+from angrmanagement.data.analysis_options import AnalysesConfiguration
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
 from angrmanagement.data.instance import Instance, ObjectContainer
 from angrmanagement.data.jobs import (
+    APIDeobfuscationConfiguration,
     APIDeobfuscationJob,
     CallingConventionRecoveryConfiguration,
     CallingConventionRecoveryJob,
@@ -35,6 +32,7 @@ from angrmanagement.data.jobs import (
     FlirtSignatureRecognitionJob,
     Job,
     PrototypeFindingJob,
+    StringDeobfuscationConfiguration,
     StringDeobfuscationJob,
     VariableRecoveryConfiguration,
     VariableRecoveryJob,
