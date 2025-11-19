@@ -19,7 +19,6 @@ from angrmanagement.config import Conf
 from angrmanagement.data.analysis_options import (
     AnalysesConfiguration,
     APIDeobfuscationConfiguration,
-    CallingConventionRecoveryConfiguration,
     CodeTaggingConfiguration,
     FlirtAnalysisConfiguration,
     StringDeobfuscationConfiguration,
@@ -29,6 +28,7 @@ from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
 from angrmanagement.data.instance import Instance, ObjectContainer
 from angrmanagement.data.jobs import (
     APIDeobfuscationJob,
+    CallingConventionRecoveryConfiguration,
     CallingConventionRecoveryJob,
     CFGAnalysisConfiguration,
     CFGGenerationJob,
