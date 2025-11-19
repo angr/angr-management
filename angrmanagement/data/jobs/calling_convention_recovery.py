@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+import multiprocessing
+import platform
 from typing import TYPE_CHECKING
 
+from angr.misc.testing import is_testing
+
+from angrmanagement.data.analysis_options import AnalysisConfiguration, BoolAnalysisOption, IntAnalysisOption
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
 from .job import InstanceJob
@@ -9,6 +14,63 @@ from .job import InstanceJob
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
     from angrmanagement.logic.jobmanager import JobContext
+
+
+class CallingConventionRecoveryConfiguration(AnalysisConfiguration):
+    """
+    Configuration for CCCA.
+    """
+
+    MAX_BINARY_SIZE = 5_120_000
+
+    def __init__(self, instance: Instance) -> None:
+        super().__init__(instance)
+        self.name = "cca"
+        self.display_name = "Recover Prototypes on All Functions"
+        self.description = "Perform a full-project calling-convention and prototype recovery analysis. "
+        self.enabled = self.get_main_obj_size() <= self.MAX_BINARY_SIZE
+        self.options = {
+            o.name: o
+            for o in [
+                IntAnalysisOption(
+                    "workers",
+                    "Number of parallel workers",
+                    tooltip="0 to disable parallel analysis. Default to the number of available cores "
+                    "minus one in the local system. Automatically default to 0 for small binaries "
+                    "on all platforms, and small- to medium-sized binaries on Windows and MacOS "
+                    "(to avoid the cost of spawning new angr-management processes).",
+                    default=self.get_default_workers(),
+                    minimum=0,
+                ),
+                BoolAnalysisOption(
+                    "skip_signature_matched_functions",
+                    "Skip variable recovery for signature-matched functions",
+                    True,
+                ),
+                BoolAnalysisOption(
+                    "analyze_callsites",
+                    "Analyze callsites of each function to improve prototype recovery",
+                    False,
+                ),
+            ]
+        }
+
+    def get_default_workers(self) -> int:
+        if is_testing:
+            return 0
+
+        main_obj_size = self.get_main_obj_size()
+
+        default_workers = max(multiprocessing.cpu_count() - 1, 1)
+        if default_workers == 1:
+            return 0
+
+        if platform.system() in {"Windows", "Darwin"}:
+            if main_obj_size <= self.MAX_BINARY_SIZE:
+                return 0
+            return default_workers
+
+        return default_workers
 
 
 class CallingConventionRecoveryJob(InstanceJob):
