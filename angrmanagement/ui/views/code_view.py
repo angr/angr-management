@@ -122,7 +122,7 @@ class CodeView(FunctionView):
 
     def decompile(
         self,
-        clear_prototype: bool = True,
+        clear_prototype: bool = False,
         focus: bool = False,
         focus_addr=None,
         flavor: str = "pseudocode",
@@ -176,7 +176,9 @@ class CodeView(FunctionView):
             )
             self.workspace.job_manager.add_job(job)
 
-        if self._function.ran_cca is False:
+        if self._function.ran_cca is False and (
+            self._function.prototype is None or self._function.is_prototype_guessed is True
+        ):
             # run calling convention analysis for this function
             if self.instance._analysis_configuration:
                 options = self.instance._analysis_configuration["varec"].to_dict()
@@ -309,7 +311,7 @@ class CodeView(FunctionView):
                 self.codegen.am_obj = new_codegen
                 update_var_types = True
             elif event == "retype_function":
-                self.decompile(clear_prototype=False, reset_cache=True)
+                self.decompile(reset_cache=True)
                 update_var_types = True
 
             if not update_var_types:

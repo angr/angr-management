@@ -500,7 +500,7 @@ class QCCodeEdit(api.CodeEdit):
         if cache.ite_exprs is None:
             cache.ite_exprs = set()
         cache.ite_exprs.add((addr, ailexpr))
-        self._code_view.decompile(clear_prototype=False, regen_clinic=False)
+        self._code_view.decompile(regen_clinic=False)
 
     def swap_binop_operands(self) -> None:
         node = self._selected_node
@@ -547,7 +547,7 @@ class QCCodeEdit(api.CodeEdit):
 
         if not existing_op_desc_removed:
             cache.binop_operators[op_desc] = negated_op
-        self._code_view.decompile(clear_prototype=False, regen_clinic=False)
+        self._code_view.decompile(regen_clinic=False)
 
     def expr2armasm(self) -> None:
         def _assemble(expr, expr_addr) -> str:
