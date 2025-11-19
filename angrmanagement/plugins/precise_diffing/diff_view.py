@@ -55,7 +55,7 @@ class DiffCodeView(CodeView):
 
     def decompile(
         self,
-        clear_prototype: bool = True,
+        clear_prototype: bool = False,
         focus: bool = False,
         focus_addr=None,
         flavor: str = "pseudocode",
@@ -106,7 +106,9 @@ class DiffCodeView(CodeView):
             )
             self.workspace.job_manager.add_job(job)
 
-        if self._function.ran_cca is False:
+        if self._function.ran_cca is False and (
+            self._function.prototype is None or self._function.is_prototype_guessed
+        ):
             # run calling convention analysis for this function
             if self.instance._analysis_configuration:
                 options = self.instance._analysis_configuration["varec"].to_dict()
