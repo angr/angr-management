@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .calling_convention_recovery import CallingConventionRecoveryJob
-from .cfg_generation import CFGGenerationJob
+from .cfg_generation import CFGAnalysisConfiguration, CFGGenerationJob
 from .code_tagging import CodeTaggingJob
 from .ddg_generation import DDGGenerationJob
 from .decompile_function import DecompileFunctionJob
@@ -19,6 +19,7 @@ __all__ = [
     "APIDeobfuscationJob",
     "StringDeobfuscationJob",
     "CallingConventionRecoveryJob",
+    "CFGAnalysisConfiguration",
     "CFGGenerationJob",
     "CodeTaggingJob",
     "DDGGenerationJob",
