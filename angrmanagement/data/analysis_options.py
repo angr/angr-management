@@ -3,7 +3,6 @@ from __future__ import annotations
 import multiprocessing
 import platform
 import textwrap
-from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 import angr
@@ -182,75 +181,6 @@ class ChoiceAnalysisOption(PrimitiveAnalysisOption):
     ) -> None:
         super().__init__(name, description, default, tooltip)
         self.choices = choices
-
-
-class CFGForceScanMode(Enum):
-    """
-    CFG scanning mode options.
-    """
-
-    Disabled = 0
-    SmartScan = 1
-    CompleteScan = 2
-
-
-class CFGAnalysisConfiguration(AnalysisConfiguration):
-    """
-    Configuration for CFGFast analysis.
-    """
-
-    def __init__(self, instance: Instance) -> None:
-        super().__init__(instance)
-        self.name = "cfg"
-        self.display_name = "Control-Flow Graph Recovery"
-        doc = angr.analyses.cfg.CFGFast.__doc__
-        self.description = extract_first_paragraph_from_docstring(doc) if doc else ""
-        self.enabled = True
-        self.options = {
-            o.name: o
-            for o in [
-                BoolAnalysisOption("resolve_indirect_jumps", "Resolve indirect jumps", True),
-                BoolAnalysisOption("data_references", "Collect cross-references and guess data types", True),
-                BoolAnalysisOption("cross_references", "Perform deep analysis on cross-references (slow)"),
-                BoolAnalysisOption("skip_unmapped_addrs", "Skip unmapped addresses", True),
-                BoolAnalysisOption("exclude_sparse_regions", "Exclude Sparse Regions", True),
-                BoolAnalysisOption(
-                    "explicit_analysis_starts", "Exclude non-explicit functions for analysis (incomplete)", False
-                ),
-                ChoiceAnalysisOption(
-                    "scanning_mode",
-                    "Scan to maximize identified code blocks",
-                    {
-                        CFGForceScanMode.Disabled: "Disabled",
-                        CFGForceScanMode.SmartScan: "Smart Scan",
-                        CFGForceScanMode.CompleteScan: "Complete Scan",
-                    },
-                    CFGForceScanMode.SmartScan,
-                ),
-                ChoiceAnalysisOption(
-                    "function_prologues",
-                    "Scan for function prologues",
-                    {
-                        None: "Auto",
-                        True: "Enabled",
-                        False: "Disabled",
-                    },
-                    None,
-                ),
-                StringAnalysisOption(
-                    "regions",
-                    "Regions for analysis",
-                    tooltip="Specify ranges of regions for which to recover CFG. Example: 0x400000-0x401000. You may "
-                    "specify multiple address ranges for analysis.",
-                ),
-                StringAnalysisOption(
-                    "function_starts",
-                    "Start at function addresses",
-                    tooltip="Specify function addresses to start recursive descent of CFG generation to speed up "
-                    "analysis. Example: 0x400000,0x401000",
-                ),
-            ]
-        }
 
 
 class FlirtAnalysisConfiguration(AnalysisConfiguration):
