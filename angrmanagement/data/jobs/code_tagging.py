@@ -2,11 +2,26 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from angrmanagement.data.analysis_options import AnalysisConfiguration
+
 from .job import InstanceJob
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
     from angrmanagement.logic.jobmanager import JobContext
+
+
+class CodeTaggingConfiguration(AnalysisConfiguration):
+    """
+    Configuration for Code Tagging.
+    """
+
+    def __init__(self, instance: Instance) -> None:
+        super().__init__(instance)
+        self.name = "code_tagging"
+        self.display_name = "Tag Functions Based on Syntactic Features"
+        self.description = "Add tags to functions based on syntactic features in assembly code and referenced strings."
+        self.enabled = False
 
 
 class CodeTaggingJob(InstanceJob):
