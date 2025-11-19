@@ -20,7 +20,6 @@ from angrmanagement.data.analysis_options import (
     AnalysesConfiguration,
     APIDeobfuscationConfiguration,
     CodeTaggingConfiguration,
-    FlirtAnalysisConfiguration,
     StringDeobfuscationConfiguration,
     VariableRecoveryConfiguration,
 )
@@ -33,6 +32,7 @@ from angrmanagement.data.jobs import (
     CFGAnalysisConfiguration,
     CFGGenerationJob,
     CodeTaggingJob,
+    FlirtAnalysisConfiguration,
     FlirtSignatureRecognitionJob,
     Job,
     PrototypeFindingJob,

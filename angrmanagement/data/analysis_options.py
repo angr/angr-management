@@ -5,8 +5,6 @@ import platform
 import textwrap
 from typing import TYPE_CHECKING, Any
 
-import angr
-
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
@@ -180,20 +178,6 @@ class ChoiceAnalysisOption(PrimitiveAnalysisOption):
     ) -> None:
         super().__init__(name, description, default, tooltip)
         self.choices = choices
-
-
-class FlirtAnalysisConfiguration(AnalysisConfiguration):
-    """
-    Configuration for Flirt analysis.
-    """
-
-    def __init__(self, instance: Instance) -> None:
-        super().__init__(instance)
-        self.name = "flirt"
-        self.display_name = "Function Signature Matching"
-        doc = angr.analyses.flirt.FlirtAnalysis.__doc__
-        self.description = doc.strip() if doc else ""
-        self.enabled = True
 
 
 class CodeTaggingConfiguration(AnalysisConfiguration):
