@@ -180,19 +180,6 @@ class ChoiceAnalysisOption(PrimitiveAnalysisOption):
         self.choices = choices
 
 
-class CodeTaggingConfiguration(AnalysisConfiguration):
-    """
-    Configuration for Code Tagging.
-    """
-
-    def __init__(self, instance: Instance) -> None:
-        super().__init__(instance)
-        self.name = "code_tagging"
-        self.display_name = "Tag Functions Based on Syntactic Features"
-        self.description = "Add tags to functions based on syntactic features in assembly code and referenced strings."
-        self.enabled = False
-
-
 class VariableRecoveryConfiguration(AnalysisConfiguration):
     """
     Configuration for VariableRecovery analysis.

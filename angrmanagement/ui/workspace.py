@@ -19,7 +19,6 @@ from angrmanagement.config import Conf
 from angrmanagement.data.analysis_options import (
     AnalysesConfiguration,
     APIDeobfuscationConfiguration,
-    CodeTaggingConfiguration,
     StringDeobfuscationConfiguration,
     VariableRecoveryConfiguration,
 )
@@ -31,6 +30,7 @@ from angrmanagement.data.jobs import (
     CallingConventionRecoveryJob,
     CFGAnalysisConfiguration,
     CFGGenerationJob,
+    CodeTaggingConfiguration,
     CodeTaggingJob,
     FlirtAnalysisConfiguration,
     FlirtSignatureRecognitionJob,
