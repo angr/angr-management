@@ -20,7 +20,6 @@ from angrmanagement.data.analysis_options import (
     AnalysesConfiguration,
     APIDeobfuscationConfiguration,
     StringDeobfuscationConfiguration,
-    VariableRecoveryConfiguration,
 )
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
 from angrmanagement.data.instance import Instance, ObjectContainer
@@ -37,6 +36,7 @@ from angrmanagement.data.jobs import (
     Job,
     PrototypeFindingJob,
     StringDeobfuscationJob,
+    VariableRecoveryConfiguration,
     VariableRecoveryJob,
 )
 from angrmanagement.data.jobs.loading import LoadBinaryJob

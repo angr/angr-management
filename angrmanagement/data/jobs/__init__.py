@@ -12,7 +12,7 @@ from .job import Job
 from .prototype_finding import PrototypeFindingJob
 from .simgr_explore import SimgrExploreJob
 from .simgr_step import SimgrStepJob
-from .variable_recovery import VariableRecoveryJob
+from .variable_recovery import VariableRecoveryConfiguration, VariableRecoveryJob
 from .vfg_generation import VFGGenerationJob
 
 __all__ = [
@@ -33,6 +33,7 @@ __all__ = [
     "PrototypeFindingJob",
     "SimgrExploreJob",
     "SimgrStepJob",
+    "VariableRecoveryConfiguration",
     "VariableRecoveryJob",
     "VFGGenerationJob",
 ]
