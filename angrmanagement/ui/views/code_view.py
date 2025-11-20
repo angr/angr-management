@@ -298,12 +298,7 @@ class CodeView(FunctionView):
                     self._function.am_obj, variable_kb=self.instance.pseudocode_variable_kb, decompile=False
                 )
                 dec_cache = self.instance.kb.decompilations[(self._function.addr, "pseudocode")]
-                new_codegen = dec.reflow_variable_types(
-                    dec_cache.type_constraints,
-                    dec_cache.func_typevar,
-                    dec_cache.var_to_typevar or {},
-                    dec_cache.codegen,
-                )
+                new_codegen = dec.reflow_variable_types(dec_cache)
                 # update the cache
                 dec_cache.codegen = new_codegen
 
