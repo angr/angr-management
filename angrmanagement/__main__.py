@@ -149,6 +149,9 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
     # install the global tooltip filter
     app.installEventFilter(QAwesomeTooltipEventFilter(app))
 
+    splash.setProgress(0.8, "Load type libraries")
+    angr.procedures.definitions.load_all_definitions()
+
     splash.setProgress(0.9, "Initializing main window")
     GlobalInfo.gui_thread = QThread.currentThread()
     file_to_open = filepath if filepath else None

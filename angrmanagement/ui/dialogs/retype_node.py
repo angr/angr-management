@@ -4,8 +4,11 @@ from typing import TYPE_CHECKING, Any
 
 import angr
 import pycparser
+from angr import SIM_TYPE_COLLECTIONS
 from angr.analyses.decompiler.structured_codegen.c import CConstruct, CFunction, CVariable
+from angr.errors import AngrMissingTypeError
 from angr.sim_variable import SimVariable
+from angr.utils.types import dereference_simtype, make_type_reference
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QFont, Qt
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
@@ -42,7 +45,7 @@ class TypeBox(QLineEdit):
     @property
     def type_str(self):
         text = self.text()
-        valid, _ = self._is_valid_type_str(text)
+        valid, _, _ = self._is_valid_type_str(text)
         if valid:
             return text.strip()
         return None
@@ -50,12 +53,12 @@ class TypeBox(QLineEdit):
     @property
     def sim_type(self):
         text = self.text()
-        valid, parsed_type = self._is_valid_type_str(text)
+        valid, _, parsed_type = self._is_valid_type_str(text)
         if valid:
             return parsed_type
         return None
 
-    def _is_valid_type_str(self, type_str: str) -> tuple[bool, SimType | None]:
+    def _is_valid_type_str(self, type_str: str) -> tuple[bool, str, SimType | None]:
         """
         We accept two forms of type strings. The user can either specify a full variable declaration, like "char var",
         or only specify a type string, like "char". This method first attempts to parse the string as a variable
@@ -71,13 +74,23 @@ class TypeBox(QLineEdit):
         except pycparser.c_parser.ParseError:
             defns = {}
         if len(defns) == 1:
-            return True, next(iter(defns.values()))
+            return True, "", next(iter(defns.values()))
 
         try:
             parsed_type = angr.sim_type.parse_type(type_str, predefined_types=self._predefined_types)
-            return True, parsed_type
         except pycparser.c_parser.ParseError:
-            return False, None
+            return False, "Invalid type declaration string", None
+
+        # once the type is parsed, try to convert it into a type reference and see if it resolves
+        ref_type = make_type_reference(parsed_type)
+
+        # try to dereference it using known type collections
+
+        try:
+            deref_type = dereference_simtype(ref_type, list(SIM_TYPE_COLLECTIONS.values()))
+            return True, "", deref_type
+        except AngrMissingTypeError as ex:
+            return False, f"Unknown type {ex.missing_type}", None
 
 
 class RetypeNode(QDialog):
@@ -180,9 +193,10 @@ class RetypeNode(QDialog):
             # initialization is not done yet
             return
 
-        if self._type_box.type_str is None:
+        type_valid, reason, _ = self._type_box._is_valid_type_str(self._type_box.text())
+        if not type_valid:
             # the variable name is invalid
-            self._status_label.setText("Invalid")
+            self._status_label.setText(f"Invalid: {reason}")
             self._status_label.setProperty("class", "status_invalid")
             self._ok_button.setEnabled(False)
         else:
