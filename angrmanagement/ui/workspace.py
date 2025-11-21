@@ -546,6 +546,22 @@ class Workspace:
             # redraw
             disasm_view.current_graph.refresh()
 
+    def get_default_analyses_configuration(self) -> AnalysesConfiguration:
+        return AnalysesConfiguration(
+            [
+                a(self.main_instance)
+                for a in [
+                    CFGAnalysisConfiguration,
+                    APIDeobfuscationConfiguration,
+                    StringDeobfuscationConfiguration,
+                    FlirtAnalysisConfiguration,
+                    CodeTaggingConfiguration,
+                    CallingConventionRecoveryConfiguration,
+                    VariableRecoveryConfiguration,
+                ]
+            ]
+        )
+
     def run_analysis(self, prompt_for_configuration: bool = True) -> None:
         if self.main_instance.project.am_none:
             return
@@ -555,20 +571,7 @@ class Workspace:
             prompt_for_configuration = False
 
         if self.main_instance._analysis_configuration is None:
-            self.main_instance._analysis_configuration = AnalysesConfiguration(
-                [
-                    a(self.main_instance)
-                    for a in [
-                        CFGAnalysisConfiguration,
-                        APIDeobfuscationConfiguration,
-                        StringDeobfuscationConfiguration,
-                        FlirtAnalysisConfiguration,
-                        CodeTaggingConfiguration,
-                        CallingConventionRecoveryConfiguration,
-                        VariableRecoveryConfiguration,
-                    ]
-                ]
-            )
+            self.main_instance._analysis_configuration = self.get_default_analyses_configuration()
 
         if prompt_for_configuration:
             dlg = AnalysisOptionsDialog(self.main_instance._analysis_configuration, self, self.main_window)
