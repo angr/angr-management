@@ -10,7 +10,6 @@ from angr import StateHierarchy
 from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
 from angr.knowledge_plugins.functions.function import Function
 from angr.knowledge_plugins.patches import Patch
-from angr.misc.testing import is_testing
 from cle import SymbolType
 from PySide6.QtWidgets import QMessageBox
 from PySide6QtAds import SideBarBottom
@@ -145,14 +144,8 @@ class AnalysisManager:
             )
 
         if conf["cca"].enabled:
-            options = conf["cca"].to_dict()
-            if is_testing:
-                options["workers"] = 0  # disable multiprocessing on angr CI
-
             job = CallingConventionRecoveryJob(
-                instance,
-                **options,
-                on_cc_recovered=self.workspace.on_cc_recovered,
+                instance, **conf["cca"].to_dict(), on_cc_recovered=self.workspace.on_cc_recovered
             )
 
             # prioritize the current function in display
@@ -163,14 +156,8 @@ class AnalysisManager:
             self._schedule_job(job)
 
         if conf["varec"].enabled:
-            options = conf["varec"].to_dict()
-            if is_testing:
-                options["workers"] = 0  # disable multiprocessing on angr CI
-
             job = VariableRecoveryJob(
-                instance,
-                **options,
-                on_variable_recovered=self.workspace.on_variable_recovered,
+                instance, **conf["varec"].to_dict(), on_variable_recovered=self.workspace.on_variable_recovered
             )
 
             # prioritize the current function in display
