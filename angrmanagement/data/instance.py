@@ -42,7 +42,7 @@ class Instance:
     def __init__(self) -> None:
         self.variable_recovery_job: VariableRecoveryJob | None = None
         self.calling_convention_recovery_job: CallingConventionRecoveryJob | None = None
-        self._analysis_configuration = None
+        self.analysis_configuration = None
 
         self.extra_containers = {}
         self._container_defaults = {}

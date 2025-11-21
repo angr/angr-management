@@ -275,9 +275,9 @@ class Workspace:
         self.main_instance.cfb.am_event()
         self.main_instance.cfg.am_event()
 
-        assert self.main_instance._analysis_configuration is not None
+        assert self.main_instance.analysis_configuration is not None
 
-        if self.main_instance._analysis_configuration["flirt"].enabled:
+        if self.main_instance.analysis_configuration["flirt"].enabled:
             self.job_manager.add_job(
                 FlirtSignatureRecognitionJob(
                     self.main_instance,
@@ -285,10 +285,10 @@ class Workspace:
                 )
             )
 
-        if self.main_instance._analysis_configuration["api_deobfuscation"].enabled:
+        if self.main_instance.analysis_configuration["api_deobfuscation"].enabled:
             self.job_manager.add_job(APIDeobfuscationJob(self.main_instance))
 
-        if self.main_instance._analysis_configuration["string_deobfuscation"].enabled:
+        if self.main_instance.analysis_configuration["string_deobfuscation"].enabled:
             self.job_manager.add_job(StringDeobfuscationJob(self.main_instance))
 
         if not self.main_instance.cfg.am_none:
@@ -324,7 +324,7 @@ class Workspace:
         )
 
     def _on_prototype_found(self, _: Any) -> None:
-        if self.main_instance._analysis_configuration["code_tagging"].enabled:
+        if self.main_instance.analysis_configuration["code_tagging"].enabled:
             self.job_manager.add_job(
                 CodeTaggingJob(
                     self.main_instance,
@@ -332,14 +332,14 @@ class Workspace:
                 )
             )
 
-        if self.main_instance._analysis_configuration["cca"].enabled:
-            options = self.main_instance._analysis_configuration["cca"].to_dict()
+        if self.main_instance.analysis_configuration["cca"].enabled:
+            options = self.main_instance.analysis_configuration["cca"].to_dict()
             if is_testing:
                 # disable multiprocessing on angr CI
                 options["workers"] = 0
             self.main_instance.calling_convention_recovery_job = CallingConventionRecoveryJob(
                 self.main_instance,
-                **self.main_instance._analysis_configuration["cca"].to_dict(),
+                **self.main_instance.analysis_configuration["cca"].to_dict(),
                 on_cc_recovered=self.on_cc_recovered,
             )
             # prioritize the current function in display
@@ -348,14 +348,14 @@ class Workspace:
                 self.main_instance.calling_convention_recovery_job.prioritize_function(disassembly_view.function.addr)
             self.job_manager.add_job(self.main_instance.calling_convention_recovery_job)
 
-        if self.main_instance._analysis_configuration["varec"].enabled:
-            options = self.main_instance._analysis_configuration["varec"].to_dict()
+        if self.main_instance.analysis_configuration["varec"].enabled:
+            options = self.main_instance.analysis_configuration["varec"].to_dict()
             if is_testing:
                 # disable multiprocessing on angr CI
                 options["workers"] = 0
             self.main_instance.variable_recovery_job = VariableRecoveryJob(
                 self.main_instance,
-                **self.main_instance._analysis_configuration["varec"].to_dict(),
+                **self.main_instance.analysis_configuration["varec"].to_dict(),
                 on_variable_recovered=self.on_variable_recovered,
             )
             # prioritize the current function in display
@@ -570,18 +570,18 @@ class Workspace:
             # If we are running headlessly (e.g. tests), just run with default configuration
             prompt_for_configuration = False
 
-        if self.main_instance._analysis_configuration is None:
-            self.main_instance._analysis_configuration = self.get_default_analyses_configuration()
+        if self.main_instance.analysis_configuration is None:
+            self.main_instance.analysis_configuration = self.get_default_analyses_configuration()
 
         if prompt_for_configuration:
-            dlg = AnalysisOptionsDialog(self.main_instance._analysis_configuration, self, self.main_window)
+            dlg = AnalysisOptionsDialog(self.main_instance.analysis_configuration, self, self.main_window)
             dlg.setModal(True)
             should_run = dlg.exec_()
         else:
             should_run = True
 
-        if should_run and self.main_instance._analysis_configuration["cfg"].enabled:
-            cfg_options = self.main_instance._analysis_configuration["cfg"].to_dict()
+        if should_run and self.main_instance.analysis_configuration["cfg"].enabled:
+            cfg_options = self.main_instance.analysis_configuration["cfg"].to_dict()
             # update function start locations
             if "function_starts" in cfg_options:
                 function_starts = []

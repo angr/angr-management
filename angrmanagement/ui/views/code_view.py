@@ -180,8 +180,8 @@ class CodeView(FunctionView):
             self._function.prototype is None or self._function.is_prototype_guessed is True
         ):
             # run calling convention analysis for this function
-            if self.instance._analysis_configuration:
-                options = self.instance._analysis_configuration["varec"].to_dict()
+            if self.instance.analysis_configuration:
+                options = self.instance.analysis_configuration["varec"].to_dict()
             else:
                 options = {}
             options["workers"] = 0
