@@ -93,6 +93,65 @@ class CFGAnalysisConfiguration(AnalysisConfiguration):
             ]
         }
 
+    def to_dict(self) -> dict:
+        cfg_options = super().to_dict()
+
+        # update function start locations
+        if "function_starts" in cfg_options:
+            function_starts = []
+            for func_start_str in cfg_options["function_starts"].split(","):
+                func_start_str = func_start_str.strip(" ")
+                if not func_start_str:
+                    continue
+
+                try:
+                    func_addr = int(func_start_str, 16)
+                except ValueError as e:
+                    _l.error("Invalid analysis start: %s", func_start_str)
+                    raise ValueError("Invalid function start string") from e
+
+                function_starts.append(func_addr)
+
+            if function_starts:
+                if "explicit_analysis_starts" in cfg_options:
+                    cfg_options["elf_eh_frame"] = False
+                    cfg_options["symbols"] = False
+                    cfg_options["start_at_entry"] = False
+
+                cfg_options["function_starts"] = function_starts
+
+        # discard "explicit_analysis_starts" even if function_starts is not set
+        if "explicit_analysis_starts" in cfg_options:
+            del cfg_options["explicit_analysis_starts"]
+
+        # update options for region specification
+        if "regions" in cfg_options:
+            regions = []
+            for region_str in cfg_options["regions"].split(","):
+                region_str = region_str.strip(" ")
+                if not region_str:
+                    continue
+                if "-" not in region_str or region_str.count("-") != 1:
+                    _l.error("Invalid analysis region: %s", region_str)
+                    raise ValueError("Invalid analysis region")
+                min_addr, max_addr = region_str.split("-")
+                try:
+                    min_addr = int(min_addr, 16)
+                    max_addr = int(max_addr, 16)
+                except ValueError as e:
+                    _l.error("Invalid analysis region: %s", region_str)
+                    raise ValueError("Invalid analysis region bound") from e
+                regions.append((min_addr, max_addr))
+            if regions:
+                cfg_options["regions"] = regions
+
+        scanning_mode = cfg_options.pop("scanning_mode", None)
+        if scanning_mode is not None:
+            cfg_options["force_smart_scan"] = scanning_mode == CFGForceScanMode.SmartScan
+            cfg_options["force_complete_scan"] = scanning_mode == CFGForceScanMode.CompleteScan
+
+        return cfg_options
+
 
 class CFGGenerationJob(InstanceJob):
     """
@@ -115,12 +174,6 @@ class CFGGenerationJob(InstanceJob):
                 cfg_args[key] = val
 
         self.cfg_args = cfg_args
-
-        scanning_mode = self.cfg_args.pop("scanning_mode", None)
-        if scanning_mode is not None:
-            self.cfg_args["force_smart_scan"] = scanning_mode == CFGForceScanMode.SmartScan
-            self.cfg_args["force_complete_scan"] = scanning_mode == CFGForceScanMode.CompleteScan
-
         self._cfb = None
 
     def run(self, ctx: JobContext):

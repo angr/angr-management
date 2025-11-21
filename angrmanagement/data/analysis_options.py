@@ -21,8 +21,7 @@ class AnalysesConfiguration:
     Configuration for a sequence of analyses.
     """
 
-    def __init__(self, analyses: Sequence[AnalysisConfiguration], instance: Instance) -> None:
-        self.instance = instance
+    def __init__(self, analyses: Sequence[AnalysisConfiguration]) -> None:
         self.analyses: Sequence[AnalysisConfiguration] = analyses
 
     def __len__(self) -> int:

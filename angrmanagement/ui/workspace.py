@@ -10,35 +10,21 @@ from angr import StateHierarchy
 from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
 from angr.knowledge_plugins.functions.function import Function
 from angr.knowledge_plugins.patches import Patch
-from angr.misc.testing import is_testing
 from cle import SymbolType
 from PySide6.QtWidgets import QMessageBox
 from PySide6QtAds import SideBarBottom
 
 from angrmanagement.config import Conf
-from angrmanagement.data.analysis_options import AnalysesConfiguration
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
 from angrmanagement.data.instance import Instance, ObjectContainer
 from angrmanagement.data.jobs import (
-    APIDeobfuscationConfiguration,
-    APIDeobfuscationJob,
-    CallingConventionRecoveryConfiguration,
-    CallingConventionRecoveryJob,
-    CFGAnalysisConfiguration,
     CFGGenerationJob,
-    CodeTaggingConfiguration,
-    CodeTaggingJob,
-    FlirtAnalysisConfiguration,
-    FlirtSignatureRecognitionJob,
     Job,
-    PrototypeFindingJob,
-    StringDeobfuscationConfiguration,
-    StringDeobfuscationJob,
-    VariableRecoveryConfiguration,
-    VariableRecoveryJob,
 )
+from angrmanagement.data.jobs.job import JobState
 from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.data.trace import BintraceTrace, Trace
+from angrmanagement.logic.analysis_manager import AnalysisManager
 from angrmanagement.logic.commands import CommandManager
 from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.logic.debugger.bintrace import BintraceDebugger
@@ -100,14 +86,20 @@ class Workspace:
     def __init__(self, main_window: MainWindow) -> None:
         self.main_window: MainWindow = main_window
         self.job_manager = JobManager(self)
+        self.job_manager.job_starting.connect(self.on_job_started)
 
         self.command_manager: CommandManager = CommandManager()
         self.view_manager: ViewManager = ViewManager(self)
         self.plugins: PluginManager = PluginManager(self)
-        self.variable_recovery_job: VariableRecoveryJob | None = None
         self._first_cfg_generation_callback_completed: bool = False
 
         self._main_instance = Instance()
+
+        self.analysis_manager: AnalysisManager = AnalysisManager(self)
+        self.analysis_manager.cfg_generated.connect(self.on_cfg_generated)
+        self.analysis_manager.cc_recovered.connect(self.on_cc_recovered)
+        self.analysis_manager.variable_recovered.connect(self.on_variable_recovered)
+        self.analysis_manager.functions_tagged.connect(self.on_function_tagged)
 
         # Configure callbacks on main_instance
         self.main_instance.project.am_subscribe(self._instance_project_initalization)
@@ -164,6 +156,62 @@ class Workspace:
     #
     # Events
     #
+
+    def on_job_started(self, job):
+        if isinstance(job, CFGGenerationJob):
+            start_daemon_thread(self._refresh_cfg, "Progressively Refreshing CFG", args=(job,))
+
+    def _refresh_cfg(self, cfg_job) -> None:
+        """
+        Reload once and then refresh in a loop, while the CFG job is running
+        """
+        reloaded = False
+        while True:
+            if not self.main_instance.cfg.am_none:
+                if reloaded:
+                    gui_thread_schedule_async(
+                        self.refresh,
+                        kwargs={
+                            "categories": ["disassembly", "functions"],
+                        },
+                    )
+                else:
+                    gui_thread_schedule_async(
+                        self.reload,
+                        kwargs={
+                            "categories": ["disassembly", "functions"],
+                        },
+                    )
+                    reloaded = True
+
+            time.sleep(0.3)
+            if cfg_job.state not in {JobState.PENDING, JobState.RUNNING}:
+                break
+
+    def on_cfg_generated(self) -> None:
+        if not self.main_instance.cfg.am_none:
+            if not self._first_cfg_generation_callback_completed:
+                self._first_cfg_generation_callback_completed = True
+                the_func = self.main_instance.kb.functions.function(name="main")
+                if the_func is None:
+                    the_func = self.main_instance.kb.functions.function(addr=self.main_instance.project.entry)
+                if the_func is not None:
+                    self.on_function_selected(the_func)
+
+            # Reload the pseudocode view
+            view = self.view_manager.first_view_in_category("pseudocode")
+            if view is not None:
+                view.reload()
+
+            # Reload the strings view
+            view = self.view_manager.first_view_in_category("strings")
+            if view is not None:
+                view.reload()
+
+            # Clear the proximity view
+            view = self.view_manager.first_view_in_category("proximity")
+            if view is not None:
+                view.clear()
 
     def on_debugger_state_updated(self) -> None:
         """
@@ -233,137 +281,6 @@ class Workspace:
         if disassembly_view is not None:
             disassembly_view.on_variable_recovered(func_addr)
 
-    def generate_cfg(self, cfg_args=None) -> None:
-        if cfg_args is None:
-            cfg_args = {}
-
-        cfg_job = CFGGenerationJob(self.main_instance, on_finish=self.on_cfg_generated, **cfg_args)
-        self.job_manager.add_job(cfg_job)
-        start_daemon_thread(self._refresh_cfg, "Progressively Refreshing CFG", args=(cfg_job,))
-
-    def _refresh_cfg(self, cfg_job) -> None:
-        """
-        Reload once and then refresh in a loop, while the CFG job is running
-        """
-        reloaded = False
-        while True:
-            if not self.main_instance.cfg.am_none:
-                if reloaded:
-                    gui_thread_schedule_async(
-                        self.refresh,
-                        kwargs={
-                            "categories": ["disassembly", "functions"],
-                        },
-                    )
-                else:
-                    gui_thread_schedule_async(
-                        self.reload,
-                        kwargs={
-                            "categories": ["disassembly", "functions"],
-                        },
-                    )
-                    reloaded = True
-
-            time.sleep(0.3)
-            if cfg_job not in self.job_manager.jobs:
-                break
-
-    def on_cfg_generated(self, cfg_result) -> None:
-        cfg, cfb = cfg_result
-        self.main_instance.cfb = cfb
-        self.main_instance.cfg = cfg
-        self.main_instance.cfb.am_event()
-        self.main_instance.cfg.am_event()
-
-        assert self.main_instance._analysis_configuration is not None
-
-        if self.main_instance._analysis_configuration["flirt"].enabled:
-            self.job_manager.add_job(
-                FlirtSignatureRecognitionJob(
-                    self.main_instance,
-                    on_finish=self._on_flirt_signature_recognized,
-                )
-            )
-
-        if self.main_instance._analysis_configuration["api_deobfuscation"].enabled:
-            self.job_manager.add_job(APIDeobfuscationJob(self.main_instance))
-
-        if self.main_instance._analysis_configuration["string_deobfuscation"].enabled:
-            self.job_manager.add_job(StringDeobfuscationJob(self.main_instance))
-
-        if not self.main_instance.cfg.am_none:
-            if not self._first_cfg_generation_callback_completed:
-                self._first_cfg_generation_callback_completed = True
-                the_func = self.main_instance.kb.functions.function(name="main")
-                if the_func is None:
-                    the_func = self.main_instance.kb.functions.function(addr=self.main_instance.project.entry)
-                if the_func is not None:
-                    self.on_function_selected(the_func)
-
-            # Reload the pseudocode view
-            view = self.view_manager.first_view_in_category("pseudocode")
-            if view is not None:
-                view.reload()
-
-            # Reload the strings view
-            view = self.view_manager.first_view_in_category("strings")
-            if view is not None:
-                view.reload()
-
-            # Clear the proximity view
-            view = self.view_manager.first_view_in_category("proximity")
-            if view is not None:
-                view.clear()
-
-    def _on_flirt_signature_recognized(self, _: Any) -> None:
-        self.job_manager.add_job(
-            PrototypeFindingJob(
-                self.main_instance,
-                on_finish=self._on_prototype_found,
-            )
-        )
-
-    def _on_prototype_found(self, _: Any) -> None:
-        if self.main_instance._analysis_configuration["code_tagging"].enabled:
-            self.job_manager.add_job(
-                CodeTaggingJob(
-                    self.main_instance,
-                    on_finish=self.on_function_tagged,
-                )
-            )
-
-        if self.main_instance._analysis_configuration["cca"].enabled:
-            options = self.main_instance._analysis_configuration["cca"].to_dict()
-            if is_testing:
-                # disable multiprocessing on angr CI
-                options["workers"] = 0
-            self.main_instance.calling_convention_recovery_job = CallingConventionRecoveryJob(
-                self.main_instance,
-                **self.main_instance._analysis_configuration["cca"].to_dict(),
-                on_cc_recovered=self.on_cc_recovered,
-            )
-            # prioritize the current function in display
-            disassembly_view = self.view_manager.first_view_in_category("disassembly")
-            if disassembly_view is not None and not disassembly_view.function.am_none:
-                self.main_instance.calling_convention_recovery_job.prioritize_function(disassembly_view.function.addr)
-            self.job_manager.add_job(self.main_instance.calling_convention_recovery_job)
-
-        if self.main_instance._analysis_configuration["varec"].enabled:
-            options = self.main_instance._analysis_configuration["varec"].to_dict()
-            if is_testing:
-                # disable multiprocessing on angr CI
-                options["workers"] = 0
-            self.main_instance.variable_recovery_job = VariableRecoveryJob(
-                self.main_instance,
-                **self.main_instance._analysis_configuration["varec"].to_dict(),
-                on_variable_recovered=self.on_variable_recovered,
-            )
-            # prioritize the current function in display
-            disassembly_view = self.view_manager.first_view_in_category("disassembly")
-            if disassembly_view is not None and not disassembly_view.function.am_none:
-                self.main_instance.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
-            self.job_manager.add_job(self.main_instance.variable_recovery_job)
-
     def _on_patch_event(self, **kwargs) -> None:
         if self.main_instance.cfg.am_none:
             return
@@ -377,7 +294,7 @@ class Workspace:
                 update_cfg = True
 
         if update_cfg:
-            self.generate_cfg(
+            self.analysis_manager.generate_cfg(
                 cfg_args={
                     "force_smart_scan": False,
                     "force_complete_scan": False,
@@ -546,107 +463,21 @@ class Workspace:
             # redraw
             disasm_view.current_graph.refresh()
 
-    def run_analysis(self, prompt_for_configuration: bool = True) -> None:
+    def run_analysis(self) -> None:
         if self.main_instance.project.am_none:
             return
 
-        if not self.main_window.shown_at_start:
-            # If we are running headlessly (e.g. tests), just run with default configuration
-            prompt_for_configuration = False
+        if self.main_instance.analysis_configuration is None:
+            self.main_instance.analysis_configuration = self.analysis_manager.get_default_analyses_configuration()
 
-        if self.main_instance._analysis_configuration is None:
-            self.main_instance._analysis_configuration = AnalysesConfiguration(
-                [
-                    a(self.main_instance)
-                    for a in [
-                        CFGAnalysisConfiguration,
-                        APIDeobfuscationConfiguration,
-                        StringDeobfuscationConfiguration,
-                        FlirtAnalysisConfiguration,
-                        CodeTaggingConfiguration,
-                        CallingConventionRecoveryConfiguration,
-                        VariableRecoveryConfiguration,
-                    ]
-                ],
-                self,
-            )
-
-        if prompt_for_configuration:
-            dlg = AnalysisOptionsDialog(self.main_instance._analysis_configuration, self, self.main_window)
+        # If we are running headlessly (e.g. tests), just run with default configuration
+        if self.main_window.shown_at_start:
+            dlg = AnalysisOptionsDialog(self.main_instance.analysis_configuration, self, self.main_window)
             dlg.setModal(True)
-            should_run = dlg.exec_()
-        else:
-            should_run = True
+            if not dlg.exec_():
+                return
 
-        if should_run and self.main_instance._analysis_configuration["cfg"].enabled:
-            cfg_options = self.main_instance._analysis_configuration["cfg"].to_dict()
-            # update function start locations
-            if "function_starts" in cfg_options:
-                function_starts = []
-                for func_start_str in cfg_options["function_starts"].split(","):
-                    func_start_str = func_start_str.strip(" ")
-                    if not func_start_str:
-                        continue
-
-                    try:
-                        func_addr = int(func_start_str, 16)
-                    except ValueError:
-                        if prompt_for_configuration:
-                            QMessageBox.critical(
-                                None, "Invalid function start string", f"Invalid analysis start {func_start_str}."
-                            )
-                        return
-
-                    function_starts.append(func_addr)
-
-                if function_starts:
-                    if "explicit_analysis_starts" in cfg_options:
-                        cfg_options["elf_eh_frame"] = False
-                        cfg_options["symbols"] = False
-                        cfg_options["start_at_entry"] = False
-
-                    cfg_options["function_starts"] = function_starts
-
-            # discard "explicit_analysis_starts" even if function_starts is not set
-            if "explicit_analysis_starts" in cfg_options:
-                del cfg_options["explicit_analysis_starts"]
-
-            # update options for region specification
-            if "regions" in cfg_options:
-                regions = []
-                for region_str in cfg_options["regions"].split(","):
-                    region_str = region_str.strip(" ")
-                    if not region_str:
-                        continue
-                    if "-" not in region_str or region_str.count("-") != 1:
-                        # invalid region
-                        if prompt_for_configuration:
-                            QMessageBox.critical(
-                                None, "Invalid region setting", f"Invalid analysis region {region_str}."
-                            )
-                        return
-                    min_addr, max_addr = region_str.split("-")
-                    try:
-                        min_addr = int(min_addr, 16)
-                    except ValueError:
-                        if prompt_for_configuration:
-                            QMessageBox.critical(
-                                None, "Invalid region setting", f"Invalid analysis region {region_str}."
-                            )
-                        return
-                    try:
-                        max_addr = int(max_addr, 16)
-                    except ValueError:
-                        if prompt_for_configuration:
-                            QMessageBox.critical(
-                                None, "Invalid region setting", f"Invalid analysis region {region_str}."
-                            )
-                        return
-                    regions.append((min_addr, max_addr))
-                if regions:
-                    cfg_options["regions"] = regions
-
-            self.generate_cfg(cfg_options)
+        self.analysis_manager.run_analysis()
 
     def decompile_current_function(self) -> None:
         current = self.view_manager.current_tab
@@ -965,7 +796,7 @@ class Workspace:
             if md.size and md.addr < addr < (md.addr + md.size):
                 md.size = addr - md.addr
 
-        self.generate_cfg(
+        self.analysis_manager.generate_cfg(
             cfg_args={
                 "symbols": False,
                 "function_prologues": False,
@@ -992,7 +823,7 @@ class Workspace:
         cfg.memory_data[md.addr] = md.copy()
         cfg.clear_region_for_reflow(func.addr)
 
-        self.generate_cfg(
+        self.analysis_manager.generate_cfg(
             cfg_args={
                 "symbols": False,
                 "function_prologues": False,
