@@ -567,8 +567,7 @@ class Workspace:
                         CallingConventionRecoveryConfiguration,
                         VariableRecoveryConfiguration,
                     ]
-                ],
-                self,
+                ]
             )
 
         if prompt_for_configuration:
