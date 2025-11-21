@@ -37,6 +37,7 @@ from angrmanagement.data.jobs import (
     VariableRecoveryConfiguration,
     VariableRecoveryJob,
 )
+from angrmanagement.data.jobs.job import JobState
 from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.data.trace import BintraceTrace, Trace
 from angrmanagement.logic.commands import CommandManager
@@ -119,18 +120,75 @@ class AnalysisManager:
             ]
         )
 
+    def _schedule_job(self, job: Job):
+        self.job_manager.add_job(job)
+
     def run_analysis(self) -> None:
-        if self.main_instance.analysis_configuration["cfg"].enabled:
-            cfg_options = self.main_instance.analysis_configuration["cfg"].to_dict()
-            self.generate_cfg(cfg_options)
+        conf = self.main_instance.analysis_configuration
+
+        if conf["cfg"].enabled:
+            job = CFGGenerationJob(self.main_instance, on_finish=self.on_cfg_generated, **conf["cfg"].to_dict())
+            self._schedule_job(job)
+            start_daemon_thread(self._refresh_cfg, "Progressively Refreshing CFG", args=(job,))
+
+        if conf["flirt"].enabled:
+            self._schedule_job(FlirtSignatureRecognitionJob(self.main_instance))
+            self._schedule_job(PrototypeFindingJob(self.main_instance))
+
+        if conf["api_deobfuscation"].enabled:
+            self._schedule_job(APIDeobfuscationJob(self.main_instance))
+
+        if conf["string_deobfuscation"].enabled:
+            self._schedule_job(StringDeobfuscationJob(self.main_instance))
+
+        if conf["code_tagging"].enabled:
+            self._schedule_job(
+                CodeTaggingJob(
+                    self.main_instance,
+                    on_finish=self.workspace.on_function_tagged,
+                )
+            )
+
+        if conf["cca"].enabled:
+            options = conf["cca"].to_dict()
+            if is_testing:
+                options["workers"] = 0  # disable multiprocessing on angr CI
+
+            job = CallingConventionRecoveryJob(
+                self.main_instance,
+                **options,
+                on_cc_recovered=self.workspace.on_cc_recovered,
+            )
+
+            # prioritize the current function in display
+            disassembly_view = self.view_manager.first_view_in_category("disassembly")
+            if disassembly_view is not None and not disassembly_view.function.am_none:
+                job.prioritize_function(disassembly_view.function.addr)
+
+            self._schedule_job(job)
+
+        if conf["varec"].enabled:
+            options = conf["varec"].to_dict()
+            if is_testing:
+                options["workers"] = 0  # disable multiprocessing on angr CI
+
+            job = VariableRecoveryJob(
+                self.main_instance,
+                **options,
+                on_variable_recovered=self.workspace.on_variable_recovered,
+            )
+
+            # prioritize the current function in display
+            disassembly_view = self.view_manager.first_view_in_category("disassembly")
+            if disassembly_view is not None and not disassembly_view.function.am_none:
+                job.prioritize_function(disassembly_view.function.addr)
+
+            self._schedule_job(job)
 
     def generate_cfg(self, cfg_args=None) -> None:
-        if cfg_args is None:
-            cfg_args = {}
-
-        cfg_job = CFGGenerationJob(self.main_instance, on_finish=self.on_cfg_generated, **cfg_args)
-        self.job_manager.add_job(cfg_job)
-        start_daemon_thread(self._refresh_cfg, "Progressively Refreshing CFG", args=(cfg_job,))
+        job = CFGGenerationJob(self.main_instance, on_finish=self.on_cfg_generated, **(cfg_args or {}))
+        self._schedule_job(job)
+        start_daemon_thread(self._refresh_cfg, "Progressively Refreshing CFG", args=(job,))
 
     def _refresh_cfg(self, cfg_job) -> None:
         """
@@ -156,7 +214,7 @@ class AnalysisManager:
                     reloaded = True
 
             time.sleep(0.3)
-            if cfg_job not in self.job_manager.jobs:
+            if cfg_job.state not in {JobState.PENDING, JobState.RUNNING}:
                 break
 
     def on_cfg_generated(self, cfg_result) -> None:
@@ -165,22 +223,6 @@ class AnalysisManager:
         self.main_instance.cfg = cfg
         self.main_instance.cfb.am_event()
         self.main_instance.cfg.am_event()
-
-        assert self.main_instance.analysis_configuration is not None
-
-        if self.main_instance.analysis_configuration["flirt"].enabled:
-            self.job_manager.add_job(
-                FlirtSignatureRecognitionJob(
-                    self.main_instance,
-                    on_finish=self._on_flirt_signature_recognized,
-                )
-            )
-
-        if self.main_instance.analysis_configuration["api_deobfuscation"].enabled:
-            self.job_manager.add_job(APIDeobfuscationJob(self.main_instance))
-
-        if self.main_instance.analysis_configuration["string_deobfuscation"].enabled:
-            self.job_manager.add_job(StringDeobfuscationJob(self.main_instance))
 
         if not self.main_instance.cfg.am_none:
             if not self._first_cfg_generation_callback_completed:
@@ -205,55 +247,6 @@ class AnalysisManager:
             view = self.view_manager.first_view_in_category("proximity")
             if view is not None:
                 view.clear()
-
-    def _on_flirt_signature_recognized(self, _: Any) -> None:
-        self.job_manager.add_job(
-            PrototypeFindingJob(
-                self.main_instance,
-                on_finish=self._on_prototype_found,
-            )
-        )
-
-    def _on_prototype_found(self, _: Any) -> None:
-        if self.main_instance.analysis_configuration["code_tagging"].enabled:
-            self.job_manager.add_job(
-                CodeTaggingJob(
-                    self.main_instance,
-                    on_finish=self.workspace.on_function_tagged,
-                )
-            )
-
-        if self.main_instance.analysis_configuration["cca"].enabled:
-            options = self.main_instance.analysis_configuration["cca"].to_dict()
-            if is_testing:
-                # disable multiprocessing on angr CI
-                options["workers"] = 0
-            self.main_instance.calling_convention_recovery_job = CallingConventionRecoveryJob(
-                self.main_instance,
-                **self.main_instance.analysis_configuration["cca"].to_dict(),
-                on_cc_recovered=self.workspace.on_cc_recovered,
-            )
-            # prioritize the current function in display
-            disassembly_view = self.view_manager.first_view_in_category("disassembly")
-            if disassembly_view is not None and not disassembly_view.function.am_none:
-                self.main_instance.calling_convention_recovery_job.prioritize_function(disassembly_view.function.addr)
-            self.job_manager.add_job(self.main_instance.calling_convention_recovery_job)
-
-        if self.main_instance.analysis_configuration["varec"].enabled:
-            options = self.main_instance.analysis_configuration["varec"].to_dict()
-            if is_testing:
-                # disable multiprocessing on angr CI
-                options["workers"] = 0
-            self.main_instance.variable_recovery_job = VariableRecoveryJob(
-                self.main_instance,
-                **self.main_instance.analysis_configuration["varec"].to_dict(),
-                on_variable_recovered=self.workspace.on_variable_recovered,
-            )
-            # prioritize the current function in display
-            disassembly_view = self.view_manager.first_view_in_category("disassembly")
-            if disassembly_view is not None and not disassembly_view.function.am_none:
-                self.main_instance.variable_recovery_job.prioritize_function(disassembly_view.function.addr)
-            self.job_manager.add_job(self.main_instance.variable_recovery_job)
 
 
 class Workspace:
