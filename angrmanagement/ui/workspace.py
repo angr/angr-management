@@ -67,7 +67,6 @@ from .views import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from typing import Any
 
     from angrmanagement.ui.main_window import MainWindow
 
@@ -96,6 +95,10 @@ class Workspace:
         self._main_instance = Instance()
 
         self.analysis_manager: AnalysisManager = AnalysisManager(self)
+        self.analysis_manager.cfg_generated.connect(self.on_cfg_generated)
+        self.analysis_manager.cc_recovered.connect(self.on_cc_recovered)
+        self.analysis_manager.variable_recovered.connect(self.on_variable_recovered)
+        self.analysis_manager.functions_tagged.connect(self.on_function_tagged)
 
         # Configure callbacks on main_instance
         self.main_instance.project.am_subscribe(self._instance_project_initalization)
@@ -184,13 +187,7 @@ class Workspace:
             if cfg_job.state not in {JobState.PENDING, JobState.RUNNING}:
                 break
 
-    def on_cfg_generated(self, cfg_result) -> None:
-        cfg, cfb = cfg_result
-        self.main_instance.cfb = cfb
-        self.main_instance.cfg = cfg
-        self.main_instance.cfb.am_event()
-        self.main_instance.cfg.am_event()
-
+    def on_cfg_generated(self) -> None:
         if not self.main_instance.cfg.am_none:
             if not self._first_cfg_generation_callback_completed:
                 self._first_cfg_generation_callback_completed = True
@@ -253,7 +250,7 @@ class Workspace:
             # ask the current view to display this function
             current_view.function = func
 
-    def on_function_tagged(self, _: Any) -> None:
+    def on_function_tagged(self) -> None:
         # reload disassembly view
         if len(self.view_manager.views_by_category["disassembly"]) == 1:
             view = self.view_manager.first_view_in_category("disassembly")
