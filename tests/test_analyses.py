@@ -19,7 +19,7 @@ from angrmanagement.data.jobs import (
     VariableRecoveryJob,
 )
 from angrmanagement.data.jobs.job import JobState
-from angrmanagement.ui.workspace import AnalysisManager
+from angrmanagement.logic.analysis_manager import AnalysisManager
 
 if TYPE_CHECKING:
     from angrmanagement.data.analysis_options import AnalysesConfiguration
