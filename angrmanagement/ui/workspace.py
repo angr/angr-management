@@ -182,7 +182,9 @@ class AnalysisManager:
             self._schedule_job(job)
 
     def generate_cfg(self, cfg_args=None) -> None:
-        job = CFGGenerationJob(self.main_instance, on_finish=self.on_cfg_generated, **(cfg_args or {}))
+        job = CFGGenerationJob(
+            self.workspace.main_instance, on_finish=self.workspace.on_cfg_generated, **(cfg_args or {})
+        )
         self._schedule_job(job)
         start_daemon_thread(self.workspace._refresh_cfg, "Progressively Refreshing CFG", args=(job,))
 
