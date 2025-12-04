@@ -24,8 +24,6 @@ if TYPE_CHECKING:
 
     from angr.knowledge_plugins.cfg import CFGModel
 
-    from .jobs import CallingConventionRecoveryJob, VariableRecoveryJob
-
 _l = logging.getLogger(__name__)
 
 
@@ -40,8 +38,6 @@ class Instance:
     log: list[LogRecord] | ObjectContainer
 
     def __init__(self) -> None:
-        self.variable_recovery_job: VariableRecoveryJob | None = None
-        self.calling_convention_recovery_job: CallingConventionRecoveryJob | None = None
         self.analysis_configuration = None
 
         self.extra_containers = {}
