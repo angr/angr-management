@@ -661,13 +661,6 @@ class DisassemblyView(SynchronizedFunctionView):
     def display_function(self, function) -> None:
         if function is None:
             return
-        if (
-            function.addr not in self.instance.kb.variables.function_managers
-            and self.instance.variable_recovery_job is not None
-        ):
-            # variable information is not available
-            # prioritize the analysis of this function
-            self.instance.variable_recovery_job.prioritize_function(function.addr)
         self.jump_history.jump_to(function.addr)
         self._display_function(function)
 
