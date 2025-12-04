@@ -98,16 +98,11 @@ class AnalysisManager:
 
     def __init__(self, workspace):
         self.workspace = workspace
-        self.job_manager = workspace.job_manager
-        self.view_manager = workspace.view_manager
-        self.main_instance = workspace.main_instance
-        self.main_window = workspace.main_window
-        self._first_cfg_generation_callback_completed: bool = False
 
     def get_default_analyses_configuration(self) -> AnalysesConfiguration:
         return AnalysesConfiguration(
             [
-                a(self.main_instance)
+                a(self.workspace.main_instance)
                 for a in [
                     CFGAnalysisConfiguration,
                     APIDeobfuscationConfiguration,
@@ -121,30 +116,31 @@ class AnalysisManager:
         )
 
     def _schedule_job(self, job: Job):
-        self.job_manager.add_job(job)
+        self.workspace.job_manager.add_job(job)
 
     def run_analysis(self) -> None:
-        conf = self.main_instance.analysis_configuration
+        instance = self.workspace.main_instance
+        conf = instance.analysis_configuration
 
         if conf["cfg"].enabled:
-            job = CFGGenerationJob(self.main_instance, on_finish=self.on_cfg_generated, **conf["cfg"].to_dict())
+            job = CFGGenerationJob(instance, on_finish=self.workspace.on_cfg_generated, **conf["cfg"].to_dict())
             self._schedule_job(job)
-            start_daemon_thread(self._refresh_cfg, "Progressively Refreshing CFG", args=(job,))
+            start_daemon_thread(self.workspace._refresh_cfg, "Progressively Refreshing CFG", args=(job,))
 
         if conf["flirt"].enabled:
-            self._schedule_job(FlirtSignatureRecognitionJob(self.main_instance))
-            self._schedule_job(PrototypeFindingJob(self.main_instance))
+            self._schedule_job(FlirtSignatureRecognitionJob(instance))
+            self._schedule_job(PrototypeFindingJob(instance))
 
         if conf["api_deobfuscation"].enabled:
-            self._schedule_job(APIDeobfuscationJob(self.main_instance))
+            self._schedule_job(APIDeobfuscationJob(instance))
 
         if conf["string_deobfuscation"].enabled:
-            self._schedule_job(StringDeobfuscationJob(self.main_instance))
+            self._schedule_job(StringDeobfuscationJob(instance))
 
         if conf["code_tagging"].enabled:
             self._schedule_job(
                 CodeTaggingJob(
-                    self.main_instance,
+                    instance,
                     on_finish=self.workspace.on_function_tagged,
                 )
             )
@@ -155,13 +151,13 @@ class AnalysisManager:
                 options["workers"] = 0  # disable multiprocessing on angr CI
 
             job = CallingConventionRecoveryJob(
-                self.main_instance,
+                instance,
                 **options,
                 on_cc_recovered=self.workspace.on_cc_recovered,
             )
 
             # prioritize the current function in display
-            disassembly_view = self.view_manager.first_view_in_category("disassembly")
+            disassembly_view = self.workspace.view_manager.first_view_in_category("disassembly")
             if disassembly_view is not None and not disassembly_view.function.am_none:
                 job.prioritize_function(disassembly_view.function.addr)
 
@@ -173,13 +169,13 @@ class AnalysisManager:
                 options["workers"] = 0  # disable multiprocessing on angr CI
 
             job = VariableRecoveryJob(
-                self.main_instance,
+                instance,
                 **options,
                 on_variable_recovered=self.workspace.on_variable_recovered,
             )
 
             # prioritize the current function in display
-            disassembly_view = self.view_manager.first_view_in_category("disassembly")
+            disassembly_view = self.workspace.view_manager.first_view_in_category("disassembly")
             if disassembly_view is not None and not disassembly_view.function.am_none:
                 job.prioritize_function(disassembly_view.function.addr)
 
@@ -188,65 +184,7 @@ class AnalysisManager:
     def generate_cfg(self, cfg_args=None) -> None:
         job = CFGGenerationJob(self.main_instance, on_finish=self.on_cfg_generated, **(cfg_args or {}))
         self._schedule_job(job)
-        start_daemon_thread(self._refresh_cfg, "Progressively Refreshing CFG", args=(job,))
-
-    def _refresh_cfg(self, cfg_job) -> None:
-        """
-        Reload once and then refresh in a loop, while the CFG job is running
-        """
-        reloaded = False
-        while True:
-            if not self.main_instance.cfg.am_none:
-                if reloaded:
-                    gui_thread_schedule_async(
-                        self.workspace.refresh,
-                        kwargs={
-                            "categories": ["disassembly", "functions"],
-                        },
-                    )
-                else:
-                    gui_thread_schedule_async(
-                        self.workspace.reload,
-                        kwargs={
-                            "categories": ["disassembly", "functions"],
-                        },
-                    )
-                    reloaded = True
-
-            time.sleep(0.3)
-            if cfg_job.state not in {JobState.PENDING, JobState.RUNNING}:
-                break
-
-    def on_cfg_generated(self, cfg_result) -> None:
-        cfg, cfb = cfg_result
-        self.main_instance.cfb = cfb
-        self.main_instance.cfg = cfg
-        self.main_instance.cfb.am_event()
-        self.main_instance.cfg.am_event()
-
-        if not self.main_instance.cfg.am_none:
-            if not self._first_cfg_generation_callback_completed:
-                self._first_cfg_generation_callback_completed = True
-                the_func = self.main_instance.kb.functions.function(name="main")
-                if the_func is None:
-                    the_func = self.main_instance.kb.functions.function(addr=self.main_instance.project.entry)
-                if the_func is not None:
-                    self.workspace.on_function_selected(the_func)
-
-            # Reload the pseudocode view
-            view = self.view_manager.first_view_in_category("pseudocode")
-            if view is not None:
-                view.reload()
-
-            # Reload the strings view
-            view = self.view_manager.first_view_in_category("strings")
-            if view is not None:
-                view.reload()
-
-            # Clear the proximity view
-            view = self.view_manager.first_view_in_category("proximity")
-            if view is not None:
-                view.clear()
+        start_daemon_thread(self.workspace._refresh_cfg, "Progressively Refreshing CFG", args=(job,))
 
 
 class Workspace:
@@ -263,6 +201,7 @@ class Workspace:
         self.command_manager: CommandManager = CommandManager()
         self.view_manager: ViewManager = ViewManager(self)
         self.plugins: PluginManager = PluginManager(self)
+        self._first_cfg_generation_callback_completed: bool = False
 
         self._main_instance = Instance()
 
@@ -323,6 +262,64 @@ class Workspace:
     #
     # Events
     #
+
+    def _refresh_cfg(self, cfg_job) -> None:
+        """
+        Reload once and then refresh in a loop, while the CFG job is running
+        """
+        reloaded = False
+        while True:
+            if not self.main_instance.cfg.am_none:
+                if reloaded:
+                    gui_thread_schedule_async(
+                        self.refresh,
+                        kwargs={
+                            "categories": ["disassembly", "functions"],
+                        },
+                    )
+                else:
+                    gui_thread_schedule_async(
+                        self.reload,
+                        kwargs={
+                            "categories": ["disassembly", "functions"],
+                        },
+                    )
+                    reloaded = True
+
+            time.sleep(0.3)
+            if cfg_job.state not in {JobState.PENDING, JobState.RUNNING}:
+                break
+
+    def on_cfg_generated(self, cfg_result) -> None:
+        cfg, cfb = cfg_result
+        self.main_instance.cfb = cfb
+        self.main_instance.cfg = cfg
+        self.main_instance.cfb.am_event()
+        self.main_instance.cfg.am_event()
+
+        if not self.main_instance.cfg.am_none:
+            if not self._first_cfg_generation_callback_completed:
+                self._first_cfg_generation_callback_completed = True
+                the_func = self.main_instance.kb.functions.function(name="main")
+                if the_func is None:
+                    the_func = self.main_instance.kb.functions.function(addr=self.main_instance.project.entry)
+                if the_func is not None:
+                    self.on_function_selected(the_func)
+
+            # Reload the pseudocode view
+            view = self.view_manager.first_view_in_category("pseudocode")
+            if view is not None:
+                view.reload()
+
+            # Reload the strings view
+            view = self.view_manager.first_view_in_category("strings")
+            if view is not None:
+                view.reload()
+
+            # Clear the proximity view
+            view = self.view_manager.first_view_in_category("proximity")
+            if view is not None:
+                view.clear()
 
     def on_debugger_state_updated(self) -> None:
         """
