@@ -24,6 +24,8 @@ if TYPE_CHECKING:
 
     from angr.knowledge_plugins.cfg import CFGModel
 
+    from angrmanagement.data.analysis_options import AnalysesConfiguration
+
 _l = logging.getLogger(__name__)
 
 
@@ -38,7 +40,7 @@ class Instance:
     log: list[LogRecord] | ObjectContainer
 
     def __init__(self) -> None:
-        self.analysis_configuration = None
+        self.analysis_configuration: AnalysesConfiguration | None = None
 
         self.extra_containers = {}
         self._container_defaults = {}
