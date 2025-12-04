@@ -125,7 +125,6 @@ class AnalysisManager:
         if conf["cfg"].enabled:
             job = CFGGenerationJob(instance, on_finish=self.workspace.on_cfg_generated, **conf["cfg"].to_dict())
             self._schedule_job(job)
-            start_daemon_thread(self.workspace._refresh_cfg, "Progressively Refreshing CFG", args=(job,))
 
         if conf["flirt"].enabled:
             self._schedule_job(FlirtSignatureRecognitionJob(instance))
@@ -186,7 +185,6 @@ class AnalysisManager:
             self.workspace.main_instance, on_finish=self.workspace.on_cfg_generated, **(cfg_args or {})
         )
         self._schedule_job(job)
-        start_daemon_thread(self.workspace._refresh_cfg, "Progressively Refreshing CFG", args=(job,))
 
 
 class Workspace:
@@ -199,6 +197,7 @@ class Workspace:
     def __init__(self, main_window: MainWindow) -> None:
         self.main_window: MainWindow = main_window
         self.job_manager = JobManager(self)
+        self.job_manager.job_starting.connect(self.on_job_started)
 
         self.command_manager: CommandManager = CommandManager()
         self.view_manager: ViewManager = ViewManager(self)
@@ -264,6 +263,10 @@ class Workspace:
     #
     # Events
     #
+
+    def on_job_started(self, job):
+        if isinstance(job, CFGGenerationJob):
+            start_daemon_thread(self._refresh_cfg, "Progressively Refreshing CFG", args=(job,))
 
     def _refresh_cfg(self, cfg_job) -> None:
         """
