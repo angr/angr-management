@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from PySide6.QtCore import QObject, Signal
+
 from angrmanagement.data.analysis_options import AnalysesConfiguration
 from angrmanagement.data.jobs import (
     APIDeobfuscationConfiguration,
@@ -21,12 +23,18 @@ from angrmanagement.data.jobs import (
 )
 
 
-class AnalysisManager:
+class AnalysisManager(QObject):
     """
     Manager of analyses.
     """
 
+    cfg_generated = Signal()
+    cc_recovered = Signal(object)
+    functions_tagged = Signal()
+    variable_recovered = Signal(object)
+
     def __init__(self, workspace):
+        super().__init__()
         self.workspace = workspace
 
     def get_default_analyses_configuration(self) -> AnalysesConfiguration:
@@ -53,7 +61,7 @@ class AnalysisManager:
         conf = instance.analysis_configuration
 
         if conf["cfg"].enabled:
-            job = CFGGenerationJob(instance, on_finish=self.workspace.on_cfg_generated, **conf["cfg"].to_dict())
+            job = CFGGenerationJob(instance, on_finish=self._on_cfg_generated, **conf["cfg"].to_dict())
             self._schedule_job(job)
 
         if conf["flirt"].enabled:
@@ -67,17 +75,10 @@ class AnalysisManager:
             self._schedule_job(StringDeobfuscationJob(instance))
 
         if conf["code_tagging"].enabled:
-            self._schedule_job(
-                CodeTaggingJob(
-                    instance,
-                    on_finish=self.workspace.on_function_tagged,
-                )
-            )
+            self._schedule_job(CodeTaggingJob(instance, on_finish=self._on_functions_tagged))
 
         if conf["cca"].enabled:
-            job = CallingConventionRecoveryJob(
-                instance, **conf["cca"].to_dict(), on_cc_recovered=self.workspace.on_cc_recovered
-            )
+            job = CallingConventionRecoveryJob(instance, **conf["cca"].to_dict(), on_cc_recovered=self._on_cc_recovered)
 
             # prioritize the current function in display
             disassembly_view = self.workspace.view_manager.first_view_in_category("disassembly")
@@ -88,7 +89,7 @@ class AnalysisManager:
 
         if conf["varec"].enabled:
             job = VariableRecoveryJob(
-                instance, **conf["varec"].to_dict(), on_variable_recovered=self.workspace.on_variable_recovered
+                instance, **conf["varec"].to_dict(), on_variable_recovered=self._on_variable_recovered
             )
 
             # prioritize the current function in display
@@ -99,7 +100,22 @@ class AnalysisManager:
             self._schedule_job(job)
 
     def generate_cfg(self, cfg_args=None) -> None:
-        job = CFGGenerationJob(
-            self.workspace.main_instance, on_finish=self.workspace.on_cfg_generated, **(cfg_args or {})
-        )
+        job = CFGGenerationJob(self.workspace.main_instance, on_finish=self._on_cfg_generated, **(cfg_args or {}))
         self._schedule_job(job)
+
+    def _on_cfg_generated(self, cfg_result) -> None:
+        cfg, cfb = cfg_result
+        self.workspace.main_instance.cfb = cfb
+        self.workspace.main_instance.cfg = cfg
+        self.workspace.main_instance.cfb.am_event()
+        self.workspace.main_instance.cfg.am_event()
+        self.cfg_generated.emit()
+
+    def _on_cc_recovered(self, func_addr: int) -> None:
+        self.cc_recovered.emit(func_addr)
+
+    def _on_variable_recovered(self, func_addr: int) -> None:
+        self.variable_recovered.emit(func_addr)
+
+    def _on_functions_tagged(self, _) -> None:
+        self.functions_tagged.emit()
