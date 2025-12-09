@@ -236,9 +236,7 @@ class QOperand(QCachedGraphicsItem):
         if self.is_branch_target:
             # a branch instruction
 
-            is_target_func = bool(
-                self.branch_targets is not None and next(iter(self.branch_targets)) in self.disasm.kb.functions
-            )
+            is_target_func = bool(self.branch_targets and next(iter(self.branch_targets)) in self.disasm.kb.functions)
 
             self._label = self.operand.render()[0]
             self._is_target_func = is_target_func
