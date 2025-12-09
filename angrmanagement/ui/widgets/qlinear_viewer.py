@@ -15,6 +15,7 @@ from sortedcontainers import SortedDict
 
 from angrmanagement.config import Conf
 from angrmanagement.utils.cache import SmartLRUCache
+from angrmanagement.utils.graph import get_out_branches
 
 from .qblock import QLinearBlock
 from .qdisasm_base_control import DisassemblyLevel, QDisassemblyBaseControl
@@ -520,6 +521,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                                     None,
                                 )
                     else:
+                        out_branches = get_out_branches(func, obj_addr)
                         qobject = QLinearBlock(
                             self.instance,
                             func_addr,
@@ -528,7 +530,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                             self.disasm_view.infodock,
                             obj.addr,
                             [obj],
-                            {},
+                            out_branches,
                         )
                 else:
                     # TODO: Get disassembly even if the function does not exist

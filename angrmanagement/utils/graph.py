@@ -180,6 +180,8 @@ def to_supergraph(transition_graph):
 
 
 class OutBranch:
+    __slots__ = ("ins_addr", "stmt_idx", "type", "targets")
+
     def __init__(self, ins_addr, stmt_idx, branch_type) -> None:
         self.ins_addr = ins_addr
         self.stmt_idx = stmt_idx
@@ -232,6 +234,8 @@ class OutBranch:
 
 
 class SuperCFGNode:
+    __slots__ = ("addr", "idx", "cfg_nodes", "out_branches")
+
     def __init__(self, addr: int, idx: int | None = None) -> None:
         self.addr = addr
         self.idx = idx
@@ -307,3 +311,22 @@ class SuperCFGNode:
             return False
 
         return self.addr == other.addr
+
+
+def get_out_branches(func: Function, obj_addr: int) -> dict[int, dict[int, OutBranch]]:
+    func_graph = func.transition_graph
+    func_block = func.get_node(obj_addr)
+    if func_block is None:
+        return {}
+    out_branches = {}
+    for _, dst, data in func_graph.out_edges(func_block, data=True):
+        if "ins_addr" in data and "stmt_idx" in data and "type" in data:
+            ins_addr = data["ins_addr"]
+            stmt_idx = data["stmt_idx"]
+            branch_type = data["type"]
+            if branch_type in {"transition", "exception", "call"}:
+                if ins_addr not in out_branches:
+                    out_branches[ins_addr] = {}
+                out_branches[ins_addr][stmt_idx] = OutBranch(ins_addr, stmt_idx, branch_type)
+                out_branches[ins_addr][stmt_idx].add_target(dst.addr)
+    return out_branches
