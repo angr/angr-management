@@ -25,7 +25,7 @@ COLOR_SCHEMES = {
         "disasm_view_variable_offset_color": QColor(0x80, 0x80, 0x00),
         "disasm_view_branch_target_text_color": QColor(0x80, 0x80, 0x00),
         "disasm_view_ir_default_color": QColor(0x80, 0x80, 0x80),
-        "disasm_view_label_color": QColor(0x00, 0x00, 0xFF),
+        "disasm_view_label_color": QColor(0x00, 0x00, 0x80),
         "disasm_view_label_highlight_color": QColor(0xF0, 0xF0, 0xBF),
         "disasm_view_target_addr_color": QColor(0x00, 0x00, 0xFF),
         "disasm_view_antitarget_addr_color": QColor(0xFF, 0x00, 0x00),
