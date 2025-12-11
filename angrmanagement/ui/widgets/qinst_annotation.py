@@ -261,7 +261,7 @@ class QBlockAnnotations(QGraphicsItem):
         for _addr, annotations_ in self.addr_to_annotations.items():
             width = sum(a.boundingRect().width() + self.PADDING for a in annotations_)
             max_width = max(max_width, width)
-            for annotation in annotations:
+            for annotation in annotations_:
                 annotation.setParentItem(self)
         self.width = max_width
         self._init_widgets()
