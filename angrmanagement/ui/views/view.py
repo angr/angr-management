@@ -128,7 +128,7 @@ class FunctionView(InstanceView):
         return self._function
 
     @function.setter
-    def function(self, function: angr.knowledge_plugins.Function) -> None:
+    def function(self, function: angr.knowledge_plugins.Function | None) -> None:
         self._function.am_obj = function
         self._function.am_event()
 

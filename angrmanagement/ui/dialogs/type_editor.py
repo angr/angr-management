@@ -21,7 +21,7 @@ class CTypeEditor(QDialog):
     :param multiline:           Whether the editor should be a multiline editor
     :param editing_single:      If set, the name of the single type we are editing
 
-    :ivar list[(Optional[str], SimType)] result:
+    :ivar list[(Optional[str], SimType)] main_result:
                                 The entered types. Will be empty if the dialog was cancelled.
                                 Will have only a single entry if editing_single is non-null.
     :ivar list[(Optional[str], SimType)] side_result:
@@ -50,8 +50,8 @@ class CTypeEditor(QDialog):
         self.setWindowTitle("Type editor")
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
 
-        self.result = []
-        self.side_result = []
+        self.main_result: list[tuple[str, sim_type.SimType]] = []
+        self.side_result: list[tuple[str, sim_type.SimType]] = []
 
     def _init_widgets(self, base_text, multiline) -> None:
         buttons = QDialogButtonBox(parent=self)
@@ -91,7 +91,7 @@ class CTypeEditor(QDialog):
         self.close()
 
     def _on_cancel_pressed(self) -> None:
-        self.result = []
+        self.main_result = []
         self.side_result = []
         self.close()
 
@@ -106,7 +106,6 @@ class CTypeEditor(QDialog):
                 text, predefined_types=self._predefined_types, arch=self.arch, side_effect_types=side_typedefs
             )
             result = list(typedefs.items()) + list(defs.items())
-            result = [(name, ty) for name, ty in result]
             side_result = [
                 (name, ty) for name, ty in side_typedefs.items() if name not in typedefs and name not in defs
             ]
@@ -127,11 +126,11 @@ class CTypeEditor(QDialog):
 
         if not result or (self._editing_single and len(result) != 1):
             self._ok_button.setEnabled(False)
-            self.result = []
+            self.main_result = []
             self.side_result = []
         else:
             self._ok_button.setEnabled(True)
-            self.result = result
+            self.main_result = result
             assert side_result is not None
             self.side_result = side_result
 

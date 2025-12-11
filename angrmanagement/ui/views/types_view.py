@@ -32,8 +32,8 @@ class TypesView(FunctionView):
         self._function = ObjectContainer(None, "Current function")
         self._function.am_subscribe(self.reload)
 
-        self._layout: QVBoxLayout = None
-        self._caption_label: QLabel = None
+        self._layout: QVBoxLayout
+        self._caption_label: QLabel
         self._init_widgets()
 
         # display global types by default
@@ -46,7 +46,9 @@ class TypesView(FunctionView):
     @property
     def current_typestore(self) -> TypesStore:
         if self._function.am_none:
+            assert self.instance.kb is not None
             return self.instance.kb.types
+        assert self.instance.pseudocode_variable_kb is not None
         var_manager: VariableManagerInternal = self.instance.pseudocode_variable_kb.variables[self._function.addr]
         return var_manager.types
 
@@ -89,7 +91,6 @@ class TypesView(FunctionView):
         # scroll_contents.setStyleSheet("background-color: white;")
 
     def reload(self) -> None:
-        print("RELOADING")
         for child in list(self._layout.parent().children()):
             if type(child) is QCTypeDef:
                 self._layout.takeAt(0)
@@ -101,6 +102,7 @@ class TypesView(FunctionView):
             return
 
         # update the display
+        assert self.function is not None
         if self.function.am_none:
             self._caption_label.setText("Persistent (global) variable types")
         else:
@@ -121,6 +123,7 @@ class TypesView(FunctionView):
             self._layout.insertWidget(self._layout.count() - 1, widget)
 
     def _on_new_type(self) -> None:
+        assert self.instance.kb is not None
         dialog = CTypeEditor(
             None,
             self.instance.project.arch,
@@ -131,10 +134,10 @@ class TypesView(FunctionView):
 
         types_store = self.current_typestore
 
-        for name, ty in dialog.result + dialog.side_result:
+        for name, ty in dialog.main_result + dialog.side_result:
             if name in ALL_TYPES:
                 continue
-            if name is None and type(ty) in (SimStruct, SimUnion) and ty.name != "<anon>":
+            if name is None and isinstance(ty, (SimStruct, SimUnion)) and ty.name != "<anon>":
                 name = ty.name
             if name is None:
                 name = types_store.unique_type_name()
