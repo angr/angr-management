@@ -13,6 +13,8 @@ from angrmanagement.ui.dialogs.type_editor import CTypeEditor, edit_field
 if TYPE_CHECKING:
     from angr.knowledge_plugins.types import TypesStore
 
+    from angrmanagement.ui import views
+
 LINE_HEIGHT = 20
 COL_WIDTH = 8
 
@@ -22,7 +24,7 @@ class QCTypeDef(QWidget):
     A widget to display a C SimType.
     """
 
-    def __init__(self, parent, ty: TypeRef, all_types: TypesStore) -> None:
+    def __init__(self, parent, ty: TypeRef, all_types: TypesStore, editor: views.TypesView | None = None) -> None:
         super().__init__(parent)
 
         self.type = ty
@@ -30,6 +32,7 @@ class QCTypeDef(QWidget):
         self.lines = [""]
         self.highlight = None  # which line should be highlighted
         self.all_types = all_types
+        self.editor = editor
 
         self.setAttribute(Qt.WidgetAttribute.WA_Hover)
         self.setMouseTracking(True)
@@ -109,19 +112,35 @@ class QCTypeDef(QWidget):
                 pass
             else:
                 if edited:
-                    self.refresh()
+                    if self.editor is not None:
+                        self.editor.reload()
+                    else:
+                        self.refresh()
                 return
 
         dialog = CTypeEditor(
-            None, self.type._arch, self.text, multiline=True, allow_multiple=False, predefined_types=self.all_types
+            None,
+            self.type._arch,
+            self.text,
+            multiline=True,
+            editing_single=self.type.name,
+            predefined_types=self.all_types,
         )
         dialog.exec_()
-        if dialog.result:
-            name, ty = dialog.result[0]
-            if name is not None and name != self.type.name:
+        if dialog.main_result:
+            name, ty = dialog.main_result[0]
+            if name is not None and stript(name) != stript(self.type.name):
                 if name in self.all_types:
                     QMessageBox.warning(None, "Duplicate type name", f"The name {name} is already taken.")
                 else:
-                    self.all_types.rename(self.type.name, name)
+                    # TODO handle the struct/union aliases properly
+                    self.all_types.rename(self.type.name, stript(name))
             self.type.type = ty
-            self.refresh()
+            if self.editor is not None:
+                self.editor.reload()
+            else:
+                self.refresh()
+
+
+def stript(s):
+    return s.removeprefix("struct ").removeprefix("union ")

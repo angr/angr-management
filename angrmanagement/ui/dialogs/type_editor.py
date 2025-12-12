@@ -19,11 +19,13 @@ class CTypeEditor(QDialog):
     :param parent:              The parent widget
     :param base_text:           The text to initially display in the editor
     :param multiline:           Whether the editor should be a multiline editor
-    :param allow_multiple:      Whether to allow inputting more than one declaration separated by semicolons
+    :param editing_single:      If set, the name of the single type we are editing
 
-    :ivar list[(Optional[str], SimType)] result:
-                                The entered types. Will only be one entry if allow_multiple is false, and will be empty
-                                if the dialog was cancelled.
+    :ivar list[(Optional[str], SimType)] main_result:
+                                The entered types. Will be empty if the dialog was cancelled.
+                                Will have only a single entry if editing_single is non-null.
+    :ivar list[(Optional[str], SimType)] side_result:
+                                Any additional types which were defined along the way.
     """
 
     def __init__(
@@ -32,23 +34,25 @@ class CTypeEditor(QDialog):
         arch,
         base_text: str = "",
         multiline: bool = False,
-        allow_multiple: bool = False,
+        editing_single: str | None = None,
         predefined_types=None,
     ) -> None:
         super().__init__(parent)
 
-        self._allow_multiple = allow_multiple
+        self._editing_single = editing_single
         self.arch = arch
         self._predefined_types = predefined_types
 
         self.text = lambda: ""
+        self.setText = lambda x: None
         self._ok_button: QPushButton | None
         self._init_widgets(base_text, multiline)
 
         self.setWindowTitle("Type editor")
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
 
-        self.result = []
+        self.main_result: list[tuple[str, sim_type.SimType]] = []
+        self.side_result: list[tuple[str, sim_type.SimType]] = []
 
     def _init_widgets(self, base_text, multiline) -> None:
         buttons = QDialogButtonBox(parent=self)
@@ -63,6 +67,7 @@ class CTypeEditor(QDialog):
             )
             editor.setFont(Conf.disasm_font)
             self.text = editor.toPlainText
+            self.setText = editor.setPlainText
 
             editor.setPlainText(base_text)
             editor.selectAll()
@@ -71,6 +76,7 @@ class CTypeEditor(QDialog):
             editor = QLineEdit(self)
             editor.setFont(Conf.disasm_font)
             self.text = editor.text
+            self.setText = editor.setText
             editor.returnPressed.connect(self._on_ok_pressed)
             editor.textChanged.connect(self._evaluate)
 
@@ -85,43 +91,51 @@ class CTypeEditor(QDialog):
         self.setLayout(layout)
 
     def _on_ok_pressed(self) -> None:
-        if not self.result:
-            return
-
         self.close()
 
     def _on_cancel_pressed(self) -> None:
-        self.result = []
+        self.main_result = []
+        self.side_result = []
         self.close()
 
     def _evaluate(self) -> None:
         text = self.text()
 
         result = None
+        side_result = None
         try:
-            defs, typedefs = sim_type.parse_file(text, predefined_types=self._predefined_types)
-            for k in list(typedefs):
-                if k.startswith("struct ") and k[7:] in typedefs:
-                    typedefs.pop(k)
+            side_typedefs = {}
+            defs, typedefs = sim_type.parse_file(
+                text, predefined_types=self._predefined_types, arch=self.arch, side_effect_types=side_typedefs
+            )
             result = list(typedefs.items()) + list(defs.items())
-            result = [(name, ty.with_arch(self.arch)) for name, ty in result]
+            side_result = [
+                (name, ty) for name, ty in side_typedefs.items() if name not in typedefs and name not in defs
+            ]
         except pycparser.plyparser.ParseError:
             pass
 
         # hack. idk why our pycparser config will accept `typedef int` as the same as `int`
         if result is None and not text.strip().startswith("typedef"):
             try:
-                ty, name = sim_type.parse_type_with_name(text, predefined_types=self._predefined_types)
-                result = [(name, ty.with_arch(self.arch))]
+                side_typedefs = {}
+                ty, name = sim_type.parse_type_with_name(
+                    text, predefined_types=self._predefined_types, arch=self.arch, side_effect_types=side_typedefs
+                )
+                result = [(name, ty)]
+                side_result = [(name2, ty) for name2, ty in side_typedefs.items() if name2 != name]
             except pycparser.plyparser.ParseError:
                 pass
 
-        if not result or (not self._allow_multiple and len(result) != 1):
+        if not result or (self._editing_single and len(result) != 1):
             self._ok_button.setEnabled(False)
-            self.result = []
+            self.main_result = []
+            self.side_result = []
         else:
             self._ok_button.setEnabled(True)
-            self.result = result
+            self.main_result = result
+            assert side_result is not None
+            self.side_result = side_result
 
 
 def edit_field(ty, field, predefined_types=None) -> bool:
@@ -150,7 +164,7 @@ def edit_field(ty, field, predefined_types=None) -> bool:
 
     name, subty = fields_list[fieldno]
     text = subty.c_repr(name=name)
-    dialog = CTypeEditor(None, ty._arch, text, multiline=False, allow_multiple=False, predefined_types=predefined_types)
+    dialog = CTypeEditor(None, ty._arch, text, multiline=False, editing_single=name, predefined_types=predefined_types)
     dialog.exec_()
     if not dialog.result:
         return False
