@@ -58,14 +58,14 @@ class TestTypeEditor(ProjectOpenTestCase):
         assert len(self.types_view.typedefs) == 0
 
         @self.editor_input("struct wawa{};")
-        def _():
+        def _a():
             self.types_view._on_new_type()
 
         assert len(self.types_view.typedefs) == 1
         assert set(self.project.kb.types.iter_own_keys()) == {"wawa", "struct wawa"}
 
         @self.editor_input("struct foo { struct wawa a; wawa b; int c; };")
-        def _():
+        def _b():
             self.types_view._on_new_type()
 
         assert len(self.types_view.typedefs) == 2
@@ -76,7 +76,7 @@ class TestTypeEditor(ProjectOpenTestCase):
         assert self.project.kb.types["foo"].type.size == 32
 
         @self.editor_input("struct wawa { int hey; };")
-        def _():
+        def _c():
             self.types_view.typedefs[0].highlight = 0
             self.types_view.typedefs[0].mouseDoubleClickEvent(None)
 
