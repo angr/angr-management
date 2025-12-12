@@ -127,15 +127,20 @@ class QCTypeDef(QWidget):
             predefined_types=self.all_types,
         )
         dialog.exec_()
-        if dialog.result:
-            name, ty = dialog.result[0]
-            if name is not None and name != self.type.name:
+        if dialog.main_result:
+            name, ty = dialog.main_result[0]
+            if name is not None and stript(name) != stript(self.type.name):
                 if name in self.all_types:
                     QMessageBox.warning(None, "Duplicate type name", f"The name {name} is already taken.")
                 else:
-                    self.all_types.rename(self.type.name, name)
+                    # TODO handle the struct/union aliases properly
+                    self.all_types.rename(self.type.name, stript(name))
             self.type.type = ty
             if self.editor is not None:
                 self.editor.reload()
             else:
                 self.refresh()
+
+
+def stript(s):
+    return s.removeprefix("struct ").removeprefix("union ")

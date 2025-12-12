@@ -35,6 +35,7 @@ class TypesView(FunctionView):
         self._layout: QVBoxLayout
         self._caption_label: QLabel
         self._init_widgets()
+        self.typedefs: list[QCTypeDef] = []
 
         # display global types by default
         self.reload()
@@ -96,6 +97,7 @@ class TypesView(FunctionView):
                 self._layout.takeAt(0)
                 self._layout.removeWidget(child)
                 child.deleteLater()
+        self.typedefs.clear()
 
         if self.instance.project.am_none:
             self._caption_label.setText("Types View")
@@ -121,6 +123,7 @@ class TypesView(FunctionView):
                 continue
             widget = QCTypeDef(self._layout.parent(), ty, types_store, self)
             self._layout.insertWidget(self._layout.count() - 1, widget)
+            self.typedefs.append(widget)
 
     def _on_new_type(self) -> None:
         assert self.instance.kb is not None

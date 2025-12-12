@@ -44,6 +44,7 @@ class CTypeEditor(QDialog):
         self._predefined_types = predefined_types
 
         self.text = lambda: ""
+        self.setText = lambda x: None
         self._ok_button: QPushButton | None
         self._init_widgets(base_text, multiline)
 
@@ -66,6 +67,7 @@ class CTypeEditor(QDialog):
             )
             editor.setFont(Conf.disasm_font)
             self.text = editor.toPlainText
+            self.setText = editor.setPlainText
 
             editor.setPlainText(base_text)
             editor.selectAll()
@@ -74,6 +76,7 @@ class CTypeEditor(QDialog):
             editor = QLineEdit(self)
             editor.setFont(Conf.disasm_font)
             self.text = editor.text
+            self.setText = editor.setText
             editor.returnPressed.connect(self._on_ok_pressed)
             editor.textChanged.connect(self._evaluate)
 
