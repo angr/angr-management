@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler import DECOMPILATION_PRESETS
@@ -20,7 +21,9 @@ from PySide6.QtWidgets import (
 from angrmanagement.ui.widgets.qproperty_editor import (
     BoolPropertyItem,
     ComboPropertyItem,
+    FloatPropertyItem,
     GroupPropertyItem,
+    IntPropertyItem,
     PropertyModel,
     QPropertyEditor,
 )
@@ -30,13 +33,28 @@ if TYPE_CHECKING:
     from angrmanagement.ui.views.code_view import CodeView
 
 
-def map_option_to_property(option, enabled):
-    if hasattr(option, "value_type") and not isinstance(option.value_type, bool) and option.candidate_values:
+def map_option_to_property(option, current_val):
+    if hasattr(option, "value_type") and not issubclass(option.value_type, bool) and option.candidate_values:
         return ComboPropertyItem(
             option.NAME, option.default_value, option.candidate_values, description=option.DESCRIPTION, option=option
         )
+    elif hasattr(option, "value_type") and issubclass(option.value_type, float):
+        minimum, maximum = sys.float_info.min, sys.float_info.max
+        if hasattr(option, "value_range") and option.value_range is not None:
+            minimum, maximum = option.value_range
+        return FloatPropertyItem(
+            option.NAME, current_val, minimum, maximum, description=option.DESCRIPTION, option=option
+        )
+    elif hasattr(option, "value_type") and issubclass(option.value_type, int):
+        minimum = -(2**31)
+        maximum = 2**31 - 1
+        if hasattr(option, "value_range") and option.value_range is not None:
+            minimum, maximum = option.value_range
+        return IntPropertyItem(
+            option.NAME, current_val, minimum, maximum, description=option.DESCRIPTION, option=option
+        )
     else:
-        return BoolPropertyItem(option.NAME, enabled, description=option.DESCRIPTION, option=option)
+        return BoolPropertyItem(option.NAME, current_val, description=option.DESCRIPTION, option=option)
 
 
 class QDecompilationOptions(QWidget):
