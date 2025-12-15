@@ -5,6 +5,7 @@ import angr
 import capstone
 import debugpy
 import parso
+import platform
 import pypcode
 import pyvex
 import pyxdia
@@ -66,11 +67,11 @@ if sys.platform == "linux":
     PYSIDE6_BASE = pathlib.Path(PySide6.__file__).parent
     included_data.append((str(PYSIDE6_BASE / "Qt" / "lib"), "PySide6/Qt/lib"))
 
-    import keystone
+    if platform.machine() != "aarch64":
+        import keystone
+        KEYSTONE_BASE = pathlib.Path(keystone.__file__).parent
+        included_data.append((str(KEYSTONE_BASE), "keystone"))
 
-    KEYSTONE_BASE = pathlib.Path(keystone.__file__).parent
-
-    included_data.append((str(KEYSTONE_BASE), "keystone"))
     included_data.append((str(ZMQ_BASE / ".." / "pyzmq.libs"), "pyzmq.libs"))
 
 
