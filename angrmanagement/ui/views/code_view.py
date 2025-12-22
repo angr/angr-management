@@ -427,8 +427,8 @@ class CodeView(FunctionView):
                 var = selected_node.variable
                 if var and isinstance(var, SimMemoryVariable):
                     self.workspace.jump_to(var.addr)
-            elif isinstance(selected_node, CLabel) and selected_node.ins_addr is not None:
-                self.workspace.jump_to(selected_node.ins_addr)
+            elif isinstance(selected_node, CLabel) and "ins_addr" in selected_node.tags:
+                self.workspace.jump_to(selected_node.tags["ins_addr"])
 
     def jump_to(self, addr: int, src_ins_addr=None) -> None:  # pylint:disable=unused-argument
         self.addr.am_obj = addr
