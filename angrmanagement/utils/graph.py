@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
 import networkx
-from angr.knowledge_plugins import Function
+from angr.codenode import FuncNode
+
+if TYPE_CHECKING:
+    from angr.knowledge_plugins import Function
 
 
 def to_supergraph(transition_graph):
@@ -48,7 +52,7 @@ def to_supergraph(transition_graph):
             continue
 
         for dst, data in edges.items():
-            if isinstance(dst, Function):
+            if isinstance(dst, FuncNode):
                 continue
             if "type" in data and data["type"] == "fake_return":
                 if all(
@@ -68,7 +72,7 @@ def to_supergraph(transition_graph):
     function_nodes = set()  # it will be traversed after all other nodes are added into the supergraph
 
     for node in transition_graph.nodes():
-        if isinstance(node, Function):
+        if isinstance(node, FuncNode):
             function_nodes.add(node)
             # don't put functions into the supergraph
             continue
@@ -135,7 +139,7 @@ def to_supergraph(transition_graph):
                     super_graph.remove_node(dst_supernode)
 
             else:
-                if isinstance(dst, Function):
+                if isinstance(dst, FuncNode):
                     # skip all functions
                     continue
 
