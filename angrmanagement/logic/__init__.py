@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
     from angrmanagement.data.library_docs import LibraryDocs
     from angrmanagement.plugins.plugin_manager import PluginManager
-    from angrmanagement.ui.main_window import MainWindow
+    from angrmanagement.ui.main_window import MainWindow, QExecuteCodeEventReceiver
 
 
 class GlobalInfo:
@@ -17,6 +17,7 @@ class GlobalInfo:
 
     gui_thread: QThread | None = None
     main_window: MainWindow | None = None
+    event_receiver: QExecuteCodeEventReceiver
     daemon_inst = None
     daemon_conn = None
     client_id: str | None = None

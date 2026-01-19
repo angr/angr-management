@@ -71,7 +71,7 @@ def gui_thread_schedule(
     event = ExecuteCodeEvent(func, args=args, kwargs=kwargs)
 
     try:
-        QCoreApplication.postEvent(GlobalInfo.main_window, event)
+        QCoreApplication.postEvent(GlobalInfo.event_receiver, event)
     except RuntimeError:
         # the application is exiting and the main window has been destroyed. just let it go
         return None
@@ -103,4 +103,4 @@ def gui_thread_schedule_async(
     event = ExecuteCodeEvent(func, args=args, kwargs=kwargs, async_=True)
 
     with contextlib.suppress(RuntimeError):  # the application is exiting and the main window has been destroyed.
-        QCoreApplication.postEvent(GlobalInfo.main_window, event)
+        QCoreApplication.postEvent(GlobalInfo.event_receiver, event)

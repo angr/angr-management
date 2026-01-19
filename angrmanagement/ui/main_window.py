@@ -125,6 +125,24 @@ class ShiftShiftEventFilter(QObject):
         return False
 
 
+class QExecuteCodeEventReceiver(QObject):
+    """
+    A class that receives ExecuteCodeEvent and executes the code on the GUI thread.
+    """
+
+    def event(self, event, /):
+        if not isinstance(event, ExecuteCodeEvent):
+            return False
+        try:
+            event.result = event.execute()
+        except Exception as ex:  # pylint:disable=broad-except
+            event.exception = ex
+            if event.async_:
+                _l.exception("Exception occurred in an async job:")
+        event.event.set()
+        return True
+
+
 class MainWindow(QMainWindow):
     """
     The main window of angr management.
@@ -141,6 +159,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("angr management")
 
         GlobalInfo.main_window = self
+        GlobalInfo.event_receiver = QExecuteCodeEventReceiver()
         self.shown_at_start = show
 
         # initialization
@@ -539,20 +558,6 @@ class MainWindow(QMainWindow):
             self.workspace.plugins.deactivate_plugin(plugin)
         self.workspace.job_manager.quit()
         event.accept()
-
-    def event(self, event):
-        if event.type() == QEvent.User and isinstance(event, ExecuteCodeEvent):
-            try:
-                event.result = event.execute()
-            except Exception as ex:  # pylint:disable=broad-except
-                event.exception = ex
-                if event.async_:
-                    _l.exception("Exception occurred in an async job:")
-            event.event.set()
-
-            return True
-
-        return super().event(event)
 
     def on_screen_changed(self, screen) -> None:
         """
