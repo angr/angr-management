@@ -250,7 +250,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         else:
             super().mousePressEvent(event)
 
-    def changeEvent(self, event: QEvent) -> None:  # type:ignore
+    def changeEvent(self, event: QEvent) -> None:  # type: ignore
         """
         Redraw on color scheme update.
         """
