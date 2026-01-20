@@ -60,7 +60,7 @@ class BlockTreeNode:
         self.span = None
         self.subobjs = []
         self.display_address = display_address
-        self._fmt_current = None  # type:ignore
+        self._fmt_current = None  # type: ignore
         self.top_margin_lines = top_margin_lines
         self.bottom_margin_lines = bottom_margin_lines
         self.update_style()

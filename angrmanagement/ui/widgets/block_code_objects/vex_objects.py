@@ -64,8 +64,8 @@ class QIrOpPcodeOp(QIROpTextObj):
     Renders a P-code op.
     """
 
-    def create_subobjs(self, obj: pypcode.PcodeOp) -> None:  # type:ignore[reportInvalidTypeForm]
-        self.add_text(pypcode.PcodePrettyPrinter.fmt_op(obj))  # type:ignore
+    def create_subobjs(self, obj: pypcode.PcodeOp) -> None:  # type: ignore[reportInvalidTypeForm]
+        self.add_text(pypcode.PcodePrettyPrinter.fmt_op(obj))  # type: ignore
 
 
 if pypcode:
@@ -143,7 +143,7 @@ class QIROpVexWrTmpObj(QIROpTextObj):
         self.add_text(" = ")
         if isinstance(obj.data, pyvex.expr.Get):
             reg_name = irsb.arch.translate_register_name(obj.data.offset, obj.data.result_size(irsb.tyenv) // 8)
-            self.add_irobj(VexIRRegWrapper(obj.data.offset, reg_name))  # type:ignore
+            self.add_irobj(VexIRRegWrapper(obj.data.offset, reg_name))  # type: ignore
         else:
             self.add_irobj(obj.data)
 
@@ -226,7 +226,7 @@ class QIROpVexPutObj(QIROpTextObj):
         irsb = self.irobj.irsb
         reg_name = irsb.arch.translate_register_name(obj.offset, obj.data.result_size(irsb.tyenv) // 8)
         self.add_text("PUT(")
-        self.add_irobj(VexIRRegWrapper(obj.offset, reg_name))  # type:ignore
+        self.add_irobj(VexIRRegWrapper(obj.offset, reg_name))  # type: ignore
         self.add_text(") = ")
         self.add_irobj(obj.data)
 
@@ -243,7 +243,7 @@ class QIROpVexExitObj(QIROpTextObj):
         self.add_text("if (")
         self.add_irobj(obj.guard)
         self.add_text(") { PUT(")
-        self.add_irobj(VexIRRegWrapper(obj.offsIP, reg_name))  # type:ignore
+        self.add_irobj(VexIRRegWrapper(obj.offsIP, reg_name))  # type: ignore
         self.add_text(") = ")
         self.add_irobj(obj.dst.value)
         self.add_text("; ")

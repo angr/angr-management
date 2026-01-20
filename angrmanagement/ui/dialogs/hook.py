@@ -48,25 +48,19 @@ class HookDialog(QDialog):
     #
 
     def _add_templates(self, addr: int) -> None:
-        self.templates[
-            "base"
-        ] = f"""\
+        self.templates["base"] = f"""\
 @project.hook(addr={addr}, length=0)
 def hook(state):
     ..."""
 
-        self.templates[
-            "assertion"
-        ] = f"""\
+        self.templates["assertion"] = f"""\
 @project.hook(addr={addr}, length=0)
 def assertion(state):
     state.add_constraints(
         ...
     )"""
 
-        self.templates[
-            "disable unicorn"
-        ] = f"""\
+        self.templates["disable unicorn"] = f"""\
 @project.hook(addr={addr}, length=0)
 def disable_unicorn(state):
     state.options.discard("UNICORN")
@@ -76,9 +70,7 @@ def disable_unicorn(state):
     state.options.discard("UNICORN_TRACK_STACK_POINTERS")
 """
 
-        self.templates[
-            "enable unicorn"
-        ] = f"""\
+        self.templates["enable unicorn"] = f"""\
 @project.hook(addr={addr}, length=0)
 def enable_unicorn(state):
     state.options.add("UNICORN")

@@ -38,7 +38,7 @@ class AvailableDebuggersModel(QAbstractItemModel):
     def index(self, row, col, parent=None):
         return self.createIndex(row, col, None)
 
-    def parent(self, index=None):  # type:ignore
+    def parent(self, index=None):  # type: ignore
         return QModelIndex()
 
     def data(self, index, role: int = Qt.ItemDataRole.DisplayRole) -> Any:

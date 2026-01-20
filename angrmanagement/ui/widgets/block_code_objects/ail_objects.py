@@ -185,7 +185,7 @@ class QAilConstObj(QAilTextObj):
         data_str = string_at_addr(
             self.instance.cfg,
             obj.value,
-            self.instance.project,  # type:ignore
+            self.instance.project,  # type: ignore
         )
         if data_str:
             self.add_text(data_str)

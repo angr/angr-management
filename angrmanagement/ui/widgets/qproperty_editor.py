@@ -253,7 +253,7 @@ class PropertyModel(QAbstractItemModel):
             return self.createIndex(row, column, childItem)
         return QModelIndex()
 
-    def parent(self, index=None):  # type:ignore
+    def parent(self, index=None):  # type: ignore
         index = index or QModelIndex()
         if not index.isValid():
             return QModelIndex()
@@ -459,7 +459,7 @@ class PropertyDelegate(QStyledItemDelegate):
                     editor.addItem(text, data)
                 return editor
             case PropertyType.BOOL | PropertyType.COLOR | PropertyType.FONT | PropertyType.FILE:
-                return None  # type:ignore
+                return None  # type: ignore
             case _:
                 pass
         return super().createEditor(parent, option, index)
@@ -649,8 +649,7 @@ class PropertyTreeView(QTreeView):
 
         # Disable expand/collapse controls. We'll handle it manually.
         self.setItemsExpandable(False)
-        self.setStyleSheet(
-            """
+        self.setStyleSheet("""
             QTreeView::item {
                 padding: 2px;
             }
@@ -658,8 +657,7 @@ class PropertyTreeView(QTreeView):
                 border-image: none;
                 image: none;
             }
-        """
-        )
+        """)
 
     def mouseDoubleClickEvent(self, event):
         index = self.indexAt(event.pos())

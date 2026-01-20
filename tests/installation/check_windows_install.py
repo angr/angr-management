@@ -9,6 +9,7 @@
 """
 Tests angr-management Windows installation stories.
 """
+
 from __future__ import annotations
 
 import argparse

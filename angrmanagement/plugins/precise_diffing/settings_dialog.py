@@ -44,27 +44,21 @@ class SettingsDialog(QDialog):
         algo_group.setTitle("Precise Diffing Algorithm")
         algo_group_layout = QVBoxLayout()
         self._bfs_diff_btn = QRadioButton("Graph Breadth First Search")
-        self._bfs_diff_btn.setToolTip(
-            """
+        self._bfs_diff_btn.setToolTip("""
             Diffs two functions by traversing the graph in a BFS manner.
             Blocks that don't exist, or are out of order, in the new graph will be marked
             as ADDed instructions.
-            """
-        )
+            """)
         self._linear_diff_btn = QRadioButton("Address Linear")
-        self._linear_diff_btn.setToolTip(
-            """
+        self._linear_diff_btn.setToolTip("""
             Diffs two functions by linearly traversing the assembly of the original
             and checking for the same index in the new binary.
-            """
-        )
+            """)
         self._use_addrs = QCheckBox("Use addresses for alignment")
-        self._use_addrs.setToolTip(
-            """
+        self._use_addrs.setToolTip("""
             When enabled, the diffing algorithm will attempt to diff functions at the same addresses across
             both binaries. When disabled we attempt to use symbols.
-            """
-        )
+            """)
         self._use_addrs.setChecked(self.diff_plugin.use_addrs)
 
         if self.diff_plugin.diff_algo_class == BFSFunctionDiff:
@@ -89,38 +83,30 @@ class SettingsDialog(QDialog):
         ins_group.setTitle("Instruction Diffing Options")
         ins_layout = QVBoxLayout()
         self._prefer_symbols = QCheckBox("Prioritize Symbols", self)
-        self._prefer_symbols.setToolTip(
-            """
+        self._prefer_symbols.setToolTip("""
             Some instructions that use symbols, such as moves from global vars, may show different addresses
             in the new binary. With this option enabled, two instructions are marked as the same if at least
             the symbol name lines up.
-            """
-        )
+            """)
         self._prefer_symbols.setChecked(self.diff_plugin.prefer_symbols)
         self._prefer_strings = QCheckBox("Prioritize Strings", self)
-        self._prefer_strings.setToolTip(
-            """
+        self._prefer_strings.setToolTip("""
             Some instructions that use strings, such as moves from memory, may show different addresses
             in the new binary. With this option enabled, two instructions that move an address that point to the
             same string are marked as the same.
-            """
-        )
+            """)
         self._prefer_strings.setChecked(self.diff_plugin.resolve_strings)
         self._prefer_insns = QCheckBox("Prioritize Instructions", self)
-        self._prefer_insns.setToolTip(
-            """
+        self._prefer_insns.setToolTip("""
             Some instructions that use addresses, such as jumps, may show different addresses
             in the new binary. With this option enabled, two instructions that use an address that both point
             to the same first few instructions are marked as the same.
-            """
-        )
+            """)
         self._prefer_insns.setChecked(self.diff_plugin.resolve_insns)
         self._ignore_globals = QCheckBox("Ignore Unnamed Globals")
-        self._ignore_globals.setToolTip(
-            """
+        self._ignore_globals.setToolTip("""
             When enabled, ignores all unnamed global values when showing psuedocode diffs.
-            """
-        )
+            """)
         self._ignore_globals.setChecked(self.diff_plugin.ignore_globals)
 
         ins_layout.addWidget(self._prefer_symbols)
