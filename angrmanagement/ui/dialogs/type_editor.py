@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 
-import pycparser.plyparser
+import pycparser.c_parser
 from angr import sim_type
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLineEdit, QMessageBox, QPushButton, QVBoxLayout
@@ -10,6 +10,17 @@ from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLineEdit, QMessageBox,
 from angrmanagement.config import Conf
 
 from .set_comment import QCommentTextBox
+
+# compatibility for pycparser 2.18 and 3.0
+PycParseErrorCls = ()
+try:
+    import pycparser.plyparser
+
+    PycParseErrorCls += (pycparser.plyparser.ParseError,)
+except ImportError:
+    pass
+
+PycParseErrorCls += (pycparser.c_parser.ParseError,)
 
 
 class CTypeEditor(QDialog):
@@ -112,7 +123,7 @@ class CTypeEditor(QDialog):
             side_result = [
                 (name, ty) for name, ty in side_typedefs.items() if name not in typedefs and name not in defs
             ]
-        except pycparser.plyparser.ParseError:
+        except PycParseErrorCls:
             pass
 
         # hack. idk why our pycparser config will accept `typedef int` as the same as `int`
@@ -124,7 +135,7 @@ class CTypeEditor(QDialog):
                 )
                 result = [(name, ty)]
                 side_result = [(name2, ty) for name2, ty in side_typedefs.items() if name2 != name]
-            except pycparser.plyparser.ParseError:
+            except PycParseErrorCls:
                 pass
 
         if not result or (self._editing_single and len(result) != 1):
