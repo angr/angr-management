@@ -196,14 +196,18 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
     def __init__(self, parent=None, addr_to_line: SortedDict = None, viewer=None) -> None:
         super().__init__(parent=parent)
         self.viewer = viewer
+        self.file_list: set[str] = set()
         if addr_to_line is not None:
             self.load(addr_to_line)
 
     def load(self, addr_to_line: SortedDict) -> None:
-        self.addr_to_line = addr_to_line  # (filename, line.state.line)
+        self.addr_to_line = addr_to_line  # {(filename, line.state.line), ...}
         self.line_to_addr = defaultdict(list)
         self.file_list = set()
-        for addr, (filename, line) in self.addr_to_line.items():
+        for addr, lines in self.addr_to_line.items():
+            if not lines:
+                continue
+            filename, line = next(iter(lines))  # take the first line and ignore the rest
             self.file_list.add(filename)
             self.line_to_addr[(filename, line)].append(addr)
         for fn in self.file_list:
