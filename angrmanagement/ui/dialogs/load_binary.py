@@ -8,6 +8,7 @@ import archinfo
 import cle
 from angr.calling_conventions import unify_arch_name
 from angr.simos import os_mapping
+from cle.backends.pe.symbolserver import SymbolPathParser
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -19,16 +20,22 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMessageBox,
+    QPushButton,
     QSizePolicy,
+    QTableWidget,
+    QTableWidgetItem,
     QTabWidget,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
+    QWidget,
 )
 
 try:
@@ -37,6 +44,7 @@ except ImportError:
     pypcode = None
 
 from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.threads import gui_thread_schedule
 
 
 class LoadBinaryError(Exception):
@@ -76,6 +84,7 @@ class LoadBinary(QDialog):
 
         # initialization
         self.file_path = partial_ld.main_object.binary
+        self.partial_ld = partial_ld
         self.md5 = None
         self.sha256 = None
         self.option_widgets = {}
@@ -91,6 +100,7 @@ class LoadBinary(QDialog):
 
         self._base_addr_checkbox = None
         self._entry_addr_checkbox = None
+        self._symbol_search_tab_index = None
 
         if pypcode:
             for a in pypcode.Arch.enumerate():
@@ -230,6 +240,9 @@ class LoadBinary(QDialog):
 
     def _init_central_tab(self, tab) -> None:
         self._init_load_options_tab(tab)
+        # Add symbol search options tab for PE files
+        if isinstance(self.partial_ld.main_object, cle.PE):
+            self._init_symbol_search_tab(tab)
 
     def _init_load_options_tab(self, tab):
         #
@@ -376,7 +389,7 @@ class LoadBinary(QDialog):
 
         frame = QFrame(self)
         frame.setLayout(layout)
-        tab.addTab(frame, "Loading Options")
+        tab.addTab(frame, "Overview")
 
         # auto load libs
         auto_load_libs = QCheckBox()
@@ -400,6 +413,123 @@ class LoadBinary(QDialog):
         frame = QFrame(self)
         frame.setLayout(layout)
         tab.addTab(frame, "Dependencies")
+
+    def _init_symbol_search_tab(self, tab) -> None:
+        """
+        Initialize the symbol search options tab for PE files.
+        """
+        layout = QVBoxLayout()
+
+        # Checkbox for allowing symbol download from Internet
+        allow_download_checkbox = QCheckBox()
+        allow_download_checkbox.setText("Allow downloading debug symbols from the Internet")
+        allow_download_checkbox.setChecked(True)
+        self.option_widgets["allow_symbol_download"] = allow_download_checkbox
+        layout.addWidget(allow_download_checkbox)
+
+        # Three-column table for symbol paths
+        symbol_paths_table = QTableWidget(self)
+        symbol_paths_table.setColumnCount(4)
+        symbol_paths_table.setHorizontalHeaderLabels(["Enabled", "Type", "Cache", "Server"])
+        symbol_paths_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        symbol_paths_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        symbol_paths_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        symbol_paths_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+        symbol_paths_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.option_widgets["symbol_paths_table"] = symbol_paths_table
+        layout.addWidget(symbol_paths_table)
+
+        # Button for parsing environment variables
+        parse_env_button = QPushButton("Enter symbol path string")
+        parse_env_button.clicked.connect(self._on_parse_symbol_path_clicked)
+        layout.addWidget(parse_env_button)
+
+        frame = QFrame(self)
+        frame.setLayout(layout)
+        self._symbol_search_tab_index = tab.addTab(frame, "Debug Symbols")
+
+        # Initially disable the tab if debug info is not checked
+        self._update_symbol_search_tab_enabled()
+
+        # Connect the load_debug_info checkbox to enable/disable the tab
+        load_debug_info = self.option_widgets["load_debug_info"]
+        load_debug_info.toggled.connect(self._update_symbol_search_tab_enabled)
+
+        # Parse the symbol path string from the environment variable
+        nt_symbol_path = os.environ.get("_NT_SYMBOL_PATH", "")
+        if nt_symbol_path:
+            self._parse_symbol_path_str_and_populate_symbol_paths_table(nt_symbol_path)
+
+    def _update_symbol_search_tab_enabled(self) -> None:
+        """
+        Enable or disable the symbol search tab based on the load_debug_info checkbox state.
+        """
+        if self._symbol_search_tab_index is None:
+            return
+
+        load_debug_info = self.option_widgets.get("load_debug_info")
+        if load_debug_info is None:
+            return
+
+        is_enabled = load_debug_info.isChecked()
+
+        # Enable/disable the tab widget (this grays it out)
+        self.tab.setTabEnabled(self._symbol_search_tab_index, is_enabled)
+
+        # Also enable/disable all widgets inside the tab
+        frame = self.tab.widget(self._symbol_search_tab_index)
+        if frame:
+            for widget in frame.findChildren(QWidget):
+                widget.setEnabled(is_enabled)
+
+    def _on_parse_symbol_path_clicked(self) -> None:
+        """
+        Handle the "Enter symbol path string" button click.
+        Parses a symbol path string (like _NT_SYMBOL_PATH) and populates the table.
+        """
+        text, ok = QInputDialog.getText(
+            self,
+            "Enter Symbol Path String",
+            "Enter symbol path string (e.g., from _NT_SYMBOL_PATH):",
+            text=os.environ.get("_NT_SYMBOL_PATH", ""),
+        )
+        if not ok or not text:
+            return
+
+        self._parse_symbol_path_str_and_populate_symbol_paths_table(text)
+
+    def _parse_symbol_path_str_and_populate_symbol_paths_table(self, text: str) -> None:
+        entries = SymbolPathParser.parse(text)
+
+        symbol_paths_table: QTableWidget = self.option_widgets["symbol_paths_table"]
+        symbol_paths_table.setRowCount(len(entries))
+
+        for row, entry in enumerate(entries):
+            # Enabled checkbox
+            enabled_item = QTableWidgetItem()
+            enabled_item.setCheckState(Qt.CheckState.Checked)
+            symbol_paths_table.setItem(row, 0, enabled_item)
+
+            # Path type
+            type_item = QTableWidgetItem(entry.entry_type)
+            type_item.setFlags(type_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            symbol_paths_table.setItem(row, 1, type_item)
+
+            # Path
+            match entry.entry_type:
+                case "local":
+                    cache = ""
+                    path = entry.local_path
+                case "srv" | "symsrv":
+                    cache = entry.cache_path
+                    path = entry.server_url
+                case "cache":
+                    cache = entry.cache_path
+                    path = ""
+            cache_item = QTableWidgetItem(cache)
+            symbol_paths_table.setItem(row, 2, cache_item)
+            path_item = QTableWidgetItem(path)
+            symbol_paths_table.setItem(row, 3, path_item)
 
     def _split_arches(self, all_arches) -> tuple[Any, list, list]:
         """
@@ -517,7 +647,106 @@ class LoadBinary(QDialog):
         if skip_libs:
             self.load_options["skip_libs"] = skip_libs
 
+        # Collect symbol search options for PE files
+        if isinstance(self.partial_ld.main_object, cle.PE):
+            if "allow_symbol_download" in self.option_widgets:
+                self.load_options["main_opts"]["download_debug_symbols"] = self.option_widgets[
+                    "allow_symbol_download"
+                ].isChecked()
+
+            if "symbol_paths_table" in self.option_widgets:
+                symbol_paths_table: QTableWidget = self.option_widgets["symbol_paths_table"]
+                symbol_paths = []
+                for row in range(symbol_paths_table.rowCount()):
+                    enabled_item = symbol_paths_table.item(row, 0)
+                    type_item = symbol_paths_table.item(row, 1)
+                    cache_item = symbol_paths_table.item(row, 2)
+                    path_item = symbol_paths_table.item(row, 3)
+                    if enabled_item and path_item and enabled_item.checkState() == Qt.CheckState.Checked:
+                        # build symbol path string
+                        match type_item.text():
+                            case "local":
+                                symbol_paths.append(path_item.text())
+                            case "srv" | "symsrv":
+                                if path_item.text():
+                                    if cache_item.text():
+                                        symbol_paths.append(f"srv*{cache_item.text()}*{path_item.text()}")
+                                    else:
+                                        symbol_paths.append(f"srv*{path_item.text()}")
+                            case "cache":
+                                if cache_item.text():
+                                    symbol_paths.append(f"cache*{cache_item.text()}")
+                if symbol_paths:
+                    self.load_options["main_opts"]["symbol_paths"] = ";".join(symbol_paths)
+
+            # Add confirmation and progress callbacks
+            self.load_options["main_opts"]["download_debug_symbol_confirm"] = LoadBinary._allow_symbol_download
+            self.load_options["main_opts"]["download_debug_symbol_progress"] = LoadBinary._symbol_download_progress
+
         self.close()
+
+    @staticmethod
+    def _allow_symbol_download(url: str) -> bool:
+        """
+        Callback function called by cle to confirm a symbol download.
+        This will be called from a background thread, so we need to use gui_thread_schedule.
+        """
+
+        def _show_confirmation_dialog() -> bool:
+            msgbox = QMessageBox(GlobalInfo.main_window)
+            msgbox.setWindowTitle("Confirm Symbol Download")
+            msgbox.setText(f"Download debug symbols from:\n{url}")
+            msgbox.setInformativeText("Do you want to proceed?")
+            msgbox.setIcon(QMessageBox.Icon.Question)
+            msgbox.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            msgbox.setDefaultButton(QMessageBox.StandardButton.Yes)
+            result = msgbox.exec_()
+            return result == QMessageBox.StandardButton.Yes
+
+        # Schedule on GUI thread and wait for result
+        result = gui_thread_schedule(_show_confirmation_dialog, ())
+        return result if result is not None else False
+
+    @staticmethod
+    def _symbol_download_progress(downloaded_bytes: int, total_bytes: int | None) -> bool:
+        """
+        Callback function called by cle to report download progress.
+        This will be called from a background thread, so we need to use gui_thread_schedule.
+        Returns False to cancel the download.
+        """
+
+        def _update_progress_dialog() -> bool:
+            main_window = GlobalInfo.main_window
+            if main_window is None:
+                return True
+
+            progress_dialog = main_window._progress_dialog
+            if progress_dialog is None:
+                return True
+
+            # Show the progress dialog if it's not visible
+            if not progress_dialog.isVisible():
+                progress_dialog.show()
+
+            # Calculate percentage
+            if total_bytes is not None and total_bytes > 0:
+                percentage = int((downloaded_bytes / total_bytes) * 100)
+                progress_dialog.setMaximum(100)
+                progress_dialog.setValue(percentage)
+                progress_dialog.setLabelText(
+                    f"Downloading debug symbols: {downloaded_bytes:,} / {total_bytes:,} bytes ({percentage}%)"
+                )
+            else:
+                # Unknown total, show indeterminate progress
+                progress_dialog.setMaximum(0)  # Indeterminate mode
+                progress_dialog.setLabelText(f"Downloading debug symbols: {downloaded_bytes:,} bytes...")
+
+            # Check if user cancelled
+            return not progress_dialog.wasCanceled()
+
+        # Schedule on GUI thread and wait for result
+        result = gui_thread_schedule(_update_progress_dialog, ())
+        return result if result is not None else True
 
     def _on_cancel_clicked(self) -> None:
         self.close()
