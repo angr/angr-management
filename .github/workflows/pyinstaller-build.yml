@@ -165,4 +165,4 @@ jobs:
             fi
           done
           exit 1
-        continue-on-error: ${{ matrix.os == 'macos-15' }}
+        continue-on-error: ${{ startsWith(matrix.os, 'macos-15') }}
