@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QFileIconProvider,
     QFrame,
     QGridLayout,
@@ -35,7 +36,6 @@ from PySide6.QtWidgets import (
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
-    QWidget,
 )
 
 try:
@@ -72,6 +72,10 @@ class LoadBinary(QDialog):
     """
     Dialog displaying loading options for a binary.
     """
+
+    PE_DEBUG_SYMBOLS_TABLE_COL_TYPE = 0
+    PE_DEBUG_SYMBOLS_TABLE_COL_CACHE = 1
+    PE_DEBUG_SYMBOLS_TABLE_COL_PATH = 2
 
     def __init__(
         self,
@@ -427,22 +431,41 @@ class LoadBinary(QDialog):
         self.option_widgets["allow_symbol_download"] = allow_download_checkbox
         layout.addWidget(allow_download_checkbox)
 
-        # Three-column table for symbol paths
+        # table for symbol paths
         symbol_paths_table = QTableWidget(self)
-        symbol_paths_table.setColumnCount(4)
-        symbol_paths_table.setHorizontalHeaderLabels(["Enabled", "Type", "Cache", "Server"])
-        symbol_paths_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        symbol_paths_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
-        symbol_paths_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
-        symbol_paths_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+        symbol_paths_table.setColumnCount(3)
+        symbol_paths_table.setHorizontalHeaderLabels(["Type", "Cache", "Server"])
+        symbol_paths_table.horizontalHeader().setSectionResizeMode(
+            LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_TYPE, QHeaderView.ResizeMode.ResizeToContents
+        )
+        symbol_paths_table.horizontalHeader().setSectionResizeMode(
+            LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_CACHE, QHeaderView.ResizeMode.ResizeToContents
+        )
+        symbol_paths_table.horizontalHeader().setSectionResizeMode(
+            LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_PATH, QHeaderView.ResizeMode.Stretch
+        )
         symbol_paths_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.option_widgets["symbol_paths_table"] = symbol_paths_table
         layout.addWidget(symbol_paths_table)
 
-        # Button for parsing environment variables
+        # Buttons for managing symbol paths
+        button_layout = QHBoxLayout()
+
+        add_entry_button = QPushButton("Add...")
+        add_entry_button.clicked.connect(self._on_add_symbol_path_entry_clicked)
+        button_layout.addWidget(add_entry_button)
+
+        remove_entry_button = QPushButton("Remove Selected")
+        remove_entry_button.clicked.connect(self._on_remove_symbol_path_entry_clicked)
+        button_layout.addWidget(remove_entry_button)
+
+        button_layout.addStretch()
+
         parse_env_button = QPushButton("Enter symbol path string")
         parse_env_button.clicked.connect(self._on_parse_symbol_path_clicked)
-        layout.addWidget(parse_env_button)
+        button_layout.addWidget(parse_env_button)
+
+        layout.addLayout(button_layout)
 
         frame = QFrame(self)
         frame.setLayout(layout)
@@ -476,12 +499,6 @@ class LoadBinary(QDialog):
         # Enable/disable the tab widget (this grays it out)
         self.tab.setTabEnabled(self._symbol_search_tab_index, is_enabled)
 
-        # Also enable/disable all widgets inside the tab
-        frame = self.tab.widget(self._symbol_search_tab_index)
-        if frame:
-            for widget in frame.findChildren(QWidget):
-                widget.setEnabled(is_enabled)
-
     def _on_parse_symbol_path_clicked(self) -> None:
         """
         Handle the "Enter symbol path string" button click.
@@ -503,17 +520,13 @@ class LoadBinary(QDialog):
 
         symbol_paths_table: QTableWidget = self.option_widgets["symbol_paths_table"]
         symbol_paths_table.setRowCount(len(entries))
+        symbol_paths_table.clearContents()
 
         for row, entry in enumerate(entries):
-            # Enabled checkbox
-            enabled_item = QTableWidgetItem()
-            enabled_item.setCheckState(Qt.CheckState.Checked)
-            symbol_paths_table.setItem(row, 0, enabled_item)
-
             # Path type
             type_item = QTableWidgetItem(entry.entry_type)
             type_item.setFlags(type_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-            symbol_paths_table.setItem(row, 1, type_item)
+            symbol_paths_table.setItem(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_TYPE, type_item)
 
             # Path
             match entry.entry_type:
@@ -527,9 +540,150 @@ class LoadBinary(QDialog):
                     cache = entry.cache_path
                     path = ""
             cache_item = QTableWidgetItem(cache)
-            symbol_paths_table.setItem(row, 2, cache_item)
+            symbol_paths_table.setItem(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_CACHE, cache_item)
             path_item = QTableWidgetItem(path)
-            symbol_paths_table.setItem(row, 3, path_item)
+            symbol_paths_table.setItem(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_PATH, path_item)
+
+    def _on_add_symbol_path_entry_clicked(self) -> None:
+        """
+        Handle the "Add Entry" button click.
+        Opens a dialog to add a new symbol path entry manually.
+        """
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Add Symbol Path Entry")
+        dialog.setModal(True)
+
+        layout = QVBoxLayout()
+
+        # Type selection
+        type_layout = QHBoxLayout()
+        type_label = QLabel("Type:")
+        type_combo = QComboBox()
+        type_combo.addItems(["local", "srv"])
+        type_layout.addWidget(type_label)
+        type_layout.addWidget(type_combo)
+        layout.addLayout(type_layout)
+
+        # Cache path (for srv types)
+        cache_layout = QHBoxLayout()
+        cache_label = QLabel("Cache Path:")
+        cache_edit = QLineEdit()
+        cache_browse_button = QPushButton("Browse...")
+        cache_browse_button.clicked.connect(lambda: self._browse_directory(cache_edit))
+        cache_layout.addWidget(cache_label)
+        cache_layout.addWidget(cache_edit)
+        cache_layout.addWidget(cache_browse_button)
+        layout.addLayout(cache_layout)
+
+        # Server/Path (for local and srv types)
+        path_layout = QHBoxLayout()
+        path_label = QLabel("Path/Server:")
+        path_edit = QLineEdit()
+        path_browse_button = QPushButton("Browse...")
+        path_browse_button.clicked.connect(lambda: self._browse_directory(path_edit))
+        path_layout.addWidget(path_label)
+        path_layout.addWidget(path_edit)
+        path_layout.addWidget(path_browse_button)
+        layout.addLayout(path_layout)
+
+        # Update visibility based on type
+        def update_fields() -> None:
+            entry_type = type_combo.currentText()
+            cache_enabled = entry_type == "srv"
+            cache_edit.setEnabled(cache_enabled)
+            # Only enable cache browse button for "srv" type
+            cache_browse_button.setEnabled(cache_enabled)
+            # Disable path browse button for "srv" type (because we expect a URL)
+            path_browse_enabled = entry_type == "local"
+            path_browse_button.setEnabled(path_browse_enabled)
+            if entry_type == "local":
+                path_label.setText("Path:")
+            elif entry_type == "srv":
+                path_label.setText("Server:")
+
+        type_combo.currentTextChanged.connect(update_fields)
+        update_fields()
+
+        # Buttons
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+
+        dialog.setLayout(layout)
+
+        if dialog.exec_() == QDialog.DialogCode.Accepted:
+            entry_type = type_combo.currentText()
+            cache_path = cache_edit.text().strip()
+            path = path_edit.text().strip()
+
+            # Validate input
+            if entry_type == "srv":
+                if not path:
+                    QMessageBox.warning(self, "Invalid Input", "Server URL is required for symbol server entries.")
+                    return
+            elif entry_type == "local":
+                if not path:
+                    QMessageBox.warning(self, "Invalid Input", "Path is required for local entries.")
+                    return
+            else:
+                QMessageBox.warning(self, "Invalid Input", "Invalid entry type.")
+                return
+
+            # Add the entry to the table
+            symbol_paths_table: QTableWidget = self.option_widgets["symbol_paths_table"]
+            row = symbol_paths_table.rowCount()
+            symbol_paths_table.insertRow(row)
+
+            # Type
+            type_item = QTableWidgetItem(entry_type)
+            type_item.setFlags(type_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            symbol_paths_table.setItem(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_TYPE, type_item)
+
+            # Cache
+            cache_item = QTableWidgetItem(cache_path if entry_type == "srv" else "")
+            symbol_paths_table.setItem(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_CACHE, cache_item)
+
+            # Path/Server
+            path_item = QTableWidgetItem(path)
+            symbol_paths_table.setItem(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_PATH, path_item)
+
+    def _browse_directory(self, path_edit: QLineEdit) -> None:
+        """
+        Open a directory selection dialog and populate the path_edit field with the selected directory.
+        """
+        directory = QFileDialog.getExistingDirectory(
+            self,
+            "Select Directory",
+            path_edit.text() if path_edit.text() else os.getcwd(),
+            QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks,
+        )
+        if directory:
+            # convert the separator from '/' to '\\' on Windows
+            if os.name == "nt":
+                directory = directory.replace("/", "\\")
+
+            path_edit.setText(directory)
+
+    def _on_remove_symbol_path_entry_clicked(self) -> None:
+        """
+        Handle the "Remove Selected" button click.
+        Removes the selected rows from the symbol paths table.
+        """
+        symbol_paths_table: QTableWidget = self.option_widgets["symbol_paths_table"]
+        selected_rows = set()
+
+        # Get all selected rows
+        for item in symbol_paths_table.selectedItems():
+            selected_rows.add(item.row())
+
+        if not selected_rows:
+            QMessageBox.information(self, "No Selection", "Please select one or more rows to remove.")
+            return
+
+        # Remove rows in reverse order to maintain indices
+        for row in sorted(selected_rows, reverse=True):
+            symbol_paths_table.removeRow(row)
 
     def _split_arches(self, all_arches) -> tuple[Any, list, list]:
         """
@@ -658,24 +812,22 @@ class LoadBinary(QDialog):
                 symbol_paths_table: QTableWidget = self.option_widgets["symbol_paths_table"]
                 symbol_paths = []
                 for row in range(symbol_paths_table.rowCount()):
-                    enabled_item = symbol_paths_table.item(row, 0)
-                    type_item = symbol_paths_table.item(row, 1)
-                    cache_item = symbol_paths_table.item(row, 2)
-                    path_item = symbol_paths_table.item(row, 3)
-                    if enabled_item and path_item and enabled_item.checkState() == Qt.CheckState.Checked:
-                        # build symbol path string
-                        match type_item.text():
-                            case "local":
-                                symbol_paths.append(path_item.text())
-                            case "srv" | "symsrv":
-                                if path_item.text():
-                                    if cache_item.text():
-                                        symbol_paths.append(f"srv*{cache_item.text()}*{path_item.text()}")
-                                    else:
-                                        symbol_paths.append(f"srv*{path_item.text()}")
-                            case "cache":
+                    type_item = symbol_paths_table.item(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_TYPE)
+                    cache_item = symbol_paths_table.item(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_CACHE)
+                    path_item = symbol_paths_table.item(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_PATH)
+                    # build symbol path string
+                    match type_item.text():
+                        case "local":
+                            symbol_paths.append(path_item.text())
+                        case "srv" | "symsrv":
+                            if path_item.text():
                                 if cache_item.text():
-                                    symbol_paths.append(f"cache*{cache_item.text()}")
+                                    symbol_paths.append(f"srv*{cache_item.text()}*{path_item.text()}")
+                                else:
+                                    symbol_paths.append(f"srv*{path_item.text()}")
+                        case "cache":
+                            if cache_item.text():
+                                symbol_paths.append(f"cache*{cache_item.text()}")
                 if symbol_paths:
                     self.load_options["main_opts"]["symbol_paths"] = ";".join(symbol_paths)
 
