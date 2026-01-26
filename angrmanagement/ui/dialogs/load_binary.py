@@ -461,7 +461,7 @@ class LoadBinary(QDialog):
 
         button_layout.addStretch()
 
-        parse_env_button = QPushButton("Enter symbol path string")
+        parse_env_button = QPushButton("Enter Symbol Path...")
         parse_env_button.clicked.connect(self._on_parse_symbol_path_clicked)
         button_layout.addWidget(parse_env_button)
 
