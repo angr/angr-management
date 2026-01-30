@@ -58,7 +58,7 @@ pyinstaller = [
   "pyinstaller==6.16.0",
   "pillow;platform_system == \"Darwin\"",
   "keystone-engine;platform_system != \"Linux\" or platform_machine != \"aarch64\"",
-  "angr[unicorn];platform_system != \"Darwin\"",
+  "angr[unicorn]",
 ]
 testing = [
   "coverage",
