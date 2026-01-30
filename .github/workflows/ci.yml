@@ -16,5 +16,45 @@ jobs:
     uses: angr/ci-settings/.github/workflows/angr-ci.yml@master
   pyinstaller:
     uses: ./.github/workflows/pyinstaller-build.yml
-  windows:
-    uses: ./.github/workflows/windows.yml
+  test:
+    name: Test ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2022, macos-15, ubuntu-24.04-arm] # ubuntu 24.04 is excluded due to inclusion in coverage.yml
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4
+        with:
+          repository: angr/binaries
+          path: binaries
+      - name: Move binaries
+        run: mv binaries ..
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Install dependencies (Ubuntu)
+        run: |
+          sudo apt-get update;
+          sudo apt-get install -y \
+            libfuse2 \
+            libegl1 \
+            libxkbcommon-x11-0 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0
+        if: startsWith(matrix.os, 'ubuntu')
+      - name: Install dependencies (macOS)
+        run: brew install flatcc flatbuffers
+        if: startsWith(matrix.os, 'macos')
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
+        if: startsWith(runner.os, 'windows')
+      - uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v6
+      - name: Sync dependencies
+        run: uv sync -p 3.10
+      - name: Run tests
+        run: uv run pytest -vv -n auto tests
