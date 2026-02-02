@@ -80,7 +80,7 @@ class LoadBinaryJob(InstanceJob):
             return
 
         engine = None
-        if hasattr(new_load_options["arch"], "pcode_arch"):
+        if isinstance(new_load_options.get("arch"), archinfo.ArchPcode):
             engine = angr.engines.UberEnginePcode
 
         self.load_options.update(new_load_options)
