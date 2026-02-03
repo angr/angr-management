@@ -79,13 +79,9 @@ class LoadBinaryJob(InstanceJob):
         if new_load_options is None:
             return
 
-        engine = None
-        if hasattr(new_load_options["arch"], "pcode_arch"):
-            engine = angr.engines.UberEnginePcode
-
         self.load_options.update(new_load_options)
 
-        proj = angr.Project(self.fname, load_options=self.load_options, engine=engine, simos=simos)
+        proj = angr.Project(self.fname, load_options=self.load_options, simos=simos)
         ctx.set_progress(95)
 
         def callback() -> None:
