@@ -253,8 +253,7 @@ class DataDepView(InstanceView):
         if key == QtCore.Qt.Key.Key_F and modifiers & QtCore.Qt.KeyboardModifier.ControlModifier:
             # User would like to search
             search_dialog = QDataDepGraphSearch(self, self.graph_widget)
-            search_dialog.setModal(False)
-            search_dialog.show()
+            search_dialog.exec_()
         else:
             super().keyPressEvent(event)
 
