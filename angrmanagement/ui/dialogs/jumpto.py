@@ -28,8 +28,6 @@ class JumpTo(QDialog):
 
         self.setLayout(self.main_layout)
 
-        self.show()
-
     #
     # Private methods
     #
