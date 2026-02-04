@@ -56,4 +56,4 @@ class DisasmLabelContextMenu(Menu):
     def _popup_xrefs(self) -> None:
         if self._disasm_view is None or self._disasm_view._flow_graph is None:
             return
-        self._disasm_view.popup_xref_dialog(addr=self.addr, variable=None, dst_addr=self.addr, async_=True)
+        self._disasm_view.popup_xref_dialog(addr=self.addr, variable=None, dst_addr=self.addr)

@@ -92,7 +92,7 @@ class DisasmInsnContextMenu(Menu):
         r = self._disasm_view._flow_graph.get_selected_operand_info()
         if r is not None:
             _, ins_addr, operand = r
-            self._disasm_view.parse_operand_and_popup_xref_dialog(ins_addr, operand, async_=True)
+            self._disasm_view.parse_operand_and_popup_xref_dialog(ins_addr, operand)
 
     def _popup_patch_dialog(self) -> None:
         self._disasm_view.popup_patch_dialog()
