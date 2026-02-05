@@ -459,7 +459,7 @@ class DisassemblyView(SynchronizedFunctionView):
             mnu.exec_(QCursor.pos())
 
     def popup_jumpto_dialog(self) -> None:
-        JumpTo(self, parent=self).exec_()
+        JumpTo(self, parent=self).show()
 
     def popup_rename_label_dialog(self) -> None:
         label_addr_tpl = self._address_in_selection()
