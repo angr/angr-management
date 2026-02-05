@@ -443,7 +443,7 @@ class CodeView(FunctionView):
 
     def popup_jumpto_dialog(self) -> None:
         view = self.workspace._get_or_create_view("disassembly", DisassemblyView)
-        JumpTo(view, parent=self).exec_()
+        JumpTo(view, parent=self).show()
         view.decompile_current_function()
 
     def jump_forward(self) -> None:

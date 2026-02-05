@@ -1821,7 +1821,7 @@ class HexView(SynchronizedInstanceView):
         """
         Display 'Jump To' dialog.
         """
-        JumpTo(self, parent=self).exec_()
+        JumpTo(self, parent=self).show()
 
     def jump_to(self, addr: int) -> bool:
         """
