@@ -30,7 +30,7 @@ from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.logic.debugger.bintrace import BintraceDebugger
 from angrmanagement.logic.debugger.simgr import SimulationDebugger
 from angrmanagement.logic.jobmanager import JobManager
-from angrmanagement.logic.threads import gui_thread_schedule_async
+from angrmanagement.logic.threads import gui_thread_schedule_async, needs_gui_thread
 from angrmanagement.plugins import PluginManager
 from angrmanagement.ui.dialogs import AnalysisOptionsDialog
 from angrmanagement.ui.dialogs.function import FunctionDialog
@@ -400,6 +400,7 @@ class Workspace:
         elif isinstance(obj, Function):
             self.jump_to(obj.addr)
 
+    @needs_gui_thread
     def jump_to(self, addr: int, view=None, use_animation: bool = False) -> None:
         if view is None or view.category != "disassembly":
             view = self._get_or_create_view("disassembly", DisassemblyView)

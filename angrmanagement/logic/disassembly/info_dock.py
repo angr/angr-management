@@ -48,6 +48,7 @@ class InfoDock:
         self.selected_insns = ObjectContainer(set(), "The currently selected instructions")
         self.selected_operands = ObjectContainer({}, "The currently selected instruction operands")
         self.selected_blocks = ObjectContainer(set(), "The currently selected blocks")
+        self.selected_ail_statements = ObjectContainer(set(), "The currently selected AIL statements")
         self.hovered_block = ObjectContainer(None, "The currently hovered block")
         self.hovered_edge = ObjectContainer(None, "The currently hovered edge")
         self.selected_labels = ObjectContainer(set(), "The currently selected labels")
@@ -136,6 +137,34 @@ class InfoDock:
         if self.selected_insns:
             self.selected_insns.clear()
             self.selected_insns.am_event()
+        self._update_published_view_state()
+
+    def select_ail_statement(self, stmt_addr, unique: bool = True) -> None:
+        self.disasm_view.set_synchronized_cursor_address(stmt_addr[0])
+
+        self.unselect_all_labels()
+        self.unselect_all_instructions()
+        if stmt_addr not in self.selected_ail_statements:
+            if unique:
+                # unselect existing ones
+                self.unselect_all_instructions()
+                self.selected_ail_statements.add(stmt_addr)
+            else:
+                self.selected_ail_statements.add(stmt_addr)
+            self.selected_ail_statements.am_event(stmt_addr=stmt_addr)
+
+        self._update_published_view_state()
+
+    def unselect_ail_statement(self, stmt_addr) -> None:
+        if stmt_addr in self.selected_ail_statements:
+            self.selected_ail_statements.remove(stmt_addr)
+            self.selected_ail_statements.am_event()
+        self._update_published_view_state()
+
+    def unselect_all_ail_statements(self) -> None:
+        if self.selected_ail_statements:
+            self.selected_ail_statements.clear()
+            self.selected_ail_statements.am_event()
         self._update_published_view_state()
 
     def select_operand(

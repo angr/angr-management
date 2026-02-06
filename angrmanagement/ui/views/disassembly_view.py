@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING
@@ -17,6 +16,7 @@ from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import ViewCommand
 from angrmanagement.logic.disassembly import InfoDock, JumpHistory
+from angrmanagement.logic.threads import needs_gui_thread
 from angrmanagement.ui.dialogs.assemble_patch import AssemblePatchDialog
 from angrmanagement.ui.dialogs.dependson import DependsOn
 from angrmanagement.ui.dialogs.func_doc import FuncDocDialog
@@ -132,6 +132,7 @@ class DisassemblyView(SynchronizedFunctionView):
     def disassembly_level(self):
         return self._disassembly_level
 
+    @needs_gui_thread
     def set_disassembly_level(self, level: DisassemblyLevel) -> None:
         self._disassembly_level = level
         self._flow_graph.set_disassembly_level(level)
@@ -229,7 +230,7 @@ class DisassemblyView(SynchronizedFunctionView):
     @SynchronizedFunctionView.function.setter
     def function(self, v) -> None:
         if v is not self.function.am_obj:
-            self.display_function(v)
+            self.display_function(v, False)
 
     #
     # Callbacks
@@ -622,6 +623,7 @@ class DisassemblyView(SynchronizedFunctionView):
             # Show linear viewer
             self.display_linear_viewer(prefer)
 
+    @needs_gui_thread
     def display_disasm_graph(self, prefer: bool = True) -> None:
         if prefer:
             self._prefer_graph = True
@@ -640,6 +642,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self.view_visibility_changed.emit()
         self._flow_graph.refresh()
 
+    @needs_gui_thread
     def display_linear_viewer(self, prefer: bool = True) -> None:
         if prefer:
             self._prefer_graph = False
@@ -658,11 +661,11 @@ class DisassemblyView(SynchronizedFunctionView):
         self.view_visibility_changed.emit()
         self._linear_viewer.refresh()
 
-    def display_function(self, function) -> None:
+    def display_function(self, function, send_event=True) -> None:
         if function is None:
             return
         self.jump_history.jump_to(function.addr)
-        self._display_function(function)
+        self._display_function(function, send_event=send_event)
 
     def decompile_current_function(self) -> None:
         if self.function.am_obj is not None:
@@ -895,7 +898,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
         self.instance.cfb.am_subscribe(self._on_cfb_event)
-        self.function.am_subscribe(functools.partial(self.display_function, self.function.am_obj))
+        self.function.am_subscribe(lambda: self.display_function(self.function.am_obj, send_event=False))
 
     def _on_breakpoints_updated(self, **kwargs) -> None:  # pylint:disable=unused-argument
         self.refresh()
@@ -922,12 +925,13 @@ class DisassemblyView(SynchronizedFunctionView):
     # Private methods
     #
 
-    def _display_function(self, the_func) -> None:
+    def _display_function(self, the_func, send_event=True) -> None:
         if the_func is not None:
             self.set_synchronized_cursor_address(the_func.addr)
 
-        self.function.am_obj = the_func
-        self.function.am_event()
+        if send_event:
+            self.function.am_obj = the_func
+            self.function.am_event()
 
         # set status bar
         self._statusbar.function = the_func
@@ -1043,3 +1047,11 @@ class DisassemblyView(SynchronizedFunctionView):
         if f is None:
             return None
         return f.instruction_size(addr)
+
+    @property
+    def flow_graph(self):
+        return self._flow_graph
+
+    @property
+    def linear_viewer(self):
+        return self._linear_viewer
