@@ -22,7 +22,9 @@ class QAilObj(BlockTreeNode):
     Renders an AIL object
     """
 
-    def __init__(self, obj: Any, instance: Instance, *args, stmt=None, block_addr=None, block_idx=None, stmt_idx=None, **kwargs) -> None:
+    def __init__(
+        self, obj: Any, instance: Instance, *args, stmt=None, block_addr=None, block_idx=None, stmt_idx=None, **kwargs
+    ) -> None:
         self.stmt = stmt or obj
         self.block_addr = block_addr
         self.block_idx = block_idx
@@ -66,10 +68,9 @@ class QAilObj(BlockTreeNode):
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:  # pylint: disable=unused-argument
         super().mousePressEvent(event)
         button = event.button()
-        if button == Qt.MouseButton.LeftButton:
-            if self.block_addr is not None:
-                stmt_addr = (self.block_addr, self.block_idx, self.stmt_idx)
-                self.infodock.select_ail_statement(stmt_addr)
+        if button == Qt.MouseButton.LeftButton and self.block_addr is not None:
+            stmt_addr = (self.block_addr, self.block_idx, self.stmt_idx)
+            self.infodock.select_ail_statement(stmt_addr)
 
 
 class QAilTextObj(QAilObj):

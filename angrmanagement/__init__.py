@@ -13,17 +13,20 @@ except ImportError:
     # qtpy is not installed
     pass
 
+
 def boot(project=None, block=False):
     if block:
         _boot(project)
         # noreturn
     else:
-        import threading
         import queue
+        import threading
+
         response = queue.Queue()
         t = threading.Thread(target=_boot, args=(project, response))
         t.start()
         return response.get()
+
 
 def _boot(project=None, response=None):
     import glob
@@ -32,19 +35,23 @@ def _boot(project=None, response=None):
     from PySide6.QtCore import QThread
     from PySide6.QtGui import QFontDatabase, QIcon
     from PySide6.QtWidgets import QApplication
+
     app = QApplication()
     app.setApplicationDisplayName("angr")
     app.setApplicationName("angr")
     from .consts import FONT_LOCATION, IMG_LOCATION
+
     icon_location = os.path.join(IMG_LOCATION, "angr.png")
     QApplication.setWindowIcon(QIcon(icon_location))
 
     from .config import Conf
+
     Conf.attempt_importing_initial_config()
     from .logic import GlobalInfo
     from .ui.awesome_tooltip_event_filter import QAwesomeTooltipEventFilter
     from .ui.css import refresh_theme  # import .ui after showing the splash screen since it's going to take time
     from .ui.main_window import MainWindow
+
     refresh_theme()
     for font_file in glob.glob(os.path.join(FONT_LOCATION, "*.ttf")):
         QFontDatabase.addApplicationFont(font_file)

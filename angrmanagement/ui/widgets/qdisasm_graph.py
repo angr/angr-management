@@ -148,7 +148,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             self._supergraph = to_ail_supergraph(self.disasm.cc_graph)
 
             def nodefunc(n):
-                return self._supergraph.nodes[n]['original_nodes']
+                return self._supergraph.nodes[n]["original_nodes"]
 
             def branchfunc(supernode):
                 return None

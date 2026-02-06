@@ -236,7 +236,16 @@ class QBlock(QCachedGraphicsItem):
             for i, stmt in enumerate(block.statements):
                 if i == len(block.statements) - 1 and bi != len(self.cfg_nodes) - 1 and isinstance(stmt, Jump):
                     continue
-                code_obj = QAilObj(stmt, self.instance, self.infodock, block_addr=block.addr, block_idx=block.idx, stmt_idx=i, parent=None, options=self._block_code_options)
+                code_obj = QAilObj(
+                    stmt,
+                    self.instance,
+                    self.infodock,
+                    block_addr=block.addr,
+                    block_idx=block.idx,
+                    stmt_idx=i,
+                    parent=None,
+                    options=self._block_code_options,
+                )
                 obj = QBlockCode(
                     addr=stmt.ins_addr,
                     obj=code_obj,
