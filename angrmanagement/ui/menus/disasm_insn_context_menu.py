@@ -56,7 +56,7 @@ class DisasmInsnContextMenu(Menu):
         return self.parent
 
     def _popup_newstate_dialog(self) -> None:
-        self._disasm_view.popup_newstate_dialog(async_=True)
+        self._disasm_view.popup_newstate_dialog()
 
     def _popup_dependson_dialog(self) -> None:
         self._disasm_view.popup_dependson_dialog(use_operand=True)
@@ -77,7 +77,7 @@ class DisasmInsnContextMenu(Menu):
         self._disasm_view.refresh()
 
     def _add_hook(self) -> None:
-        self._disasm_view.popup_hook_dialog(async_=True)
+        self._disasm_view.popup_hook_dialog()
 
     def _view_docs(self) -> None:
         if self._disasm_view is None:
@@ -92,7 +92,7 @@ class DisasmInsnContextMenu(Menu):
         r = self._disasm_view._flow_graph.get_selected_operand_info()
         if r is not None:
             _, ins_addr, operand = r
-            self._disasm_view.parse_operand_and_popup_xref_dialog(ins_addr, operand, async_=True)
+            self._disasm_view.parse_operand_and_popup_xref_dialog(ins_addr, operand)
 
     def _popup_patch_dialog(self) -> None:
         self._disasm_view.popup_patch_dialog()

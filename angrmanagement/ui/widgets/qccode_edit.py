@@ -373,7 +373,7 @@ class QCCodeEdit(api.CodeEdit):
                 disassembly_view=self._code_view,
                 parent=self._code_view,
             )
-        dialog.show()
+        dialog.exec_()
 
     def retype_node(self, *args, node=None, node_type=None) -> None:  # pylint: disable=unused-argument
         if node is None:
