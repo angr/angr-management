@@ -118,7 +118,7 @@ class QLogTableModel(QAbstractTableModel):
             logging.ERROR: QLogIcons.error(),
             logging.CRITICAL: QLogIcons.error(),
         }
-        return mapping.get(log.level, None)
+        return mapping.get(log.level)
 
     @staticmethod
     def level_to_text(loglevel: int) -> str:
