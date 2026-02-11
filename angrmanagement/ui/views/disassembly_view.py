@@ -479,16 +479,13 @@ class DisassemblyView(SynchronizedFunctionView):
         dialog = SetComment(self.workspace, comment_addr, parent=self)
         dialog.exec_()
 
-    def popup_newstate_dialog(self, async_: bool = True) -> None:
+    def popup_newstate_dialog(self) -> None:
         addr = self._instruction_address_in_selection()
         if addr is None:
             return
 
         dialog = NewState(self.workspace, self.instance, addr=addr, create_simgr=True, parent=self)
-        if async_:
-            dialog.show()
-        else:
-            dialog.exec_()
+        dialog.exec_()
 
     def popup_hook_dialog(self, addr: int | None = None) -> None:
         addr = addr or self._instruction_address_in_selection()
