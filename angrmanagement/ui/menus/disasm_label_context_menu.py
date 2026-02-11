@@ -6,10 +6,12 @@ from .menu import Menu, MenuEntry, MenuSeparator
 
 
 class DisasmLabelContextMenu(Menu):
+    addr: int | None
+
     def __init__(self, disasm_view) -> None:
         super().__init__("", parent=disasm_view)
 
-        self.addr: int = None
+        self.addr = None
 
         self.entries.extend(
             [
