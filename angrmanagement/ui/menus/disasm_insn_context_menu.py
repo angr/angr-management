@@ -77,7 +77,7 @@ class DisasmInsnContextMenu(Menu):
         self._disasm_view.refresh()
 
     def _add_hook(self) -> None:
-        self._disasm_view.popup_hook_dialog(async_=True)
+        self._disasm_view.popup_hook_dialog()
 
     def _view_docs(self) -> None:
         if self._disasm_view is None:
