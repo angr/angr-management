@@ -19,6 +19,8 @@ class DisasmInsnContextMenu(Menu):
     and `Workspace.remove_disasm_insn_ctx_menu_entry`.
     """
 
+    insn_addr: int | None
+
     def __init__(self, disasm_view: DisassemblyView) -> None:
         super().__init__("", parent=disasm_view)
 
