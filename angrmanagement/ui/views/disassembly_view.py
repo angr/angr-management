@@ -490,17 +490,14 @@ class DisassemblyView(SynchronizedFunctionView):
         else:
             dialog.exec_()
 
-    def popup_hook_dialog(self, async_: bool = True, addr: int | None = None) -> None:
+    def popup_hook_dialog(self, addr: int | None = None) -> None:
         addr = addr or self._instruction_address_in_selection()
 
         if addr is None:
             return
 
         dialog = HookDialog(self.workspace, addr=addr, parent=self)
-        if async_:
-            dialog.show()
-        else:
-            dialog.exec_()
+        dialog.exec_()
 
     def popup_func_doc_dialog(self, instr_addr) -> None:
         """
