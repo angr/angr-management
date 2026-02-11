@@ -571,19 +571,19 @@ class DisassemblyView(SynchronizedFunctionView):
                 func_arg_idx=dependson.arg,
             )
 
-    def parse_operand_and_popup_xref_dialog(self, ins_addr, operand, async_: bool = True) -> None:
+    def parse_operand_and_popup_xref_dialog(self, ins_addr, operand) -> None:
         if operand is not None:
             if operand.variable is not None:
                 # Display cross references to this variable
-                self.popup_xref_dialog(addr=ins_addr, variable=operand.variable, async_=async_)
+                self.popup_xref_dialog(addr=ins_addr, variable=operand.variable)
             elif operand.is_constant:
                 # Display cross references to an address
-                self.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_value, async_=async_)
+                self.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_value)
             elif operand.is_constant_memory:
                 # Display cross references to an address
-                self.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_memory_value, async_=async_)
+                self.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_memory_value)
 
-    def popup_xref_dialog(self, addr: int | None = None, variable=None, dst_addr=None, async_: bool = True) -> None:
+    def popup_xref_dialog(self, addr: int | None = None, variable=None, dst_addr=None) -> None:
         if variable is not None:
             dialog = XRefDialog(
                 addr=addr,
@@ -602,10 +602,7 @@ class DisassemblyView(SynchronizedFunctionView):
                 disassembly_view=self,
                 parent=self,
             )
-        if async_:
-            dialog.show()
-        else:
-            dialog.exec_()
+        dialog.exec_()
 
     def popup_patch_dialog(self) -> None:
         dlg = AssemblePatchDialog(self._insn_addr_on_context_menu, self.instance)
