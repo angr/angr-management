@@ -56,7 +56,7 @@ class DisasmInsnContextMenu(Menu):
         return self.parent
 
     def _popup_newstate_dialog(self) -> None:
-        self._disasm_view.popup_newstate_dialog(async_=True)
+        self._disasm_view.popup_newstate_dialog()
 
     def _popup_dependson_dialog(self) -> None:
         self._disasm_view.popup_dependson_dialog(use_operand=True)
