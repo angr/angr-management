@@ -1,6 +1,9 @@
 name: Release
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       version:
@@ -13,7 +16,7 @@ jobs:
   build:
     uses: ./.github/workflows/pyinstaller-build.yml
     with:
-      version: ${{ github.event.inputs.version }}
+      version: ${{ github.event.inputs.version || github.ref_name }}
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -25,9 +28,9 @@ jobs:
         uses: actions/download-artifact@v4
       - name: Make release
         run: >
-          gh release create ${{ github.event.inputs.version }} \
+          gh release create ${{ github.event.inputs.version || github.ref_name }} \
             --repo angr/angr-management \
-            --title "angr management ${{ github.event.inputs.version }}" \
+            --title "angr management ${{ github.event.inputs.version || github.ref_name }}" \
             --notes "$RELEASE_NOTES" \
             --target $GITHUB_SHA \
             $(find . -type f)
