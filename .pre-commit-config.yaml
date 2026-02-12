@@ -43,12 +43,6 @@ repos:
 # Modifiers
 #
 
-# Disabled because angr-management is not a normalized packaged name
-# -   repo: https://github.com/asottile/setup-cfg-fmt
-#     rev: v2.2.0
-#     hooks:
-#     -   id: setup-cfg-fmt
-
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
