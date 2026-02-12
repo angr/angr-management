@@ -247,7 +247,7 @@ class QBlock(QCachedGraphicsItem):
                     options=self._block_code_options,
                 )
                 obj = QBlockCode(
-                    addr=stmt.ins_addr,
+                    addr=stmt.tags.get("ins_addr"),
                     obj=code_obj,
                     config=self._config,
                     parent=self,
