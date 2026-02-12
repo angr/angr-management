@@ -11,7 +11,6 @@ from .view import InstanceView
 _l = logging.getLogger(name=__name__)
 
 if TYPE_CHECKING:
-
     import PySide6
 
     from angrmanagement.data.instance import Instance

@@ -216,7 +216,10 @@ class CodeView(FunctionView):
     #
 
     def _on_new_addr(
-        self, already_moved: bool = False, focus: bool = False, **kwargs  # pylint:disable=unused-argument
+        self,
+        already_moved: bool = False,
+        focus: bool = False,
+        **kwargs,  # pylint:disable=unused-argument
     ) -> None:
         if already_moved:
             return
@@ -348,9 +351,7 @@ class CodeView(FunctionView):
         else:
             self._options.hide()
 
-    def _on_new_function(
-        self, focus: bool = False, focus_addr=None, flavor=None, **kwargs
-    ) -> None:  # pylint: disable=unused-argument
+    def _on_new_function(self, focus: bool = False, focus_addr=None, flavor=None, **kwargs) -> None:  # pylint: disable=unused-argument
         # sets a new function. extra args are used in case this operation requires waiting for the decompiler
         if flavor is None:
             flavor = "pseudocode" if self.codegen.am_none else self.codegen.flavor

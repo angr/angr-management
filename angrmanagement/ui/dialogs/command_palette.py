@@ -158,7 +158,7 @@ class PaletteItemDelegate(QStyledItemDelegate):
             text_out = ""
             last_idx = 0
             for idx, _, size in matcher.get_matching_blocks():
-                text_out += text_in[last_idx:idx] + f"<b>{text_in[idx:idx + size]}</b>"
+                text_out += text_in[last_idx:idx] + f"<b>{text_in[idx : idx + size]}</b>"
                 last_idx = idx + size
             text_out += text_in[last_idx:]
 

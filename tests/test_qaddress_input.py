@@ -14,7 +14,6 @@ from angrmanagement.ui.widgets.qaddress_input import QAddressInput
 
 
 class TestQaddressInput(AngrManagementTestCase):
-
     def test_address_conversion(self):
         main = self.main
         main.workspace.main_instance.project.am_obj = load_shellcode(b"X", "amd64")

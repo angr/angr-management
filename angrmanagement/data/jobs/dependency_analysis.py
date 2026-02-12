@@ -179,7 +179,7 @@ class DependencyAnalysisJob(InstanceJob):
         max_depth: int,
         excluded_funtions: set[int],
         observation_points: set[tuple],
-    ) -> Generator[tuple[int, int, ReachingDefinitionsAnalysis], None, None]:
+    ) -> Generator[tuple[int, int, ReachingDefinitionsAnalysis]]:
         Handler = handler_factory(
             [
                 StdioHandlers,

@@ -127,7 +127,7 @@ class SettingsDialog(QDialog):
 
         change_label = QLabel("Diff Change Color", self)
         change_label.setToolTip("The color shown when two instructions differ in some sub-change (like ops)")
-        change_label.setStyleSheet(f"background-color: #{self.diff_plugin.chg_color.rgba() & 0xffffff:x}")
+        change_label.setStyleSheet(f"background-color: #{self.diff_plugin.chg_color.rgba() & 0xFFFFFF:x}")
         self._change_color = QLineEdit()
         self._change_color.setText(hex(self.diff_plugin.chg_color.rgb()))
         gui_layout.addWidget(change_label, 0, 0)
@@ -135,7 +135,7 @@ class SettingsDialog(QDialog):
 
         add_label = QLabel("Diff Add Color", self)
         add_label.setToolTip("The color shown when an instruction can't be matched so it's assumed to be new")
-        add_label.setStyleSheet(f"background-color: #{self.diff_plugin.add_color.rgba() & 0xffffff:x}")
+        add_label.setStyleSheet(f"background-color: #{self.diff_plugin.add_color.rgba() & 0xFFFFFF:x}")
         self._add_color = QLineEdit()
         self._add_color.setText(hex(self.diff_plugin.add_color.rgb()))
         gui_layout.addWidget(add_label, 1, 0)
@@ -145,7 +145,7 @@ class SettingsDialog(QDialog):
         del_label.setToolTip(
             "The color shown in the original binary where an instruction was removed (disabled for now)"
         )
-        del_label.setStyleSheet(f"background-color: #{self.diff_plugin.del_color.rgba() & 0xffffff:x}")
+        del_label.setStyleSheet(f"background-color: #{self.diff_plugin.del_color.rgba() & 0xFFFFFF:x}")
         self._del_color = QLineEdit()
         self._del_color.setText(hex(self.diff_plugin.del_color.rgb()))
         gui_layout.addWidget(del_label, 2, 0)

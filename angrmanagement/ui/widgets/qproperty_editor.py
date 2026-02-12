@@ -516,7 +516,6 @@ class PropertyDelegate(QStyledItemDelegate):
     def editorEvent(self, event, model, option, index):
         item = self._get_source_item(index)
         if isinstance(event, QMouseEvent):
-
             single_clicked_on_value = (
                 event.type() == QEvent.Type.MouseButtonRelease
                 and event.button() == Qt.MouseButton.LeftButton

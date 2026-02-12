@@ -98,12 +98,14 @@ class PoisonPlugin(BasePlugin):
         if isinstance(node, CFunctionCall) and node.callee_func is not None:
             yield None
             if self.knowledge.is_poisoned_local(node.codegen._func.addr, node.callee_func.addr):
-                yield "Remove poison for this function", lambda: self.set_poison_local(
-                    node.codegen._func.addr, node.callee_func.addr, False
+                yield (
+                    "Remove poison for this function",
+                    lambda: self.set_poison_local(node.codegen._func.addr, node.callee_func.addr, False),
                 )
             else:
-                yield "Poison call for this function", lambda: self.set_poison_local(
-                    node.codegen._func.addr, node.callee_func.addr, True
+                yield (
+                    "Poison call for this function",
+                    lambda: self.set_poison_local(node.codegen._func.addr, node.callee_func.addr, True),
                 )
             if self.knowledge.is_poisoned_global(node.callee_func.addr):
                 yield "Remove global poison", lambda: self.set_poison_global(node.callee_func.addr, False)

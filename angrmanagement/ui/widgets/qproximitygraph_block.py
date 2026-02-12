@@ -100,14 +100,10 @@ class QProximityGraphBlock(QCachedGraphicsItem):
 
         super().mouseDoubleClickEvent(event)
 
-    def hoverEnterEvent(
-        self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent
-    ) -> None:  # pylint:disable=unused-argument
+    def hoverEnterEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent) -> None:  # pylint:disable=unused-argument
         self._proximity_view.hover_enter_block(self)
 
-    def hoverLeaveEvent(
-        self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent
-    ) -> None:  # pylint:disable=unused-argument
+    def hoverLeaveEvent(self, event: PySide6.QtWidgets.QGraphicsSceneHoverEvent) -> None:  # pylint:disable=unused-argument
         self._proximity_view.hover_leave_block(self)
 
     def _paint_boundary(self, painter) -> None:

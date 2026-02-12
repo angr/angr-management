@@ -41,9 +41,7 @@ class QStackTableModel(QAbstractTableModel):
     def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
-    def headerData(
-        self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...
-    ) -> Any:  # pylint:disable=unused-argument
+    def headerData(self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...) -> Any:  # pylint:disable=unused-argument
         if role != Qt.ItemDataRole.DisplayRole:
             return None
         if section < len(self.Headers):
