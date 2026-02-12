@@ -11,7 +11,6 @@ from PySide6.QtWidgets import QSizePolicy
 from angrmanagement.ui.views.view import InstanceView
 
 if TYPE_CHECKING:
-
     from angrmanagement.ui.workspace import Workspace
 
     from .views.view import BaseView

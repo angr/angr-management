@@ -19,7 +19,6 @@ if TYPE_CHECKING:
 
 
 class TestRenameVariables(AngrManagementTestCase):
-
     def setUp(self) -> None:
         super().setUp()
 

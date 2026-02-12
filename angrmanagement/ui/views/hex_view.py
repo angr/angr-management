@@ -917,9 +917,7 @@ class HexGraphicsObject(QGraphicsObject):
         painter.drawPath(path)
         painter.drawPath(self.build_selection_path(region.addr, end_addr, True, half_pen_width))
 
-    def paint(
-        self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget | None = None
-    ) -> None:  # pylint: disable=unused-argument
+    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget: QWidget | None = None) -> None:  # pylint: disable=unused-argument
         """
         Repaint the item.
         """

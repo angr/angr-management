@@ -17,7 +17,6 @@ from angrmanagement.ui.views import CodeView, DisassemblyView
 
 
 class TestRenameFunctions(AngrManagementTestCase):
-
     def test_rename_a_function_in_disasm_and_pseudocode_views(self):
         main = self.main
         binpath = os.path.join(test_location, "x86_64", "fauxware")

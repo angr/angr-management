@@ -7,7 +7,6 @@ from angrmanagement.config import Conf
 from .menu import Menu, MenuEntry, MenuSeparator
 
 if TYPE_CHECKING:
-
     from angrmanagement.ui.views.disassembly_view import DisassemblyView
 
 

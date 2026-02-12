@@ -37,7 +37,7 @@ class SimulationDebugger(Debugger):
             return "Simulation (No active states)"
         else:
             pc = self.simstate.solver.eval(self.simstate.regs.pc)
-            return f'Simulation @ {pc:x} ({len(self._sim_mgr.stashes["active"])} active)'
+            return f"Simulation @ {pc:x} ({len(self._sim_mgr.stashes['active'])} active)"
 
     def _watch_state(self, **_) -> None:
         self._on_state_change()

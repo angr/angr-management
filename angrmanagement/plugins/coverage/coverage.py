@@ -164,7 +164,7 @@ class CoveragePlugin(BasePlugin):
 
         fraction_covered = len(covered_bbls) / total_bbls
 
-        return fraction_covered, f"{int(round(fraction_covered*100,0))}%"
+        return fraction_covered, f"{int(round(fraction_covered * 100, 0))}%"
 
     def _refresh_gui(self) -> None:
         self.workspace.refresh()
