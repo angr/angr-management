@@ -40,7 +40,7 @@ class QBlockCode(QCachedGraphicsItem):
 
     GRAPH_ADDR_SPACING = 20
 
-    addr: int
+    addr: int | None
     _addr_str: str
     obj: BlockTreeNode
     _config: ConfigurationManager
@@ -50,7 +50,7 @@ class QBlockCode(QCachedGraphicsItem):
 
     def __init__(
         self,
-        addr: int,
+        addr: int | None,
         obj: BlockTreeNode,
         config: ConfigurationManager,
         instance: Instance,
@@ -60,7 +60,7 @@ class QBlockCode(QCachedGraphicsItem):
     ) -> None:
         super().__init__(parent=parent)
         self.addr = addr
-        self._addr_str = f"{self.addr:08x}"
+        self._addr_str = "" if self.addr is None else f"{self.addr:08x}"
         self.obj = obj
         self._width = 0
         self._height = 0
@@ -139,6 +139,7 @@ class QBlockCode(QCachedGraphicsItem):
         if (
             event.button() == Qt.MouseButton.LeftButton
             and self._selection_mode == QBlockCodeSelectionMode.SELECT_INSTRUCTION
+            and self.addr is not None
         ):
             self.infodock.select_instruction(self.addr)
 
@@ -154,7 +155,7 @@ class QBlockCode(QCachedGraphicsItem):
     def should_highlight(self) -> bool:
         match self._selection_mode:
             case QBlockCodeSelectionMode.SELECT_INSTRUCTION:
-                if self.infodock.is_instruction_selected(self.addr):
+                if self.addr is not None and self.infodock.is_instruction_selected(self.addr):
                     return True
                 if self.obj is not None:
                     return self.obj.should_highlight() or self.obj.should_highlight_line
