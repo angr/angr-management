@@ -230,7 +230,7 @@ class DisassemblyView(SynchronizedFunctionView):
     @SynchronizedFunctionView.function.setter
     def function(self, v) -> None:
         if v is not self.function.am_obj:
-            self.display_function(v, False)
+            self.display_function(v, send_event=False)
 
     #
     # Callbacks
@@ -920,8 +920,8 @@ class DisassemblyView(SynchronizedFunctionView):
         if the_func is not None:
             self.set_synchronized_cursor_address(the_func.addr)
 
+        self.function.am_obj = the_func
         if send_event:
-            self.function.am_obj = the_func
             self.function.am_event()
 
         # set status bar
