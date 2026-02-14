@@ -30,8 +30,8 @@ class GotoPaletteModel(PaletteModel):
         instance = self.workspace.main_instance
         if instance and not instance.project.am_none:
             project = instance.project.am_obj
-            assert project is not None
-            items.extend([func for _, func in project.kb.functions.items()])
+            if project is not None:
+                items.extend([func for _, func in project.kb.functions.items()])
 
         return items
 
