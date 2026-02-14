@@ -271,6 +271,97 @@ class Style(Page):
             font_picker.update()
 
 
+class LLMSettings(Page):
+    """
+    LLM configuration page.
+    """
+
+    NAME = "LLM"
+
+    def __init__(self, workspace: Workspace | None = None, parent=None) -> None:
+        super().__init__(parent)
+        self.workspace = workspace
+
+        self._model_edit: QLineEdit
+        self._api_key_edit: QLineEdit
+        self._api_base_edit: QLineEdit
+        self._preload_chk: QCheckBox
+
+        self._init_widgets()
+        self._load_config()
+
+    def _init_widgets(self) -> None:
+        group = QGroupBox("LLM Configuration")
+        layout = QGridLayout()
+
+        layout.addWidget(QLabel("Model:"), 0, 0)
+        self._model_edit = QLineEdit()
+        self._model_edit.setPlaceholderText("e.g. gpt-4o, claude-sonnet-4-20250514, ollama/llama3")
+        layout.addWidget(self._model_edit, 0, 1)
+
+        layout.addWidget(QLabel("API Key:"), 1, 0)
+        self._api_key_edit = QLineEdit()
+        self._api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self._api_key_edit.setPlaceholderText("Optional (uses env var if empty)")
+        layout.addWidget(self._api_key_edit, 1, 1)
+
+        layout.addWidget(QLabel("API Base URL:"), 2, 0)
+        self._api_base_edit = QLineEdit()
+        self._api_base_edit.setPlaceholderText("Optional (for custom endpoints)")
+        layout.addWidget(self._api_base_edit, 2, 1)
+
+        group.setLayout(layout)
+
+        options_group = QGroupBox("Options")
+        options_layout = QVBoxLayout()
+        self._preload_chk = QCheckBox("Auto-refine callees after decompilation")
+        options_layout.addWidget(self._preload_chk)
+        options_group.setLayout(options_layout)
+
+        page_layout = QVBoxLayout()
+        page_layout.addWidget(group)
+        page_layout.addWidget(options_group)
+        page_layout.addStretch()
+        self.setLayout(page_layout)
+
+    def _load_config(self) -> None:
+        self._model_edit.setText(Conf.llm_model)
+        self._api_key_edit.setText(Conf.llm_api_key)
+        self._api_base_edit.setText(Conf.llm_api_base)
+        self._preload_chk.setChecked(Conf.llm_preload_callees)
+
+    def save_config(self) -> None:
+        Conf.llm_model = self._model_edit.text().strip()
+        Conf.llm_api_key = self._api_key_edit.text().strip()
+        Conf.llm_api_base = self._api_base_edit.text().strip()
+        Conf.llm_preload_callees = self._preload_chk.isChecked()
+        self._sync_llm_client_to_project()
+
+    def _sync_llm_client_to_project(self) -> None:
+        if self.workspace is None:
+            return
+        try:
+            instance = self.workspace.instance
+        except AttributeError:
+            return
+        if instance is None or instance.project.am_none:
+            return
+        model = Conf.llm_model
+        if model:
+            try:
+                from angr.llm_client import LLMClient
+
+                instance.project.am_obj.llm_client = LLMClient(
+                    model=model,
+                    api_key=Conf.llm_api_key or None,
+                    api_base=Conf.llm_api_base or None,
+                )
+            except ImportError:
+                pass
+        else:
+            instance.project.am_obj.llm_client = None
+
+
 class Preferences(QDialog):
     """
     Application preferences dialog.
@@ -302,6 +393,7 @@ class Preferences(QDialog):
         self._pages.append(Integration())
         self._pages.append(ThemeAndColors())
         self._pages.append(Style())
+        self._pages.append(LLMSettings(workspace=self.workspace))
 
         pages = QStackedWidget()
         for idx, page in enumerate(self._pages):

@@ -159,6 +159,7 @@ class CodeView(FunctionView):
                     else:
                         self.jump_history.record_address(self._function.am_obj.addr)
                     self._last_function = self._function.am_obj
+            self._maybe_preload_callees()
 
         def decomp(*_) -> None:
             job = DecompileFunctionJob(
@@ -557,3 +558,15 @@ class CodeView(FunctionView):
         self._textedit.focusWidget()
 
         self.workspace.plugins.instrument_code_view(self)
+
+    def _maybe_preload_callees(self) -> None:
+        if not Conf.llm_preload_callees:
+            return
+        if self._function.am_none or self.instance.project.am_none:
+            return
+        if self.instance.project.am_obj.llm_client is None:
+            return
+        from angrmanagement.data.jobs.llm_preload import LLMPreloadCalleesJob
+
+        job = LLMPreloadCalleesJob(self.instance, self._function.am_obj)
+        self.workspace.job_manager.add_job(job)
