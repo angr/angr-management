@@ -48,7 +48,7 @@ class PaletteModel(QAbstractItemModel):
         if not index.isValid() or role != Qt.ItemDataRole.DisplayRole:
             return None
         row = index.row()
-        return self._filtered_items[row] if row < len(self._filtered_items) else None
+        return self._filtered_items[row] if 0 <= row < len(self._filtered_items) else None
 
     def set_filter_text(self, query: str) -> None:
         """
@@ -106,6 +106,9 @@ class PaletteItemDelegate(QStyledItemDelegate):
             text_out = ""
             last_idx = 0
             for idx, _, size in matcher.get_matching_blocks():
+                if size == 0:
+                    # Skip the final zero-length block returned by SequenceMatcher
+                    continue
                 text_out += text_in[last_idx:idx] + f"<b>{text_in[idx : idx + size]}</b>"
                 last_idx = idx + size
             text_out += text_in[last_idx:]
@@ -220,7 +223,12 @@ class PaletteDialog(QDialog):
 
     def _set_filter_text(self, text: str) -> None:
         self._model.set_filter_text(text)
-        self._view.setCurrentIndex(self._model.index(0, 0, None))
+        if self._model.rowCount() > 0:
+            self._view.setCurrentIndex(self._model.index(0, 0))
+        else:
+            # Clear current selection/index when there are no rows to avoid out-of-range indexes
+            self._view.clearSelection()
+            self._view.setCurrentIndex(QModelIndex())
 
     def _get_selected(self):
         for i in self._view.selectedIndexes():
