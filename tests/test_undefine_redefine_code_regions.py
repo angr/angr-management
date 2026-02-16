@@ -12,7 +12,7 @@ from angrmanagement.ui.views import DisassemblyView
 
 
 class TestUndefineRedefineCodeRegions(AngrManagementTestCase):
-    def test_undefine_code_region_in_disasm_view(self):
+    def test_undefine_redefine_code_region_in_disasm_view(self):
         main = self.main
         binpath = os.path.join(test_location, "x86_64", "fauxware")
         main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
