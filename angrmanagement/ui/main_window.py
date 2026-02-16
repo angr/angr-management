@@ -38,7 +38,8 @@ from angrmanagement.ui.widgets.qam_status_bar import QAmStatusBar
 from angrmanagement.utils.io import download_url, isurl
 
 from .dialogs.about import LoadAboutDialog
-from .dialogs.command_palette import CommandPaletteDialog, GotoPaletteDialog
+from .dialogs.command_palette import CommandPaletteDialog
+from .dialogs.goto_palette import GotoPaletteDialog
 from .dialogs.load_plugins import LoadPlugins
 from .dialogs.new_state import NewState
 from .dialogs.preferences import Preferences
