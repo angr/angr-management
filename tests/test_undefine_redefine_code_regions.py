@@ -33,31 +33,28 @@ class TestUndefineRedefineCodeRegions(AngrManagementTestCase):
         disasm_view.display_disasm_graph()
         disasm_view.display_function(func)
 
-        # # select the instruction at the beginning of the function
+        # select the instruction right after call to puts
         disasm_view.infodock.select_instruction(0x40073E)
         assert len(disasm_view.infodock.selected_insns) == 1
         assert disasm_view.infodock.selected_insns == {0x40073E}
-        # print(len(cfg.graph))
 
-        # # undefine at the beginning of the function
+        # undefine the instruction
         disasm_view.undefine_code()
 
         main.workspace.job_manager.join_all_jobs()
 
-        # # the starting block should no longer be in the graph
+        # Node at 0x40073E should be removed from the CFG
         assert cfg.get_any_node(0x40073E) is None
 
         main.workspace.job_manager.join_all_jobs()
 
-        # # define at the beginning of the function
+        # select the instruction right after call to puts and redefine it as code
         disasm_view.infodock.select_label(0x40073E)
         assert disasm_view.infodock.selected_labels == {0x40073E}
-        # # print(len(cfg.graph))
         disasm_view.define_code()
-
         main.workspace.job_manager.join_all_jobs()
-        # # print(len(cfg.graph))
 
+        # Redefined node should be part of main function
         insn_node = cfg.get_any_node(insn_addr)
         assert insn_node is not None
         assert insn_node.function_address == 0x40071D
