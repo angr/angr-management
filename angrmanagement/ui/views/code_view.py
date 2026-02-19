@@ -298,7 +298,10 @@ class CodeView(FunctionView):
             update_var_types = False
             if event == "retype_variable":
                 dec = self.instance.project.analyses.Decompiler(
-                    self._function.am_obj, variable_kb=self.instance.pseudocode_variable_kb, decompile=False
+                    self._function.am_obj,
+                    variable_kb=self.instance.pseudocode_variable_kb,
+                    decompile=False,
+                    use_cache=True,
                 )
                 dec_cache = self.instance.kb.decompilations[(self._function.addr, "pseudocode")]
                 new_codegen = dec.reflow_variable_types(dec_cache)

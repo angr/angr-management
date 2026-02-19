@@ -26,6 +26,7 @@ class DecompileFunctionJob(InstanceJob):
             self.function,
             flavor="pseudocode",
             variable_kb=self.instance.pseudocode_variable_kb,
+            use_cache=True,
             **self.kwargs,
             progress_callback=ctx.set_progress,
         )
