@@ -70,6 +70,7 @@ class ProximityView(InstanceView):
         dec = inst.project.analyses.Decompiler(
             self.function,
             cfg=self.instance.cfg,
+            use_cache=True,
         )
         return dec
 
