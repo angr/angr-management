@@ -488,12 +488,33 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self._offset = offset
         self._start_line_in_object = start_line_in_object
 
+    @staticmethod
+    def _validate_cached_qobj(obj, cached_qobj: QLinearBlock | QMemoryDataBlock | QUnknownBlock) -> bool:
+        if isinstance(obj, Block) and isinstance(cached_qobj, QLinearBlock):
+            for cached_node in cached_qobj.cfg_nodes:
+                if cached_node.addr == obj.addr and cached_node.size == obj.size:
+                    return True
+
+        if isinstance(obj, MemoryData) and isinstance(cached_qobj, QMemoryDataBlock):
+            return cached_qobj.memory_data.size == obj.size
+
+        if isinstance(obj, Unknown) and isinstance(cached_qobj, QUnknownBlock):
+            return cached_qobj.bytes == obj.bytes
+
+        return False
+
     def _obj_to_paintable(
         self, obj_addr, obj, use_cache=True
     ) -> tuple[bool, None | QLinearBlock | QMemoryDataBlock | QUnknownBlock]:
         if use_cache and obj_addr in self.objects:
-            # print("Cached!")
-            return True, self.objects[obj_addr]
+            cached_qobj = self.objects[obj_addr]
+            if self._validate_cached_qobj(obj, cached_qobj):
+                return True, cached_qobj
+
+            # Cached object is outdated, delete it
+            cached_qobj.remove_children_from_scene()
+            self.scene.removeItem(cached_qobj)
+            del self.objects[obj_addr]
 
         if isinstance(obj, Block):
             cfg_node = self.cfg.get_any_node(obj_addr, force_fastpath=True)
@@ -519,7 +540,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                                     disasm,
                                     self.disasm_view.infodock,
                                     obj.addr,
-                                    ail_obj,
+                                    [ail_obj],
                                     None,
                                 )
                     else:
