@@ -488,9 +488,11 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self._offset = offset
         self._start_line_in_object = start_line_in_object
 
-    @staticmethod
-    def _validate_cached_qobj(obj, cached_qobj: QLinearBlock | QMemoryDataBlock | QUnknownBlock) -> bool:
+    def _validate_cached_qobj(self, obj, cached_qobj: QLinearBlock | QMemoryDataBlock | QUnknownBlock) -> bool:
         if isinstance(obj, Block) and isinstance(cached_qobj, QLinearBlock):
+            if self._disassembly_level != cached_qobj.disassembly_level:
+                return False
+
             obj_insns = set(obj.instruction_addrs)
             cached_insns = set(cached_qobj.addr_to_insns.keys())
             return obj_insns == cached_insns
