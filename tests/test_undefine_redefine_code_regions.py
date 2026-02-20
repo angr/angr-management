@@ -1,0 +1,64 @@
+# pylint:disable=missing-class-docstring,wrong-import-order
+from __future__ import annotations
+
+import os
+import sys
+import unittest
+
+import angr
+from common import AngrManagementTestCase, test_location
+
+from angrmanagement.ui.views import DisassemblyView
+
+
+class TestUndefineRedefineCodeRegions(AngrManagementTestCase):
+    def test_undefine_redefine_code_region_in_disasm_view(self):
+        main = self.main
+        binpath = os.path.join(test_location, "x86_64", "fauxware")
+        main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
+        main.workspace.main_instance.project.am_event()
+        main.workspace.job_manager.join_all_jobs()
+
+        cfg = main.workspace.main_instance.cfg
+        func = main.workspace.main_instance.project.kb.functions["main"]
+        assert func is not None
+
+        insn_addr = 0x40073E
+        insn_node = cfg.get_any_node(insn_addr)
+        assert insn_node is not None
+        assert insn_node.function_address == 0x40071D
+
+        # load the disassembly view
+        disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
+        disasm_view.display_disasm_graph()
+        disasm_view.display_function(func)
+
+        # select the instruction right after call to puts
+        disasm_view.infodock.select_instruction(0x40073E)
+        assert len(disasm_view.infodock.selected_insns) == 1
+        assert disasm_view.infodock.selected_insns == {0x40073E}
+
+        # undefine the instruction
+        disasm_view.undefine_code()
+
+        main.workspace.job_manager.join_all_jobs()
+
+        # Node at 0x40073E should be removed from the CFG
+        assert cfg.get_any_node(0x40073E) is None
+
+        main.workspace.job_manager.join_all_jobs()
+
+        # select the instruction right after call to puts and redefine it as code
+        disasm_view.infodock.select_label(0x40073E)
+        assert disasm_view.infodock.selected_labels == {0x40073E}
+        disasm_view.define_code()
+        main.workspace.job_manager.join_all_jobs()
+
+        # Redefined node should be part of main function
+        insn_node = cfg.get_any_node(insn_addr)
+        assert insn_node is not None
+        assert insn_node.function_address == 0x40071D
+
+
+if __name__ == "__main__":
+    unittest.main(argv=sys.argv)
