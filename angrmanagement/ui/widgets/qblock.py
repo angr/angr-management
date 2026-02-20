@@ -58,6 +58,7 @@ class QBlock(QCachedGraphicsItem):
         self.func_addr = func_addr
         self.disasm_view = disasm_view
         self.disasm = disasm
+        self.disassembly_level = disasm_view.disassembly_level
         self.infodock = infodock
         self.variable_manager = infodock.variable_manager
         self.addr = addr
