@@ -491,9 +491,9 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     @staticmethod
     def _validate_cached_qobj(obj, cached_qobj: QLinearBlock | QMemoryDataBlock | QUnknownBlock) -> bool:
         if isinstance(obj, Block) and isinstance(cached_qobj, QLinearBlock):
-            for cached_node in cached_qobj.cfg_nodes:
-                if cached_node.addr == obj.addr and cached_node.size == obj.size:
-                    return True
+            obj_insns = set(obj.instruction_addrs)
+            cached_insns = set(cached_qobj.addr_to_insns.keys())
+            return obj_insns == cached_insns
 
         if isinstance(obj, MemoryData) and isinstance(cached_qobj, QMemoryDataBlock):
             return cached_qobj.memory_data.size == obj.size
