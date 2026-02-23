@@ -170,9 +170,7 @@ class ProximityView(InstanceView):
             new_node = QProximityGraphFunctionBlock(False, self, node)
         elif isinstance(node, CallProxiNode):
             new_node = QProximityGraphCallBlock(False, self, node)
-        elif isinstance(node, VariableProxiNode):
-            new_node = QProximityGraphBlock
-        elif isinstance(node, BaseProxiNode):
+        elif isinstance(node, (VariableProxiNode, BaseProxiNode)):
             new_node = QProximityGraphBlock(False, self, node)
         else:
             raise TypeError(f"Unsupported type of proximity node {type(node)}.")
