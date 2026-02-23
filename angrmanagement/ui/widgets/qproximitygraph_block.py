@@ -165,7 +165,10 @@ class QProximityGraphFunctionBlock(QProximityGraphBlock):
         super().__init__(is_selected, proximity_view, node)
 
     def _init_widgets(self) -> None:
-        self._text = f"Function {self._node.func.name}"
+        func_node = self._node.func
+        func = self._proximity_view.instance.kb.functions.get(func_node.addr)
+        func_name = func.name if func is not None else (func_node.func_name or hex(func_node.addr))
+        self._text = f"Function {func_name}"
         self._text_item = QGraphicsSimpleTextItem(self._text, self)
         self._text_item.setFont(Conf.symexec_font)
         self._text_item.setBrush(self.FUNCTION_NODE_TEXT_COLOR)
@@ -217,7 +220,9 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
 
     def _init_widgets(self) -> None:
         self._node: CallProxiNode
-        self._func_name = self._node.callee.name
+        callee_node = self._node.callee
+        func = self._proximity_view.instance.kb.functions.get(callee_node.addr)
+        self._func_name = func.name if func is not None else callee_node.func_name
         if self._node.args is not None:
             self._args = [self._argument_text(arg) for arg in self._node.args]
         else:
@@ -225,9 +230,9 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
 
         # func name
         self._func_name_item = QGraphicsSimpleTextItem(self._func_name, self)
-        if self._node.callee.is_simprocedure:
+        if func is not None and func.is_simprocedure:
             pen_color = self.CALL_NODE_TEXT_COLOR_SIMPROC
-        elif self._node.callee.is_plt:
+        elif func is not None and func.is_plt:
             pen_color = self.CALL_NODE_TEXT_COLOR_PLT
         else:
             pen_color = self.CALL_NODE_TEXT_COLOR
