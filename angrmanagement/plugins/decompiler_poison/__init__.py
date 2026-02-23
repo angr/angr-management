@@ -64,9 +64,11 @@ class PoisonPass(OptimizationPass):
         for block in list(self._graph.nodes()):
             block: ailment.Block
             for stmt in block.statements:
-                if isinstance(stmt, ailment.statement.SideEffectStatement) and isinstance(
-                    stmt.expr, ailment.expression.Call
-                ) and self.is_poisoned(getattr(stmt.expr.target, "value", None)):
+                if (
+                    isinstance(stmt, ailment.statement.SideEffectStatement)
+                    and isinstance(stmt.expr, ailment.expression.Call)
+                    and self.is_poisoned(getattr(stmt.expr.target, "value", None))
+                ):
                     poisoned.append(block)
                     break
 
