@@ -9,7 +9,6 @@ import angr
 from common import AngrManagementTestCase, test_location
 
 from angrmanagement.ui.views import DisassemblyView
-from angrmanagement.ui.widgets import DisassemblyLevel
 
 
 class TestQDisassemblyGraph(AngrManagementTestCase):
@@ -33,7 +32,7 @@ class TestQDisassemblyGraph(AngrManagementTestCase):
         flow_graph = disasm_view.flow_graph
         entry_block = next((b for b in flow_graph.blocks if b.addr == func.addr), None)
         assert entry_block is not None
-        assert entry_block.disassembly_level is DisassemblyLevel.MachineCode
+        assert entry_block.disasm._include_ir is False
 
         # change disassembly level to LifterIR
         disasm_view.set_disassembly_level_lifter_ir()
@@ -42,7 +41,7 @@ class TestQDisassemblyGraph(AngrManagementTestCase):
         # blocks list is rebuilt by reload() — re-fetch the entry block
         entry_block = next((b for b in flow_graph.blocks if b.addr == func.addr), None)
         assert entry_block is not None
-        assert entry_block.disassembly_level is DisassemblyLevel.LifterIR
+        assert entry_block.disasm._include_ir is True
 
 
 if __name__ == "__main__":
