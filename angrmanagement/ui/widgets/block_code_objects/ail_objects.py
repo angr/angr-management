@@ -45,7 +45,8 @@ class QAilObj(BlockTreeNode):
             ailment.statement.Jump: QAilJumpObj,
             ailment.statement.ConditionalJump: QAilConditionalJumpObj,
             ailment.statement.Return: QAilReturnObj,
-            ailment.statement.Call: QAilCallObj,
+            ailment.statement.SideEffectStatement: QAilSideEffectObj,
+            ailment.expression.Call: QAilCallObj,
             ailment.expression.Const: QAilConstObj,
             ailment.expression.Tmp: QAilTmpObj,
             ailment.expression.Register: QAilRegisterObj,
@@ -147,15 +148,25 @@ class QAilReturnObj(QAilTextObj):
             self.add_ailobj(expr)
 
 
-class QAilCallObj(QAilTextObj):
+class QAilSideEffectObj(QAilTextObj):
     """
-    Renders an ailment.statement.Call
+    Renders an ailment.statement.SideEffectStatement, which wraps a Call expression
+    and optionally includes a return value destination (ret_expr).
     """
 
-    def create_subobjs(self, obj: ailment.statement.Call) -> None:
-        if obj.ret_expr is not None and self.stmt is self.obj:
+    def create_subobjs(self, obj: ailment.statement.SideEffectStatement) -> None:
+        if obj.ret_expr is not None:
             self.add_ailobj(obj.ret_expr)
             self.add_text(" = ")
+        self.add_ailobj(obj.expr)
+
+
+class QAilCallObj(QAilTextObj):
+    """
+    Renders an ailment.expression.Call
+    """
+
+    def create_subobjs(self, obj: ailment.expression.Call) -> None:
         self.add_ailobj(obj.target)
         self.add_text("(")
         if obj.args:
