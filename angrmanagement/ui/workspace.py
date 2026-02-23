@@ -786,7 +786,7 @@ class Workspace:
         # Attempt flow into preceding function
         func = cfg.find_function_for_reflow_into_addr(addr)
         if func:
-            function_starts.insert(0, func.addr)
+            function_starts = [func.addr]
             cfg.clear_region_for_reflow(func.addr)
 
         # Truncate existing memory data
