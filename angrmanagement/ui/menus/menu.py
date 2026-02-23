@@ -21,7 +21,7 @@ class MenuEntry:
         checked: bool = False,
         enabled: bool = True,
         key=None,
-        role: QAction.MenuRole = QAction.MenuRole.NoRole,
+        role: QAction.MenuRole | None = None,
         icon: QIcon | None = None,
     ) -> None:
         self.caption = caption
@@ -31,10 +31,10 @@ class MenuEntry:
         self.checked_initially = checked
         self.enabled = enabled
         self.key = key
+        self.role = role
         self.icon = icon
 
         self._qaction = None
-        self._role = role
 
     def set_qaction(self, qaction: QAction) -> None:
         self._qaction = qaction
@@ -129,6 +129,9 @@ class Menu:
             if entry.checkable:
                 action.setCheckable(True)
                 action.setChecked(entry.checked_initially)
+
+            if entry.role is not None:
+                action.setMenuRole(entry.role)
 
             if before is None:
                 menu.addAction(action)
