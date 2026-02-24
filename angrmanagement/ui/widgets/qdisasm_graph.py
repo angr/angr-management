@@ -157,10 +157,11 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         else:
             include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
             addr = self._function_graph.function.addr
+            cache_key = (addr, include_ir)
             try:
-                self.disasm = self._disasms[addr]
+                self.disasm = self._disasms[cache_key]
             except KeyError:
-                self.disasm = self._disasms[addr] = self.instance.project.analyses.Disassembly(
+                self.disasm = self._disasms[cache_key] = self.instance.project.analyses.Disassembly(
                     function=self._function_graph.function, include_ir=include_ir
                 )
             view = self.disasm_view.workspace.view_manager.first_view_in_category("console")
