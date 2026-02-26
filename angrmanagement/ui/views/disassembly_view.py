@@ -214,7 +214,7 @@ class DisassemblyView(SynchronizedFunctionView):
             # TODO: Rerun the variable recovery analysis and update the current view
 
     @property
-    def current_graph(self) -> QLinearDisassembly | QDisassemblyGraph:
+    def current_graph(self) -> QLinearDisassembly | QDisassemblyGraph | None:
         """
         Return the current disassembly control, either linear viewer or flow graph.
 
@@ -228,7 +228,7 @@ class DisassemblyView(SynchronizedFunctionView):
 
     @SynchronizedFunctionView.function.setter
     def function(self, v) -> None:
-        if v is not self.function.am_obj or (v is not None and isinstance(self.current_graph, QLinearDisassembly)):
+        if v is not self.function.am_obj or (self._current_view is self._linear_viewer):
             self.display_function(v, send_event=False)
 
     #
