@@ -228,7 +228,7 @@ class DisassemblyView(SynchronizedFunctionView):
 
     @SynchronizedFunctionView.function.setter
     def function(self, v) -> None:
-        if v is not self.function.am_obj:
+        if v is not self.function.am_obj or (v is not None and isinstance(self.current_graph, QLinearDisassembly)):
             self.display_function(v, send_event=False)
 
     #
