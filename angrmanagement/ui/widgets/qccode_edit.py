@@ -172,9 +172,8 @@ class QCCodeEdit(api.CodeEdit):
         for entry in self.workspace.plugins.build_context_menu_node(under_cursor):
             Menu.translate_element(mnu, entry)
 
-        if self._has_llm_client():
-            for action in self.llm_actions:
-                mnu.addAction(action)
+        for action in self.llm_actions:
+            mnu.addAction(action)
 
         return mnu
 
@@ -633,39 +632,17 @@ class QCCodeEdit(api.CodeEdit):
         sep.setSeparator(True)
         return sep
 
-    def _has_llm_client(self) -> bool:
-        return (
-            self.instance is not None
-            and not self.instance.project.am_none
-            and self.instance.project.am_obj.llm_client is not None
-        )
-
-    def _llm_refine(self, mode: str) -> None:
-        if not self._has_llm_client() or self._code_view is None:
-            return
-        func = self._code_view._function.am_obj
-        if func is None:
-            return
-
-        from angrmanagement.data.jobs.llm_refine import LLMRefineJob
-
-        def on_finish(*_args, **_kwargs):
-            self._code_view.codegen.am_event(already_regenerated=True)
-
-        job = LLMRefineJob(self.instance, func, mode=mode, on_finish=on_finish, blocking=True)
-        self.workspace.job_manager.add_job(job)
-
     def _llm_refine_all(self) -> None:
-        self._llm_refine("all")
+        self.workspace.llm_refine_all()
 
     def _llm_suggest_var_names(self) -> None:
-        self._llm_refine("variable_names")
+        self.workspace.llm_suggest_variable_names()
 
     def _llm_suggest_func_name(self) -> None:
-        self._llm_refine("function_name")
+        self.workspace.llm_suggest_function_name()
 
     def _llm_suggest_var_types(self) -> None:
-        self._llm_refine("variable_types")
+        self.workspace.llm_suggest_variable_types()
 
     def _initialize_context_menus(self) -> None:
         base_actions = [
@@ -747,7 +724,6 @@ class QCCodeEdit(api.CodeEdit):
         # LLM actions
         self.action_llm_refine_all = QAction("LLM: Refine All", self)
         self.action_llm_refine_all.triggered.connect(self._llm_refine_all)
-        self.action_llm_refine_all.setShortcut(QKeySequence("Ctrl+Shift+L"))
         self.action_llm_suggest_var_names = QAction("LLM: Suggest Variable Names", self)
         self.action_llm_suggest_var_names.triggered.connect(self._llm_suggest_var_names)
         self.action_llm_suggest_func_name = QAction("LLM: Suggest Function Name", self)
