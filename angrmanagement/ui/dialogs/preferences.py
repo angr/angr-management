@@ -340,10 +340,7 @@ class LLMSettings(Page):
     def _sync_llm_client_to_project(self) -> None:
         if self.workspace is None:
             return
-        try:
-            instance = self.workspace.instance
-        except AttributeError:
-            return
+        instance = self.workspace.main_instance
         if instance is None or instance.project.am_none:
             return
         model = Conf.llm_model

@@ -49,7 +49,11 @@ class LLMRefineJob(InstanceJob):
             return
 
         # get cached decompilation
-        dec_cache = self.instance.kb.decompilations.get((self.function.addr, "pseudocode"))
+        key = self.function.addr, "pseudocode"
+        if key not in self.instance.kb.decompilations:
+            log.warning("LLMRefineJob: no cached decompilation for %s", self.function.name)
+            return
+        dec_cache = self.instance.kb.decompilations[key]
         if dec_cache is None or dec_cache.codegen is None:
             log.warning("LLMRefineJob: no cached decompilation for %s", self.function.name)
             return
