@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.config import Conf
-from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
+from angrmanagement.data.jobs import DecompileFunctionJob, LLMPreloadCalleesJob, VariableRecoveryJob
 from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.logic.disassembly import JumpHistory
 from angrmanagement.ui.dialogs.jumpto import JumpTo
@@ -159,6 +159,7 @@ class CodeView(FunctionView):
                     else:
                         self.jump_history.record_address(self._function.am_obj.addr)
                     self._last_function = self._function.am_obj
+            self._maybe_preload_callees()
 
         def decomp(*_) -> None:
             job = DecompileFunctionJob(
@@ -557,3 +558,14 @@ class CodeView(FunctionView):
         self._textedit.focusWidget()
 
         self.workspace.plugins.instrument_code_view(self)
+
+    def _maybe_preload_callees(self) -> None:
+        if not Conf.llm_preload_callees:
+            return
+        if self._function.am_none or self.instance.project.am_none:
+            return
+        if self.instance.project.am_obj.llm_client is None:
+            return
+
+        job = LLMPreloadCalleesJob(self.instance, self._function.am_obj)
+        self.workspace.job_manager.add_job(job)

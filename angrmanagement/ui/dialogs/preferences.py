@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import enum
+import logging
 from datetime import datetime
 from itertools import chain
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, get_args
 
 from bidict import bidict
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QColor
+from PySide6.QtCore import QSize, QSortFilterProxyModel, Qt
+from PySide6.QtGui import QColor, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
     QCheckBox,
     QComboBox,
+    QCompleter,
     QDialog,
     QDialogButtonBox,
     QGridLayout,
@@ -271,6 +273,140 @@ class Style(Page):
             font_picker.update()
 
 
+_log = logging.getLogger(__name__)
+
+_known_model_names: list[str] | None = None
+
+
+def _get_known_model_names() -> list[str]:
+    """Return a sorted list of model names that pydantic-ai supports."""
+    global _known_model_names  # pylint:disable=global-statement
+    if _known_model_names is not None:
+        return _known_model_names
+    try:
+        from pydantic_ai.models import KnownModelName  # pylint: disable=import-outside-toplevel
+
+        value = getattr(KnownModelName, "__value__", KnownModelName)
+        names = get_args(value)
+        _known_model_names = sorted(str(n) for n in names) if names else []
+    except (ImportError, AttributeError):
+        _log.debug("Failed to load pydantic-ai model names", exc_info=True)
+        _known_model_names = []
+    return _known_model_names
+
+
+class LLMSettings(Page):
+    """
+    LLM configuration page.
+    """
+
+    NAME = "LLM"
+
+    def __init__(self, workspace: Workspace | None = None, parent=None) -> None:
+        super().__init__(parent)
+        self.workspace = workspace
+
+        self._model_combo: QComboBox
+        self._api_key_edit: QLineEdit
+        self._api_base_edit: QLineEdit
+        self._preload_chk: QCheckBox
+
+        self._init_widgets()
+        self._load_config()
+
+    def _init_widgets(self) -> None:
+        group = QGroupBox("LLM Configuration")
+        layout = QGridLayout()
+
+        layout.addWidget(QLabel("Model:"), 0, 0)
+        self._model_combo = QComboBox()
+        self._model_combo.setEditable(True)
+        self._model_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self._model_combo.lineEdit().setPlaceholderText("e.g. gpt-4o, claude-sonnet-4-20250514, ollama/llama3")
+
+        # Populate with known pydantic-ai model names
+        model_names = _get_known_model_names()
+        source_model = QStandardItemModel()
+        for name in model_names:
+            source_model.appendRow(QStandardItem(name))
+
+        # Set up a case-insensitive filter proxy so the completer matches anywhere in the string
+        proxy = QSortFilterProxyModel()
+        proxy.setSourceModel(source_model)
+        proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+
+        completer = QCompleter(proxy, self)
+        completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        completer.setMaxVisibleItems(15)
+        self._model_combo.setCompleter(completer)
+
+        # Also populate the combo box dropdown itself
+        self._model_combo.setModel(source_model)
+
+        layout.addWidget(self._model_combo, 0, 1)
+
+        layout.addWidget(QLabel("API Key:"), 1, 0)
+        self._api_key_edit = QLineEdit()
+        self._api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self._api_key_edit.setPlaceholderText("Optional (uses env var if empty)")
+        layout.addWidget(self._api_key_edit, 1, 1)
+
+        layout.addWidget(QLabel("API Base URL:"), 2, 0)
+        self._api_base_edit = QLineEdit()
+        self._api_base_edit.setPlaceholderText("Optional (for custom endpoints)")
+        layout.addWidget(self._api_base_edit, 2, 1)
+
+        group.setLayout(layout)
+
+        options_group = QGroupBox("Options")
+        options_layout = QVBoxLayout()
+        self._preload_chk = QCheckBox("Auto-refine callees after decompilation")
+        options_layout.addWidget(self._preload_chk)
+        options_group.setLayout(options_layout)
+
+        page_layout = QVBoxLayout()
+        page_layout.addWidget(group)
+        page_layout.addWidget(options_group)
+        page_layout.addStretch()
+        self.setLayout(page_layout)
+
+    def _load_config(self) -> None:
+        self._model_combo.setCurrentText(Conf.llm_model)
+        self._api_key_edit.setText(Conf.llm_api_key)
+        self._api_base_edit.setText(Conf.llm_api_base)
+        self._preload_chk.setChecked(Conf.llm_preload_callees)
+
+    def save_config(self) -> None:
+        Conf.llm_model = self._model_combo.currentText().strip()
+        Conf.llm_api_key = self._api_key_edit.text().strip()
+        Conf.llm_api_base = self._api_base_edit.text().strip()
+        Conf.llm_preload_callees = self._preload_chk.isChecked()
+        self._sync_llm_client_to_project()
+
+    def _sync_llm_client_to_project(self) -> None:
+        if self.workspace is None:
+            return
+        instance = self.workspace.main_instance
+        if instance is None or instance.project.am_none:
+            return
+        model = Conf.llm_model
+        if model:
+            try:
+                from angr.llm_client import LLMClient  # pylint: disable=import-outside-toplevel
+
+                instance.project.am_obj.llm_client = LLMClient(
+                    model=model,
+                    api_key=Conf.llm_api_key or None,
+                    api_base=Conf.llm_api_base or None,
+                )
+            except ImportError:
+                pass
+        else:
+            instance.project.am_obj.llm_client = None
+
+
 class Preferences(QDialog):
     """
     Application preferences dialog.
@@ -302,6 +438,7 @@ class Preferences(QDialog):
         self._pages.append(Integration())
         self._pages.append(ThemeAndColors())
         self._pages.append(Style())
+        self._pages.append(LLMSettings(workspace=self.workspace))
 
         pages = QStackedWidget()
         for idx, page in enumerate(self._pages):

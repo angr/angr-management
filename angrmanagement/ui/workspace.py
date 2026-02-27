@@ -20,9 +20,10 @@ from angrmanagement.data.instance import Instance, ObjectContainer
 from angrmanagement.data.jobs import (
     CFGGenerationJob,
     Job,
+    LLMRefineJob,
+    LoadBinaryJob,
 )
 from angrmanagement.data.jobs.job import JobState
-from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.data.trace import BintraceTrace, Trace
 from angrmanagement.logic.analysis_manager import AnalysisManager
 from angrmanagement.logic.commands import CommandManager
@@ -486,6 +487,50 @@ class Workspace:
         else:
             view = self._get_or_create_view("disassembly", DisassemblyView)
             view.decompile_current_function()
+
+    def _llm_refine_current_function(self, mode: str) -> None:
+        """Run LLM refinement on the currently decompiled function.
+
+        Shows an error dialog if no LLM client is configured or no function is
+        currently decompiled.
+        """
+        if self.main_instance.project.am_none:
+            QMessageBox.warning(self._main_window, "LLM Refine", "No project is loaded.")
+            return
+
+        project = self.main_instance.project.am_obj
+        if project.llm_client is None:
+            QMessageBox.warning(
+                self._main_window,
+                "LLM Refine",
+                "No LLM client configured.\n\nGo to File \u2192 Preferences \u2192 LLM to set a model.",
+            )
+            return
+
+        code_view: CodeView | None = self.view_manager.first_view_in_category("pseudocode")
+        if code_view is None or code_view._function.am_none:
+            QMessageBox.warning(self._main_window, "LLM Refine", "No function is currently decompiled.")
+            return
+
+        func = code_view._function.am_obj
+
+        def on_finish(*_args, **_kwargs):
+            code_view.codegen.am_event(already_regenerated=True)
+
+        job = LLMRefineJob(self.main_instance, func, mode=mode, on_finish=on_finish, blocking=True)
+        self.job_manager.add_job(job)
+
+    def llm_refine_all(self) -> None:
+        self._llm_refine_current_function("all")
+
+    def llm_suggest_variable_names(self) -> None:
+        self._llm_refine_current_function("variable_names")
+
+    def llm_suggest_function_name(self) -> None:
+        self._llm_refine_current_function("function_name")
+
+    def llm_suggest_variable_types(self) -> None:
+        self._llm_refine_current_function("variable_types")
 
     def view_data_dependency_graph(self, analysis_params: dict) -> None:
         view = self._get_or_create_view("data_dependency", DataDepView)

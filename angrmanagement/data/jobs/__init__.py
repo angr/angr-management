@@ -14,6 +14,9 @@ from .deobfuscation import (
 from .dependency_analysis import DependencyAnalysisJob
 from .flirt_signature_recognition import FlirtAnalysisConfiguration, FlirtSignatureRecognitionJob
 from .job import Job
+from .llm_preload import LLMPreloadCalleesJob
+from .llm_refine import LLMRefineJob
+from .loading import LoadBinaryJob
 from .prototype_finding import PrototypeFindingJob
 from .simgr_explore import SimgrExploreJob
 from .simgr_step import SimgrStepJob
@@ -37,10 +40,13 @@ __all__ = [
     "FlirtAnalysisConfiguration",
     "FlirtSignatureRecognitionJob",
     "Job",
+    "LLMPreloadCalleesJob",
+    "LLMRefineJob",
     "PrototypeFindingJob",
     "SimgrExploreJob",
     "SimgrStepJob",
     "VariableRecoveryConfiguration",
     "VariableRecoveryJob",
     "VFGGenerationJob",
+    "LoadBinaryJob",
 ]

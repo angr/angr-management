@@ -172,6 +172,9 @@ class QCCodeEdit(api.CodeEdit):
         for entry in self.workspace.plugins.build_context_menu_node(under_cursor):
             Menu.translate_element(mnu, entry)
 
+        for action in self.llm_actions:
+            mnu.addAction(action)
+
         return mnu
 
     @property
@@ -629,6 +632,18 @@ class QCCodeEdit(api.CodeEdit):
         sep.setSeparator(True)
         return sep
 
+    def _llm_refine_all(self) -> None:
+        self.workspace.llm_refine_all()
+
+    def _llm_suggest_var_names(self) -> None:
+        self.workspace.llm_suggest_variable_names()
+
+    def _llm_suggest_func_name(self) -> None:
+        self.workspace.llm_suggest_function_name()
+
+    def _llm_suggest_var_types(self) -> None:
+        self.workspace.llm_suggest_variable_types()
+
     def _initialize_context_menus(self) -> None:
         base_actions = [
             self._separator(),
@@ -705,3 +720,20 @@ class QCCodeEdit(api.CodeEdit):
         self.function_name_actions += base_actions
         self.call_actions += base_actions + expr_actions
         self.default_actions += base_actions
+
+        # LLM actions
+        self.action_llm_refine_all = QAction("AI: Refine All", self)
+        self.action_llm_refine_all.triggered.connect(self._llm_refine_all)
+        self.action_llm_suggest_var_names = QAction("AI: Suggest Variable Names", self)
+        self.action_llm_suggest_var_names.triggered.connect(self._llm_suggest_var_names)
+        self.action_llm_suggest_func_name = QAction("AI: Suggest Function Name", self)
+        self.action_llm_suggest_func_name.triggered.connect(self._llm_suggest_func_name)
+        self.action_llm_suggest_var_types = QAction("AI: Suggest Variable Types", self)
+        self.action_llm_suggest_var_types.triggered.connect(self._llm_suggest_var_types)
+        self.llm_actions = [
+            self._separator(),
+            self.action_llm_refine_all,
+            self.action_llm_suggest_var_names,
+            self.action_llm_suggest_func_name,
+            self.action_llm_suggest_var_types,
+        ]
