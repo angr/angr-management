@@ -508,9 +508,7 @@ class Workspace:
 
         code_view: CodeView | None = self.view_manager.first_view_in_category("pseudocode")
         if code_view is None or code_view._function.am_none:
-            QMessageBox.warning(
-                self._main_window, "LLM Refine", "No function is currently decompiled."
-            )
+            QMessageBox.warning(self._main_window, "LLM Refine", "No function is currently decompiled.")
             return
 
         func = code_view._function.am_obj
