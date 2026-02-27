@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import enum
+import logging
 from datetime import datetime
 from itertools import chain
 from typing import TYPE_CHECKING
 
 from bidict import bidict
-from PySide6.QtCore import QSize
-from PySide6.QtGui import QColor
+from PySide6.QtCore import QSize, QSortFilterProxyModel, Qt
+from PySide6.QtGui import QColor, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
     QCheckBox,
     QComboBox,
+    QCompleter,
     QDialog,
     QDialogButtonBox,
     QGridLayout,
@@ -271,6 +273,30 @@ class Style(Page):
             font_picker.update()
 
 
+_log = logging.getLogger(__name__)
+
+_known_model_names: list[str] | None = None
+
+
+def _get_known_model_names() -> list[str]:
+    """Return a sorted list of model names that pydantic-ai supports."""
+    global _known_model_names
+    if _known_model_names is not None:
+        return _known_model_names
+    try:
+        from typing import get_args
+
+        from pydantic_ai.models import KnownModelName
+
+        value = getattr(KnownModelName, "__value__", KnownModelName)
+        names = get_args(value)
+        _known_model_names = sorted(str(n) for n in names) if names else []
+    except Exception:
+        _log.debug("Failed to load pydantic-ai model names", exc_info=True)
+        _known_model_names = []
+    return _known_model_names
+
+
 class LLMSettings(Page):
     """
     LLM configuration page.
@@ -282,7 +308,7 @@ class LLMSettings(Page):
         super().__init__(parent)
         self.workspace = workspace
 
-        self._model_edit: QLineEdit
+        self._model_combo: QComboBox
         self._api_key_edit: QLineEdit
         self._api_base_edit: QLineEdit
         self._preload_chk: QCheckBox
@@ -295,9 +321,35 @@ class LLMSettings(Page):
         layout = QGridLayout()
 
         layout.addWidget(QLabel("Model:"), 0, 0)
-        self._model_edit = QLineEdit()
-        self._model_edit.setPlaceholderText("e.g. gpt-4o, claude-sonnet-4-20250514, ollama/llama3")
-        layout.addWidget(self._model_edit, 0, 1)
+        self._model_combo = QComboBox()
+        self._model_combo.setEditable(True)
+        self._model_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self._model_combo.lineEdit().setPlaceholderText(
+            "e.g. gpt-4o, claude-sonnet-4-20250514, ollama/llama3"
+        )
+
+        # Populate with known pydantic-ai model names
+        model_names = _get_known_model_names()
+        source_model = QStandardItemModel()
+        for name in model_names:
+            source_model.appendRow(QStandardItem(name))
+
+        # Set up a case-insensitive filter proxy so the completer matches anywhere in the string
+        proxy = QSortFilterProxyModel()
+        proxy.setSourceModel(source_model)
+        proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+
+        completer = QCompleter(proxy, self)
+        completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        completer.setMaxVisibleItems(15)
+        self._model_combo.setCompleter(completer)
+
+        # Also populate the combo box dropdown itself
+        self._model_combo.setModel(source_model)
+
+        layout.addWidget(self._model_combo, 0, 1)
 
         layout.addWidget(QLabel("API Key:"), 1, 0)
         self._api_key_edit = QLineEdit()
@@ -325,13 +377,13 @@ class LLMSettings(Page):
         self.setLayout(page_layout)
 
     def _load_config(self) -> None:
-        self._model_edit.setText(Conf.llm_model)
+        self._model_combo.setCurrentText(Conf.llm_model)
         self._api_key_edit.setText(Conf.llm_api_key)
         self._api_base_edit.setText(Conf.llm_api_base)
         self._preload_chk.setChecked(Conf.llm_preload_callees)
 
     def save_config(self) -> None:
-        Conf.llm_model = self._model_edit.text().strip()
+        Conf.llm_model = self._model_combo.currentText().strip()
         Conf.llm_api_key = self._api_key_edit.text().strip()
         Conf.llm_api_base = self._api_base_edit.text().strip()
         Conf.llm_preload_callees = self._preload_chk.isChecked()
