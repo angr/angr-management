@@ -16,6 +16,7 @@ from .flirt_signature_recognition import FlirtAnalysisConfiguration, FlirtSignat
 from .job import Job
 from .llm_preload import LLMPreloadCalleesJob
 from .llm_refine import LLMRefineJob
+from .loading import LoadBinaryJob
 from .prototype_finding import PrototypeFindingJob
 from .simgr_explore import SimgrExploreJob
 from .simgr_step import SimgrStepJob
@@ -47,4 +48,5 @@ __all__ = [
     "VariableRecoveryConfiguration",
     "VariableRecoveryJob",
     "VFGGenerationJob",
+    "LoadBinaryJob",
 ]

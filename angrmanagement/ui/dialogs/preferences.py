@@ -280,7 +280,7 @@ _known_model_names: list[str] | None = None
 
 def _get_known_model_names() -> list[str]:
     """Return a sorted list of model names that pydantic-ai supports."""
-    global _known_model_names
+    global _known_model_names  # pylint:disable=global-statement
     if _known_model_names is not None:
         return _known_model_names
     try:
@@ -289,7 +289,7 @@ def _get_known_model_names() -> list[str]:
         value = getattr(KnownModelName, "__value__", KnownModelName)
         names = get_args(value)
         _known_model_names = sorted(str(n) for n in names) if names else []
-    except Exception:
+    except (ImportError, AttributeError):
         _log.debug("Failed to load pydantic-ai model names", exc_info=True)
         _known_model_names = []
     return _known_model_names
@@ -394,7 +394,7 @@ class LLMSettings(Page):
         model = Conf.llm_model
         if model:
             try:
-                from angr.llm_client import LLMClient
+                from angr.llm_client import LLMClient  # pylint: disable=import-outside-toplevel
 
                 instance.project.am_obj.llm_client = LLMClient(
                     model=model,

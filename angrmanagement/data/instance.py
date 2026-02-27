@@ -288,7 +288,6 @@ class Instance:
                     "Failed to import angr.llm_client.LLMClient. Make sure you have the 'llm' extra installed to "
                     "use LLM features."
                 )
-                return
 
     def _reset_containers(self) -> None:
         for name, container in self.extra_containers.items():

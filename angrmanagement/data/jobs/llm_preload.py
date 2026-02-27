@@ -37,11 +37,11 @@ class LLMPreloadCalleesJob(InstanceJob):
         kb = self.instance.kb
         callgraph = kb.functions.callgraph
 
-        # get callees
-        try:
-            callee_addrs = list(callgraph.successors(self.function.addr))
-        except Exception:
+        if self.function.addr not in callgraph:
             return
+
+        # get callees
+        callee_addrs = list(callgraph.successors(self.function.addr))
 
         if not callee_addrs:
             return
@@ -78,7 +78,7 @@ class LLMPreloadCalleesJob(InstanceJob):
                     )
                     kb.decompilations[(callee.addr, "pseudocode")] = decompiler.cache
                     dec_cache = decompiler.cache
-                except Exception:
+                except Exception:  # pylint: disable=broad-except
                     log.debug("Failed to decompile callee %s", callee.name, exc_info=True)
                     continue
 
@@ -86,17 +86,14 @@ class LLMPreloadCalleesJob(InstanceJob):
                 continue
 
             # run LLM refinement
-            try:
-                dec = project.analyses.Decompiler(
-                    callee,
-                    variable_kb=self.instance.pseudocode_variable_kb,
-                    decompile=False,
-                )
-                dec.codegen = dec_cache.codegen
-                changed = dec.llm_refine()
-                if changed:
-                    dec_cache.codegen = dec.codegen
-            except Exception:
-                log.debug("Failed to LLM-refine callee %s", callee.name, exc_info=True)
+            dec = project.analyses.Decompiler(
+                callee,
+                variable_kb=self.instance.pseudocode_variable_kb,
+                decompile=False,
+            )
+            dec.codegen = dec_cache.codegen
+            changed = dec.llm_refine()
+            if changed:
+                dec_cache.codegen = dec.codegen
 
         ctx.set_progress(100, "Done")

@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.config import Conf
-from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
+from angrmanagement.data.jobs import DecompileFunctionJob, LLMPreloadCalleesJob, VariableRecoveryJob
 from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.logic.disassembly import JumpHistory
 from angrmanagement.ui.dialogs.jumpto import JumpTo
@@ -566,7 +566,6 @@ class CodeView(FunctionView):
             return
         if self.instance.project.am_obj.llm_client is None:
             return
-        from angrmanagement.data.jobs.llm_preload import LLMPreloadCalleesJob
 
         job = LLMPreloadCalleesJob(self.instance, self._function.am_obj)
         self.workspace.job_manager.add_job(job)

@@ -11,6 +11,10 @@ if TYPE_CHECKING:
 
 
 class AIMenu(Menu):
+    """
+    THe menu for AI-assisted features.
+    """
+
     def __init__(self, main_window: MainWindow) -> None:
         super().__init__("A&I", parent=main_window)
         self.entries.extend(

@@ -20,9 +20,10 @@ from angrmanagement.data.instance import Instance, ObjectContainer
 from angrmanagement.data.jobs import (
     CFGGenerationJob,
     Job,
+    LLMRefineJob,
+    LoadBinaryJob,
 )
 from angrmanagement.data.jobs.job import JobState
-from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.data.trace import BintraceTrace, Trace
 from angrmanagement.logic.analysis_manager import AnalysisManager
 from angrmanagement.logic.commands import CommandManager
@@ -512,8 +513,6 @@ class Workspace:
             return
 
         func = code_view._function.am_obj
-
-        from angrmanagement.data.jobs.llm_refine import LLMRefineJob
 
         def on_finish(*_args, **_kwargs):
             code_view.codegen.am_event(already_regenerated=True)
