@@ -491,6 +491,7 @@ class MainWindow(QMainWindow):
                     ("AI: LLM Suggest Variable Names", self.llm_suggest_variable_names),
                     ("AI: LLM Suggest Function Name", self.llm_suggest_function_name),
                     ("AI: LLM Suggest Variable Types", self.llm_suggest_variable_types),
+                    ("AI: LLM Summarize Function", self.llm_summarize_function),
                     ("Analyze: Decompile", self.decompile_current_function),
                     ("Analyze: Run Analysis...", self.run_analysis),
                     ("File: Exit", self.quit),
@@ -798,6 +799,10 @@ class MainWindow(QMainWindow):
     def llm_suggest_variable_types(self) -> None:
         if self.workspace is not None:
             self.workspace.llm_suggest_variable_types()
+
+    def llm_summarize_function(self) -> None:
+        if self.workspace is not None:
+            self.workspace.llm_summarize_function()
 
     def view_proximity_for_current_function(self) -> None:
         if self.workspace is not None:

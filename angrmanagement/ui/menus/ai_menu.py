@@ -37,5 +37,9 @@ class AIMenu(Menu):
                     "Suggest Variable &Types",
                     main_window.llm_suggest_variable_types,
                 ),
+                MenuEntry(
+                    "&Summarize Function",
+                    main_window.llm_summarize_function,
+                ),
             ],
         )

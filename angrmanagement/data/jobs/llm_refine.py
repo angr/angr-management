@@ -23,6 +23,7 @@ class LLMRefineJob(InstanceJob):
     SUGGEST_VARIABLE_NAMES = "variable_names"
     SUGGEST_FUNCTION_NAME = "function_name"
     SUGGEST_VARIABLE_TYPES = "variable_types"
+    SUMMARIZE = "summarize"
     REFINE_ALL = "all"
 
     def __init__(
@@ -67,6 +68,7 @@ class LLMRefineJob(InstanceJob):
             decompile=False,
         )
         dec.codegen = dec_cache.codegen
+        dec.cache = dec_cache
 
         changed = False
         if self.mode in (self.REFINE_ALL, self.SUGGEST_VARIABLE_NAMES):
@@ -85,5 +87,9 @@ class LLMRefineJob(InstanceJob):
             ctx.set_progress(90, "Regenerating text...")
             dec.codegen.regenerate_text()
             dec_cache.codegen = dec.codegen
+
+        if self.mode in (self.REFINE_ALL, self.SUMMARIZE):
+            ctx.set_progress(95, "Summarizing function...")
+            dec.llm_summarize_function(llm_client=llm_client)
 
         ctx.set_progress(100, "Done")
