@@ -16,21 +16,21 @@ class AIMenu(Menu):
         self.entries.extend(
             [
                 MenuEntry(
-                    "LLM: Refine &All",
+                    "Refine &All",
                     main_window.llm_refine_all,
-                    shortcut=QKeySequence("Ctrl+Shift+L"),
+                    shortcut=QKeySequence("Ctrl+I"),
                 ),
                 MenuSeparator(),
                 MenuEntry(
-                    "LLM: Suggest &Variable Names",
+                    "Suggest &Variable Names",
                     main_window.llm_suggest_variable_names,
                 ),
                 MenuEntry(
-                    "LLM: Suggest &Function Name",
+                    "Suggest &Function Name",
                     main_window.llm_suggest_function_name,
                 ),
                 MenuEntry(
-                    "LLM: Suggest Variable &Types",
+                    "Suggest Variable &Types",
                     main_window.llm_suggest_variable_types,
                 ),
             ],

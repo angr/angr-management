@@ -722,13 +722,13 @@ class QCCodeEdit(api.CodeEdit):
         self.default_actions += base_actions
 
         # LLM actions
-        self.action_llm_refine_all = QAction("LLM: Refine All", self)
+        self.action_llm_refine_all = QAction("AI: Refine All", self)
         self.action_llm_refine_all.triggered.connect(self._llm_refine_all)
-        self.action_llm_suggest_var_names = QAction("LLM: Suggest Variable Names", self)
+        self.action_llm_suggest_var_names = QAction("AI: Suggest Variable Names", self)
         self.action_llm_suggest_var_names.triggered.connect(self._llm_suggest_var_names)
-        self.action_llm_suggest_func_name = QAction("LLM: Suggest Function Name", self)
+        self.action_llm_suggest_func_name = QAction("AI: Suggest Function Name", self)
         self.action_llm_suggest_func_name.triggered.connect(self._llm_suggest_func_name)
-        self.action_llm_suggest_var_types = QAction("LLM: Suggest Variable Types", self)
+        self.action_llm_suggest_var_types = QAction("AI: Suggest Variable Types", self)
         self.action_llm_suggest_var_types.triggered.connect(self._llm_suggest_var_types)
         self.llm_actions = [
             self._separator(),
