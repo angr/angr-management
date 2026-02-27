@@ -10,6 +10,7 @@ from angr.knowledge_base import KnowledgeBase
 from angr.knowledge_plugins import Function
 from cle import SymbolType
 
+from angrmanagement.config import Conf
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, BreakpointType
 from angrmanagement.data.signatures import SignatureManager
 from angrmanagement.data.trace import Trace
@@ -272,12 +273,10 @@ class Instance:
 
     def _apply_llm_config(self) -> None:
         """Apply GUI LLM configuration to the project's llm_client."""
-        from angrmanagement.config import Conf
-
         model = Conf.llm_model
         if model and not self.project.am_none:
             try:
-                from angr.llm_client import LLMClient
+                from angr.llm_client import LLMClient  # pylint: disable=import-outside-toplevel
 
                 self.project.am_obj.llm_client = LLMClient(
                     model=model,
@@ -285,7 +284,11 @@ class Instance:
                     api_base=Conf.llm_api_base or None,
                 )
             except ImportError:
-                pass
+                _l.error(
+                    "Failed to import angr.llm_client.LLMClient. Make sure you have the 'llm' extra installed to "
+                    "use LLM features."
+                )
+                return
 
     def _reset_containers(self) -> None:
         for name, container in self.extra_containers.items():

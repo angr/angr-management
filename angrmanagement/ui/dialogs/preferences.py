@@ -4,7 +4,7 @@ import enum
 import logging
 from datetime import datetime
 from itertools import chain
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, get_args
 
 from bidict import bidict
 from PySide6.QtCore import QSize, QSortFilterProxyModel, Qt
@@ -284,9 +284,7 @@ def _get_known_model_names() -> list[str]:
     if _known_model_names is not None:
         return _known_model_names
     try:
-        from typing import get_args
-
-        from pydantic_ai.models import KnownModelName
+        from pydantic_ai.models import KnownModelName  # pylint: disable=import-outside-toplevel
 
         value = getattr(KnownModelName, "__value__", KnownModelName)
         names = get_args(value)
@@ -324,9 +322,7 @@ class LLMSettings(Page):
         self._model_combo = QComboBox()
         self._model_combo.setEditable(True)
         self._model_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
-        self._model_combo.lineEdit().setPlaceholderText(
-            "e.g. gpt-4o, claude-sonnet-4-20250514, ollama/llama3"
-        )
+        self._model_combo.lineEdit().setPlaceholderText("e.g. gpt-4o, claude-sonnet-4-20250514, ollama/llama3")
 
         # Populate with known pydantic-ai model names
         model_names = _get_known_model_names()
