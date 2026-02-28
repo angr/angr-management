@@ -532,7 +532,7 @@ class CodeView(FunctionView):
         self._summary_textedit.setPlaceholderText("No summary available. Use AI > Summarize Function to generate one.")
         self._summary_dock = QDockWidget("Function Summary", window)
         self._summary_dock.setWidget(self._summary_textedit)
-        window.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self._summary_dock)
+        window.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, self._summary_dock)
         self._summary_dock.setVisible(False)
 
         # status bar
