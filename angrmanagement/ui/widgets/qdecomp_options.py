@@ -34,18 +34,18 @@ if TYPE_CHECKING:
 
 
 def map_option_to_property(option, current_val):
-    if hasattr(option, "value_type") and not isinstance(option.value_type, bool) and option.candidate_values:
+    if hasattr(option, "value_type") and option.candidate_values:
         return ComboPropertyItem(
-            option.NAME, option.default_value, option.candidate_values, description=option.DESCRIPTION, option=option
+            option.NAME, current_val, option.candidate_values, description=option.DESCRIPTION, option=option
         )
-    elif hasattr(option, "value_type") and isinstance(option.value_type, float):
+    elif hasattr(option, "value_type") and option.value_type is float:
         minimum, maximum = sys.float_info.min, sys.float_info.max
         if hasattr(option, "value_range") and option.value_range is not None:
             minimum, maximum = option.value_range
         return FloatPropertyItem(
             option.NAME, current_val, minimum, maximum, description=option.DESCRIPTION, option=option
         )
-    elif hasattr(option, "value_type") and isinstance(option.value_type, int):
+    elif hasattr(option, "value_type") and option.value_type is int:
         minimum = -(2**31)
         maximum = 2**31 - 1
         if hasattr(option, "value_range") and option.value_range is not None:
