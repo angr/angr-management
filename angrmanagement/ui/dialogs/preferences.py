@@ -310,6 +310,10 @@ class LLMSettings(Page):
         self._api_key_edit: QLineEdit
         self._api_base_edit: QLineEdit
         self._preload_chk: QCheckBox
+        self._auto_rename_vars_chk: QCheckBox
+        self._auto_rename_func_chk: QCheckBox
+        self._auto_retype_vars_chk: QCheckBox
+        self._auto_summarize_chk: QCheckBox
 
         self._init_widgets()
         self._load_config()
@@ -364,6 +368,14 @@ class LLMSettings(Page):
         options_layout = QVBoxLayout()
         self._preload_chk = QCheckBox("Auto-refine callees after decompilation")
         options_layout.addWidget(self._preload_chk)
+        self._auto_rename_vars_chk = QCheckBox("Auto-rename variables after decompilation")
+        options_layout.addWidget(self._auto_rename_vars_chk)
+        self._auto_rename_func_chk = QCheckBox("Auto-rename function after decompilation")
+        options_layout.addWidget(self._auto_rename_func_chk)
+        self._auto_retype_vars_chk = QCheckBox("Auto-retype variables after decompilation")
+        options_layout.addWidget(self._auto_retype_vars_chk)
+        self._auto_summarize_chk = QCheckBox("Auto-summarize function after decompilation")
+        options_layout.addWidget(self._auto_summarize_chk)
         options_group.setLayout(options_layout)
 
         page_layout = QVBoxLayout()
@@ -377,12 +389,20 @@ class LLMSettings(Page):
         self._api_key_edit.setText(Conf.llm_api_key)
         self._api_base_edit.setText(Conf.llm_api_base)
         self._preload_chk.setChecked(Conf.llm_preload_callees)
+        self._auto_rename_vars_chk.setChecked(Conf.llm_auto_rename_variables)
+        self._auto_rename_func_chk.setChecked(Conf.llm_auto_rename_function)
+        self._auto_retype_vars_chk.setChecked(Conf.llm_auto_retype_variables)
+        self._auto_summarize_chk.setChecked(Conf.llm_auto_summarize)
 
     def save_config(self) -> None:
         Conf.llm_model = self._model_combo.currentText().strip()
         Conf.llm_api_key = self._api_key_edit.text().strip()
         Conf.llm_api_base = self._api_base_edit.text().strip()
         Conf.llm_preload_callees = self._preload_chk.isChecked()
+        Conf.llm_auto_rename_variables = self._auto_rename_vars_chk.isChecked()
+        Conf.llm_auto_rename_function = self._auto_rename_func_chk.isChecked()
+        Conf.llm_auto_retype_variables = self._auto_retype_vars_chk.isChecked()
+        Conf.llm_auto_summarize = self._auto_summarize_chk.isChecked()
         self._sync_llm_client_to_project()
 
     def _sync_llm_client_to_project(self) -> None:

@@ -532,6 +532,9 @@ class Workspace:
     def llm_suggest_variable_types(self) -> None:
         self._llm_refine_current_function("variable_types")
 
+    def llm_summarize_function(self) -> None:
+        self._llm_refine_current_function("summarize")
+
     def view_data_dependency_graph(self, analysis_params: dict) -> None:
         view = self._get_or_create_view("data_dependency", DataDepView)
         view.analysis_params = analysis_params
