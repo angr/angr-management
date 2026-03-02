@@ -405,7 +405,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         y = -start_line * self._line_height
 
         for obj_addr, obj in self.cfb.floor_items(addr=addr):
-            if obj_addr + obj.size <= addr:
+            if obj_addr + obj.size <= addr and (obj.size > 0 or obj_addr < addr):
                 # top_obj_addr lands after the current object; let's move on to the next object instead
                 continue
 
