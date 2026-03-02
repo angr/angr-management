@@ -30,12 +30,6 @@ from angrmanagement.ui.widgets.qproperty_editor import (
 
 if TYPE_CHECKING:
     from angr.analyses.decompiler.decompilation_options import DecompilationOption
-    from angr.analyses.decompiler.optimization_passes.optimization_pass import OptimizationPass
-    from angr.analyses.decompiler.peephole_optimizations.base import (
-        PeepholeOptimizationExprBase,
-        PeepholeOptimizationMultiStmtBase,
-        PeepholeOptimizationStmtBase,
-    )
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.views.code_view import CodeView
@@ -65,13 +59,7 @@ def map_option_to_property(option: DecompilationOption, current_val):
         )
 
 
-def map_optimization_to_property(
-    optimization: OptimizationPass
-    | PeepholeOptimizationExprBase
-    | PeepholeOptimizationStmtBase
-    | PeepholeOptimizationMultiStmtBase,
-    current_val,
-):
+def map_optimization_to_property(optimization, current_val):
     return BoolPropertyItem(optimization.NAME, current_val, description=optimization.DESCRIPTION, option=optimization)
 
 
