@@ -44,6 +44,7 @@ from .dialogs.load_plugins import LoadPlugins
 from .dialogs.new_state import NewState
 from .dialogs.preferences import Preferences
 from .dialogs.welcome import WelcomeDialog
+from .menus.ai_menu import AIMenu
 from .menus.analyze_menu import AnalyzeMenu
 from .menus.file_menu import FileMenu
 from .menus.help_menu import HelpMenu
@@ -180,6 +181,7 @@ class MainWindow(QMainWindow):
         # menus
         self._file_menu = None  # FileMenu
         self._analyze_menu = None
+        self._ai_menu = None
         self._view_menu = None
         self._help_menu = None
         self._plugin_menu = None
@@ -278,6 +280,7 @@ class MainWindow(QMainWindow):
     def _init_menus(self) -> None:
         self._file_menu = FileMenu(self)
         self._analyze_menu = AnalyzeMenu(self)
+        self._ai_menu = AIMenu(self)
         self._view_menu = ViewMenu(self)
         self._help_menu = HelpMenu(self)
         self._plugin_menu = PluginMenu(self)
@@ -288,6 +291,7 @@ class MainWindow(QMainWindow):
         self.menuBar().addMenu(self._file_menu.qmenu())
         self.menuBar().addMenu(self._view_menu.qmenu())
         self.menuBar().addMenu(self._analyze_menu.qmenu())
+        self.menuBar().addMenu(self._ai_menu.qmenu())
         self.menuBar().addMenu(self._plugin_menu.qmenu())
         self.menuBar().addMenu(self._help_menu.qmenu())
 
@@ -483,6 +487,11 @@ class MainWindow(QMainWindow):
             [
                 BasicCommand(action.__name__, caption, action)
                 for caption, action in [
+                    ("AI: LLM Refine All", self.llm_refine_all),
+                    ("AI: LLM Suggest Variable Names", self.llm_suggest_variable_names),
+                    ("AI: LLM Suggest Function Name", self.llm_suggest_function_name),
+                    ("AI: LLM Suggest Variable Types", self.llm_suggest_variable_types),
+                    ("AI: LLM Summarize Function", self.llm_summarize_function),
                     ("Analyze: Decompile", self.decompile_current_function),
                     ("Analyze: Run Analysis...", self.run_analysis),
                     ("File: Exit", self.quit),
@@ -774,6 +783,26 @@ class MainWindow(QMainWindow):
     def decompile_current_function(self) -> None:
         if self.workspace is not None:
             self.workspace.decompile_current_function()
+
+    def llm_refine_all(self) -> None:
+        if self.workspace is not None:
+            self.workspace.llm_refine_all()
+
+    def llm_suggest_variable_names(self) -> None:
+        if self.workspace is not None:
+            self.workspace.llm_suggest_variable_names()
+
+    def llm_suggest_function_name(self) -> None:
+        if self.workspace is not None:
+            self.workspace.llm_suggest_function_name()
+
+    def llm_suggest_variable_types(self) -> None:
+        if self.workspace is not None:
+            self.workspace.llm_suggest_variable_types()
+
+    def llm_summarize_function(self) -> None:
+        if self.workspace is not None:
+            self.workspace.llm_summarize_function()
 
     def view_proximity_for_current_function(self) -> None:
         if self.workspace is not None:

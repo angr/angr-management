@@ -318,6 +318,15 @@ ENTRIES = [
     # Recent
     CE("recent_files", list, []),
     CE("prompted_for_url_scheme_registration", bool, False),
+    # LLM settings
+    CE("llm_model", str, ""),
+    CE("llm_api_key", str, ""),
+    CE("llm_api_base", str, ""),
+    CE("llm_preload_callees", bool, False),
+    CE("llm_auto_rename_variables", bool, False),
+    CE("llm_auto_rename_function", bool, False),
+    CE("llm_auto_retype_variables", bool, False),
+    CE("llm_auto_summarize", bool, False),
 ]
 
 

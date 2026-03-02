@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.config import Conf
-from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
+from angrmanagement.data.jobs import DecompileFunctionJob, LLMPreloadCalleesJob, LLMRefineJob, VariableRecoveryJob
 from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.logic.disassembly import JumpHistory
 from angrmanagement.ui.dialogs.jumpto import JumpTo
@@ -74,6 +74,8 @@ class CodeView(FunctionView):
         self.jump_history: JumpHistory = JumpHistory()
         self._nav_toolbar: NavToolbar | None = None
         self._view_selector: QComboBox | None = None
+        self._summary_textedit: QTextEdit | None = None
+        self._summary_dock: QDockWidget | None = None
 
         self.vars_must_struct: set[str] = set()
 
@@ -159,6 +161,8 @@ class CodeView(FunctionView):
                     else:
                         self.jump_history.record_address(self._function.am_obj.addr)
                     self._last_function = self._function.am_obj
+            self._maybe_preload_callees()
+            self._maybe_auto_llm_refine()
 
         def decomp(*_) -> None:
             job = DecompileFunctionJob(
@@ -354,6 +358,8 @@ class CodeView(FunctionView):
         else:
             self._options.hide()
 
+        self._update_function_summary()
+
     def _on_new_function(self, focus: bool = False, focus_addr=None, flavor=None, **kwargs) -> None:  # pylint: disable=unused-argument
         # sets a new function. extra args are used in case this operation requires waiting for the decompiler
         if flavor is None:
@@ -520,6 +526,15 @@ class CodeView(FunctionView):
         options_dock.setWidget(self._options)
         options_dock.setVisible(False)
 
+        # function summary dock
+        self._summary_textedit = QTextEdit()
+        self._summary_textedit.setReadOnly(True)
+        self._summary_textedit.setPlaceholderText("No summary available. Use AI > Summarize Function to generate one.")
+        self._summary_dock = QDockWidget("Function Summary", window)
+        self._summary_dock.setWidget(self._summary_textedit)
+        window.addDockWidget(Qt.DockWidgetArea.TopDockWidgetArea, self._summary_dock)
+        self._summary_dock.setVisible(False)
+
         # status bar
         status_bar = QFrame()
         self._nav_toolbar = NavToolbar(
@@ -531,6 +546,9 @@ class CodeView(FunctionView):
         status_layout = QHBoxLayout()
         status_layout.addWidget(self._nav_toolbar.qtoolbar())
         status_layout.addStretch(0)
+        summary_toggle_btn = QToolButton()
+        summary_toggle_btn.setDefaultAction(self._summary_dock.toggleViewAction())
+        status_layout.addWidget(summary_toggle_btn)
         options_toggle_btn = QToolButton()
         options_toggle_btn.setDefaultAction(options_dock.toggleViewAction())
         status_layout.addWidget(options_toggle_btn)
@@ -557,3 +575,56 @@ class CodeView(FunctionView):
         self._textedit.focusWidget()
 
         self.workspace.plugins.instrument_code_view(self)
+
+    def _update_function_summary(self) -> None:
+        """Update the function summary text box from the decompilation cache."""
+        if self._summary_textedit is None:
+            return
+        if self._function.am_none:
+            self._summary_textedit.clear()
+            return
+        key = (self._function.addr, "pseudocode")
+        if key in self.instance.kb.decompilations:
+            dec_cache = self.instance.kb.decompilations[key]
+            if dec_cache is not None and getattr(dec_cache, "function_summary", None):
+                self._summary_textedit.setPlainText(dec_cache.function_summary)
+                return
+        self._summary_textedit.clear()
+
+    def _maybe_auto_llm_refine(self) -> None:
+        """Dispatch LLM refinement jobs for any auto-* options that are enabled."""
+        if self._function.am_none or self.instance.project.am_none:
+            return
+        if self.instance.project.am_obj.llm_client is None:
+            return
+
+        func = self._function.am_obj
+        code_view = self
+
+        def on_finish(*_args, **_kwargs):
+            code_view.codegen.am_event(already_regenerated=True)
+
+        modes: list[str] = []
+        if Conf.llm_auto_rename_variables:
+            modes.append(LLMRefineJob.SUGGEST_VARIABLE_NAMES)
+        if Conf.llm_auto_rename_function:
+            modes.append(LLMRefineJob.SUGGEST_FUNCTION_NAME)
+        if Conf.llm_auto_retype_variables:
+            modes.append(LLMRefineJob.SUGGEST_VARIABLE_TYPES)
+        if Conf.llm_auto_summarize:
+            modes.append(LLMRefineJob.SUMMARIZE)
+
+        for mode in modes:
+            job = LLMRefineJob(self.instance, func, mode=mode, on_finish=on_finish, blocking=True)
+            self.workspace.job_manager.add_job(job)
+
+    def _maybe_preload_callees(self) -> None:
+        if not Conf.llm_preload_callees:
+            return
+        if self._function.am_none or self.instance.project.am_none:
+            return
+        if self.instance.project.am_obj.llm_client is None:
+            return
+
+        job = LLMPreloadCalleesJob(self.instance, self._function.am_obj)
+        self.workspace.job_manager.add_job(job)
