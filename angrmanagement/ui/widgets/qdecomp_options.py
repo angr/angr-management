@@ -26,6 +26,7 @@ from angrmanagement.ui.widgets.qproperty_editor import (
     IntPropertyItem,
     PropertyModel,
     QPropertyEditor,
+    TextPropertyItem,
 )
 
 if TYPE_CHECKING:
@@ -49,7 +50,7 @@ def map_option_to_property(option: DecompilationOption, current_val):
         return FloatPropertyItem(
             option.NAME, current_val, minimum, maximum, description=option.DESCRIPTION, option=option
         )
-    else:
+    elif issubclass(option.value_type, int):
         minimum = -(2**31)
         maximum = 2**31 - 1
         if hasattr(option, "value_range") and option.value_range is not None:
@@ -57,6 +58,8 @@ def map_option_to_property(option: DecompilationOption, current_val):
         return IntPropertyItem(
             option.NAME, current_val, minimum, maximum, description=option.DESCRIPTION, option=option
         )
+    else:
+        return TextPropertyItem(option.NAME, current_val, description=option.DESCRIPTION, readonly=True, option=option)
 
 
 def map_optimization_to_property(optimization, current_val):
