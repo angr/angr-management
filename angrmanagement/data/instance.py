@@ -10,6 +10,7 @@ from angr.knowledge_base import KnowledgeBase
 from angr.knowledge_plugins import Function
 from cle import SymbolType
 
+from angrmanagement.config import Conf
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, BreakpointType
 from angrmanagement.data.signatures import SignatureManager
 from angrmanagement.data.trace import Trace
@@ -165,6 +166,8 @@ class Instance:
         if not initialized and self.pseudocode_variable_kb is None:
             self.initialize_pseudocode_variable_kb()
 
+        self._apply_llm_config()
+
     def initialize_pseudocode_variable_kb(self) -> None:
         self.pseudocode_variable_kb = KnowledgeBase(self.project.am_obj, name="pseudocode_variable_kb")
 
@@ -267,6 +270,24 @@ class Instance:
     #
     # Private methods
     #
+
+    def _apply_llm_config(self) -> None:
+        """Apply GUI LLM configuration to the project's llm_client."""
+        model = Conf.llm_model
+        if model and not self.project.am_none:
+            try:
+                from angr.llm_client import LLMClient  # pylint: disable=import-outside-toplevel
+
+                self.project.am_obj.llm_client = LLMClient(
+                    model=model,
+                    api_key=Conf.llm_api_key or None,
+                    api_base=Conf.llm_api_base or None,
+                )
+            except ImportError:
+                _l.error(
+                    "Failed to import angr.llm_client.LLMClient. Make sure you have the 'llm' extra installed to "
+                    "use LLM features."
+                )
 
     def _reset_containers(self) -> None:
         for name, container in self.extra_containers.items():
