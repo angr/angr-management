@@ -39,7 +39,6 @@ from angrmanagement.ui.widgets import (
     QDisassemblyGraph,
     QFindAddrAnnotation,
     QLinearDisassembly,
-    QLinearDisassemblyView,
 )
 from angrmanagement.ui.widgets.block_code_objects import QVariableObj
 from angrmanagement.ui.widgets.qinst_annotation import QBreakAnnotation, QHookAnnotation
@@ -215,7 +214,7 @@ class DisassemblyView(SynchronizedFunctionView):
             # TODO: Rerun the variable recovery analysis and update the current view
 
     @property
-    def current_graph(self) -> QLinearDisassemblyView | QDisassemblyGraph:
+    def current_graph(self) -> QLinearDisassembly | QDisassemblyGraph | None:
         """
         Return the current disassembly control, either linear viewer or flow graph.
 
@@ -229,7 +228,7 @@ class DisassemblyView(SynchronizedFunctionView):
 
     @SynchronizedFunctionView.function.setter
     def function(self, v) -> None:
-        if v is not self.function.am_obj:
+        if v is not self.function.am_obj or (self._current_view is self._linear_viewer):
             self.display_function(v, send_event=False)
 
     #
