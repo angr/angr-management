@@ -66,13 +66,13 @@ def map_option_to_property(option: DecompilationOption, current_val):
 
 
 def map_optimization_to_property(
-    opt: OptimizationPass
+    optimization: OptimizationPass
     | PeepholeOptimizationExprBase
     | PeepholeOptimizationStmtBase
     | PeepholeOptimizationMultiStmtBase,
     current_val,
 ):
-    return BoolPropertyItem(opt.NAME, current_val, description=opt.DESCRIPTION, option=opt)
+    return BoolPropertyItem(optimization.NAME, current_val, description=optimization.DESCRIPTION, option=optimization)
 
 
 class QDecompilationOptions(QWidget):
