@@ -567,6 +567,15 @@ class MainWindow(QMainWindow):
         for plugin in list(self.workspace.plugins.active_plugins.values()):
             self.workspace.plugins.deactivate_plugin(plugin)
         self.workspace.job_manager.quit()
+
+        # force-close runtime db
+        if (
+            self.workspace.main_instance is not None
+            and not self.workspace.main_instance.project.am_none
+            and "rtdb" in self.workspace.main_instance.project.kb
+        ):
+            self.workspace.main_instance.kb.rtdb.cleanup_lmdb()
+
         event.accept()
 
     def on_screen_changed(self, screen) -> None:
