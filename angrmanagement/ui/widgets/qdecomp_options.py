@@ -29,23 +29,33 @@ from angrmanagement.ui.widgets.qproperty_editor import (
 )
 
 if TYPE_CHECKING:
+    from angr.analyses.decompiler.decompilation_options import DecompilationOption
+    from angr.analyses.decompiler.optimization_passes.optimization_pass import OptimizationPass
+    from angr.analyses.decompiler.peephole_optimizations.base import (
+        PeepholeOptimizationExprBase,
+        PeepholeOptimizationMultiStmtBase,
+        PeepholeOptimizationStmtBase,
+    )
+
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.views.code_view import CodeView
 
 
-def map_option_to_property(option, current_val):
-    if hasattr(option, "value_type") and option.candidate_values:
+def map_option_to_property(option: DecompilationOption, current_val):
+    if option.candidate_values is not None:
         return ComboPropertyItem(
             option.NAME, current_val, option.candidate_values, description=option.DESCRIPTION, option=option
         )
-    elif hasattr(option, "value_type") and option.value_type is float:
+    elif issubclass(option.value_type, bool):
+        return BoolPropertyItem(option.NAME, current_val, description=option.DESCRIPTION, option=option)
+    elif issubclass(option.value_type, float):
         minimum, maximum = sys.float_info.min, sys.float_info.max
         if hasattr(option, "value_range") and option.value_range is not None:
             minimum, maximum = option.value_range
         return FloatPropertyItem(
             option.NAME, current_val, minimum, maximum, description=option.DESCRIPTION, option=option
         )
-    elif hasattr(option, "value_type") and option.value_type is int:
+    elif issubclass(option.value_type, int):
         minimum = -(2**31)
         maximum = 2**31 - 1
         if hasattr(option, "value_range") and option.value_range is not None:
@@ -53,8 +63,16 @@ def map_option_to_property(option, current_val):
         return IntPropertyItem(
             option.NAME, current_val, minimum, maximum, description=option.DESCRIPTION, option=option
         )
-    else:
-        return BoolPropertyItem(option.NAME, current_val, description=option.DESCRIPTION, option=option)
+
+
+def map_optimization_to_property(
+    opt: OptimizationPass
+    | PeepholeOptimizationExprBase
+    | PeepholeOptimizationStmtBase
+    | PeepholeOptimizationMultiStmtBase,
+    current_val,
+):
+    return BoolPropertyItem(opt.NAME, current_val, description=opt.DESCRIPTION, option=opt)
 
 
 class QDecompilationOptions(QWidget):
@@ -231,7 +249,7 @@ class QDecompilationOptions(QWidget):
         default_passes = set(self.get_default_passes())
         for pass_ in self._opti_passes:
             enabled = pass_ in default_passes if reset_values else pass_ in vals_passes
-            w = map_option_to_property(pass_, enabled)
+            w = map_optimization_to_property(pass_, enabled)
             passes_category.addChild(w)
             self._qoptipasses.append(w)
 
@@ -242,7 +260,7 @@ class QDecompilationOptions(QWidget):
         default_peephole_opts = self.get_default_peephole_opts()
         for opt_ in self._peephole_opts:
             enabled = opt_ in default_peephole_opts if reset_values else opt_ in vals_peephole
-            w = map_option_to_property(opt_, enabled)
+            w = map_optimization_to_property(opt_, enabled)
             po_category.addChild(w)
             self._qpeephole_opts.append(w)
 
