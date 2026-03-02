@@ -49,7 +49,7 @@ def map_option_to_property(option: DecompilationOption, current_val):
         return FloatPropertyItem(
             option.NAME, current_val, minimum, maximum, description=option.DESCRIPTION, option=option
         )
-    elif issubclass(option.value_type, int):
+    else:
         minimum = -(2**31)
         maximum = 2**31 - 1
         if hasattr(option, "value_range") and option.value_range is not None:
