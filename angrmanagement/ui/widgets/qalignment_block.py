@@ -10,16 +10,18 @@ from angrmanagement.config import Conf
 from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
-    from angrmanagement.ui.workspace import Workspace
+    from angrmanagement.data.instance import Instance
 
 
 class QAlignmentBlock(QCachedGraphicsItem):
+    """Renders an alignment function as a single summary line in the linear disassembly view."""
+
     SPACING = 20
 
-    def __init__(self, workspace: Workspace, addr: int, size: int, parent=None) -> None:
+    def __init__(self, instance: Instance, addr: int, size: int, parent=None) -> None:
         super().__init__(parent=parent)
 
-        self.workspace = workspace
+        self.instance = instance
         self.addr = addr
         self.size = size
 
@@ -35,7 +37,7 @@ class QAlignmentBlock(QCachedGraphicsItem):
     # Public methods
     #
 
-    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget=None) -> None:  # pylint: disable=unused-argument
         pass
 
     def _boundingRect(self):
