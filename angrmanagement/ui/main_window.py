@@ -574,7 +574,7 @@ class MainWindow(QMainWindow):
             and not self.workspace.main_instance.project.am_none
             and "rtdb" in self.workspace.main_instance.project.kb
         ):
-            self.workspace.main_instance.kb.rtdb.cleanup_lmdb()
+            self.workspace.main_instance.kb.rtdb.cleanup()
 
         event.accept()
 
