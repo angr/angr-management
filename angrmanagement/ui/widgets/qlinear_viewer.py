@@ -18,6 +18,7 @@ from angrmanagement.logic.threads import needs_gui_thread
 from angrmanagement.utils.cache import SmartLRUCache
 from angrmanagement.utils.graph import get_out_branches
 
+from .qalignment_block import QAlignmentBlock
 from .qblock import QLinearBlock
 from .qdisasm_base_control import DisassemblyLevel, QDisassemblyBaseControl
 from .qgraph import QSaveableGraphicsView
@@ -488,7 +489,12 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self._offset = offset
         self._start_line_in_object = start_line_in_object
 
-    def _validate_cached_qobj(self, obj, cached_qobj: QLinearBlock | QMemoryDataBlock | QUnknownBlock) -> bool:
+    def _validate_cached_qobj(
+        self, obj, cached_qobj: QAlignmentBlock | QLinearBlock | QMemoryDataBlock | QUnknownBlock
+    ) -> bool:
+        if isinstance(obj, Block) and isinstance(cached_qobj, QAlignmentBlock):
+            return cached_qobj.size == obj.size
+
         if isinstance(obj, Block) and isinstance(cached_qobj, QLinearBlock):
             if self._disassembly_level != cached_qobj.disassembly_level:
                 return False
@@ -507,7 +513,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
     def _obj_to_paintable(
         self, obj_addr, obj, use_cache=True
-    ) -> tuple[bool, None | QLinearBlock | QMemoryDataBlock | QUnknownBlock]:
+    ) -> tuple[bool, None | QAlignmentBlock | QLinearBlock | QMemoryDataBlock | QUnknownBlock]:
         if use_cache and obj_addr in self.objects:
             cached_qobj = self.objects[obj_addr]
             if self._validate_cached_qobj(obj, cached_qobj):
@@ -524,39 +530,42 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 func_addr = cfg_node.function_address
                 if self.instance.kb.functions.contains_addr(func_addr):
                     func = self.instance.kb.functions[func_addr]
-                    disasm = self._get_disasm(func)
-                    qobject = None
-                    if self._disassembly_level is DisassemblyLevel.AIL:
-                        ail_obj = None
-                        if disasm.graph is not None:
-                            # Clinic may yield a None graph when the function is empty
-                            for n in disasm.graph.nodes:
-                                if n.addr == obj.addr:
-                                    ail_obj = n
-                            # the corresponding AIL block may not exist
-                            if ail_obj is not None:
-                                qobject = QLinearBlock(
-                                    self.instance,
-                                    func_addr,
-                                    self.disasm_view,
-                                    disasm,
-                                    self.disasm_view.infodock,
-                                    obj.addr,
-                                    [ail_obj],
-                                    None,
-                                )
+                    if func.is_alignment:
+                        qobject = QAlignmentBlock(self.instance, obj_addr, obj.size)
                     else:
-                        out_branches = get_out_branches(func, obj_addr)
-                        qobject = QLinearBlock(
-                            self.instance,
-                            func_addr,
-                            self.disasm_view,
-                            disasm,
-                            self.disasm_view.infodock,
-                            obj.addr,
-                            [obj],
-                            out_branches,
-                        )
+                        disasm = self._get_disasm(func)
+                        qobject = None
+                        if self._disassembly_level is DisassemblyLevel.AIL:
+                            ail_obj = None
+                            if disasm.graph is not None:
+                                # Clinic may yield a None graph when the function is empty
+                                for n in disasm.graph.nodes:
+                                    if n.addr == obj.addr:
+                                        ail_obj = n
+                                # the corresponding AIL block may not exist
+                                if ail_obj is not None:
+                                    qobject = QLinearBlock(
+                                        self.instance,
+                                        func_addr,
+                                        self.disasm_view,
+                                        disasm,
+                                        self.disasm_view.infodock,
+                                        obj.addr,
+                                        [ail_obj],
+                                        None,
+                                    )
+                        else:
+                            out_branches = get_out_branches(func, obj_addr)
+                            qobject = QLinearBlock(
+                                self.instance,
+                                func_addr,
+                                self.disasm_view,
+                                disasm,
+                                self.disasm_view.infodock,
+                                obj.addr,
+                                [obj],
+                                out_branches,
+                            )
                 else:
                     # TODO: Get disassembly even if the function does not exist
                     _l.warning(
