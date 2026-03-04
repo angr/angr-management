@@ -531,7 +531,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 if self.instance.kb.functions.contains_addr(func_addr):
                     func = self.instance.kb.functions[func_addr]
                     if func.is_alignment:
-                        qobject = QAlignmentBlock(self.instance, obj_addr, obj.size)
+                        qobject = QAlignmentBlock(self.instance, obj_addr, obj.size, self.disasm_view)
                     else:
                         disasm = self._get_disasm(func)
                         qobject = None

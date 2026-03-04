@@ -18,12 +18,13 @@ class QAlignmentBlock(QCachedGraphicsItem):
 
     SPACING = 20
 
-    def __init__(self, instance: Instance, addr: int, size: int, parent=None) -> None:
+    def __init__(self, instance: Instance, addr: int, size: int, disasm_view, parent=None) -> None:
         super().__init__(parent=parent)
 
         self.instance = instance
         self.addr = addr
         self.size = size
+        self.disasm_view = disasm_view
 
         self._width = 0
         self._height = 0
@@ -36,6 +37,14 @@ class QAlignmentBlock(QCachedGraphicsItem):
     #
     # Public methods
     #
+
+    def refresh(self) -> None:
+        self._layout_items_and_update_size()
+
+    def setVisible(self, visible) -> None:
+        super().setVisible(visible)
+        self._addr_item.setVisible(visible and self.disasm_view.show_address)
+        self._content_item.setVisible(visible)
 
     def paint(self, painter, option, widget=None) -> None:  # pylint: disable=unused-argument
         pass
@@ -77,9 +86,13 @@ class QAlignmentBlock(QCachedGraphicsItem):
     def _layout_items_and_update_size(self) -> None:
         x, y = 0, Conf.disasm_font_height
 
-        self._addr_item.setPos(x, y)
-        x += self._addr_item.boundingRect().width()
-        x += self.SPACING
+        if self.disasm_view.show_address:
+            self._addr_item.setVisible(True)
+            self._addr_item.setPos(x, y)
+            x += self._addr_item.boundingRect().width()
+            x += self.SPACING
+        else:
+            self._addr_item.setVisible(False)
 
         self._content_item.setPos(x, y)
 
