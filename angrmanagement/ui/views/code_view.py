@@ -37,7 +37,6 @@ from angrmanagement.ui.toolbars import NavToolbar
 from angrmanagement.ui.widgets.qccode_edit import QCCodeEdit
 from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
 
-from .disassembly_view import DisassemblyView
 from .view import FunctionView
 
 if TYPE_CHECKING:
@@ -89,7 +88,7 @@ class CodeView(FunctionView):
         self.addr.am_subscribe(self._on_new_addr)
         self.current_node.am_subscribe(self._on_new_node)
 
-    def _focus_core(self, focus: bool, focus_addr: int) -> None:
+    def _focus_core(self, focus: bool, focus_addr: int | None) -> None:
         if focus:
             self.focus()
         if focus_addr is not None:
@@ -239,7 +238,7 @@ class CodeView(FunctionView):
             textedit.setTextCursor(cursor)
             if focus:
                 textedit.setFocus()
-                self._focus_core(True, None)
+                self._focus_core(True, self.addr.am_obj)
         else:
             # try to find the right function
             block_addr, _ = self.instance.cfb.floor_item(self.addr.am_obj)
@@ -383,6 +382,8 @@ class CodeView(FunctionView):
                 self._focus_core(focus, focus_addr)
                 self._last_function = self._function.am_obj
 
+        self.jump_history.jump_to(self._function.addr)
+
         if should_decompile:
             self.decompile(focus=focus, focus_addr=focus_addr, flavor=flavor)
 
@@ -440,9 +441,12 @@ class CodeView(FunctionView):
             elif isinstance(selected_node, CLabel) and "ins_addr" in selected_node.tags:
                 self.workspace.jump_to(selected_node.tags["ins_addr"])
 
-    def jump_to(self, addr: int, src_ins_addr=None) -> None:  # pylint:disable=unused-argument
+    def jump_to(self, addr: int, src_ins_addr=None) -> bool:  # pylint:disable=unused-argument
+        if addr == self.addr.am_obj:
+            return False
         self.addr.am_obj = addr
         self.addr.am_event()
+        return True
 
     def jump_back(self) -> None:
         addr = self.jump_history.backtrack()
@@ -452,9 +456,7 @@ class CodeView(FunctionView):
             self.jump_to(addr)
 
     def popup_jumpto_dialog(self) -> None:
-        view = self.workspace._get_or_create_view("disassembly", DisassemblyView)
-        JumpTo(view, parent=self).show()
-        view.decompile_current_function()
+        JumpTo(self, parent=self).show()
 
     def jump_forward(self) -> None:
         addr = self.jump_history.forwardstep()
