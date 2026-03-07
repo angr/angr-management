@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QVBoxLayout
 
 from angrmanagement.ui.widgets import QAddressInput
+
+if TYPE_CHECKING:
+    from angrmanagement.ui.views import CodeView, DisassemblyView
 
 
 class JumpTo(QDialog):
@@ -10,11 +15,11 @@ class JumpTo(QDialog):
     Dialog to jump to an address.
     """
 
-    def __init__(self, disasm_view, parent=None) -> None:
+    def __init__(self, current_view: DisassemblyView | CodeView, parent=None) -> None:
         super().__init__(parent)
 
         # initialization
-        self._disasm_view = disasm_view
+        self._current_view = current_view
 
         self._address_box = None
         self._status_label = None
@@ -38,7 +43,7 @@ class JumpTo(QDialog):
         address_label = QLabel(self)
         address_label.setText("Address")
 
-        address = QAddressInput(self._on_address_changed, self._disasm_view.instance, parent=self)
+        address = QAddressInput(self._on_address_changed, self._current_view.instance, parent=self)
         self._address_box = address
 
         address_layout = QHBoxLayout()
@@ -82,6 +87,6 @@ class JumpTo(QDialog):
     def _on_ok_clicked(self) -> None:
         addr = self._address_box.target
         if addr is not None:
-            r = self._disasm_view.jump_to(addr)
+            r = self._current_view.jump_to(addr)
             if r:
                 self.close()
