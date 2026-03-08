@@ -731,11 +731,8 @@ class DisassemblyView(SynchronizedFunctionView):
                 self._flow_graph.reload()
 
     def jump_to(self, addr: int, src_ins_addr=None, use_animation: bool = False, is_real_addr: bool = False) -> bool:
-        if (
-            self.instance.project.am_obj is not None
-            and self.instance.project.loader.find_object_containing(addr) is None
-        ):
-            _l.warning("Address %#x is outside loaded memory regions, skipping jump.", addr)
+        # Do not jump if addr is not in the binary
+        if not self.instance.project.am_none and self.instance.project.loader.find_object_containing(addr) is None:
             return False
 
         # Record the current instruction address
