@@ -153,7 +153,7 @@ class QFunctionHeader(BlockTreeNode):
         self._init_items()
 
         super().__init__(
-            None, infodock, parent, options=options, display_address=False, top_margin_lines=1, bottom_margin_lines=1
+            None, infodock, parent, options=options, display_address=False, top_margin_lines=2, bottom_margin_lines=0
         )
 
     def create_subobjs(self, obj) -> None:
@@ -207,10 +207,11 @@ class QFunctionHeader(BlockTreeNode):
                     self.add_text(", ")
 
             self.add_text(")")
-        self.add_newline(2)
+        self.add_newline()
 
         # arguments
-        if self._arg_str_list is not None:
+        if self._arg_str_list is not None and len(self._arg_str_list) > 0:
+            self.add_newline()
             for i, arg_str in enumerate(self._arg_str_list):
                 sub_obj = QFunctionHeaderFuncArgItem(self.addr, i, arg_str, self.infodock, self)
                 self.add_text(f"arg_{i} @ ")

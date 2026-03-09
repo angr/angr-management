@@ -10,17 +10,17 @@ from angrmanagement.config import Conf
 from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
-    from angrmanagement.ui.workspace import Workspace
+    from angrmanagement.data.instance import Instance
 
 
 class QUnknownBlock(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     DEFAULT_TEXT = "Unknown"
 
-    def __init__(self, workspace: Workspace, addr: int, bytes_, parent=None) -> None:
+    def __init__(self, instance: Instance, addr: int, bytes_, parent=None) -> None:
         super().__init__(parent=parent)
 
-        self.workspace = workspace
+        self.instance = instance
         self.addr = addr
         self.bytes = bytes_
 
@@ -39,7 +39,7 @@ class QUnknownBlock(QCachedGraphicsItem):
     # Public methods
     #
 
-    def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
+    def paint(self, painter, option, widget=None) -> None:  # pylint: disable=unused-argument
         # painter.setRenderHints(
         #         QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
         # painter.setFont(self._config.disasm_font)
