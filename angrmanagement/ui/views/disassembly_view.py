@@ -229,8 +229,7 @@ class DisassemblyView(SynchronizedFunctionView):
 
     @SynchronizedFunctionView.function.setter
     def function(self, v) -> None:
-        if v is not self.function.am_obj or (self._current_view is self._linear_viewer):
-            self.display_function(v, send_event=False)
+        self.display_function(v, send_event=False)
 
     #
     # Callbacks
@@ -944,6 +943,8 @@ class DisassemblyView(SynchronizedFunctionView):
                     exception_edges=self.show_exception_edges,
                 )
             )
+        elif self._current_view is self._flow_graph and the_func is not None:
+            self._flow_graph.show_instruction(the_func.addr)
 
         if self._current_view is self._linear_viewer and the_func is not None:
             self._linear_viewer.navigate_to_addr(the_func.addr)
