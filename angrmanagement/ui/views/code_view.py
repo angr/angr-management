@@ -238,7 +238,7 @@ class CodeView(FunctionView):
             textedit.setTextCursor(cursor)
             if focus:
                 textedit.setFocus()
-                self._focus_core(True, self.addr.am_obj)
+                self._focus_core(True, None)
         else:
             # try to find the right function
             block_addr, _ = self.instance.cfb.floor_item(self.addr.am_obj)
