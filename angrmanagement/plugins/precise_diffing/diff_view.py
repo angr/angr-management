@@ -78,7 +78,7 @@ class DiffCodeView(CodeView):
 
         def decomp_ready(*args, **kwargs) -> None:  # pylint:disable=unused-argument
             # this code is _partially_ duplicated from _on_new_function. be careful!
-            available = self.instance.kb.decompilations.available_flavors(self._function.addr)
+            available = self.instance.kb.decompilations.all_flavors(self._function.addr)
             self._update_available_views(available)
             if available:
                 chosen_flavor = flavor if flavor in available else available[0]
@@ -96,7 +96,11 @@ class DiffCodeView(CodeView):
                 self.instance,
                 self._function.am_obj,
                 cfg=self.instance.cfg,
-                options=self._options.option_and_values,
+                options=[
+                    (o, v)
+                    for o, v in self._options.option_and_values
+                    if o.param not in {"simplify_ifelse", "prettify_thiscall", "cstyle_void_param", "max_str_len"}
+                ],
                 optimization_passes=self._options.selected_passes,
                 peephole_optimizations=self._options.selected_peephole_opts,
                 vars_must_struct=self.vars_must_struct,
