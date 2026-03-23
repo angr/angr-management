@@ -21,10 +21,12 @@ class DecompileFunctionJob(InstanceJob):
         self.kwargs = kwargs
         self.function = function
 
+        if "flavor" not in self.kwargs:
+            self.kwargs["flavor"] = "pseudocode"
+
     def run(self, ctx: JobContext) -> None:
         decompiler = self.instance.project.analyses.Decompiler(
             self.function,
-            flavor="pseudocode",
             variable_kb=self.instance.pseudocode_variable_kb,
             use_cache=True,
             **self.kwargs,

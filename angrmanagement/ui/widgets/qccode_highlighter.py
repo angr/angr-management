@@ -17,6 +17,24 @@ from angr.analyses.decompiler.structured_codegen.c import (
 )
 from angr.sim_type import SimType
 from angr.sim_variable import SimMemoryVariable
+
+try:
+    from angr.analyses.decompiler.structured_codegen.rust import (
+        RustArrayTypeLength,
+        RustClosingObject,
+        RustConstant,
+        RustExpression,
+        RustFunction,
+        RustFunctionCall,
+        RustLabel,
+        RustStatement,
+        RustStructFieldNameDef,
+        RustVariable,
+    )
+
+    HAS_RUST_CODEGEN = True
+except ImportError:
+    HAS_RUST_CODEGEN = False
 from pyqodeng.core.api import SyntaxHighlighter
 from PySide6.QtGui import QBrush, QColor, QFont, QTextCharFormat
 
@@ -106,20 +124,38 @@ def _format_node(obj):
         if type(obj.variable) is SimMemoryVariable:
             return FORMATS["global_variable"]
         return FORMATS["variable"]
-    elif isinstance(obj, CArrayTypeLength):
-        # This is the part that goes after a fixed-size array (the
-        # "[20]" in "char foo[20];"), and it's highly unlikely
-        # that anyone will want to change the color here. But if
-        # you do, follow the format of the rest.
+    elif isinstance(obj, (CArrayTypeLength, CStructFieldNameDef, CClosingObject, CStatement, CConstant, CExpression)):
         return FORMATS["normal"]
-    elif isinstance(obj, CStructFieldNameDef):
-        # This is the part that is a field name in a struct def,
-        # and it's highly unlikely that anyone will want to change
-        # the color here. But if you do, follow the format of the
-        # rest.
-        return FORMATS["normal"]
-    elif isinstance(obj, CClosingObject | CStatement | CConstant | CExpression):
-        return FORMATS["normal"]
+
+    # Rust codegen node types
+    if HAS_RUST_CODEGEN:
+        if isinstance(obj, RustFunctionCall):
+            if obj.callee_func is not None and (
+                obj.callee_func.is_simprocedure or obj.callee_func.is_plt or obj.callee_func.is_syscall
+            ):
+                return FORMATS["library_function"]
+            return FORMATS["function"]
+        elif isinstance(obj, RustFunction):
+            return FORMATS["function"]
+        elif isinstance(obj, RustLabel):
+            return FORMATS["label"]
+        elif isinstance(obj, RustVariable):
+            if type(obj.variable) is SimMemoryVariable:
+                return FORMATS["global_variable"]
+            return FORMATS["variable"]
+        elif isinstance(
+            obj,
+            (
+                RustArrayTypeLength,
+                RustStructFieldNameDef,
+                RustClosingObject,
+                RustStatement,
+                RustConstant,
+                RustExpression,
+            ),
+        ):
+            return FORMATS["normal"]
+
     return FORMATS["normal"]
 
 
@@ -188,6 +224,34 @@ class QCCodeHighlighter(SyntaxHighlighter):
         (r"\bvirtual\b", "keyword"),
         (r"\bvolatile\b", "keyword"),
         (r"\bwhile\b", "keyword"),
+        # Rust keywords
+        (r"\blet\b", "keyword"),
+        (r"\bmut\b", "keyword"),
+        (r"\bfn\b", "keyword"),
+        (r"\bimpl\b", "keyword"),
+        (r"\btrait\b", "keyword"),
+        (r"\bself\b", "keyword"),
+        (r"\bSelf\b", "keyword"),
+        (r"\buse\b", "keyword"),
+        (r"\bmod\b", "keyword"),
+        (r"\bpub\b", "keyword"),
+        (r"\bcrate\b", "keyword"),
+        (r"\bsuper\b", "keyword"),
+        (r"\bas\b", "keyword"),
+        (r"\bref\b", "keyword"),
+        (r"\bmatch\b", "keyword"),
+        (r"\bloop\b", "keyword"),
+        (r"\bmove\b", "keyword"),
+        (r"\bunsafe\b", "keyword"),
+        (r"\bwhere\b", "keyword"),
+        (r"\basync\b", "keyword"),
+        (r"\bawait\b", "keyword"),
+        (r"\bdyn\b", "keyword"),
+        (r"\btype\b", "keyword"),
+        (r"\bNone\b", "keyword"),
+        (r"\bSome\b", "keyword"),
+        (r"\bOk\b", "keyword"),
+        (r"\bErr\b", "keyword"),
     ]
 
     def __init__(self, parent, color_scheme=None) -> None:
