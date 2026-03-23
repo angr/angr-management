@@ -439,7 +439,9 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 # this object should be skipped. ignore it
                 start_line -= object_lines
                 # adjust the offset as well
-                if obj_addr <= addr < obj_addr + obj.size:
+                if obj.size == 0:
+                    offset += 1
+                elif obj_addr <= addr < obj_addr + obj.size:
                     offset += obj_addr + obj.size - addr
                 else:
                     offset = base_offset + (obj_addr + obj.size - mr.addr)
