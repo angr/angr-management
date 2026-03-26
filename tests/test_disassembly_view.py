@@ -178,6 +178,17 @@ class TestPopupDialogs(TestDisassemblyViewBase):
             assert isinstance(self._dialog_instance, SetComment)
             self._dialog_instance.close()
 
+    def test_ctrl_slash_calls_popup_comment(self):
+        """Test that pressing Ctrl+/ calls popup_comment_dialog."""
+        with patch.object(self.disasm_view, "popup_comment_dialog") as mock_popup:
+            key_event = QKeyEvent(
+                QKeyEvent.Type.KeyPress,
+                Qt.Key.Key_Slash,
+                Qt.KeyboardModifier.ControlModifier,
+            )
+            self.disasm_view.keyPressEvent(key_event)
+            mock_popup.assert_called_once()
+
     def test_popup_rename_label_dialog(self):
         """Test that popup_rename_label_dialog creates and shows RenameLabel dialog (modal)."""
         with patch.object(self.disasm_view, "_address_in_selection", return_value=(0x1000, False)):
