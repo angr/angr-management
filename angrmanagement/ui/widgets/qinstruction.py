@@ -26,7 +26,7 @@ class QInstruction(QCachedGraphicsItem):
     INTERSPERSE_ARGS = ", "
 
     LINEAR_INSTRUCTION_OFFSET = 120
-    COMMENT_PREFIX = "// "
+    COMMENT_PREFIX = "; "
 
     def __init__(
         self, instance: Instance, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None

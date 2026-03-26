@@ -294,7 +294,11 @@ class DisassemblyView(SynchronizedFunctionView):
             # decompile
             self.decompile_current_function()
             return
-        elif key == Qt.Key.Key_Semicolon:
+        elif (
+            key == Qt.Key.Key_Semicolon
+            or key == Qt.Key.Key_Slash
+            and event.modifiers() == Qt.KeyboardModifier.ControlModifier
+        ):
             # add comment
             self.popup_comment_dialog()
             return
