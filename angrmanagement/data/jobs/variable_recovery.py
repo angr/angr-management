@@ -19,8 +19,8 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
     Configuration for VariableRecovery analysis.
     """
 
-    SMALL_BINARY_SIZE = 65536
-    MEDIUM_BINARY_SIZE = 400000
+    SMALL_BINARY_SIZE = 65_536
+    MEDIUM_BINARY_SIZE = 400_000
 
     def __init__(self, instance: Instance) -> None:
         super().__init__(instance)
@@ -40,7 +40,7 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
                     "workers",
                     "Number of parallel workers",
                     tooltip="0 to disable parallel analysis. Default to the number of available cores "
-                    "minus one in the local system. Automatically default to 0 for small binaries "
+                    "in the local system (capped at 4). Automatically default to 0 for small binaries "
                     "on all platforms, and small- to medium-sized binaries on Windows and MacOS "
                     "(to avoid the cost of spawning new angr-management processes).",
                     default=self.get_default_workers(),
@@ -62,7 +62,7 @@ class VariableRecoveryConfiguration(AnalysisConfiguration):
     def get_default_workers(self) -> int:
         main_obj_size = self.get_main_obj_size()
 
-        default_workers = max(multiprocessing.cpu_count() - 1, 1)
+        default_workers = min(multiprocessing.cpu_count(), 4)
         if default_workers == 1:
             return 0
 
