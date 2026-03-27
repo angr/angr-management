@@ -41,7 +41,7 @@ class CallingConventionRecoveryConfiguration(AnalysisConfiguration):
                 ),
                 BoolAnalysisOption(
                     "skip_signature_matched_functions",
-                    "Skip variable recovery for signature-matched functions",
+                    "Skip calling convention recovery for signature-matched functions",
                     True,
                 ),
                 BoolAnalysisOption(
