@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import multiprocessing
-import platform
 from typing import TYPE_CHECKING
 
 from angr.misc.testing import is_testing
@@ -21,7 +20,7 @@ class CallingConventionRecoveryConfiguration(AnalysisConfiguration):
     Configuration for CCCA.
     """
 
-    MAX_BINARY_SIZE = 5_120_000
+    MAX_BINARY_SIZE = 100_000_000
 
     def __init__(self, instance: Instance) -> None:
         super().__init__(instance)
@@ -35,16 +34,14 @@ class CallingConventionRecoveryConfiguration(AnalysisConfiguration):
                 IntAnalysisOption(
                     "workers",
                     "Number of parallel workers",
-                    tooltip="0 to disable parallel analysis. Default to the number of available cores "
-                    "minus one in the local system. Automatically default to 0 for small binaries "
-                    "on all platforms, and small- to medium-sized binaries on Windows and MacOS "
-                    "(to avoid the cost of spawning new angr-management processes).",
+                    tooltip="0 to disable parallel analysis. Default to 0 for binaries less than 100 MB; otherwise, "
+                    "default to 4 or the number of CPU cores, whichever is lower.",
                     default=self.get_default_workers(),
                     minimum=0,
                 ),
                 BoolAnalysisOption(
                     "skip_signature_matched_functions",
-                    "Skip variable recovery for signature-matched functions",
+                    "Skip calling convention recovery for signature-matched functions",
                     True,
                 ),
                 BoolAnalysisOption(
@@ -61,14 +58,12 @@ class CallingConventionRecoveryConfiguration(AnalysisConfiguration):
 
         main_obj_size = self.get_main_obj_size()
 
-        default_workers = max(multiprocessing.cpu_count() - 1, 1)
+        default_workers = min(multiprocessing.cpu_count(), 4)
         if default_workers == 1:
             return 0
 
-        if platform.system() in {"Windows", "Darwin"}:
-            if main_obj_size <= self.MAX_BINARY_SIZE:
-                return 0
-            return default_workers
+        if main_obj_size <= self.MAX_BINARY_SIZE:
+            return 0
 
         return default_workers
 
