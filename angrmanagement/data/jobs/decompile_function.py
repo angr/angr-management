@@ -25,14 +25,12 @@ class DecompileFunctionJob(InstanceJob):
             self.kwargs["flavor"] = "pseudocode"
 
     def run(self, ctx: JobContext) -> None:
-        decompiler = self.instance.project.analyses.Decompiler(
+        _decompiler = self.instance.project.analyses.Decompiler(
             self.function,
             variable_kb=self.instance.pseudocode_variable_kb,
             use_cache=True,
             **self.kwargs,
             progress_callback=ctx.set_progress,
         )
-        # cache the result
-        self.instance.kb.decompilations[(self.function.addr, "pseudocode")] = decompiler.cache
 
         GlobalInfo.main_window.workspace.plugins.decompile_callback(self.function)
