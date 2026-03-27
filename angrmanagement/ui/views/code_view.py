@@ -358,7 +358,7 @@ class CodeView(FunctionView):
             # restore the scroll position
             self._textedit.verticalScrollBar().setValue(scroll_pos)
 
-        if self.codegen.flavor not in {"pseudocode", "rust"}:
+        if self.codegen.flavor in {"pseudocode", "rust"}:
             self._options.show()
         else:
             self._options.hide()
