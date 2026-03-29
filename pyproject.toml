@@ -38,9 +38,8 @@ Homepage = "https://angr.io"
 Repository = "https://github.com/angr/angr-management"
 
 [project.optional-dependencies]
-bintrace = [
-  "bintrace"
-]
+bintrace = ["bintrace"]
+unicorn = ["angr[unicorn]"]
 
 [dependency-groups]
 dev = [
