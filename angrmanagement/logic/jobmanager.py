@@ -48,7 +48,7 @@ class JobContext:
         percentage_delta = percentage - self._last_reported_percentage
         time_delta = time.time() - self._last_reported_timestamp
 
-        if (percentage_delta > 0.02 or self._last_text != text) and time_delta >= 0.1:
+        if (percentage_delta > 0.02 or self._last_text != text) and time_delta >= 0.1 or percentage_delta >= 1.0:
             self._last_reported_percentage = percentage
             self._last_reported_timestamp = time.time()
             self._job_worker.job_progressed.emit(self._job, percentage, text)
