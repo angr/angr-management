@@ -386,6 +386,8 @@ class QCCodeEdit(api.CodeEdit):
         if isinstance(node, CVariable) and isinstance(node.variable, SimTemporaryVariable):
             # unsupported right now..
             return
+        if node_type is None and hasattr(node, "type"):
+            node_type = node.type
         dialog = RetypeNode(self.instance, code_view=self._code_view, node=node, node_type=node_type)
         dialog.exec_()
 

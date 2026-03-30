@@ -160,8 +160,8 @@ class RetypeNode(QDialog):
 
         type_box = TypeBox(self._on_type_changed, predefined_types=self._get_predefined_types(), parent=self)
         if self._node is not None:
-            if isinstance(self._node, CVariable) and self._node.unified_variable:
-                type_box.set_type(self._node.type, cvariable=self._node)
+            if isinstance(self._node, CVariable) and self._node.unified_variable and self._node_type is not None:
+                type_box.set_type(self._node_type, cvariable=self._node)
             elif isinstance(self._node, CFunction):
                 type_box.setText(self._node.functy.c_repr(name=self._node.demangled_name, full=True, name_parens=False))
 
