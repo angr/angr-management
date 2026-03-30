@@ -46,7 +46,8 @@ class LLMRefineJob(InstanceJob):
         self.mode = mode
         self.flavor = flavor
 
-    def _show_error_msgbox(self, message: str) -> None:
+    @staticmethod
+    def _show_error_msgbox(message: str) -> None:
         msgbox = QMessageBox(GlobalInfo.main_window)
         msgbox.setWindowTitle("LLM Refinement Error")
         msgbox.setText(message)
