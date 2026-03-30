@@ -617,7 +617,7 @@ class CodeView(FunctionView):
             modes.append(LLMRefineJob.SUMMARIZE)
 
         for mode in modes:
-            job = LLMRefineJob(self.instance, func, mode=mode, on_finish=on_finish, blocking=True)
+            job = LLMRefineJob(self.instance, func, mode=mode, on_finish=on_finish)
             self.workspace.job_manager.add_job(job)
 
     def _maybe_preload_callees(self) -> None:

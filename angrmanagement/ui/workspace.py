@@ -517,7 +517,7 @@ class Workspace:
         def on_finish(*_args, **_kwargs):
             code_view.codegen.am_event(already_regenerated=True)
 
-        job = LLMRefineJob(self.main_instance, func, mode=mode, on_finish=on_finish, blocking=True)
+        job = LLMRefineJob(self.main_instance, func, mode=mode, on_finish=on_finish)
         self.job_manager.add_job(job)
 
     def llm_refine_all(self) -> None:
