@@ -79,7 +79,7 @@ class LoadBinary(QDialog):
 
     def __init__(
         self,
-        partial_ld,
+        partial_ld: cle.Loader,
         suggested_backend: cle.Backend | None = None,
         suggested_os_name: str | None = None,
         parent=None,
@@ -101,9 +101,11 @@ class LoadBinary(QDialog):
         # _try_loading will try its best to fill in the following two properties from partial_ld
         self._base_addr: int | None = None
         self._entry_addr: int | None = None
+        self._offset: int = 0
 
         self._base_addr_checkbox = None
         self._entry_addr_checkbox = None
+        self._offset_checkbox = None
         self._symbol_search_tab_index = None
 
         if pypcode:
@@ -144,7 +146,7 @@ class LoadBinary(QDialog):
     # Private methods
     #
 
-    def _try_loading(self, partial_ld) -> None:
+    def _try_loading(self, partial_ld: cle.Loader) -> None:
         deps = []
         for ident in sorted(partial_ld.requested_names):
             deps.append(ident)
@@ -164,11 +166,14 @@ class LoadBinary(QDialog):
             if isinstance(partial_ld.main_object, cle.MetaELF | cle.PE | cle.MachO | cle.CGC):
                 self._base_addr = partial_ld.main_object.mapped_base
                 self._entry_addr = partial_ld.main_object.entry
+                self._offset = getattr(partial_ld.main_object, "offset", 0)
             else:
                 if hasattr(partial_ld.main_object, "mapped_base"):
                     self._base_addr = partial_ld.main_object.mapped_base
                 if hasattr(partial_ld.main_object, "entry"):
                     self._entry_addr = partial_ld.main_object.entry
+                if hasattr(partial_ld.main_object, "offset"):
+                    self._offset = partial_ld.main_object.offset
 
             # don't know what to do with other backends...
 
@@ -177,16 +182,21 @@ class LoadBinary(QDialog):
         if isinstance(self.suggested_backend, cle.Blob):
             self._toggle_base_addr_textbox(True)
             self._toggle_entry_addr_textbox(True)
+            self._toggle_offset_textbox(True)
             self.option_widgets["entry_addr"].setText("0x0")
             self.option_widgets["base_addr"].setText("0x0")
+            self.option_widgets["offset"].setText("0x0")
         else:
             self._toggle_base_addr_textbox(False)
             self._toggle_entry_addr_textbox(False)
+            self._toggle_offset_textbox(False)
 
             if self._entry_addr is not None:
                 self.option_widgets["entry_addr"].setText(hex(self._entry_addr))
             if self._base_addr is not None:
                 self.option_widgets["base_addr"].setText(hex(self._base_addr))
+            if self._offset is not None:
+                self.option_widgets["offset"].setText(hex(self._offset))
 
     def _init_widgets(self) -> None:
         layout = QGridLayout()
@@ -377,6 +387,17 @@ class LoadBinary(QDialog):
         entry_addr_checkbox.clicked.connect(self._on_entry_addr_checkbox_clicked)
         self._entry_addr_checkbox = entry_addr_checkbox
         self.option_widgets["entry_addr"] = entry_addr
+
+        # offset amount
+        offset_checkbox = QCheckBox()
+        offset_checkbox.setChecked(False)
+        offset_checkbox.setText("Offset:")
+        blob_layout.addWidget(offset_checkbox, 3, 0)
+        offset = QLineEdit(self)
+        blob_layout.addWidget(offset, 3, 1)
+        offset_checkbox.clicked.connect(self._on_offset_checkbox_clicked)
+        self._offset_checkbox = offset_checkbox
+        self.option_widgets["offset"] = offset
 
         # load debug symbols
         load_debug_info = QCheckBox()
@@ -723,6 +744,9 @@ class LoadBinary(QDialog):
     def _toggle_entry_addr_textbox(self, enabled: bool) -> None:
         self.option_widgets["entry_addr"].setEnabled(enabled)
 
+    def _toggle_offset_textbox(self, enabled: bool) -> None:
+        self.option_widgets["offset"].setEnabled(enabled)
+
     #
     # Event handlers
     #
@@ -732,6 +756,9 @@ class LoadBinary(QDialog):
 
     def _on_entry_addr_checkbox_clicked(self) -> None:
         self._toggle_entry_addr_textbox(self._entry_addr_checkbox.isChecked())
+
+    def _on_offset_checkbox_clicked(self) -> None:
+        self._toggle_offset_textbox(self._offset_checkbox.isChecked())
 
     def _on_ok_clicked(self) -> None:
         force_load_libs = []
@@ -780,7 +807,7 @@ class LoadBinary(QDialog):
 
         self.simos = self.available_simos[cur_simos_name]
 
-        if self._base_addr_checkbox.isChecked():
+        if self._base_addr_checkbox is not None and self._base_addr_checkbox.isChecked():
             try:
                 base_addr = int(self.option_widgets["base_addr"].text(), 16)
             except ValueError:
@@ -788,13 +815,21 @@ class LoadBinary(QDialog):
                 return
             self.load_options["main_opts"]["base_addr"] = base_addr
 
-        if self._entry_addr_checkbox.isChecked():
+        if self._entry_addr_checkbox is not None and self._entry_addr_checkbox.isChecked():
             try:
                 entry_addr = int(self.option_widgets["entry_addr"].text(), 16)
             except ValueError:
                 QMessageBox.critical(None, "Incorrect entry point address", "Please input a valid entry point address.")
                 return
             self.load_options["main_opts"]["entry_point"] = entry_addr
+
+        if self._offset_checkbox is not None and self._offset_checkbox.isChecked():
+            try:
+                offset_addr = int(self.option_widgets["offset"].text(), 16)
+            except ValueError:
+                QMessageBox.critical(None, "Incorrect offset", "Please input a valid offset.")
+                return
+            self.load_options["main_opts"]["offset"] = offset_addr
 
         if force_load_libs:
             self.load_options["force_load_libs"] = force_load_libs
@@ -905,7 +940,7 @@ class LoadBinary(QDialog):
 
     @staticmethod
     def run(
-        partial_ld, suggested_backend=None, suggested_os_name: str | None = None
+        partial_ld: cle.Loader, suggested_backend=None, suggested_os_name: str | None = None
     ) -> tuple[dict | None, dict | None]:
         try:
             dialog = LoadBinary(
