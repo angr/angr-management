@@ -43,8 +43,10 @@ class ManagementService(rpyc.Service):
 
     def on_disconnect(self, conn) -> None:
         self._conn = None
-        if conn in CONNECTIONS:
-            del CONNECTIONS[conn]
+        CONNECTIONS.pop(conn, None)
+        stale_targets = [target_id for target_id, target_conn in TargetIDtoCONN.items() if target_conn is conn]
+        for target_id in stale_targets:
+            del TargetIDtoCONN[target_id]
 
     def exposed_open(self, bin_path) -> None:
         if bin_path is None:
