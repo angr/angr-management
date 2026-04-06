@@ -398,6 +398,18 @@ class QCCodeEdit(api.CodeEdit):
                 self._code_view.codegen.am_event(event="retype_function", node=node)
                 return
 
+            if isinstance(node, CVariable):
+                cfunc = self._code_view.codegen.cfunc
+                for idx, arg in enumerate(cfunc.arg_list):
+                    if arg is node:
+                        new_proto = self._code_view.function.prototype
+                        new_args = list(new_proto.args)
+                        new_args[idx] = new_node_type.with_arch(self.instance.project.arch)
+                        new_proto.args = tuple(new_args)
+                        self._code_view.function.prototype = new_proto.with_arch(self.instance.project.arch)
+                        self._code_view.codegen.am_event(event="retype_function", node=cfunc)
+                        return
+
             # need workspace for altering callbacks of changes
             variable_kb = self._code_view.codegen._variable_kb
             # specify the type
