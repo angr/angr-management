@@ -402,7 +402,7 @@ class QCCodeEdit(api.CodeEdit):
                 cfunc = self._code_view.codegen.cfunc
                 for idx, arg in enumerate(cfunc.arg_list):
                     if arg is node:
-                        new_proto = self._code_view.function.prototype
+                        new_proto = self._code_view.function.prototype.copy()
                         new_args = list(new_proto.args)
                         new_args[idx] = new_node_type.with_arch(self.instance.project.arch)
                         new_proto.args = tuple(new_args)
