@@ -54,7 +54,7 @@ class TestRetypeVariables(AngrManagementTestCase):
         assert arg_node.type is not None
         assert arg_node.type.c_repr() == "char *"
 
-        new_type = angr.sim_type.parse_type("int *")
+        new_type = angr.types.parse_type("int *")
 
         def mock_exec(dialog_self, *_args, **_kwargs):
             dialog_self.new_type = new_type
@@ -75,6 +75,7 @@ class TestRetypeVariables(AngrManagementTestCase):
         assert cfunc is not None
         assert len(cfunc.arg_list) > 0
         assert cfunc.arg_list[0].name == "a0"
+        assert cfunc.arg_list[0].type is not None
         assert cfunc.arg_list[0].type.c_repr() == "int *"
 
 
