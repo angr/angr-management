@@ -34,7 +34,7 @@ class TestRetypeVariables(AngrManagementTestCase):
         disasm_view.decompile_current_function()
         self.main.workspace.job_manager.join_all_jobs()
 
-        self.code_view: CodeView = self.main.workspace.view_manager.first_view_in_category("pseudocode")
+        self.code_view: CodeView = self.main.workspace.view_manager.first_view_in_category("pseudocode")  # type: ignore
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -49,7 +49,9 @@ class TestRetypeVariables(AngrManagementTestCase):
         assert len(cfunc.arg_list) > 0
 
         arg_node = cfunc.arg_list[0]
+        assert arg_node is not None
         assert arg_node.name == "a0"
+        assert arg_node.type is not None
         assert arg_node.type.c_repr() == "char *"
 
         new_type = angr.sim_type.parse_type("int *")
@@ -60,6 +62,7 @@ class TestRetypeVariables(AngrManagementTestCase):
             return QDialog.DialogCode.Accepted
 
         textedit = self.code_view._textedit
+        assert textedit is not None
 
         with patch("angrmanagement.ui.dialogs.retype_node.RetypeNode.exec_", mock_exec):
             textedit.retype_node(node=arg_node)
@@ -68,8 +71,11 @@ class TestRetypeVariables(AngrManagementTestCase):
 
         assert self.func.prototype.c_repr() == "unsigned long long ()(int *, char *)"
 
-        assert self.code_view.codegen.cfunc.arg_list[0].name == "a0"
-        assert self.code_view.codegen.cfunc.arg_list[0].type.c_repr() == "int *"
+        cfunc = self.code_view.codegen.cfunc
+        assert cfunc is not None
+        assert len(cfunc.arg_list) > 0
+        assert cfunc.arg_list[0].name == "a0"
+        assert cfunc.arg_list[0].type.c_repr() == "int *"
 
 
 if __name__ == "__main__":
