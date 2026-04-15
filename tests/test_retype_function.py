@@ -93,6 +93,7 @@ class TestRetypeFunction(AngrManagementTestCase):
         assert self.func.prototype.c_repr() == "unsigned long long ()(int *, char *)"
 
         cfunc = self.code_view.codegen.cfunc
+        assert cfunc is not None
         assert len(cfunc.arg_list) == 2
         assert cfunc.arg_list[0].type is not None
         assert cfunc.arg_list[0].type.c_repr() == "int *"
