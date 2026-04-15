@@ -69,7 +69,7 @@ class TestRetypeVariables(AngrManagementTestCase):
 
     def test_retype_argument(self):
         assert self.func.prototype is not None
-        assert self.func.prototype.c_repr() == "unsigned long long ()(char *, char *)"
+        assert self.func.prototype.c_repr() == "unsigned int ()(char *, char *)"
 
         cfunc = self.code_view.codegen.cfunc
         assert cfunc is not None
@@ -93,7 +93,7 @@ class TestRetypeVariables(AngrManagementTestCase):
 
         self.main.workspace.job_manager.join_all_jobs()
 
-        assert self.func.prototype.c_repr() == "unsigned long long ()(int *, char *)"
+        assert self.func.prototype.c_repr() == "unsigned int ()(int *, char *)"
 
         cfunc = self.code_view.codegen.cfunc
         assert cfunc is not None
