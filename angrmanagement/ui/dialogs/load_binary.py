@@ -716,12 +716,13 @@ class LoadBinary(QDialog):
         other_arches = []
 
         self_arch_str = str(self.arch)
+        arch_names = self.partial_ld.main_object.available_arches if self.partial_ld.main_object is not None else []
 
         for arch in all_arches:
             if isinstance(arch, archinfo.Arch):
                 if str(arch) == self_arch_str:
                     the_arch = arch
-                elif arch.name == self.arch.name:
+                elif arch.name in arch_names:
                     recommended_arches.append(arch)
                 else:
                     other_arches.append(arch)
