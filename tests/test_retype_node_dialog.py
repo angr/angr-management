@@ -1,5 +1,5 @@
 """
-Test cases for the RetypeNode dialog and TypeBox widget.
+Test cases for the RetypeNode dialog.
 """
 # pylint: disable=no-self-use,protected-access
 
