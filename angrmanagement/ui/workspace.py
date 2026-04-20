@@ -261,6 +261,19 @@ class Workspace:
         if view is not None and view.current_function.am_obj is not None:
             view.reload()
 
+    def on_flirt_signatures_applied(self) -> None:
+        functions_view = self.view_manager.first_view_in_category("functions")
+        if functions_view is not None:
+            functions_view.reset_cache_and_refresh()
+
+        view = self.view_manager.first_view_in_category("disassembly")
+        if view is not None:
+            view.reload()
+
+        view = self.view_manager.first_view_in_category("pseudocode")
+        if view is not None:
+            view.reload()
+
     def on_cc_recovered(self, func_addr: int) -> None:
         """
         Called when the calling convention of a given function is available.
