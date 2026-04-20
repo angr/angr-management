@@ -197,6 +197,6 @@ class SignatureManager:
         return None
 
     def is_signature_present(self, sig: Signature | str) -> bool:
-        """Check if a signature with the given path is already present."""
+        """Check if a signature is already present."""
         sig_path = sig.sig_path if isinstance(sig, Signature) else sig
         return any(s.sig_path == sig_path for s in self.signatures)
