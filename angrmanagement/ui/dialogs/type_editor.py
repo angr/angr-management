@@ -177,9 +177,9 @@ def edit_field(ty, field, predefined_types=None) -> bool:
     text = subty.c_repr(name=name)
     dialog = CTypeEditor(None, ty._arch, text, multiline=False, editing_single=name, predefined_types=predefined_types)
     dialog.exec_()
-    if not dialog.result:
+    if not dialog.main_result:
         return False
-    name2, subty = dialog.result[0]
+    name2, subty = dialog.main_result[0]
     if name2 is not None:
         if name != name2 and name2 in fields:
             QMessageBox.warning(None, "Duplicate field name", f"The name {name2} is already used")
