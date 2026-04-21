@@ -126,13 +126,18 @@ class SignatureManager:
     def sync_from_angr(self):
         for _arch, sigs in FLIRT_SIGNATURES_BY_ARCH.items():
             for sig in sigs:
-                self.add_signature(WrappedFlirtSignature(sig))
+                if not self.is_signature_present(sig):
+                    self.add_signature(WrappedFlirtSignature(sig))
 
     def clear(self) -> None:
         self.signatures.clear()
         self.signatures.am_event()
 
     def add_signature(self, sig: Signature) -> None:
+        if self.is_signature_present(sig):
+            _l.warning("Signature with path %s already exists. Skipping.", sig.sig_path)
+            return
+
         self.signatures.append(sig)
         self.signatures.am_event(added=sig)
 
@@ -170,6 +175,9 @@ class SignatureManager:
         for filename in filenames:
             basename = os.path.basename(filename)
             meta_path = filename[: filename.rindex(".")] + ".meta" if "." in basename else None
+            if self.is_signature_present(filename):
+                _l.warning("Signature with path %s already exists. Skipping.", filename)
+                continue
             r = angr.flirt.load_signature(filename, meta_path=meta_path)
             if r is not None:
                 arch, sig = r
@@ -187,3 +195,8 @@ class SignatureManager:
         if sig.sig_path in self.dryrun_results:
             return self.dryrun_results[sig.sig_path]
         return None
+
+    def is_signature_present(self, sig: Signature | str) -> bool:
+        """Check if a signature is already present."""
+        sig_path = sig.sig_path if isinstance(sig, Signature) else sig
+        return any(s.sig_path == sig_path for s in self.signatures)

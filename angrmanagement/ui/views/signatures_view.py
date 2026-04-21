@@ -4,7 +4,16 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QAbstractTableModel, QSize, Qt
-from PySide6.QtWidgets import QAbstractItemView, QHBoxLayout, QHeaderView, QMenu, QPushButton, QTableView, QVBoxLayout
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QDialog,
+    QHBoxLayout,
+    QHeaderView,
+    QMenu,
+    QPushButton,
+    QTableView,
+    QVBoxLayout,
+)
 
 from .view import InstanceView
 
@@ -139,7 +148,7 @@ class QSignatureTableWidget(QTableView):
             menu.addAction(
                 "&Try applying signature(s)", lambda: self.signature_mgr.apply_signatures(sigs, dry_run=True)
             )
-            menu.addAction("&Apply signature(s)", lambda: self.signature_mgr.apply_signatures(sigs, dry_run=False))
+            menu.addAction("&Apply signature(s)", lambda: self._apply_and_refresh(sigs))
             # Add "View Matches" option if there's exactly one signature selected and it has matches
             if len(sigs) == 1:
                 sig = sigs[0]
@@ -165,12 +174,17 @@ class QSignatureTableWidget(QTableView):
             # No matches yet, try applying the signature
             self.signature_mgr.apply_signatures([sig], dry_run=True)
 
+    def _apply_and_refresh(self, sigs) -> None:
+        self.signature_mgr.apply_signatures(sigs, dry_run=False)
+        self.workspace.on_flirt_signatures_applied()
+
     def _show_matches_dialog(self, sig, matches) -> None:
         """Show dialog displaying matched functions for a signature."""
         from angrmanagement.ui.dialogs.signature_matches import SignatureMatchesDialog
 
         dialog = SignatureMatchesDialog(sig, matches, self.workspace.main_instance, self.signature_mgr, self)
-        dialog.exec()
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self.workspace.on_flirt_signatures_applied()
 
 
 class SignaturesView(InstanceView):
