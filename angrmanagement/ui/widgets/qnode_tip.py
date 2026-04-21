@@ -60,6 +60,10 @@ class QNodeTip(QFrame):
     def current_node(self):
         return self._current_node
 
+    @property
+    def text(self):
+        return self._text
+
     @current_node.setter
     def current_node(self, node) -> None:
         self._current_node = node
@@ -108,9 +112,6 @@ class QNodeTip(QFrame):
         self._current_node = None
         self._text = ""
         self.hide()
-
-    def text(self) -> str:
-        return self._text
 
     def _build_text(self, node) -> str | None:
         if isinstance(node, CFunctionCall):
