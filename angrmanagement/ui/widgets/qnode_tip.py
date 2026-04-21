@@ -117,7 +117,8 @@ class QNodeTip(QFrame):
             return self._format_prototype(node)
         return None
 
-    def _format_prototype(self, node: CFunctionCall) -> str | None:
+    @staticmethod
+    def _format_prototype(node: CFunctionCall) -> str | None:
         func = node.callee_func
         if func is None or func.prototype is None:
             return None
@@ -133,10 +134,7 @@ class QNodeTip(QFrame):
         arg_locs = None
         cc = func.calling_convention
         if cc is not None and args:
-            try:
-                arg_locs = cc.arg_locs(proto)
-            except Exception:
-                arg_locs = None
+            arg_locs = cc.arg_locs(proto)
 
         for i, arg_type in enumerate(args):
             arg_name = arg_names[i] if i < len(arg_names) and arg_names[i] else f"a{i}"
