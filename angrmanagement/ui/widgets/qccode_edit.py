@@ -31,6 +31,7 @@ from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.documents.qcodedocument import QCodeDocument
 from angrmanagement.ui.menus.menu import Menu
 from angrmanagement.ui.widgets.qccode_highlighter import FORMATS, QCCodeHighlighter
+from angrmanagement.ui.widgets.qnode_tip import QNodeTip
 
 if TYPE_CHECKING:
     from PySide6.QtGui import QTextDocument
@@ -73,6 +74,8 @@ class QCCodeEdit(api.CodeEdit):
         self.setTabChangesFocus(False)
         self.setReadOnly(True)
 
+        self._node_tip = QNodeTip(self)
+
         self.constant_actions = []
         self.operator_actions = []
         self.variable_actions = []
@@ -82,6 +85,8 @@ class QCCodeEdit(api.CodeEdit):
         self.action_rename_node = None
         self.action_xref = None
         self._selected_node = None
+
+        self.mouse_moved.connect(self._on_hover_mouse_moved)
 
         self._initialize_context_menus()
 
@@ -253,6 +258,7 @@ class QCCodeEdit(api.CodeEdit):
         return asm_ins_addr
 
     def keyPressEvent(self, event):
+        self._dismiss_nodetip()
         key = event.key()
         modifiers = event.modifiers()
         xkey = key
@@ -331,6 +337,43 @@ class QCCodeEdit(api.CodeEdit):
             self.code_highlighter.refresh_editor(self.color_scheme)
             self.rehighlight()
         self._palette_updating = False
+
+    def _on_hover_mouse_moved(self, event) -> None:
+        doc = self.document()
+        if not isinstance(doc, QCodeDocument):
+            self._dismiss_nodetip()
+            return
+
+        pos = self.cursorForPosition(event.pos()).position()
+        node = doc.get_node_at_position(pos)
+
+        if node is None:
+            self._dismiss_nodetip()
+            return
+
+        if self._node_tip.current_node is node:
+            return
+
+        self._node_tip.show_tip(node, self.mapToGlobal(event.pos()))
+
+    def _dismiss_nodetip(self) -> None:
+        self._node_tip.hide_tip()
+
+    def leaveEvent(self, event) -> None:
+        self._dismiss_nodetip()
+        super().leaveEvent(event)
+
+    def focusOutEvent(self, event) -> None:
+        self._dismiss_nodetip()
+        super().focusOutEvent(event)
+
+    def wheelEvent(self, event) -> None:
+        self._dismiss_nodetip()
+        super().wheelEvent(event)
+
+    def mousePressEvent(self, event) -> None:
+        self._dismiss_nodetip()
+        super().mousePressEvent(event)
 
     #
     # Actions
