@@ -424,7 +424,7 @@ class QCCodeEdit(api.CodeEdit):
     def retype_node(self, *args, node=None, node_type=None) -> None:  # pylint: disable=unused-argument
         if node is None:
             node = self._selected_node
-        if not isinstance(node, CVariable | CFunction | CFunctionCall | CStructField):
+        if not isinstance(node, CVariable | CFunction | CStructField):
             return
         if isinstance(node, CVariable) and isinstance(node.variable, SimTemporaryVariable):
             # unsupported right now..
@@ -436,35 +436,55 @@ class QCCodeEdit(api.CodeEdit):
 
         new_node_type = dialog.new_type
         if new_node_type is not None and self._code_view is not None and node is not None:
+            new_node_type = new_node_type.with_arch(self.instance.project.arch)
             if isinstance(node, CFunction):
-                self._code_view.function.prototype = new_node_type.with_arch(self.instance.project.arch)
+                self._code_view.function.prototype = new_node_type
                 self._code_view.codegen.am_event(event="retype_function", node=node)
                 return
 
+            if isinstance(node, CStructField):
+                node.struct_type.fields[node.field] = new_node_type
+                self._code_view.codegen.am_event(event="retype_variable", node=node)
+                return
+
             if isinstance(node, CVariable):
-                cfunc = self._code_view.codegen.cfunc
-                for idx, arg in enumerate(cfunc.arg_list):
-                    if arg is node:
-                        new_proto = self._code_view.function.prototype.copy()
-                        new_args = list(new_proto.args)
-                        new_args[idx] = new_node_type.with_arch(self.instance.project.arch)
-                        new_proto.args = tuple(new_args)
-                        self._code_view.function.prototype = new_proto.with_arch(self.instance.project.arch)
-                        self._code_view.codegen.am_event(event="retype_function", node=cfunc)
-                        return
+                # Function argument
+                if node.unified_variable is not None and node.unified_variable.is_function_argument:
+                    cfunc = self._code_view.codegen.cfunc
+                    for idx, arg in enumerate(cfunc.arg_list):
+                        if arg is node:
+                            new_proto = self._code_view.function.prototype.copy()
+                            new_args = list(new_proto.args)
+                            new_args[idx] = new_node_type
+                            new_proto.args = tuple(new_args)
+                            self._code_view.function.prototype = new_proto.with_arch(self.instance.project.arch)
+                            self._code_view.codegen.am_event(event="retype_function", node=cfunc)
+                            return
 
-            # need workspace for altering callbacks of changes
-            variable_kb = self._code_view.codegen._variable_kb
-            # specify the type
-            new_node_type = new_node_type.with_arch(self.instance.project.arch)
-            variable_kb.variables[self._code_view.function.addr].set_variable_type(
-                node.variable,
-                new_node_type,
-                all_unified=True,
-                mark_manual=True,
-            )
+                # need workspace for altering callbacks of changes
+                variable_kb = self._code_view.codegen._variable_kb
 
-            self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
+                # Local variable
+                if (
+                    node.unified_variable is not None
+                    and node.unified_variable in self._code_view.codegen.cfunc.get_unified_local_vars()
+                ):
+                    variable_kb.variables[self._code_view.codegen.cfunc.addr].set_variable_type(
+                        node.variable,
+                        new_node_type,
+                        all_unified=True,
+                        mark_manual=True,
+                    )
+                # Global variable
+                else:
+                    variable_kb.variables["global"].set_variable_type(
+                        node.variable,
+                        new_node_type,
+                        all_unified=False,
+                        mark_manual=True,
+                    )
+
+                self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
 
     def comment(self, expr: bool = False, node=None) -> None:
         addr = self.get_closest_insaddr(node, expr=expr)
