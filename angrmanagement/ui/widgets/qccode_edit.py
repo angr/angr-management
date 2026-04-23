@@ -424,7 +424,7 @@ class QCCodeEdit(api.CodeEdit):
     def retype_node(self, *args, node=None, node_type=None) -> None:  # pylint: disable=unused-argument
         if node is None:
             node = self._selected_node
-        if not isinstance(node, CVariable | CFunction | CStructField):
+        if not isinstance(node, CVariable | CFunction | CFunctionCall | CStructField):
             return
         if isinstance(node, CVariable) and isinstance(node.variable, SimTemporaryVariable):
             # unsupported right now..
