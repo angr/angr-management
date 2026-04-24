@@ -440,7 +440,7 @@ class PluginManager:
         return any(res for res in self._dispatch(BasePlugin.handle_function_renamed, False, func, old_name, new_name))
 
     def handle_function_retyped(self, func, old_type, new_type):
-        return any(res for res in self._dispatch(BasePlugin.handle_global_var_retyped, False, func, old_type, new_type))
+        return any(res for res in self._dispatch(BasePlugin.handle_function_retyped, False, func, old_type, new_type))
 
     def handle_comment_changed(self, address, old_cmt, new_cmt, created: bool, decomp: bool) -> bool:
         for res in self._dispatch(BasePlugin.handle_comment_changed, False, address, old_cmt, new_cmt, created, decomp):
