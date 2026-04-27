@@ -194,14 +194,14 @@ class RenameNode(QDialog):
                 # function argument
                 elif self._node.unified_variable.is_function_argument:
                     workspace.plugins.handle_func_arg_renamed(
-                        code_kb.functions[self._node.codegen.cfunc.addr], 0, self._node.variable.name, node_name
+                        code_kb.functions[cfunc.addr], 0, self._node.variable.name, node_name
                     )
-                    arg_names = list(self._node.codegen.cfunc.functy.arg_names)
-                    for idx, arg in enumerate(self._node.codegen.cfunc.arg_list):
+                    arg_names = list(cfunc.functy.arg_names)
+                    for idx, arg in enumerate(cfunc.arg_list):
                         if arg is self._node:
                             arg_names[idx] = node_name
                             break
-                    self._node.codegen.cfunc.functy.arg_names = tuple(arg_names)
+                    cfunc.functy.arg_names = tuple(arg_names)
 
                 self._node.unified_variable.name = node_name
                 self._node.unified_variable.renamed = True
@@ -218,9 +218,7 @@ class RenameNode(QDialog):
 
             # function name
             elif isinstance(self._node, CFunction):
-                workspace.plugins.handle_function_renamed(
-                    code_kb.functions[self._node.codegen.cfunc.addr], self._node.name, node_name
-                )
+                workspace.plugins.handle_function_renamed(code_kb.functions[cfunc.addr], self._node.name, node_name)
 
                 code_kb.functions.get_by_addr(self._node.addr).name = node_name
                 self._node.name = node_name
@@ -230,7 +228,7 @@ class RenameNode(QDialog):
             elif isinstance(self._node, CFunctionCall):
                 if self._node.callee_func is not None:
                     workspace.plugins.handle_function_renamed(
-                        code_kb.functions[self._node.codegen.cfunc.addr], self._node.callee_func.name, node_name
+                        code_kb.functions[cfunc.addr], self._node.callee_func.name, node_name
                     )
 
                     self._node.callee_func.name = node_name
