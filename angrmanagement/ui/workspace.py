@@ -274,6 +274,11 @@ class Workspace:
         if view is not None:
             view.reload()
 
+    def on_function_updated(self) -> None:
+        functions_view = self.view_manager.first_view_in_category("functions")
+        if functions_view is not None:
+            functions_view.reset_cache_and_refresh()
+
     def on_cc_recovered(self, func_addr: int) -> None:
         """
         Called when the calling convention of a given function is available.

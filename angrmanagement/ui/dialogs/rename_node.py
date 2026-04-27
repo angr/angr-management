@@ -218,6 +218,7 @@ class RenameNode(QDialog):
                 code_kb.functions.get_by_addr(self._node.addr).name = node_name
                 self._node.name = node_name
                 self._node.demangled_name = node_name
+                self._code_view.workspace.on_function_updated()
 
             # function renaming (as a call)
             elif isinstance(self._node, CFunctionCall):
@@ -227,6 +228,7 @@ class RenameNode(QDialog):
                     )
 
                     self._node.callee_func.name = node_name
+                    self._code_view.workspace.on_function_updated()
 
             # struct renaming
             elif isinstance(self._node, CStructField):
