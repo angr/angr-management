@@ -146,8 +146,9 @@ class CodeView(FunctionView):
 
         def decomp_ready(*args, **kwargs) -> None:  # pylint:disable=unused-argument
             # this code is _partially_ duplicated from _on_new_function. be careful!
+            all_flavors = self.instance.kb.decompilations.all_flavors(self._function.addr)
+            self._update_available_views(all_flavors)
             available = self.instance.kb.decompilations.available_flavors(self._function.addr)
-            self._update_available_views(available)
             if available:
                 chosen_flavor = flavor if flavor in available else available[0]
                 cached = self.instance.kb.decompilations[(self._function.addr, chosen_flavor)]
@@ -168,7 +169,11 @@ class CodeView(FunctionView):
                 self.instance,
                 self._function.am_obj,
                 cfg=self.instance.cfg,
-                options=self._options.option_and_values,
+                options=[
+                    (o, v)
+                    for o, v in self._options.option_and_values
+                    if o.param not in {"simplify_ifelse", "prettify_thiscall", "cstyle_void_param", "max_str_len"}
+                ],
                 optimization_passes=self._options.selected_passes,
                 peephole_optimizations=self._options.selected_peephole_opts,
                 inline_functions=self.instance.functions_to_inline,
@@ -176,6 +181,7 @@ class CodeView(FunctionView):
                 on_finish=decomp_ready,
                 blocking=True,
                 regen_clinic=regen_clinic,
+                flavor=flavor,
             )
             self.workspace.job_manager.add_job(job)
 
@@ -352,7 +358,7 @@ class CodeView(FunctionView):
             # restore the scroll position
             self._textedit.verticalScrollBar().setValue(scroll_pos)
 
-        if self.codegen.flavor == "pseudocode":
+        if self.codegen.flavor in {"pseudocode", "rust"}:
             self._options.show()
         else:
             self._options.hide()
@@ -367,8 +373,9 @@ class CodeView(FunctionView):
         if not self.codegen.am_none and self._last_function is self._function.am_obj:
             self._focus_core(focus, focus_addr)
             return
+        all_flavors = self.instance.kb.decompilations.all_flavors(self._function.addr)
+        self._update_available_views(all_flavors)
         available = self.instance.kb.decompilations.available_flavors(self._function.addr)
-        self._update_available_views(available)
         should_decompile = True
         if available:
             chosen_flavor = flavor if flavor in available else available[0]
@@ -496,13 +503,17 @@ class CodeView(FunctionView):
         for _ in range(self._view_selector.count()):
             self._view_selector.removeItem(0)
         self._view_selector.addItems(available)
-        self._view_selector.setVisible(len(available) >= 2)
 
     def _on_view_selector_changed(self, index) -> None:
         if not self._function.am_none:
-            key = (self._function.addr, self._view_selector.itemText(index))
-            self.codegen.am_obj = self.instance.kb.decompilations[key].codegen
-            self.codegen.am_event()
+            new_flavor = self._view_selector.itemText(index)
+            key = self._function.addr, new_flavor
+            if key in self.instance.kb.decompilations:
+                # it's available; just switch
+                self.codegen.am_obj = self.instance.kb.decompilations[key].codegen
+                self.codegen.am_event()
+            else:
+                self.decompile(flavor=new_flavor)
 
     #
     # Private methods
@@ -543,8 +554,8 @@ class CodeView(FunctionView):
             self.jump_history, self.jump_back, self.jump_forward, self.jump_to_history_position, True, self
         )
         self._view_selector = QComboBox()
-        self._view_selector.addItems(["Pseudocode"])
         self._view_selector.activated.connect(self._on_view_selector_changed)
+        self._view_selector.setVisible(True)
         status_layout = QHBoxLayout()
         status_layout.addWidget(self._nav_toolbar.qtoolbar())
         status_layout.addStretch(0)
