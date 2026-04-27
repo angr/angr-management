@@ -175,6 +175,11 @@ class RenameNode(QDialog):
             # need workspace for altering callbacks of changes
             workspace = self._code_view.workspace
             code_kb = self._code_view.codegen.kb
+            cfunc = self._code_view.codegen.cfunc
+
+            if cfunc is None:
+                self.close()
+                return
 
             if isinstance(self._node, CVariable) and self._node.unified_variable is not None:
                 # Stack variable
