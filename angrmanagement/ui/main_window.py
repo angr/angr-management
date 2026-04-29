@@ -549,7 +549,7 @@ class MainWindow(QMainWindow):
             and not self.workspace.main_instance.project.am_none
             and self.shown_at_start
         ):
-            msgbox = QMessageBox()
+            msgbox = QMessageBox(self)
             msgbox.setWindowTitle("Save database")
             msgbox.setText("angr management is about to exit. Do you want to save the database?")
             msgbox.setIcon(QMessageBox.Icon.Question)

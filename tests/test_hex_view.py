@@ -45,6 +45,10 @@ class HexGraphicsObjectTestCase(unittest.TestCase):
     def setUp(self):
         self.hex_obj = HexGraphicsObject()
 
+    def tearDown(self):
+        self.hex_obj.cursor_blink_timer.stop()
+        del self.hex_obj
+
     def _load_sample_data(self, size: int = 256, start_addr: int = 0x1000) -> None:
         """Load sample sequential byte data into the hex object."""
         data = bytes(range(size)) if size <= 256 else bytes(i % 256 for i in range(size))

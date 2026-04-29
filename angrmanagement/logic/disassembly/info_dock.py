@@ -359,6 +359,7 @@ class InfoDock:
         """
 
         self.unselect_all_instructions()
+        self.unselect_all_operands()
         self.unselect_all_labels()
 
         self.selected_block_tree_node.am_obj = obj
