@@ -14,6 +14,7 @@ from angr.angrdb import AngrDB
 from PySide6.QtCore import QEvent, QObject, QSize, Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QIcon, QKeySequence, QShortcut, QWindow
 from PySide6.QtWidgets import (
+    QDialog,
     QFileDialog,
     QMainWindow,
     QMessageBox,
@@ -32,6 +33,7 @@ from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import BasicCommand
 from angrmanagement.logic.threads import ExecuteCodeEvent
+from angrmanagement.ui.dialogs.archive_loader import ArchiveLoaderDialog, is_archive
 from angrmanagement.ui.dialogs.progress_dialog import ProgressDialog
 from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.ui.widgets.qam_status_bar import QAmStatusBar
@@ -240,7 +242,11 @@ class MainWindow(QMainWindow):
             self,
             "Open a binary",
             self._get_recent_dir(),
-            "All executables (*);;Windows PE files (*.exe);;Core Dumps (*.core);;angr database (*.adb)",
+            "All executables (*)"
+            ";;Windows PE files (*.exe)"
+            ";;Core Dumps (*.core)"
+            ";;angr database (*.adb)"
+            ";;Archives (*.zip *.tar *.tar.gz *.tgz *.tar.bz2 *.tbz2 *.tar.xz *.txz)",
         )
         return file_path
 
@@ -646,6 +652,13 @@ class MainWindow(QMainWindow):
         if not isurl(file_path):
             # file
             if os.path.isfile(file_path):
+                if is_archive(file_path):
+                    dlg = ArchiveLoaderDialog(file_path, parent=self)
+                    if dlg.exec() != QDialog.DialogCode.Accepted or not dlg.extracted_file_path:
+                        dlg.cleanup()
+                        return
+                    file_path = dlg.extracted_file_path
+
                 if file_path.endswith(".trace"):
                     self.workspace.load_trace_from_path(file_path)
                     return
