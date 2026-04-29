@@ -34,11 +34,12 @@ def _list_tar(path: str) -> list[tuple[str, int]]:
 
 
 def _format_size(size: int) -> str:
+    s: float = size
     for unit in ("B", "KB", "MB", "GB"):
-        if size < 1024:
-            return f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
-        size /= 1024
-    return f"{size:.1f} TB"
+        if s < 1024:
+            return f"{s:.0f} {unit}" if unit == "B" else f"{s:.1f} {unit}"
+        s /= 1024
+    return f"{s:.1f} TB"
 
 
 def _extract_zip(archive_path: str, member: str, dest_dir: str) -> str:
@@ -56,6 +57,8 @@ def _extract_tar(archive_path: str, member: str, dest_dir: str) -> str:
 
 
 class ArchiveLoaderDialog(QDialog):
+    """Dialog that lets the user pick a file from inside an archive to load."""
+
     def __init__(self, archive_path: str, parent=None) -> None:
         super().__init__(parent)
         self.archive_path = archive_path
@@ -96,7 +99,7 @@ class ArchiveLoaderDialog(QDialog):
     def _populate_tree(self) -> None:
         try:
             members = _list_zip(self.archive_path) if self._is_zip else _list_tar(self.archive_path)
-        except Exception as e:
+        except (zipfile.BadZipFile, tarfile.TarError, OSError) as e:
             self._err = f"Failed to read archive: {e}"
             return
 
@@ -105,12 +108,12 @@ class ArchiveLoaderDialog(QDialog):
 
         for name, size in members:
             parts = name.split("/")
-            for i in range(len(parts)):
+            for i, part in enumerate(parts):
                 key = "/".join(parts[: i + 1])
                 if key in nodes:
                     continue
                 item = QTreeWidgetItem()
-                item.setText(0, parts[i])
+                item.setText(0, part)
                 is_file = i == len(parts) - 1
                 if is_file:
                     item.setData(0, Qt.ItemDataRole.UserRole, name)
@@ -159,7 +162,7 @@ class ArchiveLoaderDialog(QDialog):
                 self.extracted_file_path = None
                 raise ValueError("Extracted path is not a file")
 
-        except Exception as e:
+        except (zipfile.BadZipFile, tarfile.TarError, OSError, ValueError) as e:
             QMessageBox.critical(self, "Extraction Error", f"Failed to extract file: {e}")
             self.cleanup()
             return

@@ -657,7 +657,7 @@ class MainWindow(QMainWindow):
                     if dlg.exec() != QDialog.DialogCode.Accepted or not dlg.extracted_file_path:
                         dlg.cleanup()
                         return
-                    file_path = dlg.extracted_file_path
+                    file_path: str = dlg.extracted_file_path
 
                 if file_path.endswith(".trace"):
                     self.workspace.load_trace_from_path(file_path)
