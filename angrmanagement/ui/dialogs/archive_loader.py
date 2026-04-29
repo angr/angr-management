@@ -154,6 +154,11 @@ class ArchiveLoaderDialog(QDialog):
             else:
                 self.extracted_file_path = _extract_tar(self.archive_path, member, self._temp_dir)
 
+            # Sanity check
+            if not os.path.isfile(self.extracted_file_path):
+                self.extracted_file_path = None
+                raise ValueError("Extracted path is not a file")
+
         except Exception as e:
             QMessageBox.critical(self, "Extraction Error", f"Failed to extract file: {e}")
             self.cleanup()
@@ -171,3 +176,4 @@ class ArchiveLoaderDialog(QDialog):
         if self._temp_dir and os.path.isdir(self._temp_dir):
             shutil.rmtree(self._temp_dir, ignore_errors=True)
             self._temp_dir = None
+            self.extracted_file_path = None
