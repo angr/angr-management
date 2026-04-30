@@ -652,19 +652,21 @@ class MainWindow(QMainWindow):
         if not isurl(file_path):
             # file
             if os.path.isfile(file_path):
-                if is_archive(file_path):
-                    dlg = ArchiveLoaderDialog(file_path, parent=self)
-                    if dlg.exec() != QDialog.DialogCode.Accepted or not dlg.extracted_file_path:
-                        dlg.cleanup()
-                        return
-                    file_path: str = dlg.extracted_file_path
-
                 if file_path.endswith(".trace"):
                     self.workspace.load_trace_from_path(file_path)
                     return
 
                 self.workspace.main_instance.binary_path = file_path
                 self.workspace.main_instance.original_binary_path = file_path
+
+                if is_archive(file_path):
+                    dlg = ArchiveLoaderDialog(file_path, parent=self)
+                    if dlg.exec() != QDialog.DialogCode.Accepted or dlg.extracted_file_path is None:
+                        dlg.cleanup()
+                        return
+                    file_path = dlg.extracted_file_path
+                    self.workspace.main_instance.binary_path = file_path
+
                 if file_path.endswith(".adb"):
                     self._load_database(file_path)
                 else:
