@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "angr-management"
 dynamic = ["version"]
 description = "The official GUI for angr"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 readme = "README.md"
 license = "BSD-2-Clause"
 license-files = ["LICENSE"]
@@ -106,7 +106,6 @@ bintrace = { git = "https://github.com/mborgerson/bintrace", branch = "master" }
 
 [tool.ruff]
 line-length = 120
-target-version = 'py310'
 exclude = ["angrmanagement/vendor/"]
 
 [tool.ruff.lint]

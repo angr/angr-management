@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import threading
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QCoreApplication, QEvent, QThread
 
@@ -12,10 +12,8 @@ from . import GlobalInfo
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-T = TypeVar("T")
 
-
-class ExecuteCodeEvent(QEvent, Generic[T]):
+class ExecuteCodeEvent[T](QEvent):
     """ExecuteCodeEvent represents a custom event that executes a callable on the GUI thread."""
 
     func: Callable[..., T]
@@ -61,7 +59,7 @@ def needs_gui_thread(f):
     return inner
 
 
-def gui_thread_schedule(
+def gui_thread_schedule[T](
     func: Callable[..., T],
     args: tuple[Any, ...] | None = None,
     timeout: int | None = None,
@@ -96,7 +94,7 @@ def gui_thread_schedule(
     return event.result
 
 
-def gui_thread_schedule_async(
+def gui_thread_schedule_async[T](
     func: Callable[..., T], args: tuple[Any, ...] | None = None, kwargs: dict[str, Any] | None = None
 ) -> None:
     """
