@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import sys
 from enum import Enum, auto
-from typing import Any, ClassVar, Generic, TypeVar
+from typing import Any, ClassVar, TypeVar
 
 from PySide6.QtCore import (
     QAbstractItemModel,
@@ -103,7 +103,7 @@ class GroupPropertyItem(PropertyItem):
     type: ClassVar[PropertyType] = PropertyType.GROUP
 
 
-class ValuePropertyItem(PropertyItem, Generic[T]):
+class ValuePropertyItem[T](PropertyItem):
     """
     Generic value property.
     """
