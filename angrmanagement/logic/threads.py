@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import threading
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QCoreApplication, QEvent, QThread
 
@@ -11,8 +11,6 @@ from . import GlobalInfo
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-T = TypeVar("T")
 
 
 class ExecuteCodeEvent[T](QEvent):
