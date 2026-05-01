@@ -106,7 +106,6 @@ bintrace = { git = "https://github.com/mborgerson/bintrace", branch = "master" }
 
 [tool.ruff]
 line-length = 120
-target-version = 'py312'
 exclude = ["angrmanagement/vendor/"]
 
 [tool.ruff.lint]
