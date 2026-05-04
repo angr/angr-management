@@ -109,7 +109,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         curr_offset = self._offset
         self.initialize()
         self._offset = None  # force a re-generation of objects
-        self.prepare_objects(curr_offset, start_line=self._start_line_in_object)
+        self.prepare_objects(curr_offset, start_line=self._start_line_in_object, use_cache=False)
         self.redraw()
 
     #
@@ -323,7 +323,9 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.verticalScrollBar().setValue(offset)
 
     @timethis
-    def prepare_objects(self, offset: int, start_line: int = 0, adjust_start_line: bool = False) -> int | None:
+    def prepare_objects(
+        self, offset: int, start_line: int = 0, adjust_start_line: bool = False, use_cache: bool = True
+    ) -> int | None:
         """
         Prepare objects to print based on offset and start_line. Update self.objects, self._offset, and
         self._start_line_in_object.
@@ -366,7 +368,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 _l.debug("... got %s @ %#x", obj, obj_addr)
                 if obj_addr >= top_obj_addr:
                     continue
-                _, qobject = self._obj_to_paintable(obj_addr, obj)
+                _, qobject = self._obj_to_paintable(obj_addr, obj, use_cache)
                 if qobject is None:
                     continue
                 object_lines = int(qobject.height // self._line_height)
@@ -410,7 +412,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 # top_obj_addr lands after the current object; let's move on to the next object instead
                 continue
 
-            is_cached, qobject = self._obj_to_paintable(obj_addr, obj)
+            is_cached, qobject = self._obj_to_paintable(obj_addr, obj, use_cache)
             _l.debug("[%#x] %s --> %s.", obj_addr, obj, qobject)
             if qobject is None:
                 # Conversion failed
