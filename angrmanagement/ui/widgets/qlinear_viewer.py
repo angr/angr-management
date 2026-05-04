@@ -236,6 +236,13 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         if self.cfb.am_none:
             return
 
+        for obj in self.objects.values():
+            if obj.isVisible():
+                obj.setVisible(False)
+            obj.remove_children_from_scene()
+            self.scene.removeItem(obj)
+
+        self.objects.clear()
         self._addr_to_region_offset.clear()
         self._offset_to_region.clear()
         self._disasms.clear()
