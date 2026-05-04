@@ -276,7 +276,7 @@ class Workspace:
 
     def on_function_updated(self) -> None:
         functions_view = self.view_manager.first_view_in_category("functions")
-        if functions_view is not None:
+        if functions_view is not None and isinstance(functions_view, FunctionsView):
             functions_view.reset_cache_and_refresh()
 
     def on_cc_recovered(self, func_addr: int) -> None:
