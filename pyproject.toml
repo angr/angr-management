@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "angr-management"
 dynamic = ["version"]
 description = "The official GUI for angr"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 readme = "README.md"
 license = "BSD-2-Clause"
 license-files = ["LICENSE"]
@@ -15,9 +15,9 @@ dependencies = [
   "PySide6-QtAds>=4.2.1",
   "QtAwesome==1.4.0",
   "QtPy",
-  "angr[angrDB]==9.2.213.dev0",
+  "angr[angrDB]==9.2.214.dev0",
   "bidict",
-  "cle==9.2.213.dev0",
+  "cle==9.2.214.dev0",
   "ipython",
   "pyqodeng>=0.0.10",
   "requests[socks]",
@@ -106,7 +106,6 @@ bintrace = { git = "https://github.com/mborgerson/bintrace", branch = "master" }
 
 [tool.ruff]
 line-length = 120
-target-version = 'py310'
 exclude = ["angrmanagement/vendor/"]
 
 [tool.ruff.lint]
