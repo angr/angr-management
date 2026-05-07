@@ -15,7 +15,7 @@ import unittest
 import zipfile
 from unittest.mock import patch
 
-from common import AngrManagementTestCase
+from common import AngrManagementTestCase  # pylint: disable=import-error
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QTreeWidgetItem
 
