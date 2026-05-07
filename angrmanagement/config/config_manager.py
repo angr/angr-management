@@ -292,7 +292,7 @@ ENTRIES = [
     CE("proximity_call_node_text_color_simproc", QColor, QColor(0x8B, 0x00, 0x8B)),
     CE("log_timestamp_format", str, "%X"),
     # FLIRT signatures
-    CE("flirt_signatures_root", str, "./angrmanagement/resources/flirt_signatures/"),
+    CE("flirt_signatures_root", str, "./angrmanagement/resources/flirt_signatures/flirt_signatures/"),
     # Library documentation
     CE("library_docs_root", str, "./angrmanagement/resources/library_docs/"),
     # feature map

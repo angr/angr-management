@@ -175,10 +175,14 @@ class RenameNode(QDialog):
             # need workspace for altering callbacks of changes
             workspace = self._code_view.workspace
             code_kb = self._code_view.codegen.kb
+            cfunc = self._code_view.codegen.cfunc
 
-            # stack variable
+            if cfunc is None:
+                self.close()
+                return
+
             if isinstance(self._node, CVariable) and self._node.unified_variable is not None:
-                # sanity check that we are a stack var
+                # Stack variable
                 if hasattr(self._node.variable, "offset") and self._node.variable.offset is not None:
                     workspace.plugins.handle_stack_var_renamed(
                         self._func,
@@ -186,6 +190,18 @@ class RenameNode(QDialog):
                         self._node.variable.name,
                         node_name,
                     )
+
+                # function argument
+                elif self._node.unified_variable.is_function_argument:
+                    workspace.plugins.handle_func_arg_renamed(
+                        code_kb.functions[cfunc.addr], 0, self._node.variable.name, node_name
+                    )
+                    arg_names = list(cfunc.functy.arg_names)
+                    for idx, arg in enumerate(cfunc.arg_list):
+                        if arg is self._node:
+                            arg_names[idx] = node_name
+                            break
+                    cfunc.functy.arg_names = tuple(arg_names)
 
                 self._node.unified_variable.name = node_name
                 self._node.unified_variable.renamed = True
@@ -200,20 +216,9 @@ class RenameNode(QDialog):
                 self._node.variable.name = node_name
                 self._node.variable.renamed = True
 
-            # function arg
-            elif isinstance(self._node, CVariable):
-                workspace.plugins.handle_func_arg_renamed(
-                    code_kb.functions[self._node.codegen.cfunc.addr], 0, self._node.variable.name, node_name
-                )
-
-                self._node.variable.name = node_name
-                self._node.variable.renamed = True
-
             # function name
             elif isinstance(self._node, CFunction):
-                workspace.plugins.handle_function_renamed(
-                    code_kb.functions[self._node.codegen.cfunc.addr], self._node.name, node_name
-                )
+                workspace.plugins.handle_function_renamed(code_kb.functions[cfunc.addr], self._node.name, node_name)
 
                 code_kb.functions.get_by_addr(self._node.addr).name = node_name
                 self._node.name = node_name
@@ -223,7 +228,7 @@ class RenameNode(QDialog):
             elif isinstance(self._node, CFunctionCall):
                 if self._node.callee_func is not None:
                     workspace.plugins.handle_function_renamed(
-                        code_kb.functions[self._node.codegen.cfunc.addr], self._node.callee_func.name, node_name
+                        code_kb.functions[cfunc.addr], self._node.callee_func.name, node_name
                     )
 
                     self._node.callee_func.name = node_name

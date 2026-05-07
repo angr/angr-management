@@ -55,6 +55,6 @@ jobs:
         if: startsWith(runner.os, 'windows')
       - uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v6
       - name: Sync dependencies
-        run: uv sync -p 3.10
+        run: uv sync -p 3.12
       - name: Run tests
         run: uv run pytest -vv -n auto tests
