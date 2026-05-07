@@ -163,7 +163,6 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
             assert item is not None
             if item.text(0) == label:
                 return item
-        raise AssertionError(f"{label!r} not found in tree")
 
     def test_tree_contains_expected_items(self):
         """Test that tree widget contains files, directories, and correct UserRole data."""
@@ -214,6 +213,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         """Test that OK button is enabled when a file item is selected."""
         dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
         item = self._find_tree_item(dlg, "hello.txt")
+        assert item is not None
         dlg._tree.setCurrentItem(item)
         assert dlg._ok_button.isEnabled() is True
         dlg.close()
@@ -222,6 +222,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         """Test that OK button remains disabled when a directory item is selected."""
         dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
         item = self._find_tree_item(dlg, "subdir")
+        assert item is not None
         dlg._tree.setCurrentItem(item)
         assert dlg._ok_button.isEnabled() is False
         dlg.close()
@@ -230,6 +231,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         """Test that _on_accept extracts selected file from zip archive."""
         dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
         item = self._find_tree_item(dlg, "hello.txt")
+        assert item is not None
         dlg._tree.setCurrentItem(item)
         dlg._on_accept()
         assert dlg.extracted_file_path is not None
@@ -243,6 +245,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         """Test that _on_accept extracts selected file from tar archive."""
         dlg = ArchiveLoaderDialog(self._tar_path, parent=self.main)
         item = self._find_tree_item(dlg, "hello.txt")
+        assert item is not None
         dlg._tree.setCurrentItem(item)
         dlg._on_accept()
         assert dlg.extracted_file_path is not None
@@ -256,6 +259,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         """Test that cleanup removes extracted temp directory and resets state."""
         dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
         item = self._find_tree_item(dlg, "hello.txt")
+        assert item is not None
         dlg._tree.setCurrentItem(item)
         dlg._on_accept()
         temp_dir = dlg._temp_dir
@@ -292,6 +296,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         """Test that double-clicking a file item triggers extraction."""
         dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
         item = self._find_tree_item(dlg, "hello.txt")
+        assert item is not None
         dlg._tree.setCurrentItem(item)
         dlg._on_double_click(item, 0)
         assert dlg.extracted_file_path is not None
@@ -302,6 +307,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         """Test that double-clicking a directory item does not trigger extraction."""
         dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
         item = self._find_tree_item(dlg, "subdir")
+        assert item is not None
         dlg._on_double_click(item, 0)
         assert dlg.extracted_file_path is None
         dlg.close()
