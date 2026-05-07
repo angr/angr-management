@@ -325,7 +325,7 @@ COLOR_SCHEMES = {
         "disasm_view_minimap_background_color": QColor(30, 30, 46),  # base
         "disasm_view_minimap_shadow_color": QColor(0, 0, 0, 64),
         "disasm_view_minimap_viewport_color": QColor(105, 110, 150),  # Custom highlight
-        "disasm_view_minimap_outline_color": QColor(88, 91, 112),  # surface2
+        "disasm_view_minimap_outline_color": QColor(108, 112, 134),  # overlay0
         "disasm_view_operand_color": QColor(137, 220, 235),  # sky
         "disasm_view_operand_constant_color": QColor(249, 226, 175),  # yellow
         "disasm_view_variable_label_color": QColor(166, 227, 161),  # green
@@ -338,7 +338,7 @@ COLOR_SCHEMES = {
         "disasm_view_variable_ident_color": QColor(180, 190, 254),  # lavender
         "disasm_view_variable_offset_color": QColor(243, 139, 168),  # red
         "disasm_view_branch_target_text_color": QColor(137, 180, 250),  # blue
-        "disasm_view_ir_default_color": QColor(88, 91, 112),  # surface2
+        "disasm_view_ir_default_color": QColor(147, 153, 178),  # overlay2
         "disasm_view_alignment_color": QColor(108, 112, 134),  # overlay0
         "disasm_view_label_color": QColor(137, 220, 235),  # sky
         "disasm_view_label_highlight_color": QColor(105, 110, 150),
@@ -369,36 +369,36 @@ COLOR_SCHEMES = {
         "hex_view_instruction_color": QColor(166, 227, 161),  # green
         # Function Table Colors
         "function_table_color": QColor(205, 214, 244),  # text
-        "function_table_syscall_color": QColor(243, 139, 168),  # red
+        "function_table_syscall_color": QColor(180, 190, 254),  # lavender
         "function_table_plt_color": QColor(166, 227, 161),  # green
-        "function_table_simprocedure_color": QColor(180, 190, 254),  # lavender
+        "function_table_simprocedure_color": QColor(243, 139, 168),  # red
         "function_table_alignment_color": QColor(249, 226, 175),  # yellow
-        "function_table_signature_bg_color": QColor(245, 224, 220),  # rosewater
+        "function_table_signature_bg_color": QColor(49, 50, 68),  # surface0
         # Palette Colors
         "palette_window": QColor(30, 30, 46),  # base
         "palette_windowtext": QColor(205, 214, 244),  # text
         "palette_base": QColor(30, 30, 46),  # base
         "palette_alternatebase": QColor(49, 50, 68),  # surface0
         "palette_tooltipbase": QColor(30, 30, 46),  # base
-        "palette_tooltiptext": QColor(88, 91, 112),  # surface2
+        "palette_tooltiptext": QColor(205, 214, 244),  # text
         "palette_text": QColor(205, 214, 244),  # text
         "palette_button": QColor(30, 30, 46),  # base
-        "palette_buttontext": QColor(88, 91, 112),  # surface2
+        "palette_buttontext": QColor(205, 214, 244),  # text
         "palette_brighttext": QColor(88, 91, 112),  # surface2
         "palette_highlight": QColor(105, 110, 150),  # Custom highlight
         "palette_highlightedtext": QColor(255, 255, 255),  # White text for contrast
         # Feature Map Colors
         "feature_map_regular_function_color": QColor(166, 227, 161),  # green
-        "feature_map_unknown_color": QColor(137, 220, 235),  # sky
-        "feature_map_delimiter_color": QColor(249, 226, 175),  # yellow
+        "feature_map_unknown_color": QColor(30, 30, 46),  # base
+        "feature_map_delimiter_color": QColor(108, 112, 134),  # overlay0
         "feature_map_data_color": QColor(180, 190, 254),  # lavender
         "feature_map_string_color": QColor(249, 226, 175),  # yellow
         # Pseudocode Colors
-        "pseudocode_comment_color": QColor(205, 214, 244),  # text
+        "pseudocode_comment_color": QColor(147, 153, 178),  # overlay2
         "pseudocode_function_color": QColor(166, 227, 161),  # green
         "pseudocode_library_function_color": QColor(243, 139, 168),  # red
         "pseudocode_global_variable_color": QColor(166, 227, 161),  # green
-        "pseudocode_quotation_color": QColor(166, 227, 161),  # green
+        "pseudocode_quotation_color": QColor(250, 179, 135),  # peach
         "pseudocode_keyword_color": QColor(137, 220, 235),  # sky
         "pseudocode_types_color": QColor(249, 226, 175),  # yellow
         "pseudocode_variable_color": QColor(205, 214, 244),  # text
@@ -406,14 +406,14 @@ COLOR_SCHEMES = {
         "pseudocode_highlight_color": QColor(105, 110, 150),  # Custom highlight
         # Proximity View Colors
         "proximity_node_background_color": QColor(30, 30, 46),  # base
-        "proximity_node_selected_background_color": QColor(105, 110, 150),  # Custom highlight
+        "proximity_node_selected_background_color": QColor(49, 50, 68),  # surface0
         "proximity_node_border_color": QColor(88, 91, 112),  # surface2
         "proximity_function_node_text_color": QColor(166, 227, 161),  # green
         "proximity_string_node_text_color": QColor(249, 226, 175),  # yellow
         "proximity_integer_node_text_color": QColor(137, 220, 235),  # sky
         "proximity_variable_node_text_color": QColor(180, 190, 254),  # lavender
         "proximity_unknown_node_text_color": QColor(245, 224, 220),  # rosewater
-        "proximity_call_node_text_color": QColor(166, 227, 161),  # green
+        "proximity_call_node_text_color": QColor(137, 220, 235),  # sky
         "proximity_call_node_text_color_plt": QColor(137, 180, 250),  # blue
         "proximity_call_node_text_color_simproc": QColor(243, 139, 168),  # red
         # Palette Colors
