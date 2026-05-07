@@ -156,13 +156,14 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         shutil.rmtree(self._temp_dir, ignore_errors=True)
         super().tearDown()
 
-    def _find_tree_item(self, dlg: ArchiveLoaderDialog, label: str) -> QTreeWidgetItem:
+    def _find_tree_item(self, dlg: ArchiveLoaderDialog, label: str) -> QTreeWidgetItem | None:
         """Find a top-level tree item by label text."""
         for i in range(dlg._tree.topLevelItemCount()):
             item = dlg._tree.topLevelItem(i)
             assert item is not None
             if item.text(0) == label:
                 return item
+        return None
 
     def test_tree_contains_expected_items(self):
         """Test that tree widget contains files, directories, and correct UserRole data."""
