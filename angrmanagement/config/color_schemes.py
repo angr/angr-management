@@ -25,6 +25,7 @@ COLOR_SCHEMES = {
         "disasm_view_variable_offset_color": QColor(0x80, 0x80, 0x00),
         "disasm_view_branch_target_text_color": QColor(0x80, 0x80, 0x00),
         "disasm_view_ir_default_color": QColor(0x80, 0x80, 0x80),
+        "disasm_view_alignment_color": QColor(0x00, 0x60, 0x60),
         "disasm_view_label_color": QColor(0x00, 0x00, 0x80),
         "disasm_view_label_highlight_color": QColor(0xF0, 0xF0, 0xBF),
         "disasm_view_target_addr_color": QColor(0x00, 0x00, 0xFF),
@@ -112,6 +113,7 @@ COLOR_SCHEMES = {
     "Dark": {
         "disasm_view_minimap_background_color": QColor(0x28, 0x28, 0x28),
         "disasm_view_minimap_shadow_color": QColor(0x00, 0x00, 0x00, 0x40),
+        "disasm_view_minimap_viewport_color": QColor(0x46, 0x85, 0xE5),
         "disasm_view_minimap_outline_color": QColor(0x40, 0x40, 0x40),
         "disasm_view_operand_color": QColor(0xF0, 0xF0, 0x5A),
         "disasm_view_operand_constant_color": QColor(0x34, 0xF0, 0x8C),
@@ -128,6 +130,7 @@ COLOR_SCHEMES = {
         "disasm_view_variable_offset_color": QColor(0x80, 0x80, 0x00),
         "disasm_view_branch_target_text_color": QColor(0x80, 0x80, 0x00),
         "disasm_view_ir_default_color": QColor(0x80, 0x80, 0x80),
+        "disasm_view_alignment_color": QColor(0x7A, 0x8A, 0x8F),
         "disasm_view_label_color": QColor(0x00, 0xAA, 0xFF),
         "disasm_view_label_highlight_color": QColor(0x2F, 0x2F, 0x25),
         "disasm_view_target_addr_color": QColor(0x00, 0xAA, 0xFF),
@@ -214,6 +217,7 @@ COLOR_SCHEMES = {
     },
     "Dracula": {
         "disasm_view_minimap_background_color": QColor(0x28, 0x2A, 0x36),
+        "disasm_view_minimap_shadow_color": QColor(0x00, 0x00, 0x00, 0x40),
         "disasm_view_minimap_viewport_color": QColor(0x44, 0x47, 0x5A),
         "disasm_view_minimap_outline_color": QColor(0x44, 0x47, 0x5A),
         "disasm_view_operand_color": QColor(0xFF, 0x79, 0xC6),
@@ -228,7 +232,10 @@ COLOR_SCHEMES = {
         "disasm_view_string_color": QColor(0xFF, 0xB8, 0x6C),
         "disasm_view_comment_color": QColor(0x5B, 0x65, 0x8E),
         "disasm_view_variable_ident_color": QColor(0xBD, 0x93, 0xF9),
+        "disasm_view_variable_offset_color": QColor(0xF1, 0xFA, 0x8C),
+        "disasm_view_branch_target_text_color": QColor(0x50, 0xFA, 0x7B),
         "disasm_view_ir_default_color": QColor(0x50, 0xFA, 0x7B),
+        "disasm_view_alignment_color": QColor(0x5B, 0x65, 0x8E),
         "disasm_view_label_color": QColor(0x00, 0xAA, 0xFF),
         "disasm_view_label_highlight_color": QColor(0x2F, 0x2F, 0x25),
         "disasm_view_target_addr_color": QColor(0x50, 0xFA, 0x7B),
@@ -316,6 +323,8 @@ COLOR_SCHEMES = {
     "Catppuccin Mocha": {
         # Disassembly View Colors
         "disasm_view_minimap_background_color": QColor(30, 30, 46),  # base
+        "disasm_view_minimap_shadow_color": QColor(0, 0, 0, 64),
+        "disasm_view_minimap_viewport_color": QColor(105, 110, 150),  # Custom highlight
         "disasm_view_minimap_outline_color": QColor(88, 91, 112),  # surface2
         "disasm_view_operand_color": QColor(137, 220, 235),  # sky
         "disasm_view_operand_constant_color": QColor(249, 226, 175),  # yellow
@@ -330,6 +339,7 @@ COLOR_SCHEMES = {
         "disasm_view_variable_offset_color": QColor(243, 139, 168),  # red
         "disasm_view_branch_target_text_color": QColor(137, 180, 250),  # blue
         "disasm_view_ir_default_color": QColor(88, 91, 112),  # surface2
+        "disasm_view_alignment_color": QColor(108, 112, 134),  # overlay0
         "disasm_view_label_color": QColor(137, 220, 235),  # sky
         "disasm_view_label_highlight_color": QColor(105, 110, 150),
         "disasm_view_target_addr_color": QColor(166, 227, 161),  # green
