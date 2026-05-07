@@ -330,7 +330,10 @@ class QCCodeEdit(api.CodeEdit):
         # re-create panels to apply the new palette
         self.remove_panels()
         self.create_panels()
-        self._node_tip.refresh_palette()
+
+        if hasattr(self, "_node_tip") and self._node_tip is not None:
+            self._node_tip.refresh_palette()
+
         # re-generate color scheme because FORMATS has changed
         if self.color_scheme is not None:
             self.color_scheme = ColorSchemeIDA()
