@@ -25,9 +25,6 @@ class QNodeTip(QFrame):
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setFrameShape(QFrame.Shape.Box)
-        self.setStyleSheet(
-            f"QFrame {{ border: 1px solid {Conf.palette_text.name()}; background-color: {Conf.palette_base.name()}; }}"
-        )
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(1, 1, 1, 1)
@@ -42,10 +39,7 @@ class QNodeTip(QFrame):
         self._editor.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._editor.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self._editor.setFont(Conf.code_font)
-        self._editor.setStyleSheet(
-            f"QPlainTextEdit {{ background-color: {Conf.palette_base.name()}; "
-            f"color: {Conf.palette_text.name()}; border: 0; padding: 4px 6px; }}"
-        )
+        self.refresh_palette()
         layout.addWidget(self._editor)
 
         self._current_node = None
@@ -63,6 +57,15 @@ class QNodeTip(QFrame):
     @property
     def text(self):
         return self._text
+
+    def refresh_palette(self) -> None:
+        self.setStyleSheet(
+            f"QFrame {{ border: 1px solid {Conf.palette_text.name()}; background-color: {Conf.palette_base.name()}; }}"
+        )
+        self._editor.setStyleSheet(
+            f"QPlainTextEdit {{ background-color: {Conf.palette_base.name()}; "
+            f"color: {Conf.palette_text.name()}; border: 0; padding: 4px 6px; }}"
+        )
 
     @current_node.setter
     def current_node(self, node) -> None:
