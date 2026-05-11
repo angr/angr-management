@@ -20,7 +20,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 elif [[ "$OSTYPE" == "linux-gnu" ]]; then
     source /etc/os-release
     tar -C dist -czf upload/angr-management-v$AM_VERSION-$ID-$VERSION_ID-$(uname -m).tar.gz angr-management
-elif [[ "$OSTYPE" == "msys" ]]; then
+elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
     OUTDIR=$(pwd)/upload
     pushd dist
     7z a $OUTDIR/angr-management-v$AM_VERSION-win64-x86_64.zip \*
