@@ -68,6 +68,11 @@ class FileMenu(Menu):
                     main_window.open_trace_file_button,
                     shortcut=QKeySequence("Ctrl+Shift+T"),
                 ),
+                MenuEntry(
+                    "Load a &FLIRT signature file...",
+                    main_window.load_signature_button,
+                    shortcut=QKeySequence("Ctrl+Shift+F"),
+                ),
                 self.recent_menu,
                 MenuSeparator(),
                 MenuEntry(
