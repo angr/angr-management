@@ -504,6 +504,7 @@ class MainWindow(QMainWindow):
                     ("File: Load a new binary...", self.open_file_button),
                     ("File: Load a new trace...", self.load_trace),
                     ("File: Load angr database...", self.load_database),
+                    ("File: Load FLIRT signature file...", self.load_signature_button),
                     ("File: Preferences...", self.preferences),
                     ("File: Save angr database as...", self.save_database_as),
                     ("File: Save angr database...", self.save_database),
@@ -615,6 +616,13 @@ class MainWindow(QMainWindow):
         if not file_path:
             return
         self.load_trace_file(file_path)
+
+    def load_signature_button(self) -> None:
+        sig_mgr = self.workspace.main_instance.signature_mgr
+        if sig_mgr is None:
+            return
+        sig_mgr.load_signatures()
+        self.workspace.show_signatures_view()
 
     def load_trace_file(self, file_path) -> None:
         if isurl(file_path):
