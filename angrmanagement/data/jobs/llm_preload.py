@@ -68,7 +68,8 @@ class LLMPreloadCalleesJob(InstanceJob):
             ctx.set_progress(pct, f"Refining callee {callee.name} ({i + 1}/{total})")
 
             # decompile if not already cached
-            dec_cache = kb.decompilations.get((callee.addr, "pseudocode"))
+            key = (callee.addr, "pseudocode")
+            dec_cache = kb.decompilations[key] if key in kb.decompilations else None
             if dec_cache is None or dec_cache.codegen is None:
                 try:
                     decompiler = project.analyses.Decompiler(
