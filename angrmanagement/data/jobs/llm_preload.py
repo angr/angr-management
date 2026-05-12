@@ -69,7 +69,7 @@ class LLMPreloadCalleesJob(InstanceJob):
 
             # decompile if not already cached
             key = (callee.addr, "pseudocode")
-            dec_cache = kb.decompilations[key] if key in kb.decompilations else None
+            dec_cache = kb.decompilations.get(key, None)
             if dec_cache is None or dec_cache.codegen is None:
                 try:
                     decompiler = project.analyses.Decompiler(
