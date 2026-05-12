@@ -52,11 +52,21 @@ class QStateBlock(QGraphicsItem):
 
     def _init_widgets(self) -> None:
         addr = None
-        if self.state.regs._ip.symbolic:
-            self._label_str = str(self.state.regs._ip)
-        else:
-            addr = claripy.backends.concrete.convert(self.state.regs._ip).value
-            self._label_str = f"{addr:#x}"
+        try:
+            if self.state.regs._ip.symbolic:
+                self._label_str = str(self.state.regs._ip)
+            else:
+                addr = claripy.backends.concrete.convert(self.state.regs._ip).value
+                self._label_str = f"{addr:#x}"
+        except ReferenceError:
+            # The SimState was held via weakref and has been garbage-collected
+            # while the path-tree view was still alive (issue #1644). Fall back
+            # to a placeholder label instead of letting the graphical update
+            # abort halfway through.
+            self._label_str = "<state freed>"
+            self._function_str = "Function: Unknown"
+            self.addr = None
+            return
 
         self.addr = addr
 
