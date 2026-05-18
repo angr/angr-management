@@ -33,10 +33,11 @@ from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import BasicCommand
 from angrmanagement.logic.threads import ExecuteCodeEvent
-from angrmanagement.ui.dialogs.archive_loader import ArchiveLoaderDialog, is_archive
+from angrmanagement.ui.dialogs.archive_loader import ArchiveLoaderDialog
 from angrmanagement.ui.dialogs.progress_dialog import ProgressDialog
 from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.ui.widgets.qam_status_bar import QAmStatusBar
+from angrmanagement.utils.archive import is_archive
 from angrmanagement.utils.io import download_url, isurl
 
 from .dialogs.about import LoadAboutDialog

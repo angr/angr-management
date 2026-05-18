@@ -2,35 +2,30 @@ from __future__ import annotations
 
 import os
 import shutil
-import tarfile
 import tempfile
-import zipfile
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QHeaderView,
+    QInputDialog,
     QLabel,
+    QLineEdit,
     QMessageBox,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
 )
 
-
-def is_archive(file_path: str) -> bool:
-    return zipfile.is_zipfile(file_path) or tarfile.is_tarfile(file_path)
-
-
-def _list_zip(path: str) -> list[tuple[str, int]]:
-    with zipfile.ZipFile(path, "r") as zf:
-        return [(i.filename, i.file_size) for i in zf.infolist() if not i.is_dir()]
-
-
-def _list_tar(path: str) -> list[tuple[str, int]]:
-    with tarfile.open(path, "r:*") as tf:
-        return [(m.name, m.size) for m in tf.getmembers() if m.isfile()]
+from angrmanagement.utils.archive import (
+    Archive,
+    ArchiveError,
+    ArchiveInvalidPassword,
+    ArchiveMember,
+    ArchivePasswordRequired,
+    get_archive_object,
+)
 
 
 def _format_size(size: int) -> str:
@@ -42,20 +37,6 @@ def _format_size(size: int) -> str:
     return f"{s:.1f} TB"
 
 
-def _extract_zip(archive_path: str, member: str, dest_dir: str) -> str:
-    with zipfile.ZipFile(archive_path, "r") as zf:
-        zf.extract(member, dest_dir)
-    dest = os.path.join(dest_dir, member)
-    return dest
-
-
-def _extract_tar(archive_path: str, member: str, dest_dir: str) -> str:
-    with tarfile.open(archive_path, "r:*") as tf:
-        tf.extract(member, dest_dir, filter="data")
-    dest = os.path.join(dest_dir, member)
-    return dest
-
-
 class ArchiveLoaderDialog(QDialog):
     """Dialog that lets the user pick a file from inside an archive to load."""
 
@@ -65,12 +46,15 @@ class ArchiveLoaderDialog(QDialog):
         self.extracted_file_path: str | None = None
         self._temp_dir: str | None = None
         self._err: str | None = None
+        self._password: str | None = None
+        self._archive_obj: Archive | None = None
+        try:
+            self._archive_obj = get_archive_object(archive_path)
+        except ArchiveError as e:
+            self._err = str(e)
 
         self.setWindowTitle("Load File from Archive")
         self.setMinimumSize(500, 400)
-
-        self._is_zip = zipfile.is_zipfile(archive_path)
-        self._is_tar = tarfile.is_tarfile(archive_path) if not self._is_zip else False
 
         layout = QVBoxLayout()
         layout.addWidget(QLabel(f"Archive: {os.path.basename(archive_path)}"))
@@ -97,17 +81,20 @@ class ArchiveLoaderDialog(QDialog):
         self._populate_tree()
 
     def _populate_tree(self) -> None:
-        try:
-            members = _list_zip(self.archive_path) if self._is_zip else _list_tar(self.archive_path)
-        except (zipfile.BadZipFile, tarfile.TarError, OSError) as e:
-            self._err = f"Failed to read archive: {e}"
+        if self._archive_obj is None:
             return
 
-        members.sort(key=lambda m: m[0])
+        try:
+            members = self._archive_obj.list_members()
+            members.sort(key=lambda m: m.name)
+        except ArchiveError as e:
+            self._err = str(e)
+            return
+
         nodes: dict[str, QTreeWidgetItem] = {}
 
-        for name, size in members:
-            parts = name.split("/")
+        for member in members:
+            parts = member.name.split("/")
             for i, part in enumerate(parts):
                 key = "/".join(parts[: i + 1])
                 if key in nodes:
@@ -116,8 +103,8 @@ class ArchiveLoaderDialog(QDialog):
                 item.setText(0, part)
                 is_file = i == len(parts) - 1
                 if is_file:
-                    item.setData(0, Qt.ItemDataRole.UserRole, name)
-                    item.setText(1, _format_size(size))
+                    item.setData(0, Qt.ItemDataRole.UserRole, member)
+                    item.setText(1, _format_size(member.size))
                     item.setTextAlignment(1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 else:
                     item.setData(0, Qt.ItemDataRole.UserRole, None)
@@ -139,7 +126,7 @@ class ArchiveLoaderDialog(QDialog):
 
     def _on_double_click(self, item: QTreeWidgetItem, _column: int) -> None:
         member = item.data(0, Qt.ItemDataRole.UserRole)
-        if member is not None:
+        if member is not None and isinstance(member, ArchiveMember):
             self._on_accept()
 
     def _on_accept(self) -> None:
@@ -147,27 +134,69 @@ class ArchiveLoaderDialog(QDialog):
         if current is None:
             return
         member = current.data(0, Qt.ItemDataRole.UserRole)
-        if member is None:
+        if not isinstance(member, ArchiveMember):
+            return
+        if self._archive_obj is None:
             return
 
-        try:
-            self._temp_dir = tempfile.mkdtemp(prefix="angr_management_archive_")
-            if self._is_zip:
-                self.extracted_file_path = _extract_zip(self.archive_path, member, self._temp_dir)
-            else:
-                self.extracted_file_path = _extract_tar(self.archive_path, member, self._temp_dir)
+        password: str | None = None
+        while True:
+            if member.encrypted:
+                password = self._prompt_for_password(member)
+                if password is None:
+                    return
 
-            # Sanity check
-            if not os.path.isfile(self.extracted_file_path):
-                self.extracted_file_path = None
-                raise ValueError("Extracted path is not a file")
+            try:
+                self._temp_dir = tempfile.mkdtemp(prefix="angr_management_archive_")
+                self.extracted_file_path = self._archive_obj.extract(member.name, self._temp_dir, password=password)
 
-        except (zipfile.BadZipFile, tarfile.TarError, OSError, ValueError) as e:
-            QMessageBox.critical(self, "Extraction Error", f"Failed to extract file: {e}")
-            self.cleanup()
-            return
+                # Sanity check
+                if not os.path.isfile(self.extracted_file_path):
+                    self.extracted_file_path = None
+                    raise ArchiveError("Extracted path is not a file")
 
+            except ArchivePasswordRequired:
+                self._cleanup_extraction()
+                member = ArchiveMember(member.name, member.size, encrypted=True)
+                continue
+            except ArchiveInvalidPassword as e:
+                self._cleanup_extraction()
+                QMessageBox.warning(self, "Incorrect Password", str(e))
+                continue
+            except ArchiveError as e:
+                QMessageBox.critical(self, "Extraction Error", f"Failed to extract file: {e}")
+                self.cleanup()
+                return
+
+            if password is not None:
+                self._password = password
+            break
+
+        self._close_archive()
         self.accept()
+
+    def _prompt_for_password(self, member: ArchiveMember) -> str | None:
+        password, ok = QInputDialog.getText(
+            self,
+            "Archive Password",
+            f"Password required for {member.name}:",
+            QLineEdit.EchoMode.Password,
+            self._password or "",
+        )
+        if not ok:
+            return None
+        return password
+
+    def _cleanup_extraction(self) -> None:
+        if self._temp_dir and os.path.isdir(self._temp_dir):
+            shutil.rmtree(self._temp_dir, ignore_errors=True)
+            self._temp_dir = None
+            self.extracted_file_path = None
+
+    def _close_archive(self) -> None:
+        if self._archive_obj is not None:
+            self._archive_obj.close()
+            self._archive_obj = None
 
     def exec(self) -> int:
         if self._err is not None:
@@ -176,7 +205,5 @@ class ArchiveLoaderDialog(QDialog):
         return super().exec()
 
     def cleanup(self) -> None:
-        if self._temp_dir and os.path.isdir(self._temp_dir):
-            shutil.rmtree(self._temp_dir, ignore_errors=True)
-            self._temp_dir = None
-            self.extracted_file_path = None
+        self._close_archive()
+        self._cleanup_extraction()
