@@ -23,7 +23,10 @@ class RustTypeDBLoaderConfiguration(AnalysisConfiguration):
         super().__init__(instance)
         self.name = "rust_typedb_loader"
         self.display_name = "Rust TypeDB Loader"
-        self.description = "Load Rust prototype and type information from the Rust type database."
+        self.description = (
+            "Load Rust prototype and type information from the Rust type database. Enabled by default "
+            "for Rust binaries."
+        )
         self.enabled = not self.instance.project.am_none and self.instance.project.is_rust_binary
 
 

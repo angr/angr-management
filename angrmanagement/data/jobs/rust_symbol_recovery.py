@@ -24,7 +24,7 @@ class RustSymbolRecoveryConfiguration(AnalysisConfiguration):
         super().__init__(instance)
         self.name = "rust_symbol_recovery"
         self.display_name = "Rust Symbol Recovery"
-        self.description = "Recover Rust symbols from stripped Rust binaries."
+        self.description = "Recover Rust symbols from stripped Rust binaries. Enabled by default for Rust binaries."
         self.enabled = not self.instance.project.am_none and self.instance.project.is_rust_binary
 
 
