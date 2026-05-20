@@ -18,10 +18,10 @@ from .llm_preload import LLMPreloadCalleesJob
 from .llm_refine import LLMRefineJob
 from .loading import LoadBinaryJob
 from .prototype_finding import PrototypeFindingJob
-from .rust_symbol_recovery import RustSymbolRecoveryJob
+from .rust_symbol_recovery import RustSymbolRecoveryConfiguration, RustSymbolRecoveryJob
+from .rust_typedb_loader import RustTypeDBLoaderConfiguration, RustTypeDBLoaderJob
 from .simgr_explore import SimgrExploreJob
 from .simgr_step import SimgrStepJob
-from .typedb_loader import TypeDBLoaderJob
 from .variable_recovery import VariableRecoveryConfiguration, VariableRecoveryJob
 from .vfg_generation import VFGGenerationJob
 
@@ -45,10 +45,12 @@ __all__ = [
     "LLMPreloadCalleesJob",
     "LLMRefineJob",
     "PrototypeFindingJob",
+    "RustSymbolRecoveryConfiguration",
     "RustSymbolRecoveryJob",
+    "RustTypeDBLoaderConfiguration",
+    "RustTypeDBLoaderJob",
     "SimgrExploreJob",
     "SimgrStepJob",
-    "TypeDBLoaderJob",
     "VariableRecoveryConfiguration",
     "VariableRecoveryJob",
     "VFGGenerationJob",

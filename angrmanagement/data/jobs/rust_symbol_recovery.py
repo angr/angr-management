@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from angrmanagement.data.analysis_options import AnalysisConfiguration
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
 from .job import InstanceJob
@@ -12,6 +13,19 @@ if TYPE_CHECKING:
     from angrmanagement.logic.jobmanager import JobContext
 
 _l = logging.getLogger(__name__)
+
+
+class RustSymbolRecoveryConfiguration(AnalysisConfiguration):
+    """
+    Configuration for Rust Symbol Recovery.
+    """
+
+    def __init__(self, instance: Instance) -> None:
+        super().__init__(instance)
+        self.name = "rust_symbol_recovery"
+        self.display_name = "Rust Symbol Recovery"
+        self.description = "Recover Rust symbols from stripped Rust binaries."
+        self.enabled = not self.instance.project.am_none and self.instance.project.is_rust_binary
 
 
 class RustSymbolRecoveryJob(InstanceJob):
