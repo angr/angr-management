@@ -15,6 +15,18 @@ from angr.analyses.decompiler.structured_codegen.c import (
     CStructFieldNameDef,
     CVariable,
 )
+from angr.analyses.decompiler.structured_codegen.rust import (
+    RustArrayTypeLength,
+    RustClosingObject,
+    RustConstant,
+    RustExpression,
+    RustFunction,
+    RustFunctionCall,
+    RustLabel,
+    RustStatement,
+    RustStructFieldNameDef,
+    RustVariable,
+)
 from angr.sim_type import SimType
 from angr.sim_variable import SimMemoryVariable
 from pyqodeng.core.api import SyntaxHighlighter
@@ -106,20 +118,37 @@ def _format_node(obj):
         if type(obj.variable) is SimMemoryVariable:
             return FORMATS["global_variable"]
         return FORMATS["variable"]
-    elif isinstance(obj, CArrayTypeLength):
-        # This is the part that goes after a fixed-size array (the
-        # "[20]" in "char foo[20];"), and it's highly unlikely
-        # that anyone will want to change the color here. But if
-        # you do, follow the format of the rest.
+    elif isinstance(obj, (CArrayTypeLength, CStructFieldNameDef, CClosingObject, CStatement, CConstant, CExpression)):
         return FORMATS["normal"]
-    elif isinstance(obj, CStructFieldNameDef):
-        # This is the part that is a field name in a struct def,
-        # and it's highly unlikely that anyone will want to change
-        # the color here. But if you do, follow the format of the
-        # rest.
+
+    # Rust codegen node types
+    if isinstance(obj, RustFunctionCall):
+        if obj.callee_func is not None and (
+            obj.callee_func.is_simprocedure or obj.callee_func.is_plt or obj.callee_func.is_syscall
+        ):
+            return FORMATS["library_function"]
+        return FORMATS["function"]
+    elif isinstance(obj, RustFunction):
+        return FORMATS["function"]
+    elif isinstance(obj, RustLabel):
+        return FORMATS["label"]
+    elif isinstance(obj, RustVariable):
+        if type(obj.variable) is SimMemoryVariable:
+            return FORMATS["global_variable"]
+        return FORMATS["variable"]
+    elif isinstance(
+        obj,
+        (
+            RustArrayTypeLength,
+            RustStructFieldNameDef,
+            RustClosingObject,
+            RustStatement,
+            RustConstant,
+            RustExpression,
+        ),
+    ):
         return FORMATS["normal"]
-    elif isinstance(obj, CClosingObject | CStatement | CConstant | CExpression):
-        return FORMATS["normal"]
+
     return FORMATS["normal"]
 
 
@@ -132,7 +161,7 @@ class QCCodeHighlighter(SyntaxHighlighter):
     comments, and strings) and adds styling to them based on the current color scheme.
     """
 
-    HIGHLIGHTING_RULES = [
+    C_CPP_HIGHLIGHTING_RULES = [
         # quotation
         # (r"\"([^\\\"]|(\\.))*\"", 'quotation'),
         # comment
@@ -190,11 +219,80 @@ class QCCodeHighlighter(SyntaxHighlighter):
         (r"\bwhile\b", "keyword"),
     ]
 
-    def __init__(self, parent, color_scheme=None) -> None:
+    RUST_HIGHLIGHTING_RULES = [
+        # Rust keywords
+        (r"\bas\b", "keyword"),
+        (r"\basync\b", "keyword"),
+        (r"\bawait\b", "keyword"),
+        (r"\bbreak\b", "keyword"),
+        (r"\bconst\b", "keyword"),
+        (r"\bcontinue\b", "keyword"),
+        (r"\bcrate\b", "keyword"),
+        (r"\bdyn\b", "keyword"),
+        (r"\belse\b", "keyword"),
+        (r"\benum\b", "keyword"),
+        (r"\bextern\b", "keyword"),
+        (r"\bfalse\b", "keyword"),
+        (r"\bfn\b", "keyword"),
+        (r"\bfor\b", "keyword"),
+        (r"\bif\b", "keyword"),
+        (r"\bimpl\b", "keyword"),
+        (r"\bin\b", "keyword"),
+        (r"\blet\b", "keyword"),
+        (r"\bloop\b", "keyword"),
+        (r"\bmatch\b", "keyword"),
+        (r"\bmod\b", "keyword"),
+        (r"\bmove\b", "keyword"),
+        (r"\bmut\b", "keyword"),
+        (r"\bpub\b", "keyword"),
+        (r"\bref\b", "keyword"),
+        (r"\breturn\b", "keyword"),
+        (r"\bself\b", "keyword"),
+        (r"\bSelf\b", "keyword"),
+        (r"\bstatic\b", "keyword"),
+        (r"\bstruct\b", "keyword"),
+        (r"\bsuper\b", "keyword"),
+        (r"\btrait\b", "keyword"),
+        (r"\btrue\b", "keyword"),
+        (r"\btype\b", "keyword"),
+        (r"\bunsafe\b", "keyword"),
+        (r"\buse\b", "keyword"),
+        (r"\bwhere\b", "keyword"),
+        (r"\bwhile\b", "keyword"),
+        # reserved keywords
+        (r"\babstract\b", "keyword"),
+        (r"\bbecome\b", "keyword"),
+        (r"\bbox\b", "keyword"),
+        (r"\bdo\b", "keyword"),
+        (r"\bfinal\b", "keyword"),
+        (r"\bgen\b", "keyword"),
+        (r"\bmacro\b", "keyword"),
+        (r"\boverride\b", "keyword"),
+        (r"\bpriv\b", "keyword"),
+        (r"\btry\b", "keyword"),
+        (r"\btypeof\b", "keyword"),
+        (r"\bunsized\b", "keyword"),
+        (r"\bvirtual\b", "keyword"),
+        (r"\byield\b", "keyword"),
+        # weak keywords
+        (r"\b'static\b", "keyword"),
+        (r"\bmarco_rules\b", "keyword"),
+        (r"\braw\b", "keyword"),
+        (r"\bsafe\b", "keyword"),
+        (r"\bunion\b", "keyword"),
+        # Rust common types and values that are not keywords, but we want to highlight as such
+        (r"\bNone\b", "keyword"),
+        (r"\bSome\b", "keyword"),
+        (r"\bOk\b", "keyword"),
+        (r"\bErr\b", "keyword"),
+    ]
+
+    def __init__(self, parent, color_scheme=None, flavor: str | None = None) -> None:
         super().__init__(parent, color_scheme=color_scheme)
 
         self.doc: QCodeDocument = parent
         self.comment_status = False
+        self.flavor: str | None = flavor
 
     def highlight_block(self, text: str, block) -> None:
         # this code makes the assumption that this function is only ever called on lines in sequence in order
@@ -270,7 +368,8 @@ class QCCodeHighlighter(SyntaxHighlighter):
                 self.setFormat(element.start - start_pos, element.length, fmt)
             current_idx = (element.start - start_pos) + element.length
 
-        for pattern, format_id in self.HIGHLIGHTING_RULES:
+        rules = self.RUST_HIGHLIGHTING_RULES if self.flavor == "rust" else self.C_CPP_HIGHLIGHTING_RULES
+        for pattern, format_id in rules:
             for mo in list(re.finditer(pattern, text)):
                 start = mo.start()
                 end = mo.end()
