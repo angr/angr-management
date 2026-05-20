@@ -4,6 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from angrmanagement.data.analysis_options import AnalysisConfiguration
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
 from .job import InstanceJob
@@ -58,9 +59,8 @@ class RustSymbolRecoveryJob(InstanceJob):
         # Trigger functions view refresh
         gui_thread_schedule_async(self._refresh_functions_view)
 
-    def _refresh_functions_view(self) -> None:
-        from angrmanagement.logic import GlobalInfo
-
+    @staticmethod
+    def _refresh_functions_view() -> None:
         workspace = GlobalInfo.main_window.workspace
         view = workspace.view_manager.first_view_in_category("functions")
         if view is not None:
