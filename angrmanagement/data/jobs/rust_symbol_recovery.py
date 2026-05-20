@@ -61,6 +61,8 @@ class RustSymbolRecoveryJob(InstanceJob):
 
     @staticmethod
     def _refresh_functions_view() -> None:
+        if GlobalInfo.main_window is None:
+            return
         workspace = GlobalInfo.main_window.workspace
         view = workspace.view_manager.first_view_in_category("functions")
         if view is not None:
