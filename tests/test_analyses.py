@@ -15,6 +15,8 @@ from angrmanagement.data.jobs import (
     CodeTaggingJob,
     FlirtSignatureRecognitionJob,
     PrototypeFindingJob,
+    RustSymbolRecoveryJob,
+    RustTypeDBLoaderJob,
     StringDeobfuscationJob,
     VariableRecoveryJob,
 )
@@ -67,6 +69,8 @@ class TestAnalysisManager(AngrManagementTestCase):
             StringDeobfuscationJob,
             CodeTaggingJob,
             CallingConventionRecoveryJob,
+            RustSymbolRecoveryJob,
+            RustTypeDBLoaderJob,
             VariableRecoveryJob,
         ]
 
