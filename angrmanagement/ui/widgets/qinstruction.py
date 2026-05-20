@@ -25,11 +25,21 @@ class QInstruction(QCachedGraphicsItem):
 
     INTERSPERSE_ARGS = ", "
 
-    LINEAR_INSTRUCTION_OFFSET = 120
+    LINEAR_INSTRUCTION_OFFSET = 200
     COMMENT_PREFIX = "; "
 
     def __init__(
-        self, instance: Instance, func_addr, disasm_view, disasm, infodock, insn, out_branch, config, parent=None
+        self,
+        instance: Instance,
+        func_addr,
+        disasm_view,
+        disasm,
+        infodock,
+        insn,
+        out_branch,
+        config,
+        linear: bool = False,
+        parent=None,
     ) -> None:
         super().__init__(parent=parent)
 
@@ -42,6 +52,7 @@ class QInstruction(QCachedGraphicsItem):
         self.variable_manager = infodock.variable_manager
         self.insn = insn
         self.out_branch = out_branch
+        self._linear = linear
         self._config = config
 
         # all "widgets"
@@ -283,7 +294,11 @@ class QInstruction(QCachedGraphicsItem):
         if self.disasm_view.show_address:
             self._addr_item.setVisible(True)
             self._addr_item.setPos(x, y)
-            x += self._addr_item.boundingRect().width() + self.GRAPH_ADDR_SPACING
+            x += (
+                self._addr_item.boundingRect().width() + self.GRAPH_ADDR_SPACING
+                if not self._linear
+                else self.LINEAR_INSTRUCTION_OFFSET
+            )
         else:
             self._addr_item.setVisible(False)
 

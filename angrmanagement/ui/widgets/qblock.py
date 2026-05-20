@@ -37,6 +37,7 @@ class QBlock(QCachedGraphicsItem):
     AIL_SHOW_CONDITIONAL_JUMP_TARGETS = True
     SHADOW_OFFSET_X = 0
     SHADOW_OFFSET_Y = 0
+    MODE = None
 
     def __init__(
         self,
@@ -272,6 +273,7 @@ class QBlock(QCachedGraphicsItem):
                     obj,
                     out_branch,
                     self._config,
+                    linear=self.MODE == "linear",
                     parent=self,
                 )
                 self.objects.append(insn)
@@ -340,6 +342,7 @@ class QGraphBlock(QBlock):
     SHADOW_OFFSET_X = 5
     SHADOW_OFFSET_Y = 5
     BLOCK_ANNOTATIONS_LEFT_PADDING = 2
+    MODE = "graph"
 
     def __init__(self, *args, **kwargs):
         self.color_override = None
@@ -460,6 +463,8 @@ class QGraphBlock(QBlock):
 
 
 class QLinearBlock(QBlock):
+    MODE = "linear"
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._height = 0
@@ -482,7 +487,7 @@ class QLinearBlock(QBlock):
                 max_width = obj_start + obj.boundingRect().width()
             y_offset += obj.boundingRect().height()
 
-        self._height = y_offset
+        self._height = y_offset + Conf.disasm_font_height
         self._width = max_width
 
     def paint(self, painter, option, widget=None) -> None:  # pylint: disable=unused-argument
