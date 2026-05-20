@@ -107,6 +107,17 @@ class CodeView(FunctionView):
     def document(self):
         return self._doc
 
+    @property
+    def flavor(self) -> str | None:
+        """
+        Return the current flavor of the codegen. This is just a convenient wrapper around self.codegen.flavor.
+        """
+        return self.codegen.flavor if not self.codegen.am_none else None
+
+    @property
+    def best_flavor(self) -> str:
+        return "rust" if not self.instance.project.am_none and self.instance.project.is_rust_binary else "pseudocode"
+
     #
     # Public methods
     #
@@ -368,7 +379,7 @@ class CodeView(FunctionView):
     def _on_new_function(self, focus: bool = False, focus_addr=None, flavor=None, **kwargs) -> None:  # pylint: disable=unused-argument
         # sets a new function. extra args are used in case this operation requires waiting for the decompiler
         if flavor is None:
-            flavor = "pseudocode" if self.codegen.am_none else self.codegen.flavor
+            flavor = self.best_flavor if self.codegen.am_none else self.codegen.flavor
 
         if not self.codegen.am_none and self._last_function is self._function.am_obj:
             self._focus_core(focus, focus_addr)
