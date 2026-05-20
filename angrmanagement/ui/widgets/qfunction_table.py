@@ -6,12 +6,8 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from angr.analyses.code_tagging import CodeTags
+from angr.rust.utils.demangler import demangle as rust_demangle
 from angr.utils.library import get_cpp_function_name
-
-try:
-    from angr.rust.utils.demangler import demangle as rust_demangle
-except ImportError:
-    rust_demangle = None
 from cle.backends.uefi_firmware import UefiPE
 from PySide6.QtCore import SIGNAL, QAbstractTableModel, QEvent, Qt
 from PySide6.QtGui import QAction, QBrush, QCursor, QPalette
@@ -231,7 +227,7 @@ class QFunctionTableModel(QAbstractTableModel):
         if idx == self.INLINE_COL:
             return func in self.instance.functions_to_inline
         elif idx == self.NAME_COL:
-            if rust_demangle is not None:
+            if not self.instance.project.am_none and self.instance.project.is_rust_binary:
                 return rust_demangle(func.name)
             name = func.demangled_name
             if name != func.name and " " in name:
