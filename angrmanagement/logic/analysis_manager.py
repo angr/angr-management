@@ -15,6 +15,7 @@ from angrmanagement.data.jobs import (
     FlirtAnalysisConfiguration,
     FlirtSignatureRecognitionJob,
     Job,
+    OverviewConfiguration,
     PrototypeFindingJob,
     RustSymbolRecoveryConfiguration,
     RustSymbolRecoveryJob,
@@ -46,6 +47,7 @@ class AnalysisManager(QObject):
             [
                 a(self.workspace.main_instance)
                 for a in [
+                    OverviewConfiguration,
                     CFGAnalysisConfiguration,
                     APIDeobfuscationConfiguration,
                     StringDeobfuscationConfiguration,
