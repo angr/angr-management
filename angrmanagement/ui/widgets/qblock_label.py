@@ -97,7 +97,7 @@ class QBlockLabel(QCachedGraphicsItem):
 
         self._text_item.setPos(x, y)
 
-        self._width = self._text_item.boundingRect().width()
+        self._width = x + self._text_item.boundingRect().width()
         self._height = self._text_item.boundingRect().height()
         self.recalculate_size()
 
