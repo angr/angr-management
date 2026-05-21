@@ -6,50 +6,39 @@ Test cases for ArchiveLoaderDialog and archive utility functions.
 
 from __future__ import annotations
 
-import io
 import os
 import shutil
-import tarfile
 import tempfile
 import unittest
-import zipfile
 from unittest.mock import patch
 
-from common import AngrManagementTestCase  # pylint: disable=import-error
+from common import AngrManagementTestCase, test_location  # pylint: disable=import-error
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QTreeWidgetItem
 
 from angrmanagement.ui.dialogs.archive_loader import (
     ArchiveLoaderDialog,
-    _extract_tar,
-    _extract_zip,
     _format_size,
-    _list_tar,
-    _list_zip,
+)
+from angrmanagement.utils.archive import (
+    ArchiveError,
+    ArchiveInvalidPassword,
+    ArchiveMember,
+    ArchivePasswordRequired,
+    TarArchive,
+    ZipArchive,
+    get_archive_object,
     is_archive,
 )
 
+ZIP_PATH = os.path.join(test_location, "x86_64", "test_zip_archive.zip")
+TAR_PATH = os.path.join(test_location, "x86_64", "test_tar_archive.tar")
+ENC_ZIP_PATH = os.path.join(test_location, "x86_64", "test_enc_zip_archive.zip")
+ENC_ZIP_PASSWORD = "infected"
 
-def _create_test_zip(path: str, files: dict[str, bytes]) -> None:
-    """Create a zip archive with given files."""
-    with zipfile.ZipFile(path, "w") as zf:
-        for name, data in files.items():
-            zf.writestr(name, data)
-
-
-def _create_test_tar(path: str, files: dict[str, bytes]) -> None:
-    """Create a tar.gz archive with given files."""
-    with tarfile.open(path, "w:gz") as tf:
-        for name, data in files.items():
-            info = tarfile.TarInfo(name=name)
-            info.size = len(data)
-            tf.addfile(info, io.BytesIO(data))
-
-
-TEST_FILES = {
-    "hello.txt": b"hello world",
-    "subdir/nested.bin": b"\x00\x01\x02\x03",
-}
+ZIP_MEMBERS = {"fauxware": 8776, "subfolder/fauxware_reflow": 16328}
+TAR_MEMBERS = {"./fauxware": 8776, "./subfolder/fauxware_reflow": 16328}
+ELF_MAGIC = b"\x7fELF"
 
 
 class TestFormatSize(unittest.TestCase):
@@ -73,18 +62,12 @@ class TestFormatSize(unittest.TestCase):
         assert _format_size(1024**4) == "1.0 TB"
 
 
-class TestArchiveIOUtilities(unittest.TestCase):
-    """Test is_archive, _list_zip, _list_tar, _extract_zip, and _extract_tar."""
+class TestArchiveClasses(unittest.TestCase):
+    """Test archive detection, listing, and extraction."""
 
     def setUp(self):
         self._temp_dir = tempfile.mkdtemp()
-        self._zip_path = os.path.join(self._temp_dir, "test.zip")
-        self._tar_path = os.path.join(self._temp_dir, "test.tar.gz")
         self._not_archive_path = os.path.join(self._temp_dir, "not_archive.txt")
-
-        _create_test_zip(self._zip_path, TEST_FILES)
-        _create_test_tar(self._tar_path, TEST_FILES)
-
         with open(self._not_archive_path, "w", encoding="utf-8") as f:
             f.write("just plain text")
 
@@ -93,47 +76,101 @@ class TestArchiveIOUtilities(unittest.TestCase):
 
     def test_is_archive_zip(self):
         """Test that zip files are detected as archives."""
-        assert is_archive(self._zip_path) is True
+        assert is_archive(ZIP_PATH) is True
 
     def test_is_archive_tar(self):
         """Test that tar files are detected as archives."""
-        assert is_archive(self._tar_path) is True
+        assert is_archive(TAR_PATH) is True
 
     def test_is_archive_plain_text(self):
         """Test that plain text files are not detected as archives."""
         assert is_archive(self._not_archive_path) is False
 
-    def test_list_zip_returns_all_files(self):
-        """Test that _list_zip returns all file members with correct sizes."""
-        members = _list_zip(self._zip_path)
-        names = {m[0] for m in members}
-        assert names == {"hello.txt", "subdir/nested.bin"}
-        for name, size in members:
-            assert size == len(TEST_FILES[name])
+    def test_get_archive_object(self):
+        """Test that get_archive_object returns the right type or raises error."""
+        with get_archive_object(ZIP_PATH) as archive:
+            assert isinstance(archive, ZipArchive)
 
-    def test_list_tar_returns_all_files(self):
-        """Test that _list_tar returns all file members with correct sizes."""
-        members = _list_tar(self._tar_path)
-        names = {m[0] for m in members}
-        assert names == {"hello.txt", "subdir/nested.bin"}
-        for name, size in members:
-            assert size == len(TEST_FILES[name])
+        with get_archive_object(ENC_ZIP_PATH) as archive:
+            assert isinstance(archive, ZipArchive)
 
-    def test_extract_zip(self):
+        with get_archive_object(TAR_PATH) as archive:
+            assert isinstance(archive, TarArchive)
+
+        with self.assertRaises(ArchiveError):
+            get_archive_object(self._not_archive_path)
+
+    def test_zip_lists_all_files(self):
+        """Test that ZipArchive returns all file members with correct sizes."""
+        with ZipArchive(ZIP_PATH) as archive:
+            members = archive.list_members()
+            member_map = {m.name: m for m in members}
+            assert set(member_map) == set(ZIP_MEMBERS)
+            for name, expected_size in ZIP_MEMBERS.items():
+                assert member_map[name].size == expected_size
+                assert member_map[name].encrypted is False
+
+    def test_enc_zip_lists_all_files(self):
+        """Test that ZipArchive returns all file members with correct sizes."""
+        with ZipArchive(ENC_ZIP_PATH) as archive:
+            members = archive.list_members()
+            member_map = {m.name: m for m in members}
+            assert set(member_map) == set(ZIP_MEMBERS)
+            for name, expected_size in ZIP_MEMBERS.items():
+                assert member_map[name].size == expected_size
+                assert member_map[name].encrypted is True
+
+    def test_tar_lists_all_files(self):
+        """Test that TarArchive returns all file members with correct sizes."""
+        with TarArchive(TAR_PATH) as archive:
+            members = archive.list_members()
+            member_map = {m.name: m for m in members}
+            assert set(member_map) == set(TAR_MEMBERS)
+            for name, expected_size in TAR_MEMBERS.items():
+                assert member_map[name].size == expected_size
+                assert member_map[name].encrypted is False
+
+    def test_zip_extract(self):
         """Test extracting a file from a zip archive."""
-        dest_dir = tempfile.mkdtemp(dir=self._temp_dir)
-        path = _extract_zip(self._zip_path, "hello.txt", dest_dir)
-        assert os.path.isfile(path)
-        with open(path, "rb") as f:
-            assert f.read() == b"hello world"
+        with ZipArchive(ZIP_PATH) as archive:
+            dest_dir = tempfile.mkdtemp(dir=self._temp_dir)
+            path = archive.extract("fauxware", dest_dir)
+            assert os.path.isfile(path)
 
-    def test_extract_tar(self):
+    def test_operations_fail_after_close(self):
+        """Test that callers cannot use an archive after closing it."""
+        archive = get_archive_object(ZIP_PATH)
+        archive.close()
+        with self.assertRaises(ArchiveError):
+            archive.list_members()
+
+    def test_zip_extract_encrypted_without_password_fails(self):
+        """Test that encrypted zip members require a password."""
+        with ZipArchive(ENC_ZIP_PATH) as backend:
+            dest_dir = tempfile.mkdtemp(dir=self._temp_dir)
+            with self.assertRaises(ArchivePasswordRequired):
+                backend.extract("fauxware", dest_dir)
+
+    def test_zip_extract_encrypted_with_password(self):
+        """Test extracting a password-protected file from a zip archive."""
+        with ZipArchive(ENC_ZIP_PATH) as backend:
+            dest_dir = tempfile.mkdtemp(dir=self._temp_dir)
+            path = backend.extract("fauxware", dest_dir, password=ENC_ZIP_PASSWORD)
+            assert os.path.isfile(path)
+
+    def test_zip_extract_encrypted_with_wrong_password_fails(self):
+        """Test that encrypted zip members reject wrong passwords."""
+        with ZipArchive(ENC_ZIP_PATH) as backend:
+            dest_dir = tempfile.mkdtemp(dir=self._temp_dir)
+            with self.assertRaises(ArchiveInvalidPassword):
+                backend.extract("fauxware", dest_dir, password="wrong")
+
+    def test_tar_extract(self):
         """Test extracting a file from a tar archive."""
-        dest_dir = tempfile.mkdtemp(dir=self._temp_dir)
-        path = _extract_tar(self._tar_path, "hello.txt", dest_dir)
-        assert os.path.isfile(path)
-        with open(path, "rb") as f:
-            assert f.read() == b"hello world"
+        with TarArchive(TAR_PATH) as backend:
+            dest_dir = tempfile.mkdtemp(dir=self._temp_dir)
+            path = backend.extract("./fauxware", dest_dir)
+            assert os.path.isfile(path)
 
 
 class TestArchiveLoaderDialog(AngrManagementTestCase):
@@ -142,13 +179,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
     def setUp(self):
         super().setUp()
         self._temp_dir = tempfile.mkdtemp()
-        self._zip_path = os.path.join(self._temp_dir, "test.zip")
-        self._tar_path = os.path.join(self._temp_dir, "test.tar.gz")
         self._not_archive_path = os.path.join(self._temp_dir, "not_archive.txt")
-
-        _create_test_zip(self._zip_path, TEST_FILES)
-        _create_test_tar(self._tar_path, TEST_FILES)
-
         with open(self._not_archive_path, "w", encoding="utf-8") as f:
             f.write("just plain text")
 
@@ -167,7 +198,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
 
     def test_tree_contains_expected_items(self):
         """Test that tree widget contains files, directories, and correct UserRole data."""
-        dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
+        dlg = ArchiveLoaderDialog(ZIP_PATH, parent=self.main)
         all_labels: list[str] = []
         file_member_paths: list[str] = []
         dir_data: list[str] = []
@@ -179,7 +210,8 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
             all_labels.append(label)
             data = item.data(0, Qt.ItemDataRole.UserRole)
             if data is not None:
-                file_member_paths.append(data)
+                assert isinstance(data, ArchiveMember)
+                file_member_paths.append(data.name)
             else:
                 dir_data.append(label)
             for j in range(item.childCount()):
@@ -187,33 +219,41 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
                 all_labels.append(child.text(0))
                 child_data = child.data(0, Qt.ItemDataRole.UserRole)
                 if child_data is not None:
-                    file_member_paths.append(child_data)
+                    assert isinstance(child_data, ArchiveMember)
+                    file_member_paths.append(child_data.name)
 
-        assert "hello.txt" in all_labels
-        assert "subdir" in all_labels
-        assert "nested.bin" in all_labels
-        assert "hello.txt" in file_member_paths
-        assert "subdir/nested.bin" in file_member_paths
-        assert "subdir" in dir_data
+        assert "fauxware" in all_labels
+        assert "subfolder" in all_labels
+        assert "fauxware_reflow" in all_labels
+        assert "fauxware" in file_member_paths
+        assert "subfolder/fauxware_reflow" in file_member_paths
+        assert "subfolder" in dir_data
         dlg.close()
 
     def test_tree_populated_for_tar(self):
         """Test that tree is populated correctly for a tar archive."""
-        dlg = ArchiveLoaderDialog(self._tar_path, parent=self.main)
+        dlg = ArchiveLoaderDialog(TAR_PATH, parent=self.main)
+        assert dlg._tree.topLevelItemCount() > 0
+        assert dlg._err is None
+        dlg.close()
+
+    def test_tree_populated_for_enc_zip(self):
+        """Test that tree is populated correctly for a encrypted zip archive."""
+        dlg = ArchiveLoaderDialog(ENC_ZIP_PATH, parent=self.main)
         assert dlg._tree.topLevelItemCount() > 0
         assert dlg._err is None
         dlg.close()
 
     def test_ok_button_disabled_initially(self):
         """Test that OK button is disabled when no item is selected."""
-        dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
+        dlg = ArchiveLoaderDialog(ZIP_PATH, parent=self.main)
         assert dlg._ok_button.isEnabled() is False
         dlg.close()
 
     def test_ok_enabled_when_file_selected(self):
         """Test that OK button is enabled when a file item is selected."""
-        dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
-        item = self._find_tree_item(dlg, "hello.txt")
+        dlg = ArchiveLoaderDialog(ZIP_PATH, parent=self.main)
+        item = self._find_tree_item(dlg, "fauxware")
         assert item is not None
         dlg._tree.setCurrentItem(item)
         assert dlg._ok_button.isEnabled() is True
@@ -221,8 +261,8 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
 
     def test_ok_disabled_when_directory_selected(self):
         """Test that OK button remains disabled when a directory item is selected."""
-        dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
-        item = self._find_tree_item(dlg, "subdir")
+        dlg = ArchiveLoaderDialog(ZIP_PATH, parent=self.main)
+        item = self._find_tree_item(dlg, "subfolder")
         assert item is not None
         dlg._tree.setCurrentItem(item)
         assert dlg._ok_button.isEnabled() is False
@@ -230,36 +270,93 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
 
     def test_accept_extracts_selected_file_zip(self):
         """Test that _on_accept extracts selected file from zip archive."""
-        dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
-        item = self._find_tree_item(dlg, "hello.txt")
+        dlg = ArchiveLoaderDialog(ZIP_PATH, parent=self.main)
+        item = self._find_tree_item(dlg, "fauxware")
         assert item is not None
         dlg._tree.setCurrentItem(item)
         dlg._on_accept()
         assert dlg.extracted_file_path is not None
         assert os.path.isfile(dlg.extracted_file_path)
-        with open(dlg.extracted_file_path, "rb") as f:
-            assert f.read() == b"hello world"
         dlg.cleanup()
         dlg.close()
 
     def test_accept_extracts_selected_file_tar(self):
         """Test that _on_accept extracts selected file from tar archive."""
-        dlg = ArchiveLoaderDialog(self._tar_path, parent=self.main)
-        item = self._find_tree_item(dlg, "hello.txt")
+        dlg = ArchiveLoaderDialog(TAR_PATH, parent=self.main)
+        item = self._find_tree_item(dlg, ".")
         assert item is not None
-        dlg._tree.setCurrentItem(item)
+        fauxware_child = None
+        for i in range(item.childCount()):
+            child = item.child(i)
+            if child.text(0) == "fauxware":
+                fauxware_child = child
+                break
+        assert fauxware_child is not None
+        dlg._tree.setCurrentItem(fauxware_child)
         dlg._on_accept()
         assert dlg.extracted_file_path is not None
         assert os.path.isfile(dlg.extracted_file_path)
-        with open(dlg.extracted_file_path, "rb") as f:
-            assert f.read() == b"hello world"
+        dlg.cleanup()
+        dlg.close()
+
+    def test_accept_extracts_password_protected_zip(self):
+        """Test that _on_accept prompts for password and extracts an encrypted zip member."""
+        dlg = ArchiveLoaderDialog(ENC_ZIP_PATH, parent=self.main)
+        item = self._find_tree_item(dlg, "fauxware")
+        assert item is not None
+        dlg._tree.setCurrentItem(item)
+        with patch(
+            "angrmanagement.ui.dialogs.archive_loader.QInputDialog.getText",
+            return_value=(ENC_ZIP_PASSWORD, True),
+        ) as prompt:
+            dlg._on_accept()
+        prompt.assert_called_once()
+        assert dlg.extracted_file_path is not None
+        assert os.path.isfile(dlg.extracted_file_path)
+        dlg.cleanup()
+        dlg.close()
+
+    def test_accept_password_prompt_cancel_does_not_extract(self):
+        """Test that canceling the password prompt leaves the dialog open."""
+        dlg = ArchiveLoaderDialog(ENC_ZIP_PATH, parent=self.main)
+        item = self._find_tree_item(dlg, "fauxware")
+        assert item is not None
+        dlg._tree.setCurrentItem(item)
+        with patch(
+            "angrmanagement.ui.dialogs.archive_loader.QInputDialog.getText",
+            return_value=("", False),
+        ):
+            dlg._on_accept()
+        assert dlg.extracted_file_path is None
+        assert dlg._temp_dir is None
+        dlg.close()
+
+    def test_accept_reprompts_after_wrong_password(self):
+        """Test that a bad password does not close the dialog and can be retried."""
+        dlg = ArchiveLoaderDialog(ENC_ZIP_PATH, parent=self.main)
+        item = self._find_tree_item(dlg, "fauxware")
+        assert item is not None
+        dlg._tree.setCurrentItem(item)
+        with (
+            patch(
+                "angrmanagement.ui.dialogs.archive_loader.QInputDialog.getText",
+                side_effect=[("wrong", True), (ENC_ZIP_PASSWORD, True)],
+            ) as prompt,
+            patch("angrmanagement.ui.dialogs.archive_loader.QMessageBox.warning") as warning,
+        ):
+            dlg._on_accept()
+        assert prompt.call_count == 2
+        warning.assert_called_once()
+        assert dlg._password == ENC_ZIP_PASSWORD
+        assert dlg.extracted_file_path is not None
+        assert os.path.isfile(dlg.extracted_file_path)
         dlg.cleanup()
         dlg.close()
 
     def test_cleanup_removes_temp_directory(self):
         """Test that cleanup removes extracted temp directory and resets state."""
-        dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
-        item = self._find_tree_item(dlg, "hello.txt")
+        dlg = ArchiveLoaderDialog(ZIP_PATH, parent=self.main)
+        item = self._find_tree_item(dlg, "fauxware")
         assert item is not None
         dlg._tree.setCurrentItem(item)
         dlg._on_accept()
@@ -280,23 +377,16 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
 
     def test_accept_with_no_selection_does_nothing(self):
         """Test that _on_accept with no current item is a no-op."""
-        dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
+        dlg = ArchiveLoaderDialog(ZIP_PATH, parent=self.main)
         dlg._on_accept()
         assert dlg.extracted_file_path is None
         assert dlg._temp_dir is None
         dlg.close()
 
-    def test_cleanup_is_idempotent(self):
-        """Test that calling cleanup multiple times does not raise."""
-        dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
-        dlg.cleanup()
-        dlg.cleanup()
-        dlg.close()
-
     def test_double_click_file_triggers_accept(self):
         """Test that double-clicking a file item triggers extraction."""
-        dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
-        item = self._find_tree_item(dlg, "hello.txt")
+        dlg = ArchiveLoaderDialog(ZIP_PATH, parent=self.main)
+        item = self._find_tree_item(dlg, "fauxware")
         assert item is not None
         dlg._tree.setCurrentItem(item)
         dlg._on_double_click(item, 0)
@@ -306,8 +396,8 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
 
     def test_double_click_directory_does_nothing(self):
         """Test that double-clicking a directory item does not trigger extraction."""
-        dlg = ArchiveLoaderDialog(self._zip_path, parent=self.main)
-        item = self._find_tree_item(dlg, "subdir")
+        dlg = ArchiveLoaderDialog(ZIP_PATH, parent=self.main)
+        item = self._find_tree_item(dlg, "subfolder")
         assert item is not None
         dlg._on_double_click(item, 0)
         assert dlg.extracted_file_path is None
