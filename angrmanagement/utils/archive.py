@@ -105,7 +105,7 @@ class ZipArchive(Archive):
                 raise ArchivePasswordRequired("Password required for encrypted ZIP member") from e
             raise ArchiveError(f"Failed to extract ZIP member: {e}") from e
 
-        except (KeyError, zipfile.BadZipFile, NotImplementedError, OSError) as e:
+        except (KeyError, zipfile.BadZipFile, OSError) as e:
             raise ArchiveError(f"Failed to extract ZIP member: {e}") from e
 
     def close(self) -> None:
