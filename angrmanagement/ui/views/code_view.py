@@ -11,6 +11,7 @@ from angr.analyses.decompiler.structured_codegen.c import (
     CStructuredCodeGenerator,
     CVariable,
 )
+from angr.analyses.decompiler.structured_codegen.rust import RustConstant, RustFunctionCall
 from angr.knowledge_plugins.functions.function import Function
 from angr.sim_variable import SimMemoryVariable
 from PySide6.QtCore import Qt
@@ -458,6 +459,18 @@ class CodeView(FunctionView):
                     self.workspace.jump_to(var.addr)
             elif isinstance(selected_node, CLabel) and "ins_addr" in selected_node.tags:
                 self.workspace.jump_to(selected_node.tags["ins_addr"])
+            elif isinstance(selected_node, RustFunctionCall):
+                # decompile this new function
+                if selected_node.callee_func is not None:
+                    self._navigate_to_function(selected_node.tags["ins_addr"], selected_node.callee_func)
+            elif isinstance(selected_node, RustConstant):  # noqa: SIM102
+                # jump to highlighted constants
+                if selected_node.reference_values is not None and selected_node.value is not None:
+                    for v in selected_node.reference_values.values():
+                        if isinstance(v, Function):
+                            self._navigate_to_function(selected_node.tags["ins_addr"], v)
+                            return
+                    self.workspace.jump_to(selected_node.value)
 
     def jump_to(self, addr: int, src_ins_addr=None) -> bool:  # pylint:disable=unused-argument
         if addr == self.addr.am_obj:
