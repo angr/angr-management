@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QRectF, Qt
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QBrush, QPainter
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
 from angrmanagement.config import Conf
@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
 
 class QBlockLabel(QCachedGraphicsItem):
+    ADDR_SPACING = 10
+
     def __init__(self, addr: int, text: str, config, disasm_view, instance: Instance, infodock, parent=None) -> None:
         super().__init__(parent=parent)
 
@@ -28,6 +30,7 @@ class QBlockLabel(QCachedGraphicsItem):
         self._config = config
         self._disasm_view = disasm_view
 
+        self._addr_item: QGraphicsSimpleTextItem = None
         self._text_item: QGraphicsSimpleTextItem = None
 
         self._init_widgets()
@@ -67,6 +70,13 @@ class QBlockLabel(QCachedGraphicsItem):
     #
 
     def _init_widgets(self) -> None:
+        # address
+        self._addr = f"{self.addr:08x}"
+        self._addr_item = QGraphicsSimpleTextItem(self)
+        self._addr_item.setBrush(QBrush(self._config.disasm_view_node_address_color))
+        self._addr_item.setFont(self._config.disasm_font)
+        self._addr_item.setText(self._addr)
+
         self._text_item = QGraphicsSimpleTextItem(self.text, self)
         self._text_item.setBrush(Conf.disasm_view_label_color)
         self._text_item.setFont(self._config.disasm_font)
@@ -74,7 +84,18 @@ class QBlockLabel(QCachedGraphicsItem):
         self._layout_items_and_update_size()
 
     def _layout_items_and_update_size(self) -> None:
-        self._text_item.setPos(0, 0)
+
+        x, y = 0, 0
+
+        # address
+        if self._disasm_view.show_address:
+            self._addr_item.setVisible(True)
+            self._addr_item.setPos(x, y)
+            x += self._addr_item.boundingRect().width() + self.ADDR_SPACING
+        else:
+            self._addr_item.setVisible(False)
+
+        self._text_item.setPos(x, y)
 
         self._width = self._text_item.boundingRect().width()
         self._height = self._text_item.boundingRect().height()

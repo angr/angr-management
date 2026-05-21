@@ -16,6 +16,10 @@ from angrmanagement.data.jobs import (
     FlirtSignatureRecognitionJob,
     Job,
     PrototypeFindingJob,
+    RustSymbolRecoveryConfiguration,
+    RustSymbolRecoveryJob,
+    RustTypeDBLoaderConfiguration,
+    RustTypeDBLoaderJob,
     StringDeobfuscationConfiguration,
     StringDeobfuscationJob,
     VariableRecoveryConfiguration,
@@ -48,6 +52,8 @@ class AnalysisManager(QObject):
                     FlirtAnalysisConfiguration,
                     CodeTaggingConfiguration,
                     CallingConventionRecoveryConfiguration,
+                    RustSymbolRecoveryConfiguration,
+                    RustTypeDBLoaderConfiguration,
                     VariableRecoveryConfiguration,
                 ]
             ]
@@ -86,6 +92,12 @@ class AnalysisManager(QObject):
                 job.prioritize_function(disassembly_view.function.addr)
 
             self._schedule_job(job)
+
+        if conf["rust_symbol_recovery"].enabled:
+            self._schedule_job(RustSymbolRecoveryJob(instance))
+
+        if conf["rust_typedb_loader"].enabled:
+            self._schedule_job(RustTypeDBLoaderJob(instance))
 
         if conf["varec"].enabled:
             job = VariableRecoveryJob(

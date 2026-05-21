@@ -318,7 +318,9 @@ class QCCodeEdit(api.CodeEdit):
         super().setDocument(document)
 
         self.color_scheme = ColorSchemeIDA()
-        self.code_highlighter = QCCodeHighlighter(self.document(), color_scheme=self.color_scheme)
+        self.code_highlighter = QCCodeHighlighter(
+            self.document(), color_scheme=self.color_scheme, flavor=self._code_view.flavor
+        )
         self.modes.append(self.code_highlighter)
         self.syntax_highlighter.fold_detector = api.CharBasedFoldDetector()
 

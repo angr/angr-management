@@ -11,6 +11,7 @@ from angr.analyses.decompiler.structured_codegen.c import (
     CStructuredCodeGenerator,
     CVariable,
 )
+from angr.analyses.decompiler.structured_codegen.rust import RustConstant, RustFunctionCall
 from angr.knowledge_plugins.functions.function import Function
 from angr.sim_variable import SimMemoryVariable
 from PySide6.QtCore import Qt
@@ -107,6 +108,17 @@ class CodeView(FunctionView):
     def document(self):
         return self._doc
 
+    @property
+    def flavor(self) -> str | None:
+        """
+        Return the current flavor of the codegen. This is just a convenient wrapper around self.codegen.flavor.
+        """
+        return self.codegen.flavor if not self.codegen.am_none else None
+
+    @property
+    def best_flavor(self) -> str:
+        return "rust" if not self.instance.project.am_none and self.instance.project.is_rust_binary else "pseudocode"
+
     #
     # Public methods
     #
@@ -146,8 +158,9 @@ class CodeView(FunctionView):
 
         def decomp_ready(*args, **kwargs) -> None:  # pylint:disable=unused-argument
             # this code is _partially_ duplicated from _on_new_function. be careful!
+            all_flavors = self.instance.kb.decompilations.all_flavors(self._function.addr)
+            self._update_available_views(all_flavors)
             available = self.instance.kb.decompilations.available_flavors(self._function.addr)
-            self._update_available_views(available)
             if available:
                 chosen_flavor = flavor if flavor in available else available[0]
                 cached = self.instance.kb.decompilations[(self._function.addr, chosen_flavor)]
@@ -168,7 +181,11 @@ class CodeView(FunctionView):
                 self.instance,
                 self._function.am_obj,
                 cfg=self.instance.cfg,
-                options=self._options.option_and_values,
+                options=[
+                    (o, v)
+                    for o, v in self._options.option_and_values
+                    if o.param not in {"simplify_ifelse", "prettify_thiscall", "cstyle_void_param", "max_str_len"}
+                ],
                 optimization_passes=self._options.selected_passes,
                 peephole_optimizations=self._options.selected_peephole_opts,
                 inline_functions=self.instance.functions_to_inline,
@@ -176,6 +193,7 @@ class CodeView(FunctionView):
                 on_finish=decomp_ready,
                 blocking=True,
                 regen_clinic=regen_clinic,
+                flavor=flavor,
             )
             self.workspace.job_manager.add_job(job)
 
@@ -352,7 +370,7 @@ class CodeView(FunctionView):
             # restore the scroll position
             self._textedit.verticalScrollBar().setValue(scroll_pos)
 
-        if self.codegen.flavor == "pseudocode":
+        if self.codegen.flavor in {"pseudocode", "rust"}:
             self._options.show()
         else:
             self._options.hide()
@@ -362,13 +380,14 @@ class CodeView(FunctionView):
     def _on_new_function(self, focus: bool = False, focus_addr=None, flavor=None, **kwargs) -> None:  # pylint: disable=unused-argument
         # sets a new function. extra args are used in case this operation requires waiting for the decompiler
         if flavor is None:
-            flavor = "pseudocode" if self.codegen.am_none else self.codegen.flavor
+            flavor = self.best_flavor if self.codegen.am_none else self.codegen.flavor
 
         if not self.codegen.am_none and self._last_function is self._function.am_obj:
             self._focus_core(focus, focus_addr)
             return
+        all_flavors = self.instance.kb.decompilations.all_flavors(self._function.addr)
+        self._update_available_views(all_flavors)
         available = self.instance.kb.decompilations.available_flavors(self._function.addr)
-        self._update_available_views(available)
         should_decompile = True
         if available:
             chosen_flavor = flavor if flavor in available else available[0]
@@ -440,6 +459,18 @@ class CodeView(FunctionView):
                     self.workspace.jump_to(var.addr)
             elif isinstance(selected_node, CLabel) and "ins_addr" in selected_node.tags:
                 self.workspace.jump_to(selected_node.tags["ins_addr"])
+            elif isinstance(selected_node, RustFunctionCall):
+                # decompile this new function
+                if selected_node.callee_func is not None:
+                    self._navigate_to_function(selected_node.tags["ins_addr"], selected_node.callee_func)
+            elif isinstance(selected_node, RustConstant):  # noqa: SIM102
+                # jump to highlighted constants
+                if selected_node.reference_values is not None and selected_node.value is not None:
+                    for v in selected_node.reference_values.values():
+                        if isinstance(v, Function):
+                            self._navigate_to_function(selected_node.tags["ins_addr"], v)
+                            return
+                    self.workspace.jump_to(selected_node.value)
 
     def jump_to(self, addr: int, src_ins_addr=None) -> bool:  # pylint:disable=unused-argument
         if addr == self.addr.am_obj:
@@ -496,13 +527,17 @@ class CodeView(FunctionView):
         for _ in range(self._view_selector.count()):
             self._view_selector.removeItem(0)
         self._view_selector.addItems(available)
-        self._view_selector.setVisible(len(available) >= 2)
 
     def _on_view_selector_changed(self, index) -> None:
         if not self._function.am_none:
-            key = (self._function.addr, self._view_selector.itemText(index))
-            self.codegen.am_obj = self.instance.kb.decompilations[key].codegen
-            self.codegen.am_event()
+            new_flavor = self._view_selector.itemText(index)
+            key = self._function.addr, new_flavor
+            if key in self.instance.kb.decompilations:
+                # it's available; just switch
+                self.codegen.am_obj = self.instance.kb.decompilations[key].codegen
+                self.codegen.am_event()
+            else:
+                self.decompile(flavor=new_flavor)
 
     #
     # Private methods
@@ -543,8 +578,8 @@ class CodeView(FunctionView):
             self.jump_history, self.jump_back, self.jump_forward, self.jump_to_history_position, True, self
         )
         self._view_selector = QComboBox()
-        self._view_selector.addItems(["Pseudocode"])
         self._view_selector.activated.connect(self._on_view_selector_changed)
+        self._view_selector.setVisible(True)
         status_layout = QHBoxLayout()
         status_layout.addWidget(self._nav_toolbar.qtoolbar())
         status_layout.addStretch(0)
