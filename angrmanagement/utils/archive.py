@@ -21,12 +21,16 @@ class ArchiveInvalidPassword(ArchiveError):
 
 @dataclass(frozen=True)
 class ArchiveMember:
+    """A single file entry inside an archive."""
+
     name: str
     size: int
     encrypted: bool = False
 
 
 class Archive(ABC):
+    """Base class for archive format handlers."""
+
     def __init__(self, path: str) -> None:
         self.path = path
         self._closed = False
@@ -59,10 +63,12 @@ class Archive(ABC):
 
 
 class ZipArchive(Archive):
+    """Handler for ZIP archives."""
+
     def __init__(self, path: str) -> None:
         super().__init__(path)
         try:
-            self._handle = zipfile.ZipFile(path, "r")
+            self._handle = zipfile.ZipFile(path, "r")  # pylint: disable=consider-using-with
         except (zipfile.BadZipFile, OSError) as e:
             raise ArchiveError(f"Failed to open ZIP archive: {e}") from e
 
@@ -87,10 +93,10 @@ class ZipArchive(Archive):
             info = self._handle.getinfo(member)
             if info.flag_bits & 0x1 and password is None:
                 raise ArchivePasswordRequired("Password required for encrypted ZIP member")
+
             pwd = password.encode("utf-8") if password is not None else None
             return self._handle.extract(member, dest_dir, pwd=pwd)
-        except ArchivePasswordRequired:
-            raise
+
         except RuntimeError as e:
             message = str(e).lower()
             if "bad password" in message:
@@ -98,6 +104,7 @@ class ZipArchive(Archive):
             if "password required" in message or "encrypted" in message:
                 raise ArchivePasswordRequired("Password required for encrypted ZIP member") from e
             raise ArchiveError(f"Failed to extract ZIP member: {e}") from e
+
         except (KeyError, zipfile.BadZipFile, NotImplementedError, OSError) as e:
             raise ArchiveError(f"Failed to extract ZIP member: {e}") from e
 
@@ -107,10 +114,12 @@ class ZipArchive(Archive):
 
 
 class TarArchive(Archive):
+    """Handler for TAR archives (including compressed variants)."""
+
     def __init__(self, path: str) -> None:
         super().__init__(path)
         try:
-            self._handle = tarfile.TarFile.open(path, "r:*")
+            self._handle = tarfile.TarFile.open(path, "r:*")  # pylint: disable=consider-using-with
         except (tarfile.TarError, OSError) as e:
             raise ArchiveError(f"Failed to open TAR archive: {e}") from e
 
