@@ -17,6 +17,7 @@ from .job import Job
 from .llm_preload import LLMPreloadCalleesJob
 from .llm_refine import LLMRefineJob
 from .loading import LoadBinaryJob
+from .overview import OverviewConfiguration
 from .prototype_finding import PrototypeFindingJob
 from .rust_symbol_recovery import RustSymbolRecoveryConfiguration, RustSymbolRecoveryJob
 from .rust_typedb_loader import RustTypeDBLoaderConfiguration, RustTypeDBLoaderJob
@@ -44,6 +45,7 @@ __all__ = [
     "Job",
     "LLMPreloadCalleesJob",
     "LLMRefineJob",
+    "OverviewConfiguration",
     "PrototypeFindingJob",
     "RustSymbolRecoveryConfiguration",
     "RustSymbolRecoveryJob",

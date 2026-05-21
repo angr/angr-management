@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QListWidget,
     QListWidgetItem,
+    QMessageBox,
     QSplitter,
     QVBoxLayout,
 )
@@ -38,6 +39,9 @@ from angrmanagement.ui.widgets.qproperty_editor import (
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
+
+
+RUST_DEPENDENT_ANALYSES = ("rust_symbol_recovery", "rust_typedb_loader")
 
 
 def map_option_to_property(option: AnalysisOption):
@@ -100,11 +104,13 @@ class AnalysisOptionsDialog(QDialog):
         analyses_gbox = QGroupBox("Available Analyses")
         analyses_gbox.setLayout(layout)
 
+        self._items_by_name: dict[str, QListWidgetItem] = {}
         for analysis in self._analyses.analyses:
             item = QListWidgetItem(analysis.display_name, self._analysis_list)
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
             item.setCheckState(Qt.CheckState.Checked if analysis.enabled else Qt.CheckState.Unchecked)
             self._analysis_list.addItem(item)
+            self._items_by_name[analysis.name] = item
 
         #
         # Analysis details
@@ -177,9 +183,45 @@ class AnalysisOptionsDialog(QDialog):
 
         def on_value_changed(prop, value):
             prop.extra["option"].value = value
+            if analysis.name == "overview" and prop.extra["option"].name == "languages":
+                self._on_language_changed(value)
 
         model.valueChanged.connect(on_value_changed)
         self._options_tree.setModel(model)
+
+    def _on_language_changed(self, language) -> None:
+        want_enabled = language == "rust"
+        targets = []
+        for name in RUST_DEPENDENT_ANALYSES:
+            try:
+                config = self._analyses.by_name(name)
+            except KeyError:
+                continue
+            if config.enabled != want_enabled:
+                targets.append(config)
+
+        if not targets:
+            return
+
+        action_word = "enable" if want_enabled else "disable"
+        names = ", ".join(c.display_name for c in targets)
+        reply = QMessageBox.question(
+            self,
+            f"{action_word.capitalize()} Rust-specific analyses?",
+            f"The selected language is {'Rust' if want_enabled else 'not Rust'}. "
+            f"Would you like to {action_word} the following Rust-specific {'analyses' if len(targets) > 1 else 'analysis'}?\n\n"
+            f"{names}",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        for config in targets:
+            config.enabled = want_enabled
+            item = self._items_by_name.get(config.name)
+            if item is not None:
+                item.setCheckState(Qt.CheckState.Checked if want_enabled else Qt.CheckState.Unchecked)
 
     #
     # Event handlers
