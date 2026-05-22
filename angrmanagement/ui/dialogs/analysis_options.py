@@ -190,6 +190,13 @@ class AnalysisOptionsDialog(QDialog):
         self._options_tree.setModel(model)
 
     def _on_language_changed(self, language) -> None:
+        try:
+            overview = self._analyses.by_name("overview")
+        except KeyError:
+            overview = None
+        if overview is not None and not overview.instance.project.am_none:
+            overview.instance.project._languages = [language]
+
         want_enabled = language == "rust"
         targets = []
         for name in RUST_DEPENDENT_ANALYSES:
