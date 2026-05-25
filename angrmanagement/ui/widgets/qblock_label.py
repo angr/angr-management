@@ -37,7 +37,11 @@ class QBlockLabel(QCachedGraphicsItem):
 
     def setVisible(self, visible):
         super().setVisible(visible)
+        self._addr_item.setVisible(visible and self._disasm_view.show_address)
         self._text_item.setVisible(visible)
+
+    def refresh(self):
+        self._layout_items_and_update_size()
 
     def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
