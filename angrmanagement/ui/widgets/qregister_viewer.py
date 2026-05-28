@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QVBoxLayout
 
+from angrmanagement.config import Conf
+
 from .qast_viewer import QASTViewer
 
 if TYPE_CHECKING:
@@ -208,7 +210,7 @@ class QRegisterViewer(QFrame):
         container = QFrame()
         container.setAutoFillBackground(True)
         palette = container.palette()
-        palette.setColor(container.backgroundRole(), Qt.GlobalColor.white)
+        palette.setColor(container.backgroundRole(), Conf.palette_base)
         container.setPalette(palette)
         container.setLayout(layout)
 
