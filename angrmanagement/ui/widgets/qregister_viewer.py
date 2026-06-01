@@ -190,7 +190,7 @@ class QRegisterViewer(QFrame):
             sublayout = QHBoxLayout()
 
             lbl_reg_name = QLabel(self)
-            lbl_reg_name.setProperty("class", "reg_viewer_label")
+            lbl_reg_name.setFont(Conf.symexec_font)
             lbl_reg_name.setText(reg_name)
             lbl_reg_name.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             sublayout.addWidget(lbl_reg_name)
