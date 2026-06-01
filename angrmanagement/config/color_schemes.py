@@ -60,6 +60,10 @@ COLOR_SCHEMES = {
         "function_table_simprocedure_color": QColor(0x80, 0x00, 0x00),
         "function_table_alignment_color": QColor(0x80, 0x00, 0x80),
         "function_table_signature_bg_color": QColor(0xAA, 0xFF, 0xFF),
+        "ast_viewer_concrete_color": QColor(0x00, 0x00, 0xFF),
+        "ast_viewer_symbolic_color": QColor(0x00, 0x80, 0x00),
+        "memory_viewer_address_color": QColor(0x00, 0x00, 0x00),
+        "memory_viewer_data_color": QColor(0x00, 0x00, 0x00),
         "palette_window": QColor(0xEF, 0xEF, 0xEF, 0xFF),
         "palette_windowtext": QColor(0x00, 0x00, 0x00, 0xFF),
         "palette_base": QColor(0xFF, 0xFF, 0xFF, 0xFF),
@@ -165,6 +169,10 @@ COLOR_SCHEMES = {
         "function_table_simprocedure_color": QColor(0xF1, 0x66, 0x64),
         "function_table_alignment_color": QColor(0x80, 0x80, 0x00),
         "function_table_signature_bg_color": QColor(0x1A, 0x32, 0x36),
+        "ast_viewer_concrete_color": QColor(0x00, 0xAA, 0xFF),
+        "ast_viewer_symbolic_color": QColor(0x2C, 0xC9, 0x76),
+        "memory_viewer_address_color": QColor(0x2C, 0xC9, 0x76),
+        "memory_viewer_data_color": QColor(0xE0, 0xE0, 0xE0),
         "palette_window": QColor(0x3A, 0x3A, 0x3A),
         "palette_windowtext": QColor(0xFF, 0xFF, 0xFF),
         "palette_base": QColor(0x24, 0x24, 0x24),
@@ -270,6 +278,10 @@ COLOR_SCHEMES = {
         "function_table_simprocedure_color": QColor(0xFF, 0x55, 0x55),
         "function_table_alignment_color": QColor(0xF1, 0xFA, 0x8C),
         "function_table_signature_bg_color": QColor(0x1F, 0x45, 0x4D),
+        "ast_viewer_concrete_color": QColor(0x8B, 0xE9, 0xFD),
+        "ast_viewer_symbolic_color": QColor(0x50, 0xFA, 0x7B),
+        "memory_viewer_address_color": QColor(0x50, 0xFA, 0x7B),
+        "memory_viewer_data_color": QColor(0xF8, 0xF8, 0xF2),
         "palette_window": QColor(0x24, 0x26, 0x31),
         "palette_windowtext": QColor(0xF8, 0xF8, 0xF2),
         "palette_base": QColor(0x28, 0x2A, 0x36),
@@ -374,6 +386,12 @@ COLOR_SCHEMES = {
         "function_table_simprocedure_color": QColor(243, 139, 168),  # red
         "function_table_alignment_color": QColor(249, 226, 175),  # yellow
         "function_table_signature_bg_color": QColor(49, 50, 68),  # surface0
+        # AST viewer
+        "ast_viewer_concrete_color": QColor(137, 180, 250),  # blue
+        "ast_viewer_symbolic_color": QColor(166, 227, 161),  # green
+        # Memory viewer
+        "memory_viewer_address_color": QColor(205, 214, 244),  # text (matches disasm address)
+        "memory_viewer_data_color": QColor(205, 214, 244),  # text
         # Palette Colors
         "palette_window": QColor(30, 30, 46),  # base
         "palette_windowtext": QColor(205, 214, 244),  # text
