@@ -195,7 +195,7 @@ class QRegisterViewer(QFrame):
             lbl_reg_name.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             sublayout.addWidget(lbl_reg_name)
 
-            sublayout.addSpacing(10)
+            sublayout.addSpacing((4 - len(reg_name)) * Conf.symexec_font_width)
             reg_value = QASTViewer(None, parent=self, workspace=self.workspace)
             self._registers[reg_name] = reg_value
             sublayout.addWidget(reg_value)
