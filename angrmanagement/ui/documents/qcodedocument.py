@@ -20,6 +20,8 @@ from angrmanagement.config import Conf
 if TYPE_CHECKING:
     from angr.analyses.decompiler.structured_codegen.base import BaseStructuredCodeGenerator
 
+    from angrmanagement.data.object_container import ObjectContainer
+
 
 class QCodeDocument(QTextDocument):
     """
@@ -29,7 +31,7 @@ class QCodeDocument(QTextDocument):
     def __init__(self, codegen) -> None:
         super().__init__()
 
-        self._codegen: BaseStructuredCodeGenerator = codegen
+        self._codegen: ObjectContainer | BaseStructuredCodeGenerator = codegen
         self._doclayout = QPlainTextDocumentLayout(self)
         self._doclayout.setCursorWidth(2)
 
@@ -46,12 +48,14 @@ class QCodeDocument(QTextDocument):
         :return:
         :rtype:     Optional[PositionMapping]
         """
-        if self._codegen is None:
+        if self._codegen is None or self._codegen.am_none:
             return None
         return self._codegen.map_pos_to_node
 
     def get_node_at_position(self, pos):
-        if self._codegen is not None and self._codegen.map_pos_to_node is not None:
+        if self._codegen is None or self._codegen.am_none:
+            return None
+        if self._codegen.map_pos_to_node is not None:
             n = self._codegen.map_pos_to_node.get_node(pos)
             if n is None:
                 n = self._codegen.map_pos_to_node.get_node(pos - 1)
@@ -75,7 +79,7 @@ class QCodeDocument(QTextDocument):
         :return:
         """
 
-        if self._codegen is None or self._codegen.map_pos_to_addr is None:
+        if self._codegen is None or self._codegen.am_none or self._codegen.map_pos_to_addr is None:
             return None
 
         n = self._codegen.map_pos_to_addr.get_node(pos)
@@ -111,10 +115,12 @@ class QCodeDocument(QTextDocument):
         return n
 
     def find_closest_node_pos(self, ins_addr):
+        if self._codegen is None or self._codegen.am_none:
+            return None
         return self._codegen.map_addr_to_pos.get_nearest_pos(ins_addr)
 
     def find_related_text_chunks(self, node):
-        if self._codegen is None or self._codegen.map_ast_to_pos is None:
+        if self._codegen is None or self._codegen.am_none or self._codegen.map_ast_to_pos is None:
             return None
 
         if isinstance(node, CConstant):
