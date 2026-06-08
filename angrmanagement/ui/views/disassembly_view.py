@@ -828,8 +828,8 @@ class DisassemblyView(SynchronizedFunctionView):
                     addr_to_annotations[addr].append(QFindAddrAnnotation(addr, qsimgrs))
                 if addr in qsimgrs.avoid_addrs:
                     addr_to_annotations[addr].append(QAvoidAddrAnnotation(addr, qsimgrs))
-                for bp in self.instance.breakpoint_mgr.get_breakpoints_at(addr):
-                    addr_to_annotations[addr].append(QBreakAnnotation(bp))
+            for bp in self.instance.breakpoint_mgr.get_breakpoints_at(addr):
+                addr_to_annotations[addr].append(QBreakAnnotation(bp))
 
         return QBlockAnnotations(addr_to_annotations, parent=qblock, disasm_view=self)
 
