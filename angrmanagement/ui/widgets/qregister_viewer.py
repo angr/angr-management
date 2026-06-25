@@ -4,7 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QVBoxLayout
+from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QScrollArea, QSizePolicy, QVBoxLayout
 
 from angrmanagement.config import Conf
 
@@ -175,7 +175,7 @@ class QRegisterViewer(QFrame):
             log.error("Architecture %s is not listed in QRegisterViewer.ARCH_REGISTERS.", self._state.arch.name)
             return
 
-        layout = QVBoxLayout()
+        layout = QGridLayout()
         area = QScrollArea()
         area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
@@ -186,24 +186,19 @@ class QRegisterViewer(QFrame):
         # common ones
         common_regs = regs["common"]
 
-        for reg_name in common_regs:
-            sublayout = QHBoxLayout()
-
+        for row, reg_name in enumerate(common_regs):
             lbl_reg_name = QLabel(self)
-            lbl_reg_name.setProperty("class", "reg_viewer_label")
+            lbl_reg_name.setFont(Conf.symexec_font)
             lbl_reg_name.setText(reg_name)
             lbl_reg_name.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-            sublayout.addWidget(lbl_reg_name)
+            layout.addWidget(lbl_reg_name, row, 0)
 
-            sublayout.addSpacing(10)
             reg_value = QASTViewer(None, parent=self, workspace=self.workspace)
             self._registers[reg_name] = reg_value
-            sublayout.addWidget(reg_value)
+            layout.addWidget(reg_value, row, 1)
 
-            layout.addLayout(sublayout)
-
+        layout.setColumnStretch(1, 1)
         layout.setSpacing(0)
-        layout.addStretch(0)
         layout.setContentsMargins(2, 2, 2, 2)
 
         # the container
