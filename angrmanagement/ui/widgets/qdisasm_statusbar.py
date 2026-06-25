@@ -16,6 +16,9 @@ if TYPE_CHECKING:
     from angr.knowledge_plugins import Function
 
 
+MAX_FUNCTION_NAME_LENGTH = 55
+
+
 class QDisasmStatusBar(QFrame):
     """
     Status and control bar for disassembly views
@@ -133,8 +136,11 @@ class QDisasmStatusBar(QFrame):
         self._disasm_level_combo.setCurrentIndex(index)
 
     def _update_function_label(self) -> None:
-        s = f"{self._function.name} ({self._function.addr:x})" if self._function is not None else ""
-        self._function_label.setText(s)
+        func_name = self._function.demangled_name if self._function is not None else ""
+        if len(func_name) > MAX_FUNCTION_NAME_LENGTH:
+            func_name = func_name[:MAX_FUNCTION_NAME_LENGTH] + "..."
+        label_text = func_name + f" ({self._function.addr:x})" if self._function is not None else ""
+        self._function_label.setText(label_text)
 
     def _on_saveimage_btn_clicked(self) -> None:
         filename, folder = QFileDialog.getSaveFileName(self, "Save image...", "", "PNG Files (*.png);;Bitmaps (*.bmp)")
