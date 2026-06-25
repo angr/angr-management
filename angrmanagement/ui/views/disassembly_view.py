@@ -601,7 +601,7 @@ class DisassemblyView(SynchronizedFunctionView):
         dialog.exec_()
 
     def popup_patch_dialog(self) -> None:
-        dlg = AssemblePatchDialog(self._insn_addr_on_context_menu, self.instance)
+        dlg = AssemblePatchDialog(self._insn_addr_on_context_menu, self.instance, self)
         dlg.exec_()
 
     #
