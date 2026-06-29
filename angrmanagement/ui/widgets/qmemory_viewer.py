@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QPainter, QPen
+from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QLineEdit, QScrollArea, QVBoxLayout, QWidget
 
 from angrmanagement.config import Conf
@@ -59,7 +59,6 @@ class QMemoryView(QWidget):
 
         painter = QPainter(self)
 
-        painter.setPen(QPen(Qt.black, 1))
         painter.setFont(Conf.symexec_font)
 
         x = MARGIN_LEFT
@@ -74,12 +73,14 @@ class QMemoryView(QWidget):
                 y += Conf.symexec_font_height + LINE_MARGIN
             elif obj_type is AddressPiece:
                 # address
+                painter.setPen(Conf.memory_viewer_address_color)
                 addr_str = f"{obj.address:08x}"
                 painter.drawText(x, y + Conf.symexec_font_ascent, addr_str)
                 x += Conf.symexec_font_width * len(addr_str)
                 x += 7
             elif obj_type is QASTViewer:
-                # AST viewer
+                # AST viewer (memory data)
+                painter.setPen(Conf.memory_viewer_data_color)
                 obj.x = x
                 obj.y = y
                 obj.paint(painter)

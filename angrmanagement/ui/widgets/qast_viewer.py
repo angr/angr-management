@@ -148,7 +148,7 @@ class QASTViewer(QFrame):
 
         if self._display_size:
             size_label = QLabel(self)
-            size_label.setProperty("class", "ast_viewer_size")
+            size_label.setFont(Conf.symexec_font)
             size_label.setAlignment(Qt.AlignmentFlag.AlignRight)
             size_label.setMaximumSize(QSize(24, 65536))
             self._size_label = size_label
@@ -169,11 +169,14 @@ class QASTViewer(QFrame):
 
         ast = self._ast
 
-        # set style
+        # set color
         if isinstance(ast, int) or not ast.symbolic:
-            self._ast_label.setProperty("class", "ast_viewer_ast_concrete")
+            color = Conf.ast_viewer_concrete_color
         else:
-            self._ast_label.setProperty("class", "ast_viewer_ast_symbolic")
+            color = Conf.ast_viewer_symbolic_color
+
+        self._ast_label.setFont(Conf.symexec_font)
+        self._ast_label.setStyleSheet(f"color: {color.name()}")
 
         # set text
         if self._display_size:
@@ -182,10 +185,6 @@ class QASTViewer(QFrame):
             self._size_label.setText("")
 
         self._ast_label.setText(self._ast_str)
-
-        # reapply the style
-        self._ast_label.style().unpolish(self._ast_label)
-        self._ast_label.style().polish(self._ast_label)
 
     def _build_strings(self) -> None:
         if self._ast is None:

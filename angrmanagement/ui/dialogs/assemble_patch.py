@@ -141,6 +141,8 @@ class AssemblePatchDialog(QDialog):
                     byte_length_delta = len(self._original_bytes) - len(self._new_bytes)
                     if byte_length_delta:
                         status_msg = "Warning: Unable to completely pad remainder"
+                else:
+                    status_msg = "Warning: Patch is shorter than original instruction"
             elif byte_length_delta < 0:
                 status_msg = "Warning: Patch exceeds original instruction length"
 
