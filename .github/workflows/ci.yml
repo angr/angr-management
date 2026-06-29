@@ -49,7 +49,7 @@ jobs:
             libxcb-shape0
         if: startsWith(matrix.os, 'ubuntu')
       - name: Install dependencies (macOS)
-        run: brew install flatcc flatbuffers
+        run: brew install flatcc flatbuffers keystone
         if: startsWith(matrix.os, 'macos')
       - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
         if: startsWith(runner.os, 'windows')
