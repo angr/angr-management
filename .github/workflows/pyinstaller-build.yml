@@ -47,7 +47,7 @@ jobs:
             libxcb-shape0
         if: startsWith(matrix.os, 'ubuntu')
       - name: Install dependencies (macOS)
-        run: brew install flatcc flatbuffers
+        run: brew install flatcc flatbuffers keystone
         if: startsWith(matrix.os, 'macos')
       - name: Run nightly build on Windows
         run: |
