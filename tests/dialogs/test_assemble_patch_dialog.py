@@ -24,7 +24,6 @@ def _make_instance(insn_bytes, arch_id):
     instance = MagicMock()
     instance.project.factory.block.return_value = block
     instance.project.arch = arch
-    instance.project.kb.patches.get_patch.return_value = None
     return instance
 
 
