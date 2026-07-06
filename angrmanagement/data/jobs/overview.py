@@ -22,7 +22,7 @@ def _detect_default_language(instance: Instance) -> str:
         return "unknown"
     try:
         languages = instance.project.languages()
-    except Exception:
+    except Exception:  # pylint:disable=broad-exception-caught
         return "unknown"
     if not languages:
         return "unknown"
