@@ -216,7 +216,8 @@ class AnalysisOptionsDialog(QDialog):
             self,
             f"{action_word.capitalize()} Rust-specific analyses?",
             f"The selected language is {'Rust' if want_enabled else 'not Rust'}. "
-            f"Would you like to {action_word} the following Rust-specific {'analyses' if len(targets) > 1 else 'analysis'}?\n\n"
+            f"Would you like to {action_word} the following Rust-specific "
+            f"{'analyses' if len(targets) > 1 else 'analysis'}?\n\n"
             f"{names}",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.Yes,
