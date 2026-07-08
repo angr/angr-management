@@ -35,6 +35,16 @@ class QAilObj(BlockTreeNode):
     def create_subobjs(self, obj: Any) -> None:
         self.add_ailobj(obj)
 
+    def ail_variable(self, obj: Any):
+        """
+        Look up the variable associated with an AIL statement or expression. Variables no longer live on AIL objects
+        themselves; they are tracked in a VariableMap side container on the Clinic instance.
+        """
+        variable_map = getattr(self.infodock.disasm_view.disasm, "variable_map", None)
+        if variable_map is None:
+            return None
+        return variable_map.variable(obj)
+
     def add_ailobj(self, obj: Any) -> None:
         """
         Map appropriate AIL type to the display type
@@ -100,13 +110,14 @@ class QAilStoreObj(QAilTextObj):
     """
 
     def create_subobjs(self, obj: ailment.statement.Store) -> None:
-        if obj.variable is None or not self.options.show_variables:
+        variable = self.ail_variable(obj) if self.options.show_variables else None
+        if variable is None:
             self.add_text("*(")
             self.add_ailobj(obj.addr)
             self.add_text(") = ")
             self.add_ailobj(obj.data)
         else:
-            self.add_variable(obj.variable)
+            self.add_variable(variable)
             self.add_text(" = ")
             self.add_ailobj(obj.data)
 
@@ -246,8 +257,9 @@ class QAilRegisterObj(QAilTextObj):
         return fmt
 
     def create_subobjs(self, obj: ailment.expression.Register) -> None:
-        if obj.variable is not None and self.options.show_variables:
-            self.add_variable(obj.variable)
+        variable = self.ail_variable(obj) if self.options.show_variables else None
+        if variable is not None:
+            self.add_variable(variable)
         else:
             s = f"{obj.reg_name}" if hasattr(obj, "reg_name") else f"reg_{obj.reg_offset}<{obj.bits // 8}>"
             self.add_text(s)
@@ -302,8 +314,9 @@ class QAilLoadObj(QAilTextObj):
     """
 
     def create_subobjs(self, obj: ailment.expression.Load) -> None:
-        if obj.variable is not None and self.options.show_variables:
-            self.add_variable(obj.variable)
+        variable = self.ail_variable(obj) if self.options.show_variables else None
+        if variable is not None:
+            self.add_variable(variable)
         else:
             self.add_text("*(")
             self.add_ailobj(obj.addr)

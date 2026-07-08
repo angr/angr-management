@@ -43,6 +43,33 @@ class TestQDisassemblyGraph(AngrManagementTestCase):
         assert entry_block is not None
         assert entry_block.disasm._include_ir is True
 
+    def test_ail_graph(self):
+        main = self.main
+        binpath = os.path.join(test_location, "x86_64", "fauxware")
+        main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
+        main.workspace.main_instance.project.am_event()
+        main.workspace.job_manager.join_all_jobs()
+
+        # authenticate's AIL graph keeps Load expressions, which used to crash rendering after variables moved off
+        # AIL objects and into VariableMap
+        func = main.workspace.main_instance.project.kb.functions["authenticate"]
+        assert func is not None
+
+        # load the disassembly view in graph mode
+        disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
+        disasm_view.display_disasm_graph()
+        disasm_view.display_function(func)
+        main.workspace.job_manager.join_all_jobs()
+
+        # change disassembly level to AIL; this rebuilds all graph blocks and renders AIL statements
+        disasm_view.set_disassembly_level_ail()
+        main.workspace.job_manager.join_all_jobs()
+
+        flow_graph = disasm_view.flow_graph
+        entry_block = next((b for b in flow_graph.blocks if b.addr == func.addr), None)
+        assert entry_block is not None
+        assert isinstance(entry_block.disasm, angr.analyses.decompiler.clinic.Clinic)
+
 
 if __name__ == "__main__":
     unittest.main(argv=sys.argv)
