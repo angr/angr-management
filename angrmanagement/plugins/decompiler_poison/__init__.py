@@ -48,8 +48,8 @@ class PoisonPass(OptimizationPass):
     NAME = "Poison Pass"
     DESCRIPTION = __doc__.strip()
 
-    def __init__(self, func, **kwargs) -> None:
-        super().__init__(func, **kwargs)
+    def __init__(self, func, *args, **kwargs) -> None:
+        super().__init__(func, *args, **kwargs)
         self.analyze()
 
     def is_poisoned(self, addr: int):
