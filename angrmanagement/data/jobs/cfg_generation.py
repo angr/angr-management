@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import logging
+import time
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -23,6 +24,9 @@ if TYPE_CHECKING:
     from angrmanagement.logic.jobmanager import JobContext
 
 _l = logging.getLogger(name=__name__)
+
+# the minimum interval (in seconds) between two consecutive GUI refreshes during CFG recovery
+MIN_REFRESH_INTERVAL = 0.1
 
 
 class CFGForceScanMode(Enum):
@@ -175,6 +179,7 @@ class CFGGenerationJob(InstanceJob):
 
         self.cfg_args = cfg_args
         self._cfb = None
+        self._last_refresh: float = 0.0
 
     def run(self, ctx: JobContext):
         exclude_region_types = {"kernel", "tls"}
@@ -206,7 +211,8 @@ class CFGGenerationJob(InstanceJob):
     def _progress_callback(self, ctx: JobContext, percentage, text: str | None = None, cfg=None) -> None:
         ctx.set_progress(percentage, text)
 
-        if cfg is not None:
+        if cfg is not None and time.monotonic() - self._last_refresh >= MIN_REFRESH_INTERVAL:
+            self._last_refresh = time.monotonic()
             # Peek into the CFG
             gui_thread_schedule_async(
                 self._refresh,
