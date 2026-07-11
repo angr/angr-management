@@ -27,6 +27,8 @@ _l = logging.getLogger(name=__name__)
 
 # the minimum interval (in seconds) between two consecutive GUI refreshes during CFG recovery
 MIN_REFRESH_INTERVAL = 0.1
+# the minimum amount of time (in seconds) between two consecutive batches of CFB object-added events
+MIN_CFB_EVENT_INTERVAL = 0.1
 
 
 class CFGForceScanMode(Enum):
@@ -180,6 +182,8 @@ class CFGGenerationJob(InstanceJob):
         self.cfg_args = cfg_args
         self._cfb = None
         self._last_refresh: float = 0.0
+        self._pending_cfb_objs: list[tuple[int, object]] = []
+        self._last_cfb_event: float = 0.0
 
     def run(self, ctx: JobContext):
         exclude_region_types = {"kernel", "tls"}
@@ -195,6 +199,7 @@ class CFGGenerationJob(InstanceJob):
             cfb=temp_cfb,
             **self.cfg_args,
         )
+        self._flush_cfb_objects()
         self._cfb = None
         # Build the real one
         cfb = self.instance.project.analyses.CFB(kb=cfg.kb, exclude_region_types=exclude_region_types)
@@ -229,4 +234,13 @@ class CFGGenerationJob(InstanceJob):
         self.instance.cfb = cfb
 
     def _on_cfb_object_added(self, addr: int, obj) -> None:
-        self.instance.cfb.am_event(object_added=(addr, obj))
+        self._pending_cfb_objs.append((addr, obj))
+        if time.monotonic() - self._last_cfb_event >= MIN_CFB_EVENT_INTERVAL:
+            self._flush_cfb_objects()
+
+    def _flush_cfb_objects(self) -> None:
+        self._last_cfb_event = time.monotonic()
+        if self._pending_cfb_objs:
+            objs = self._pending_cfb_objs
+            self._pending_cfb_objs = []
+            self.instance.cfb.am_event(objects_added=objs)
