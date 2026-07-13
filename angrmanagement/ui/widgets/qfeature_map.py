@@ -198,17 +198,21 @@ class FeatureMapItem(QGraphicsItem):
         return QRectF(0, 0, self._width, self._height)
 
     def _on_cfb_event(self, **kwargs) -> None:
-        if "object_added" in kwargs:  # Called by task thread
-            addr, item = kwargs["object_added"]
-            tags = _get_tags_for_item(item)
-            if tags is None or item.size is None:
-                return
+        if "objects_added" in kwargs:  # Called by task thread
+            objs = kwargs.get("objects_added")
+            added = False
             with self._cfb_feature_maps_lock:
-                for fm in self._cfb_feature_maps:
-                    fm.add(addr, item.size, tags)
+                for addr, item in objs:
+                    tags = _get_tags_for_item(item)
+                    if tags is None or item.size is None:
+                        continue
+                    for fm in self._cfb_feature_maps:
+                        fm.add(addr, item.size, tags)
+                    added = True
 
             if (
-                not self._refresh_pending
+                added
+                and not self._refresh_pending
                 and time.time() - self._last_refresh_timestamp > self._min_cfb_time_between_refresh
             ):
                 self._refresh_pending = True
