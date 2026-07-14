@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import claripy
+from angr import claripy
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel
 
@@ -57,7 +57,7 @@ class QASTViewer(QFrame):
 
     def mouseDoubleClickEvent(self, event) -> None:
         if self._ast is not None and not self._ast.symbolic:
-            self.workspace.viz(claripy.backends.concrete.convert(self._ast).value)
+            self.workspace.viz(self._ast.concrete_value)
 
     #
     # Properties
@@ -205,7 +205,7 @@ class QASTViewer(QFrame):
                 self._size_label.setText(f"[{len(ast) // 8}]")  # in bytes
             if not ast.symbolic:
                 format = "%02x" if self._byte_format is None else self._byte_format
-                self._ast_str = format % claripy.backends.concrete.convert(ast).value
+                self._ast_str = format % ast.concrete_value
             else:
                 # symbolic
                 if isinstance(ast, claripy.ast.BV) and ast.op == "BVS":
