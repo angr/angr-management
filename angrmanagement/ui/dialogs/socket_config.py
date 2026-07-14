@@ -4,7 +4,7 @@ import base64
 import socket
 from typing import TYPE_CHECKING
 
-import claripy
+from angr import claripy
 from angr.storage.file import SimPacketsStream
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, QSize, Qt
 from PySide6.QtGui import QColor, QContextMenuEvent, QIntValidator
