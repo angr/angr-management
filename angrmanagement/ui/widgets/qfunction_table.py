@@ -1,24 +1,20 @@
 from __future__ import annotations
 
-import os
-import string
+import contextlib
 from functools import partial
 from typing import TYPE_CHECKING
 
 from angr.analyses.code_tagging import CodeTags
 from angr.rust.utils.demangler import demangle as rust_demangle
 from angr.utils.library import get_cpp_function_name
-from cle.backends.uefi_firmware import UefiPE
 from PySide6.QtCore import SIGNAL, QAbstractTableModel, QEvent, Qt
 from PySide6.QtGui import QAction, QBrush, QCursor, QPalette
 from PySide6.QtWidgets import (
-    QAbstractItemView,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
     QMenu,
-    QTableView,
     QVBoxLayout,
     QWidget,
 )
@@ -28,14 +24,90 @@ from angrmanagement.data.instance import Instance, ObjectContainer
 from angrmanagement.ui.icons import icon
 from angrmanagement.ui.menus.function_context_menu import FunctionContextMenu
 from angrmanagement.ui.toolbars import FunctionTableToolbar
+from angrmanagement.ui.widgets.qfast_table_view import QFastTableView
 
 if TYPE_CHECKING:
     import PySide6
+    import PySide6.QtCore
     import PySide6.QtGui
     from angr.knowledge_plugins.functions import Function, FunctionManager
 
     from angrmanagement.ui.views.functions_view import FunctionsView
     from angrmanagement.ui.workspace import Workspace
+
+
+class FunctionTableEntry:
+    """
+    A single entry in the function table as a proxy for the actual Function object.
+    """
+
+    __slots__ = ("_funcman", "addr")
+
+    def __init__(self, funcman: FunctionManager, addr: int) -> None:
+        self._funcman = funcman
+        self.addr = addr
+
+    def _meta_func(self) -> Function | None:
+        try:
+            return self._funcman.get_by_addr(self.addr, meta_only=True)
+        except KeyError:
+            return None
+
+    @property
+    def is_syscall(self) -> bool:
+        func = self._meta_func()
+        return bool(func.is_syscall) if func is not None else False
+
+    @property
+    def is_plt(self) -> bool:
+        return self._funcman.is_plt_cached(self.addr)
+
+    @property
+    def is_simprocedure(self) -> bool:
+        func = self._meta_func()
+        return bool(func.is_simprocedure) if func is not None else False
+
+    @property
+    def is_alignment(self) -> bool:
+        func = self._meta_func()
+        return bool(func.is_alignment) if func is not None else False
+
+    @property
+    def from_signature(self) -> str | None:
+        return self._funcman.get_from_signature(self.addr)
+
+    @property
+    def name(self) -> str:
+        return self._funcman.get_func_name(self.addr)
+
+    @property
+    def demangled_name(self) -> str:
+        func = self._meta_func()
+        return func.demangled_name if func is not None else self.name
+
+    @property
+    def tags(self) -> list[str]:
+        func = self._meta_func()
+        return list(func.tags) if func is not None else []
+
+    @property
+    def size(self) -> int:
+        func = self._meta_func()
+        return func.size if func is not None else 0
+
+    @property
+    def number_of_blocks(self) -> int:
+        return self._funcman.get_func_block_count(self.addr)
+
+    @property
+    def cyclomatic_complexity(self) -> int:
+        func = self._meta_func()
+        return func.cyclomatic_complexity if func is not None else 0
+
+    @property
+    def binary_name(self) -> str:
+        func = self._meta_func()
+        return (func.binary_name or "") if func is not None else ""
 
 
 class QFunctionTableModel(QAbstractTableModel):
@@ -56,8 +128,8 @@ class QFunctionTableModel(QAbstractTableModel):
     def __init__(self, workspace: Workspace, instance: Instance, func_list) -> None:
         super().__init__()
 
-        self._func_list = None
-        self._raw_func_list = func_list
+        self._func_list: list[FunctionTableEntry] | None = None
+        self._raw_func_list: list[FunctionTableEntry] | None = func_list
         self.workspace = workspace
         self.instance = instance
         self._config = Conf
@@ -71,7 +143,7 @@ class QFunctionTableModel(QAbstractTableModel):
         return 0
 
     @property
-    def func_list(self) -> list[Function]:
+    def func_list(self) -> list[FunctionTableEntry] | None:
         if self._func_list is not None:
             return self._func_list
         return self._raw_func_list
@@ -125,6 +197,8 @@ class QFunctionTableModel(QAbstractTableModel):
     def data(self, index, role=None):
         if not index.isValid():
             return None
+        if self.func_list is None:
+            return None
 
         row = index.row()
         if row >= len(self):
@@ -148,7 +222,10 @@ class QFunctionTableModel(QAbstractTableModel):
         return value
 
     def _data_uncached(self, row, col, role):
-        func = self.func_list[row]
+        if self.func_list is None:
+            return None
+
+        func: FunctionTableEntry = self.func_list[row]
 
         if role == Qt.ItemDataRole.DisplayRole:
             if col == self.INLINE_COL:
@@ -186,6 +263,8 @@ class QFunctionTableModel(QAbstractTableModel):
         return None
 
     def sort(self, column, order=None) -> None:
+        if self.func_list is None:
+            return None
         self.layoutAboutToBeChanged.emit()
         self.func_list = sorted(
             self.func_list,
@@ -199,6 +278,9 @@ class QFunctionTableModel(QAbstractTableModel):
     #
 
     def setData(self, index: PySide6.QtCore.QModelIndex, value, role=Qt.ItemDataRole.EditRole) -> bool:
+        if self.func_list is None:
+            return False
+
         if not index.isValid():
             return False
 
@@ -223,7 +305,7 @@ class QFunctionTableModel(QAbstractTableModel):
             flags |= Qt.ItemFlag.ItemIsUserCheckable
         return flags
 
-    def _get_column_data(self, func, idx: int):
+    def _get_column_data(self, func: FunctionTableEntry, idx: int):
         if idx == self.INLINE_COL:
             return func in self.instance.functions_to_inline
         elif idx == self.NAME_COL:
@@ -242,13 +324,13 @@ class QFunctionTableModel(QAbstractTableModel):
         elif idx == self.SIZE_COL:
             return func.size
         elif idx == self.BLOCKS_COL:
-            return len(func.block_addrs_set)
+            return func.number_of_blocks
         elif idx == self.COMPLEXITY_COL:
             return func.cyclomatic_complexity
         else:
             return self.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[0]
 
-    def _get_column_text(self, func, idx: int):
+    def _get_column_text(self, func: FunctionTableEntry, idx: int):
         if idx < len(self.Headers):
             data = self._get_column_data(func, idx)
             if idx == self.ADDRESS_COL:
@@ -261,17 +343,18 @@ class QFunctionTableModel(QAbstractTableModel):
         return self.workspace.plugins.extract_func_column(func, idx - len(self.Headers))[1]
 
     @staticmethod
-    def _get_binary_name(func) -> str:
-        if func.binary is not None:
-            if func.binary.binary is not None:
-                return os.path.basename(func.binary.binary)
-            if isinstance(func.binary, UefiPE):
-                if func.binary.user_interface_name:
-                    return func.binary.user_interface_name
-                if func.binary.guid:
-                    return str(func.binary.guid)
-                return str(func.binary)
-        return ""
+    def _get_binary_name(func: FunctionTableEntry) -> str:
+        return func.binary_name
+        # if func.binary is not None:
+        #     if func.binary.binary is not None:
+        #         return os.path.basename(func.binary.binary)
+        #     if isinstance(func.binary, UefiPE):
+        #         if func.binary.user_interface_name:
+        #             return func.binary.user_interface_name
+        #         if func.binary.guid:
+        #             return str(func.binary.guid)
+        #         return str(func.binary)
+        # return ""
 
     TAG_STRS = {
         CodeTags.HAS_XOR: "Xor",
@@ -345,13 +428,20 @@ class QFunctionTableHeaderView(QHeaderView):
             self.setSectionHidden(idx, not visible)
 
 
-class QFunctionTableView(QTableView):
+class QFunctionTableView(QFastTableView):
     """
     The table view for QFunctionTable.
+
+    Backed by :class:`QFastTableView`, which renders only the currently visible rows via a
+    ``QGraphicsScene`` so that the table stays responsive for binaries with thousands of
+    functions.
     """
 
+    _model: QFunctionTableModel
+
     def __init__(self, parent, workspace: Workspace, instance: Instance, selection_callback=None) -> None:
-        super().__init__(parent)
+        header = QFunctionTableHeaderView(Qt.Orientation.Horizontal)
+        super().__init__(parent, header=header)
         self.workspace = workspace
         self.instance = instance
         self._context_menu = FunctionContextMenu(workspace, self)
@@ -360,14 +450,12 @@ class QFunctionTableView(QTableView):
         self._selected_func = ObjectContainer(None, "Currently selected function")
         self._selected_func.am_subscribe(selection_callback)
 
-        header = QFunctionTableHeaderView(Qt.Orientation.Horizontal, self)
         header.setSectionsClickable(True)
-        self.setHorizontalHeader(header)
-        self.horizontalHeader().setVisible(True)
-        self.verticalHeader().setVisible(False)
-        self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
-        self.setWordWrap(False)
+        header.setDefaultAlignment(Qt.AlignmentFlag.AlignLeft)
+        header.setSortIndicatorShown(True)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        header.setStretchLastSection(True)
+        self.set_row_height(24)
 
         self.show_alignment_functions = False
         self.filter_text = ""
@@ -376,21 +464,16 @@ class QFunctionTableView(QTableView):
 
         self.setModel(self._model)
 
-        self.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.horizontalHeader().setSortIndicatorShown(True)
-        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-        self.horizontalHeader().setStretchLastSection(True)
-        self.verticalHeader().setDefaultSectionSize(24)
-
         # Adjusted column widths: Added a width for "Inline?" column (e.g., 30)
         column_widths = [30, 200, 80, 80, 80, 50, 50]  # Shifted original widths
         for idx, width in enumerate(column_widths):
-            if idx < self.model().columnCount():  # Ensure we don't go out of bounds
-                self.setColumnWidth(idx, width)
+            if idx < self._model.columnCount():  # Ensure we don't go out of bounds
+                header.resizeSection(idx, width)
 
         # slots
-        self.horizontalHeader().sortIndicatorChanged.connect(self.sortByColumn)
-        self.doubleClicked.connect(self._on_function_selected)
+        self.row_double_clicked.connect(self._on_function_selected_row)
+        self.context_menu_requested.connect(self._on_context_menu_requested)
+        self.key_pressed.connect(self._on_key_pressed)
 
     def refresh(self, added_funcs: set[int] | None = None, removed_funcs: set[int] | None = None) -> None:
         if self._functions is None:
@@ -398,21 +481,24 @@ class QFunctionTableView(QTableView):
         if added_funcs:
             new_funcs = []
             for addr in added_funcs:
-                try:
-                    f_ = self._functions[addr]
-                except KeyError:
-                    continue
-                if self.show_alignment_functions or (not self.show_alignment_functions and not f_.is_alignment):
-                    new_funcs.append(f_)
-            self._model.func_list += new_funcs
-        if removed_funcs:
+                f_ = FunctionTableEntry(self._functions, addr)
+                # try:
+                #     f_ = self._functions.get(addr, meta=True)
+                # except KeyError:
+                #     continue
+                # if self.show_alignment_functions or (not self.show_alignment_functions and not f_.is_alignment):
+                new_funcs.append(f_)
+            if self._model.func_list is None:
+                self._model.func_list = new_funcs
+            else:
+                self._model.func_list += new_funcs
+        if removed_funcs and self._model.func_list:
             self._model.func_list = [f_ for f_ in self._model.func_list if f_.addr not in removed_funcs]
-        self.viewport().update()
+        self.viewport_update()
 
     def changeEvent(self, event):  # type: ignore
         if event.type() == QEvent.Type.PaletteChange:
             self._model.clear_data_cache()
-            self.viewport().update()
         super().changeEvent(event)
 
     @property
@@ -432,40 +518,42 @@ class QFunctionTableView(QTableView):
         self._model.filter(keyword)
 
     def jump_to_result(self, index: int = 0) -> None:
-        if len(self._model.func_list) > index:
-            self._selected_func.am_obj = self._model.func_list[index]
+        if self._model.func_list is not None and len(self._model.func_list) > index:
+            func_entry = self._model.func_list[index]
+            self._selected_func.am_obj = self._functions.get_by_addr(func_entry.addr, meta_only=True)
             self._selected_func.am_event(func=self._selected_func.am_obj)
 
     def load_functions(self) -> None:
         if self._functions is None:
             return
-        if not self.show_alignment_functions:
-            self._model.func_list = [v for v in self._functions.values() if not v.is_alignment]
-        else:
-            self._model.func_list = list(self._functions.values())
+        # if not self.show_alignment_functions:
+        #    # TODO: Fix
+        #    # self._model.func_list = [v for v in self._functions.values(meta_only=True) if not v.is_alignment]
+        self._model.func_list = [FunctionTableEntry(self._functions, addr) for addr in self._functions]
         self._model.filter(self.filter_text)
 
-    def _on_function_selected(self, model_index) -> None:
-        row = model_index.row()
-        self._selected_func.am_obj = self._model.func_list[row]
+    def _on_function_selected_row(self, row: int) -> None:
+        if self._model.func_list is None or self._functions is None:
+            return
+        if not (0 <= row < len(self._model.func_list)):
+            return
+        func_entry = self._model.func_list[row]
+        self._selected_func.am_obj = self._functions.get_by_addr(func_entry.addr, meta_only=True)
         self._selected_func.am_event(func=self._selected_func.am_obj)
 
-    def keyPressEvent(self, key_event):  # type: ignore
-        text = key_event.text()
-        if not text or text not in string.printable or text in string.whitespace:
-            # modifier keys
-            return super().keyPressEvent(key_event)
-
+    def _on_key_pressed(self, text: str) -> None:
         # show the filtering text box
         self._function_table.show_filter_box(prefix=text)
-        return True
 
-    def contextMenuEvent(self, event: PySide6.QtGui.QContextMenuEvent) -> None:  # pylint:disable=unused-argument
-        rows = self.selectionModel().selectedRows(self.model().NAME_COL)
+    def _on_context_menu_requested(self, global_pos: PySide6.QtCore.QPoint) -> None:
         funcs = []
-        if self.instance.kb is not None and self.instance.kb.functions is not None:
-            funcs = [self.instance.kb.functions[r.data()] for r in rows]
-        self._context_menu.set(funcs).qmenu().popup(QCursor.pos())
+        func_list = self._model.func_list
+        if func_list is not None and self.instance.kb is not None and self.instance.kb.functions is not None:
+            for row in self.selected_rows():
+                if 0 <= row < len(func_list):
+                    with contextlib.suppress(KeyError):
+                        funcs.append(self.instance.kb.functions[func_list[row].addr])
+        self._context_menu.set(funcs).qmenu().popup(global_pos)
 
 
 class QFunctionTableFilterBox(QLineEdit):
@@ -529,7 +617,8 @@ class QFunctionTable(QWidget):
             self._table_view.function_manager = v
         else:
             raise ValueError("QFunctionTableView is uninitialized.")
-        self._last_known_func_addrs = {func.addr for func in self._table_view._model.func_list}
+        func_list = self._table_view._model.func_list
+        self._last_known_func_addrs = {func.addr for func in func_list} if func_list else set()
         self.filter_functions(self._filter_box.text())
         self.update_displayed_function_count()
 
@@ -570,7 +659,7 @@ class QFunctionTable(QWidget):
         self._table_view.subscribe_func_select(callback)
 
     def update_displayed_function_count(self) -> None:
-        cnt = self._table_view.model().rowCount()
+        cnt = self._table_view._model.rowCount()
         if self.function_manager is None:
             self._status_label.setText("")
             return

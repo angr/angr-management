@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from PySide6.QtCore import QThread
 
     from angrmanagement.data.library_docs import LibraryDocs
+    from angrmanagement.logic.stall_watchdog import StallWatchdog
     from angrmanagement.plugins.plugin_manager import PluginManager
     from angrmanagement.ui.main_window import MainWindow, QExecuteCodeEventReceiver
 
@@ -24,3 +25,4 @@ class GlobalInfo:
     headless_plugin_manager: PluginManager | None = None
     library_docs: LibraryDocs = None
     autoreload = False
+    stall_watchdog: StallWatchdog | None = None

@@ -11,7 +11,8 @@ import sys
 import time
 import warnings
 
-from PySide6.QtCore import QThread
+from PySide6.QtCore import QThread, QTimer
+from PySide6.QtWidgets import QApplication
 
 from . import __version__
 
@@ -24,9 +25,25 @@ def shut_up(*args, **kwargs) -> None:  # pylint:disable=unused-argument
 
 
 warnings.simplefilter = shut_up
+EVENT_PROFILING = os.getenv("AM_EVENT_PROFILING", "no").lower() in ("1", "true", "yes")
+STALL_WATCHDOG = os.getenv("AM_STALL_WATCHDOG", "no").lower() in ("1", "true", "yes")
 
 
 name: str = "angr-management"
+
+
+class QProfilingApplication(QApplication):
+    def notify(self, receiver, event):
+        t0 = time.perf_counter()
+        try:
+            return super().notify(receiver, event)
+        finally:
+            dt = (time.perf_counter() - t0) * 1000
+            if dt > 100:
+                print(f"[slow] {dt:.0f} ms  {event.type()!r}  {receiver.__class__.__name__}  {repr(receiver)}")
+                parent = receiver.parent() if hasattr(receiver, "parent") else None
+                if parent is not None:
+                    print(f"  parent={parent.__class__.__name__ if parent else None}")
 
 
 def set_app_user_model_id() -> None:
@@ -98,7 +115,22 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
             # This happens before logging is set up so use stderr
             print(f"Failed to set App name! {type(e).__name__}: {e}", file=sys.stderr)
 
-    app = QApplication(sys.argv)
+    app = QProfilingApplication(sys.argv) if EVENT_PROFILING else QApplication(sys.argv)
+
+    # set up custom GC logic; GC must not run on angr's worker/analysis threads.
+    import gc as _gc
+
+    _gc.disable()
+    # Collect the young generation often (cheap) and do a full generation-2 sweep rarely (it
+    # can briefly pause the GUI on large heaps). Both timers are parented to app, so they run
+    # on the GUI thread and Qt keeps them (and their wrappers) alive.
+    _gc_young_timer = QTimer(app)
+    _gc_young_timer.timeout.connect(lambda: _gc.collect(0))
+    _gc_young_timer.start(1000)
+    _gc_full_timer = QTimer(app)
+    _gc_full_timer.timeout.connect(lambda: _gc.collect(2))
+    _gc_full_timer.start(20000)
+
     app.setApplicationDisplayName(name)
     app.setApplicationName(name)
     icon_location = os.path.join(IMG_LOCATION, "angr.png")
@@ -169,6 +201,13 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
 
     if file_to_open is None:
         main_window.show_welcome_dialog()
+
+    if STALL_WATCHDOG:
+        # start the stall watchdog
+        from .logic import GlobalInfo
+        from .logic.stall_watchdog import StallWatchdog
+
+        GlobalInfo.stall_watchdog = StallWatchdog(app=app, tick_ms=20, stall_ms=150)
 
     app.exec_()
 
