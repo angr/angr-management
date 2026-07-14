@@ -100,7 +100,6 @@ version = {attr = "angrmanagement.__version__"}
 archinfo = { git = "https://github.com/angr/archinfo.git", branch = "master" }
 pyvex = { git = "https://github.com/angr/pyvex.git", branch = "master" }
 cle = { git = "https://github.com/angr/cle.git", branch = "master" }
-claripy = { git = "https://github.com/angr/claripy.git", branch = "master" }
 angr = { git = "https://github.com/angr/angr.git", branch = "master" }
 bintrace = { git = "https://github.com/mborgerson/bintrace", branch = "master" }
 
