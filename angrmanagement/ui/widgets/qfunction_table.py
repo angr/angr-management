@@ -125,13 +125,16 @@ class QFunctionTableModel(QAbstractTableModel):
     BLOCKS_COL = 6
     COMPLEXITY_COL = 7
 
-    def __init__(self, workspace: Workspace, instance: Instance, func_list) -> None:
+    def __init__(self, workspace: Workspace, instance: Instance, table_view: QFunctionTableView, func_list) -> None:
         super().__init__()
 
         self._func_list: list[FunctionTableEntry] | None = None
         self._raw_func_list: list[FunctionTableEntry] | None = func_list
         self.workspace = workspace
         self.instance = instance
+        self.table_view = table_view
+        self._last_filter_keyword = ""
+        self._last_show_alignment: bool | None = True
         self._config = Conf
         self._data_cache = {}
 
@@ -153,20 +156,32 @@ class QFunctionTableModel(QAbstractTableModel):
         self._func_list = None
         self._raw_func_list = v
         self._data_cache.clear()
-        self.emit(SIGNAL("layoutChanged()"))  # type: ignore
+        self.filter(self.table_view.filter_text, show_alignment=self.table_view.show_alignment_functions)
 
-    def filter(self, keyword) -> None:
-        if not keyword or self._raw_func_list is None:
-            # remove the filtering
+    def filter(self, keyword, show_alignment: bool = True) -> None:
+        if (not keyword and show_alignment) or self._raw_func_list is None:
+            # no active filters; remove the filtering
             self._func_list = None
         else:
             extra_columns = self.workspace.plugins.count_func_columns()
+            base_func_list = self._raw_func_list
+            if (
+                self._last_filter_keyword
+                and self._last_filter_keyword in keyword
+                and show_alignment == self._last_show_alignment
+                and self._func_list is not None
+            ):
+                # incremental filtering
+                base_func_list = self._func_list
             self._func_list = [
                 func
-                for func in self._raw_func_list
+                for func in base_func_list
                 if self._func_match_keyword(func, keyword, extra_columns=extra_columns)
+                and (show_alignment or not func.is_alignment)
             ]
 
+        self._last_filter_keyword = keyword
+        self._last_show_alignment = show_alignment
         self._data_cache.clear()
         self.emit(SIGNAL("layoutChanged()"))  # type: ignore
 
@@ -177,6 +192,11 @@ class QFunctionTableModel(QAbstractTableModel):
         if self.func_list is None:
             return 0
         return len(self.func_list)
+
+    def totalCount(self) -> int:
+        if self._raw_func_list is None:
+            return 0
+        return len(self._raw_func_list)
 
     def columnCount(self, *args, **kwargs):  # pylint:disable=unused-argument
         return len(self.Headers) + self.workspace.plugins.count_func_columns()
@@ -345,16 +365,6 @@ class QFunctionTableModel(QAbstractTableModel):
     @staticmethod
     def _get_binary_name(func: FunctionTableEntry) -> str:
         return func.binary_name
-        # if func.binary is not None:
-        #     if func.binary.binary is not None:
-        #         return os.path.basename(func.binary.binary)
-        #     if isinstance(func.binary, UefiPE):
-        #         if func.binary.user_interface_name:
-        #             return func.binary.user_interface_name
-        #         if func.binary.guid:
-        #             return str(func.binary.guid)
-        #         return str(func.binary)
-        # return ""
 
     TAG_STRS = {
         CodeTags.HAS_XOR: "Xor",
@@ -366,7 +376,7 @@ class QFunctionTableModel(QAbstractTableModel):
     def _get_tags_display_string(cls, tags):
         return ", ".join(cls.TAG_STRS.get(t, t) for t in tags)
 
-    def _func_match_keyword(self, func, keyword, extra_columns: int = 0) -> bool:
+    def _func_match_keyword(self, func: FunctionTableEntry, keyword: str, extra_columns: int = 0) -> bool:
         """
         Check whether the function matches against the given keyword or not.
 
@@ -378,7 +388,9 @@ class QFunctionTableModel(QAbstractTableModel):
 
         keyword = keyword.lower()
 
-        if keyword in func.name.lower():
+        if not keyword:
+            return True
+        if func.name is not None and keyword in func.name.lower():
             return True
         demangled_name = func.demangled_name
         if demangled_name and keyword in demangled_name.lower():
@@ -388,9 +400,9 @@ class QFunctionTableModel(QAbstractTableModel):
                 return True
             if keyword in f"{func.addr:#x}":
                 return True
-        if keyword in ",".join(func.tags).lower():
+        if func.tags and keyword in ",".join(func.tags).lower():
             return True
-        if func.binary and keyword in self._get_binary_name(func).lower():
+        if func.binary_name and keyword in self._get_binary_name(func).lower():
             return True
         if extra_columns > 0:
             for idx in range(extra_columns):
@@ -460,7 +472,7 @@ class QFunctionTableView(QFastTableView):
         self.show_alignment_functions = False
         self.filter_text = ""
         self._functions = None
-        self._model = QFunctionTableModel(self.workspace, self.instance, [])
+        self._model = QFunctionTableModel(self.workspace, self.instance, self, [])
 
         self.setModel(self._model)
 
@@ -482,11 +494,6 @@ class QFunctionTableView(QFastTableView):
             new_funcs = []
             for addr in added_funcs:
                 f_ = FunctionTableEntry(self._functions, addr)
-                # try:
-                #     f_ = self._functions.get(addr, meta=True)
-                # except KeyError:
-                #     continue
-                # if self.show_alignment_functions or (not self.show_alignment_functions and not f_.is_alignment):
                 new_funcs.append(f_)
             if self._model.func_list is None:
                 self._model.func_list = new_funcs
@@ -513,9 +520,9 @@ class QFunctionTableView(QFastTableView):
     def subscribe_func_select(self, callback) -> None:
         self._selected_func.am_subscribe(callback)
 
-    def filter(self, keyword) -> None:
+    def filter(self, keyword, show_alignment: bool = True) -> None:
         self.filter_text = keyword
-        self._model.filter(keyword)
+        self._model.filter(keyword, show_alignment=show_alignment)
 
     def jump_to_result(self, index: int = 0) -> None:
         if self._model.func_list is not None and len(self._model.func_list) > index:
@@ -524,13 +531,13 @@ class QFunctionTableView(QFastTableView):
             self._selected_func.am_event(func=self._selected_func.am_obj)
 
     def load_functions(self) -> None:
+        """
+        Load all functions from FunctionManager and create table entries for them.
+        """
         if self._functions is None:
             return
-        # if not self.show_alignment_functions:
-        #    # TODO: Fix
-        #    # self._model.func_list = [v for v in self._functions.values(meta_only=True) if not v.is_alignment]
         self._model.func_list = [FunctionTableEntry(self._functions, addr) for addr in self._functions]
-        self._model.filter(self.filter_text)
+        self._model.filter(self.filter_text, show_alignment=self.show_alignment_functions)
 
     def _on_function_selected_row(self, row: int) -> None:
         if self._model.func_list is None or self._functions is None:
@@ -652,7 +659,7 @@ class QFunctionTable(QWidget):
 
     def toggle_show_alignment_functions(self) -> None:
         self._table_view.show_alignment_functions = not self._table_view.show_alignment_functions
-        self._table_view.load_functions()
+        self.filter_functions(self._filter_box.text())
         self.update_displayed_function_count()
 
     def subscribe_func_select(self, callback) -> None:
@@ -660,16 +667,17 @@ class QFunctionTable(QWidget):
 
     def update_displayed_function_count(self) -> None:
         cnt = self._table_view._model.rowCount()
+        total_cnt = self._table_view._model.totalCount()
         if self.function_manager is None:
             self._status_label.setText("")
             return
-        if cnt == len(self.function_manager):
+        if cnt == total_cnt:
             self._status_label.setText(f"{cnt} functions")
         else:
-            self._status_label.setText(f"{cnt}/{len(self.function_manager)} functions")
+            self._status_label.setText(f"{cnt}/{total_cnt} functions")
 
     def filter_functions(self, text: str) -> None:
-        self._table_view.filter(text)
+        self._table_view.filter(text, show_alignment=self._table_view.show_alignment_functions)
         self.update_displayed_function_count()
 
     #
