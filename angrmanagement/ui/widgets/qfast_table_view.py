@@ -43,7 +43,7 @@ class QFastTableContentItem(QGraphicsItem):
     def boundingRect(self) -> QRectF:  # type: ignore[override]
         return QRectF(0, 0, self._table.content_width(), self._table.content_height())
 
-    def paint(self, painter, option, widget=None) -> None:  # type: ignore[override]
+    def paint(self, painter, option, widget=None) -> None:  # type: ignore[override] # pylint:disable=unused-argument
         self._table._paint_cells(painter, option.exposedRect)
 
 
@@ -239,7 +239,7 @@ class QFastTableView(QWidget):
         self._request_repaint()
 
     def select_row(self, row: int, *, ensure_visible: bool = True) -> None:
-        if not (0 <= row < self.row_count()):
+        if not 0 <= row < self.row_count():
             return
         self._selected_rows = {row}
         self._current_row = row
@@ -468,7 +468,7 @@ class QFastTableView(QWidget):
         model = self._model
         assert model is not None
         index = model.index(row, logical)
-        if not (model.flags(index) & Qt.ItemFlag.ItemIsUserCheckable):
+        if not model.flags(index) & Qt.ItemFlag.ItemIsUserCheckable:
             return False
         check_state = model.data(index, Qt.ItemDataRole.CheckStateRole)
         if check_state is None:

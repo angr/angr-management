@@ -33,6 +33,10 @@ name: str = "angr-management"
 
 
 class QProfilingApplication(QApplication):
+    """
+    A QApplication wrapper class that profiles notify() calls and warns about slow events.
+    """
+
     def notify(self, receiver, event):
         t0 = time.perf_counter()
         try:
@@ -67,7 +71,7 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
 
     from PySide6.QtCore import QMargins, QRectF, Qt
     from PySide6.QtGui import QCursor, QFontDatabase, QGuiApplication, QIcon, QPixmap
-    from PySide6.QtWidgets import QApplication, QSplashScreen
+    from PySide6.QtWidgets import QSplashScreen
 
     from .consts import FONT_LOCATION, IMG_LOCATION
 
@@ -204,7 +208,6 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
 
     if STALL_WATCHDOG:
         # start the stall watchdog
-        from .logic import GlobalInfo
         from .logic.stall_watchdog import StallWatchdog
 
         GlobalInfo.stall_watchdog = StallWatchdog(app=app, tick_ms=20, stall_ms=150)

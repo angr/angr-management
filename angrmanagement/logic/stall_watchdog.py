@@ -9,6 +9,10 @@ from PySide6.QtCore import Qt, QTimer
 
 
 class StallWatchdog:
+    """
+    A watchdog that monitors the main thread for stalls.
+    """
+
     def __init__(self, app, tick_ms=20, stall_ms=100):
         self._stall = stall_ms / 1000
         self._last = time.perf_counter()

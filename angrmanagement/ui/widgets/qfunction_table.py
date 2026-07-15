@@ -284,7 +284,7 @@ class QFunctionTableModel(QAbstractTableModel):
 
     def sort(self, column, order=None) -> None:
         if self.func_list is None:
-            return None
+            return
         self.layoutAboutToBeChanged.emit()
         self.func_list = sorted(
             self.func_list,
@@ -542,7 +542,7 @@ class QFunctionTableView(QFastTableView):
     def _on_function_selected_row(self, row: int) -> None:
         if self._model.func_list is None or self._functions is None:
             return
-        if not (0 <= row < len(self._model.func_list)):
+        if not 0 <= row < len(self._model.func_list):
             return
         func_entry = self._model.func_list[row]
         self._selected_func.am_obj = self._functions.get_by_addr(func_entry.addr, meta_only=True)
