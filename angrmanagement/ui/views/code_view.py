@@ -138,12 +138,15 @@ class CodeView(FunctionView):
         clear_prototype: bool = False,
         focus: bool = False,
         focus_addr=None,
-        flavor: str = "pseudocode",
+        flavor: str | None = None,
         reset_cache: bool = False,
         regen_clinic: bool = True,
     ) -> None:
         if self._function.am_none:
             return
+
+        if flavor is None:
+            flavor = self.best_flavor if self.codegen.am_none else self.codegen.flavor
 
         if clear_prototype:
             # clear the existing function prototype
