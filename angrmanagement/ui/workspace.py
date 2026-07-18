@@ -969,6 +969,59 @@ class Workspace:
             }
         )
 
+    def can_resume_cfg_recovery(self, addr: int | None = None) -> bool:
+        """
+        Determine whether CFG recovery may be resumed right now, optionally from the given address. Resuming requires
+        an existing (possibly partial) CFG model and no CFG generation job in flight; resuming from an address that is
+        already part of the CFG is a no-op and is therefore not allowed.
+        """
+        if self.main_instance.cfg.am_none or self.main_instance.project.am_none or self._cfg_job_active():
+            return False
+        if addr is not None:
+            if self.main_instance.project.loader.find_object_containing(addr) is None:
+                return False
+            if self.main_instance.cfg.get_any_node(addr, anyaddr=True) is not None:
+                return False
+        return True
+
+    def resume_cfg_recovery(self, addr: int) -> None:
+        """
+        Resume CFG recovery from the given address only: recovery continues outward from this address on top of the
+        existing (partial) CFG model, without re-seeding symbols, prologues, or gap scanning.
+        """
+        if not self.can_resume_cfg_recovery(addr):
+            return
+
+        self.analysis_manager.generate_cfg(
+            cfg_args={
+                "symbols": False,
+                "function_prologues": False,
+                "eh_frame": False,
+                "start_at_entry": False,
+                "force_smart_scan": False,
+                "force_complete_scan": False,
+                "function_starts": [addr],
+                "model": self.main_instance.kb.cfgs.get_most_accurate(),
+            }
+        )
+
+    def resume_cfg_recovery_full(self) -> None:
+        """
+        Resume full CFG recovery: re-seed the frontier that a cancelled CFG generation job did not get to process and
+        let global scanning (symbols, prologues, smart scan) finish the rest of the binary on top of the existing
+        (partial) CFG model.
+        """
+        if not self.can_resume_cfg_recovery():
+            return
+
+        self.analysis_manager.generate_cfg(
+            cfg_args={
+                "start_at_entry": False,
+                "function_starts": sorted(self.main_instance.cfg_resume_frontier),
+                "model": self.main_instance.kb.cfgs.get_most_accurate(),
+            }
+        )
+
     def show_function_info(self, function: str | int | Function) -> None:
         if isinstance(function, str | int):
             function = self.main_instance.project.kb.functions[function]

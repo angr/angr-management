@@ -31,6 +31,7 @@ from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.menus import Menu
 from angrmanagement.ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from angrmanagement.ui.menus.disasm_label_context_menu import DisasmLabelContextMenu
+from angrmanagement.ui.menus.disasm_unknown_context_menu import DisasmUnknownContextMenu
 from angrmanagement.ui.views.symexec_view import SymexecView
 from angrmanagement.ui.widgets import (
     DisassemblyLevel,
@@ -414,6 +415,7 @@ class DisassemblyView(SynchronizedFunctionView):
 
         # pass in the instruction address
         self._insn_menu.insn_addr = insn.addr
+        self._update_resume_cfg_entries(self._insn_menu, insn.addr)
         # pop up the menu
         mnu = self._insn_menu.qmenu(
             extra_entries=list(self.workspace.plugins.build_context_menu_insn(insn)), cached=False
@@ -425,11 +427,41 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def label_context_menu(self, addr: int, pos) -> None:
         self._label_menu.addr = addr
+        self._update_resume_cfg_entries(self._label_menu, addr)
         mnu = self._label_menu.qmenu(
             extra_entries=list(self.workspace.plugins.build_context_menu_label(addr)), cached=False
         )
         self.append_view_menu_actions(mnu)
         mnu.exec_(pos)
+
+    def unknown_block_context_menu(self, addr: int, pos) -> None:
+        """
+        Display a context menu for undefined bytes in the linear view.
+        """
+        self._unknown_menu.addr = addr
+        self._update_resume_cfg_entries(self._unknown_menu, addr)
+        mnu = self._unknown_menu.qmenu(cached=False)
+        self.append_view_menu_actions(mnu)
+        mnu.exec_(pos)
+
+    def _update_resume_cfg_entries(self, menu, addr: int) -> None:
+        """
+        Enable or disable the resume-CFG-recovery entries of the given context menu based on the current state.
+        """
+        if self.workspace.can_resume_cfg_recovery(addr):
+            menu.resume_cfg_here_entry.enable()
+        else:
+            menu.resume_cfg_here_entry.disable()
+        if self.workspace.can_resume_cfg_recovery():
+            menu.resume_cfg_full_entry.enable()
+        else:
+            menu.resume_cfg_full_entry.disable()
+
+    def resume_cfg_from(self, addr: int) -> None:
+        self.workspace.resume_cfg_recovery(addr)
+
+    def resume_cfg_full(self) -> None:
+        self.workspace.resume_cfg_recovery_full()
 
     def rename_selected_object(self) -> None:
         """
@@ -912,6 +944,7 @@ class DisassemblyView(SynchronizedFunctionView):
     def _init_menus(self) -> None:
         self._insn_menu = DisasmInsnContextMenu(self)
         self._label_menu = DisasmLabelContextMenu(self)
+        self._unknown_menu = DisasmUnknownContextMenu(self)
 
     def _register_events(self) -> None:
         # redraw the current graph if instruction/operand selection changes

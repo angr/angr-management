@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QRectF
+from PySide6.QtCore import QRectF, Qt
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
 from angrmanagement.config import Conf
@@ -11,18 +11,23 @@ from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.views.disassembly_view import DisassemblyView
 
 
 class QUnknownBlock(QCachedGraphicsItem):
     LINEAR_INSTRUCTION_OFFSET = 120
     DEFAULT_TEXT = "Unknown"
+    BYTES_PER_LINE = 16
 
-    def __init__(self, instance: Instance, addr: int, bytes_, parent=None) -> None:
+    def __init__(
+        self, instance: Instance, addr: int, bytes_, parent=None, disasm_view: DisassemblyView | None = None
+    ) -> None:
         super().__init__(parent=parent)
 
         self.instance = instance
         self.addr = addr
         self.bytes = bytes_
+        self._disasm_view = disasm_view
 
         self._width = 0
         self._height = 0
@@ -65,6 +70,23 @@ class QUnknownBlock(QCachedGraphicsItem):
             for byte_line in self._byte_lines:
                 scene.removeItem(byte_line)
             self._byte_lines = []
+
+    #
+    # Event handlers
+    #
+
+    def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.MouseButton.RightButton and self._disasm_view is not None:
+            # determine the address of the clicked line
+            line_height = self._byte_lines[0].boundingRect().height() if self._byte_lines else 0
+            line_idx = int(event.pos().y() // line_height) if line_height > 0 else 0
+            addr = self.addr + max(line_idx, 0) * self.BYTES_PER_LINE
+            if self.bytes:
+                addr = min(addr, self.addr + len(self.bytes) - 1)
+            self._disasm_view.unknown_block_context_menu(addr, event.screenPos().toPoint())
+            event.accept()
+            return
+        super().mousePressEvent(event)
 
     #
     # Private methods

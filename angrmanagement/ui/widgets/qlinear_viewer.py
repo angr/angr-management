@@ -621,7 +621,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         elif isinstance(obj, MemoryData):
             qobject = QMemoryDataBlock(self.instance, self.disasm_view.infodock, obj_addr, obj, parent=None)
         elif isinstance(obj, Unknown):
-            qobject = QUnknownBlock(self.instance, obj_addr, obj.bytes)
+            qobject = QUnknownBlock(self.instance, obj_addr, obj.bytes, disasm_view=self.disasm_view)
         else:
             qobject = None
         return False, qobject
