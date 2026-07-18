@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QAbstractScrollArea, QAbstractSlider, QGraphicsSce
 from sortedcontainers import SortedDict
 
 from angrmanagement.config import Conf
+from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.logic.threads import needs_gui_thread
 from angrmanagement.utils.cache import SmartLRUCache
 from angrmanagement.utils.graph import get_out_branches
@@ -629,6 +630,11 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             del self.objects[obj_addr]
 
         if isinstance(obj, Block):
+            cfg = self.cfg
+            if isinstance(cfg, ObjectContainer) and cfg.am_none:
+                # during CFG recovery, blocks may land in the CFB before the (partial) CFG model is first published;
+                # render them as raw bytes for now - they will be re-rendered once the CFG is available
+                return False, QUnknownBlock(self.instance, obj_addr, obj.bytes, disasm_view=self.disasm_view)
             cfg_node = self.cfg.get_any_node(obj_addr, force_fastpath=True)
             if cfg_node is not None:
                 func_addr = cfg_node.function_address
