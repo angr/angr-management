@@ -4,6 +4,7 @@ import logging
 import os
 import time
 import traceback
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, TypeVar
 
 from angr import StateHierarchy
@@ -92,6 +93,9 @@ class Workspace:
         self.view_manager: ViewManager = ViewManager(self)
         self.plugins: PluginManager = PluginManager(self)
         self._first_cfg_generation_callback_completed: bool = False
+        # whether the user manually navigated anywhere while a CFG generation job was running
+        self._user_navigated_during_cfg: bool = False
+        self._nav_tracking_suppress_count: int = 0
 
         self._main_instance = Instance()
 
@@ -188,20 +192,47 @@ class Workspace:
             if cfg_job.state not in {JobState.PENDING, JobState.RUNNING}:
                 break
 
+    @contextmanager
+    def _nav_tracking_suppressed(self):
+        """
+        Suppress user-navigation tracking while performing programmatic navigation.
+        """
+        self._nav_tracking_suppress_count += 1
+        try:
+            yield
+        finally:
+            self._nav_tracking_suppress_count -= 1
+
+    def _cfg_job_active(self) -> bool:
+        return any(
+            isinstance(job, CFGGenerationJob) and job.state in {JobState.PENDING, JobState.RUNNING}
+            for job in self.job_manager.jobs
+        )
+
+    def note_user_navigation(self) -> None:
+        """
+        Record that the user manually navigated somewhere. Only tracked while a CFG generation job is running, so
+        that when the job completes we know to ask before navigating away.
+        """
+        if self._nav_tracking_suppress_count == 0 and self._cfg_job_active():
+            self._user_navigated_during_cfg = True
+
     def on_cfg_recovery_started(self, cfb) -> None:
         """
         Called on the GUI thread as soon as a CFG generation job creates its temporary CFBlanket. Publish the blanket
         so that views can render the not-yet-analyzed binary and, for the initial CFG recovery, show the entry point
         in the linear disassembly view so that the user can start analyzing right away.
         """
+        self._user_navigated_during_cfg = False
         self.main_instance.cfb = cfb
         self.main_instance.cfb.am_event()
 
         if not self._first_cfg_generation_callback_completed and not self.main_instance.project.am_none:
-            view = self._get_or_create_view("disassembly", DisassemblyView)
-            self.raise_view(view)
-            view.display_linear_viewer(prefer=True)
-            view.jump_to(self.main_instance.project.entry)
+            with self._nav_tracking_suppressed():
+                view = self._get_or_create_view("disassembly", DisassemblyView)
+                self.raise_view(view)
+                view.display_linear_viewer(prefer=True)
+                view.jump_to(self.main_instance.project.entry)
 
     def on_cfg_generated(self) -> None:
         if not self.main_instance.cfg.am_none:
@@ -211,7 +242,7 @@ class Workspace:
                 if the_func is None:
                     the_func = self.main_instance.kb.functions.function(addr=self.main_instance.project.entry)
                 if the_func is not None:
-                    self.on_function_selected(the_func)
+                    self._navigate_to_function_after_cfg(the_func)
 
             # Reload the pseudocode view
             view = self.view_manager.first_view_in_category("pseudocode")
@@ -227,6 +258,28 @@ class Workspace:
             view = self.view_manager.first_view_in_category("proximity")
             if view is not None:
                 view.clear()
+
+    def _navigate_to_function_after_cfg(self, func: Function) -> None:
+        """
+        Navigate to the given function and switch to the graph view after CFG recovery completes. If the user
+        manually navigated anywhere during the recovery, ask before yanking the view away.
+        """
+        if self._user_navigated_during_cfg:
+            r = QMessageBox.question(
+                self.main_window,
+                "CFG recovery finished",
+                f"CFG recovery finished. Jump to {func.name} and switch to graph view?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
+            if r != QMessageBox.StandardButton.Yes:
+                return
+        self._user_navigated_during_cfg = False
+        with self._nav_tracking_suppressed():
+            view = self.view_manager.first_view_in_category("disassembly")
+            if view is not None:
+                view.display_disasm_graph(prefer=True)
+            self.on_function_selected(func)
 
     def on_debugger_state_updated(self) -> None:
         """

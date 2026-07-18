@@ -683,6 +683,7 @@ class DisassemblyView(SynchronizedFunctionView):
     def display_function(self, function, send_event=True) -> None:
         if function is None:
             return
+        self.workspace.note_user_navigation()
         self.jump_history.jump_to(function.addr)
         self._display_function(function, send_event=send_event)
 
@@ -764,6 +765,8 @@ class DisassemblyView(SynchronizedFunctionView):
         if not self.instance.project.am_none and self.instance.project.loader.find_object_containing(addr) is None:
             return False
 
+        self.workspace.note_user_navigation()
+
         # Record the current instruction address
         if src_ins_addr is not None:
             self.jump_history.record_address(src_ins_addr)
@@ -776,16 +779,19 @@ class DisassemblyView(SynchronizedFunctionView):
     def jump_back(self) -> None:
         addr = self.jump_history.backtrack()
         if addr is not None:
+            self.workspace.note_user_navigation()
             self._jump_to(addr, use_animation=False)
 
     def jump_forward(self) -> None:
         addr = self.jump_history.forwardstep()
         if addr is not None:
+            self.workspace.note_user_navigation()
             self._jump_to(addr, use_animation=False)
 
     def jump_to_history_position(self, pos: int) -> None:
         addr = self.jump_history.step_position(pos)
         if addr is not None:
+            self.workspace.note_user_navigation()
             self._jump_to(addr, use_animation=False)
 
     def select_label(self, label_addr) -> None:

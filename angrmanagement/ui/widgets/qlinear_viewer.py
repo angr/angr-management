@@ -165,6 +165,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         :param QWheelEvent event:
         :return:
         """
+        self.disasm_view.workspace.note_user_navigation()
         delta = event.angleDelta().y()
         if delta < 0:
             # scroll down by some lines
@@ -187,6 +188,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             self.reload()
 
     def _on_vertical_scroll_bar_triggered(self, action) -> None:
+        self.disasm_view.workspace.note_user_navigation()
         action = QAbstractSlider.SliderAction(action)  # XXX: `action` is passed as an int
 
         if action == QAbstractSlider.SliderAction.SliderSingleStepAdd:
