@@ -168,8 +168,12 @@ class CFGGenerationJob(InstanceJob):
         "normalize": True,  # this is what people naturally expect
     }
 
-    def __init__(self, instance: Instance, on_finish=None, **kwargs) -> None:
+    def __init__(self, instance: Instance, on_finish=None, on_cfb_available=None, **kwargs) -> None:
         super().__init__("CFG generation", instance, on_finish=on_finish)
+
+        # called on the GUI thread with the temporary CFBlanket as soon as it exists, so that the UI can start
+        # displaying the binary before CFG recovery finishes
+        self._on_cfb_available = on_cfb_available
 
         # TODO: sanitize arguments
 
@@ -193,6 +197,9 @@ class CFGGenerationJob(InstanceJob):
             exclude_region_types=exclude_region_types, on_object_added=self._on_cfb_object_added
         )
         self._cfb = temp_cfb
+
+        if self._on_cfb_available is not None:
+            gui_thread_schedule_async(self._on_cfb_available, args=(temp_cfb,))
 
         cfg = self.instance.project.analyses.CFG(
             progress_callback=functools.partial(self._progress_callback, ctx),

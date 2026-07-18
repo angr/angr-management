@@ -188,6 +188,21 @@ class Workspace:
             if cfg_job.state not in {JobState.PENDING, JobState.RUNNING}:
                 break
 
+    def on_cfg_recovery_started(self, cfb) -> None:
+        """
+        Called on the GUI thread as soon as a CFG generation job creates its temporary CFBlanket. Publish the blanket
+        so that views can render the not-yet-analyzed binary and, for the initial CFG recovery, show the entry point
+        in the linear disassembly view so that the user can start analyzing right away.
+        """
+        self.main_instance.cfb = cfb
+        self.main_instance.cfb.am_event()
+
+        if not self._first_cfg_generation_callback_completed and not self.main_instance.project.am_none:
+            view = self._get_or_create_view("disassembly", DisassemblyView)
+            self.raise_view(view)
+            view.display_linear_viewer(prefer=True)
+            view.jump_to(self.main_instance.project.entry)
+
     def on_cfg_generated(self) -> None:
         if not self.main_instance.cfg.am_none:
             if not self._first_cfg_generation_callback_completed:
