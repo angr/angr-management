@@ -305,6 +305,38 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.verticalScrollBar().setValue(offset)
         self.prepare_objects(offset, start_line=0)
 
+    def visible_addr_range(self) -> tuple[int, int] | None:
+        """
+        Return a cheap superset of the address range that is currently visible in the viewport, or None if nothing is
+        displayed. The upper bound assumes the maximum line density (16 bytes per line, as used by memory data and
+        unknown-byte blocks).
+        """
+        if self._offset is None or not self._offset_to_region:
+            return None
+        base_offset, mr = self._region_from_offset(self._offset)
+        if mr is None:
+            return None
+        start_addr = self._addr_from_offset(mr, base_offset, self._offset)
+        viewable_lines = max(int(self.height() // self._line_height), 1)
+        return start_addr, start_addr + viewable_lines * 16
+
+    @needs_gui_thread
+    def refresh_objects(self) -> None:
+        """
+        Regenerate the objects of the current viewport without a full reload. Used to update the viewport when new
+        objects (blocks or memory data) land within the visible address range during CFG recovery.
+        """
+        curr_offset = self._offset
+        self._offset = None  # force a re-generation of objects
+        try:
+            self.prepare_objects(curr_offset, start_line=self._start_line_in_object)
+        except RuntimeError:
+            # the CFB may be mutated by the job thread while we iterate over it; skip this refresh, another one will
+            # follow shortly
+            self._offset = curr_offset
+            return
+        self.redraw()
+
     #
     # Private methods
     #
