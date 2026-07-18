@@ -77,8 +77,10 @@ class TestGracefulCancel(CfgRecoveryUxTestCase):
         assert not workspace.main_instance.cfg.am_none
         assert not workspace.main_instance.cfb.am_none
         assert len(workspace.main_instance.cfg.graph) > 0
-        # the unprocessed frontier was captured for resuming
+        # the unprocessed frontier and the resume state were captured for resuming
         assert len(workspace.main_instance.cfg_resume_frontier) > 0
+        assert workspace.main_instance.cfg_resume_state is not None
+        assert len(workspace.main_instance.cfg_resume_state.jobs) > 0
         # the recovery was truncated: some functions of the full run are missing
         assert self.full_reference_functions() - set(workspace.main_instance.kb.functions)
 
@@ -106,7 +108,8 @@ class TestResume(CfgRecoveryUxTestCase):
         workspace.resume_cfg_recovery_full()
         workspace.job_manager.join_all_jobs()
 
-        assert self.full_reference_functions().issubset(set(workspace.main_instance.kb.functions))
+        # resuming with the captured resume state reproduces the exact function set of an uninterrupted run
+        assert set(workspace.main_instance.kb.functions) == self.full_reference_functions()
 
     def test_can_resume_enablement(self):
         workspace = self.main.workspace

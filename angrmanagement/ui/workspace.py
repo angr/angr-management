@@ -1170,7 +1170,7 @@ class Workspace:
 
     def resume_cfg_recovery_full(self) -> None:
         """
-        Resume full CFG recovery: re-seed the frontier that a cancelled CFG generation job did not get to process and
+        Resume full CFG recovery: re-inject the state that a cancelled CFG generation job did not get to process and
         let global scanning (symbols, prologues, smart scan) finish the rest of the binary on top of the existing
         (partial) CFG model.
         """
@@ -1178,13 +1178,15 @@ class Workspace:
         if kb is None or not self.can_resume_cfg_recovery():
             return
 
-        self.analysis_manager.generate_cfg(
-            cfg_args={
-                "start_at_entry": False,
-                "function_starts": sorted(self.main_instance.cfg_resume_frontier),
-                "model": kb.cfgs.get_most_accurate(),
-            }
-        )
+        cfg_args = {
+            "start_at_entry": False,
+            "model": kb.cfgs.get_most_accurate(),
+        }
+        if self.main_instance.cfg_resume_state is not None:
+            # re-create the unprocessed jobs with their original function context; this reproduces the result of an
+            # uninterrupted recovery
+            cfg_args["resume_state"] = self.main_instance.cfg_resume_state
+        self.analysis_manager.generate_cfg(cfg_args=cfg_args)
 
     def show_function_info(self, function: str | int | Function) -> None:
         if isinstance(function, str | int):
