@@ -39,8 +39,8 @@ class JobContext:
         self._last_reported_percentage = 0.0
         self._last_text = ""
 
-    def set_progress(self, percentage: float, text: str = "") -> None:
-        if self._job.state == JobState.CANCELLED:
+    def set_progress(self, percentage: float, text: str = "", ignore_cancel: bool = False) -> None:
+        if self._job.state == JobState.CANCELLED and not ignore_cancel:
             raise JobCancelled
 
         self._job.progress_percentage = percentage

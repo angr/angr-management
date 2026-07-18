@@ -17,7 +17,7 @@ from angrmanagement.data.analysis_options import (
 )
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
-from .job import InstanceJob
+from .job import InstanceJob, JobState
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
@@ -184,6 +184,7 @@ class CFGGenerationJob(InstanceJob):
         self._last_refresh: float = 0.0
         self._pending_cfb_objs: list[tuple[int, object]] = []
         self._last_cfb_event: float = 0.0
+        self._abort_requested: bool = False
 
     def run(self, ctx: JobContext):
         exclude_region_types = {"kernel", "tls"}
@@ -199,6 +200,9 @@ class CFGGenerationJob(InstanceJob):
             cfb=temp_cfb,
             **self.cfg_args,
         )
+        # if the job was cancelled, the CFG recovery was gracefully aborted and returned a finalized partial model;
+        # remember the addresses it did not get to process so that the user may resume the recovery later
+        self.instance.cfg_resume_frontier = set(getattr(cfg, "unprocessed_job_addrs", None) or set())
         self._flush_cfb_objects()
         self._cfb = None
         # Build the real one
@@ -214,6 +218,15 @@ class CFGGenerationJob(InstanceJob):
     #
 
     def _progress_callback(self, ctx: JobContext, percentage, text: str | None = None, cfg=None) -> None:
+        if self.state == JobState.CANCELLED:
+            # gracefully abort the CFG recovery instead of raising JobCancelled: the analysis finalizes the partially
+            # recovered model, run() returns normally, and the partial result gets published
+            if cfg is not None and not self._abort_requested:
+                self._abort_requested = True
+                cfg.abort()
+            ctx.set_progress(percentage, "Cancelling: finalizing the partial CFG...", ignore_cancel=True)
+            return
+
         ctx.set_progress(percentage, text)
 
         if cfg is not None and time.monotonic() - self._last_refresh >= MIN_REFRESH_INTERVAL:

@@ -81,6 +81,8 @@ class Instance:
         initialize(self)
 
         self.cfg_args = None
+        # addresses that a cancelled CFG recovery job did not get to process; used for resuming CFG recovery
+        self.cfg_resume_frontier: set[int] = set()
         self.variable_recovery_args = None
 
         self.database_path = None
