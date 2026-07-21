@@ -96,11 +96,7 @@ class DiffCodeView(CodeView):
                 self.instance,
                 self._function.am_obj,
                 cfg=self.instance.cfg,
-                options=[
-                    (o, v)
-                    for o, v in self._options.option_and_values
-                    if o.param not in {"simplify_ifelse", "prettify_thiscall", "cstyle_void_param", "max_str_len"}
-                ],
+                options=self._options.option_and_values,
                 optimization_passes=self._options.selected_passes,
                 peephole_optimizations=self._options.selected_peephole_opts,
                 vars_must_struct=self.vars_must_struct,
