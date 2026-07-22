@@ -49,8 +49,8 @@ class TypesView(FunctionView):
         if self._function.am_none:
             assert self.instance.kb is not None
             return self.instance.kb.types
-        assert self.instance.pseudocode_variable_kb is not None
-        var_manager: VariableManagerInternal = self.instance.pseudocode_variable_kb.variables[self._function.addr]
+        assert self.instance.kb is not None
+        var_manager: VariableManagerInternal = self.instance.kb.dec_variables[self._function.addr]
         return var_manager.types
 
     #

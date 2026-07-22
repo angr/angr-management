@@ -100,7 +100,6 @@ class LLMRefineJob(InstanceJob):
         # create a Decompiler instance without decompiling, then attach existing codegen
         dec = project.analyses.Decompiler(
             self.function,
-            variable_kb=self.instance.pseudocode_variable_kb,
             decompile=False,
         )
         dec.codegen = dec_cache.codegen

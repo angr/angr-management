@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 import angr
 from angr.analyses.disassembly import Instruction
 from angr.block import Block
-from angr.knowledge_base import KnowledgeBase
 from angr.knowledge_plugins import Function
 from cle import SymbolType
 
@@ -83,7 +82,6 @@ class Instance:
 
         self.cfg_args = None
         self.variable_recovery_args = None
-        self.pseudocode_variable_kb = None
 
         self.database_path = None
 
@@ -157,19 +155,13 @@ class Instance:
                 default_val_func(), description, logging_permitted=logging_permitted
             )
 
-    def initialize(self, initialized: bool = False) -> None:
+    def initialize(self, initialized: bool = False) -> None:  # pylint:disable=unused-argument
         if self.project.am_none:
             return
 
         self.patches.am_obj = self.kb.patches
 
-        if not initialized and self.pseudocode_variable_kb is None:
-            self.initialize_pseudocode_variable_kb()
-
         self._apply_llm_config()
-
-    def initialize_pseudocode_variable_kb(self) -> None:
-        self.pseudocode_variable_kb = KnowledgeBase(self.project.am_obj, name="pseudocode_variable_kb")
 
     def get_instruction_text_at(self, addr: int):
         """
