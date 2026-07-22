@@ -48,9 +48,7 @@ class APIDeobfuscationJob(InstanceJob):
         super().__init__("API Deobfuscation", instance, on_finish=on_finish)
 
     def run(self, ctx: JobContext) -> None:
-        self.instance.project.analyses[APIObfuscationFinder].prep(progress_callback=ctx.set_progress)(
-            variable_kb=self.instance.pseudocode_variable_kb
-        )
+        self.instance.project.analyses[APIObfuscationFinder].prep(progress_callback=ctx.set_progress)()
 
     def __repr__(self) -> str:
         return "APIDeobfuscationJob"

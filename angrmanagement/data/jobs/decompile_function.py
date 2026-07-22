@@ -27,7 +27,6 @@ class DecompileFunctionJob(InstanceJob):
     def run(self, ctx: JobContext) -> None:
         _decompiler = self.instance.project.analyses.Decompiler(
             self.function,
-            variable_kb=self.instance.pseudocode_variable_kb,
             use_cache=True,
             **self.kwargs,
             progress_callback=ctx.set_progress,

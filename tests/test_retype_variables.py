@@ -125,8 +125,7 @@ class TestRetypeVariables(AngrManagementTestCase):
 
         self.main.workspace.job_manager.join_all_jobs()
 
-        variable_kb = self.code_view.codegen._variable_kb
-        vm = variable_kb.variables[self.func.addr]
+        vm = self.code_view.codegen.kb.dec_variables[self.func.addr]
         updated_type = vm.get_variable_type(original_var)
 
         assert updated_type is not None

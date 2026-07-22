@@ -888,7 +888,7 @@ class MainWindow(QMainWindow):
         job = LoadAngrDBJob(
             self.workspace.main_instance,
             file_path,
-            ["global", "pseudocode_variable_kb"],
+            ["global"],
             other_kbs=other_kbs,
             extra_info=extra_info,
         )
@@ -913,10 +913,6 @@ class MainWindow(QMainWindow):
         self.workspace.main_instance.project = proj
         self.workspace.main_instance.cfg = cfg
         self.workspace.main_instance.cfb = cfb
-        if "pseudocode_variable_kb" in job.other_kbs:
-            self.workspace.main_instance.pseudocode_variable_kb = job.other_kbs["pseudocode_variable_kb"]
-        else:
-            self.workspace.main_instance.initialize_pseudocode_variable_kb()
         self.workspace.main_instance.project.am_event(initialized=True)
 
         # trigger callbacks
@@ -938,7 +934,6 @@ class MainWindow(QMainWindow):
             file_path,
             kbs=[
                 self.workspace.main_instance.kb,
-                self.workspace.main_instance.pseudocode_variable_kb,
             ],
             extra_info=extra_info,
         )

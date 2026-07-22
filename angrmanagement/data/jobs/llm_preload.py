@@ -74,7 +74,6 @@ class LLMPreloadCalleesJob(InstanceJob):
                     decompiler = project.analyses.Decompiler(
                         callee,
                         flavor="pseudocode",
-                        variable_kb=self.instance.pseudocode_variable_kb,
                     )
                     kb.decompilations[(callee.addr, "pseudocode")] = decompiler.cache
                     dec_cache = decompiler.cache
@@ -88,7 +87,6 @@ class LLMPreloadCalleesJob(InstanceJob):
             # run LLM refinement
             dec = project.analyses.Decompiler(
                 callee,
-                variable_kb=self.instance.pseudocode_variable_kb,
                 decompile=False,
             )
             dec.codegen = dec_cache.codegen
