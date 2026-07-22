@@ -43,12 +43,11 @@ class ConsoleView(InstanceView):
             return
 
         import angr  # pylint: disable=import-outside-toplevel,multiple-imports
-        import claripy
         import cle
 
         namespace = {
             "angr": angr,
-            "claripy": claripy,
+            "claripy": angr.claripy,
             "cle": cle,
             "workspace": self.workspace,
             "instance": self.instance,
@@ -79,12 +78,11 @@ class ConsoleView(InstanceView):
 
     def _init_widgets(self) -> None:
         import angr  # pylint: disable=import-outside-toplevel,multiple-imports
-        import claripy
         import cle
 
         namespace = {
             "angr": angr,
-            "claripy": claripy,
+            "claripy": angr.claripy,
             "cle": cle,
         }
 

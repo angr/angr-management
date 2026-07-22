@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 
-import claripy
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPen
 from PySide6.QtWidgets import QGraphicsItem
@@ -56,7 +55,7 @@ class QStateBlock(QGraphicsItem):
             if self.state.regs._ip.symbolic:
                 self._label_str = str(self.state.regs._ip)
             else:
-                addr = claripy.backends.concrete.convert(self.state.regs._ip).value
+                addr = self.state.regs._ip.concrete_value
                 self._label_str = f"{addr:#x}"
         except ReferenceError:
             # The SimState was held via weakref and has been garbage-collected
