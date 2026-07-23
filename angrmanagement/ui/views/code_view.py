@@ -155,7 +155,7 @@ class CodeView(FunctionView):
 
         if reset_cache:
             self.instance.kb.decompilations.discard((self._function.addr, flavor))
-            variables = self.instance.pseudocode_variable_kb.variables
+            variables = self.instance.kb.dec_variables
             if variables.has_function_manager(self._function.addr):
                 del variables[self._function.addr]
 
@@ -228,8 +228,8 @@ class CodeView(FunctionView):
             func_addr = self._function.addr
         if func_addr is None:
             return None
-        kb = self.codegen._variable_kb
-        return kb.variables[func_addr] if func_addr in kb.variables else None  # noqa:SIM401
+        variables = self.codegen.kb.dec_variables
+        return variables[func_addr] if func_addr in variables else None  # noqa:SIM401
 
     #
     # Event callbacks
@@ -319,7 +319,6 @@ class CodeView(FunctionView):
             if event == "retype_variable":
                 dec = self.instance.project.analyses.Decompiler(
                     self._function.am_obj,
-                    variable_kb=self.instance.pseudocode_variable_kb,
                     decompile=False,
                     use_cache=True,
                 )

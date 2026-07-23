@@ -468,14 +468,14 @@ class QCCodeEdit(api.CodeEdit):
                             return
 
                 # need workspace for altering callbacks of changes
-                variable_kb = self._code_view.codegen._variable_kb
+                dec_variables = self._code_view.codegen.kb.dec_variables
 
                 # Local variable
                 if (
                     node.unified_variable is not None
                     and node.unified_variable in self._code_view.codegen.cfunc.get_unified_local_vars()
                 ):
-                    variable_kb.variables[self._code_view.codegen.cfunc.addr].set_variable_type(
+                    dec_variables[self._code_view.codegen.cfunc.addr].set_variable_type(
                         node.variable,
                         new_node_type,
                         all_unified=True,
@@ -483,7 +483,7 @@ class QCCodeEdit(api.CodeEdit):
                     )
                 # Global variable
                 else:
-                    variable_kb.variables["global"].set_variable_type(
+                    dec_variables["global"].set_variable_type(
                         node.variable,
                         new_node_type,
                         all_unified=False,

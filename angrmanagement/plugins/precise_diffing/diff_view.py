@@ -72,7 +72,7 @@ class DiffCodeView(CodeView):
 
         if reset_cache:
             self.instance.kb.decompilations.discard((self._function.addr, flavor))
-            variables = self.instance.pseudocode_variable_kb.variables
+            variables = self.instance.kb.dec_variables
             if variables.has_function_manager(self._function.addr):
                 del variables[self._function.addr]
 

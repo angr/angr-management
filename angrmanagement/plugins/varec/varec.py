@@ -53,7 +53,7 @@ class VaRec(BasePlugin):
     @staticmethod
     def _restore_stage(view) -> None:
         # shrug
-        for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
+        for v in view.codegen.kb.dec_variables[view.function.addr]._unified_variables:
             m = re.match(r"@@(\S+)@@(\S+)@@", v.name)
             if m is not None:
                 var_name = m.group(1)
@@ -76,18 +76,18 @@ class VaRec(BasePlugin):
                 QMessageBox.StandardButton.Ok,
             )
             return
-        if view.codegen._variable_kb is None:
+        if view.codegen.kb is None or view.function.addr not in view.codegen.kb.dec_variables:
             QMessageBox.critical(
                 self.workspace._main_window,
                 "Error in variable name prediction",
-                "Cannot predict variable names. The pseudocode view does not have associated variables KB.",
+                "Cannot predict variable names. The pseudocode view does not have associated variables.",
                 QMessageBox.StandardButton.Ok,
             )
             return
 
         proxies = {"http": Conf.http_proxy, "https": Conf.https_proxy} if Conf.http_proxy or Conf.https_proxy else None
 
-        for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
+        for v in view.codegen.kb.dec_variables[view.function.addr]._unified_variables:
             if not v.renamed:
                 v.name = f"@@{v.name}@@{VaRec.randstr()}@@"
 
@@ -161,7 +161,7 @@ class VaRec(BasePlugin):
 
         # rename them all
         used_names = set()
-        for v in view.codegen._variable_kb.variables[view.function.addr]._unified_variables:
+        for v in view.codegen.kb.dec_variables[view.function.addr]._unified_variables:
             m = re.match(r"@@(\S+)@@\S+@@", v.name)
             if m is not None:
                 var_name = m.group(1)
