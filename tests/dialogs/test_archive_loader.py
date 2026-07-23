@@ -6,10 +6,12 @@ Test cases for ArchiveLoaderDialog and archive utility functions.
 
 from __future__ import annotations
 
+import io
 import os
 import shutil
 import tempfile
 import unittest
+import zipfile
 from unittest.mock import patch
 
 from common import AngrManagementTestCase, test_location  # pylint: disable=import-error
@@ -85,6 +87,19 @@ class TestArchiveClasses(unittest.TestCase):
     def test_is_archive_plain_text(self):
         """Test that plain text files are not detected as archives."""
         assert is_archive(self._not_archive_path) is False
+
+    def test_is_archive_binary_with_embedded_zip(self):
+        """Test that a binary with zip data appended is not detected as an archive."""
+        zip_buf = io.BytesIO()
+        with zipfile.ZipFile(zip_buf, "w") as zf:
+            zf.writestr("payload.txt", "embedded zip member")
+
+        embedded_path = os.path.join(self._temp_dir, "elf_with_zip")
+        with open(embedded_path, "wb") as f:
+            f.write(ELF_MAGIC + b"\x00" * 128 + zip_buf.getvalue())
+
+        assert ZipArchive.is_type(embedded_path) is False
+        assert is_archive(embedded_path) is False
 
     def test_get_archive_object(self):
         """Test that get_archive_object returns the right type or raises error."""

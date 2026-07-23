@@ -74,6 +74,16 @@ class ZipArchive(Archive):
 
     @classmethod
     def is_type(cls, path: str) -> bool:
+        # zipfile.is_zipfile only looks for an end-of-central-directory record near the
+        # end of the file, so a binary with zip data appended would be misdetected as an
+        # archive; require a zip signature at offset 0 as well
+        try:
+            with open(path, "rb") as f:
+                magic = f.read(4)
+        except OSError:
+            return False
+        if magic not in (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"):
+            return False
         return zipfile.is_zipfile(path)
 
     def list_members(self) -> list[ArchiveMember]:
