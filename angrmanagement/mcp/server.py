@@ -48,10 +48,12 @@ def create_server(workspace: Workspace) -> FastMCP:
             "cfg_built": not instance.cfg.am_none,
         }
 
+    from .edit_tools import register_edit_tools  # pylint:disable=import-outside-toplevel
     from .tools import register_read_tools, register_view_tools  # pylint:disable=import-outside-toplevel
 
     register_read_tools(server, workspace)
     register_view_tools(server, workspace)
+    register_edit_tools(server, workspace)
 
     try:
         from angr.mcp.server import mcp as angr_mcp_server  # pylint:disable=import-outside-toplevel
