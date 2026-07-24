@@ -939,6 +939,7 @@ class Workspace:
                 "force_complete_scan": False,
                 "function_starts": function_starts,
                 "model": self.main_instance.kb.cfgs.get_most_accurate(),
+                "treat_functions_as_complete": self.main_instance.cfg_resume_state is None,
             }
         )
 
@@ -966,6 +967,7 @@ class Workspace:
                 "force_complete_scan": False,
                 "function_starts": [func.addr],
                 "model": self.main_instance.kb.cfgs.get_most_accurate(),
+                "treat_functions_as_complete": self.main_instance.cfg_resume_state is None,
             }
         )
 
@@ -1002,6 +1004,9 @@ class Workspace:
                 "force_complete_scan": False,
                 "function_starts": [addr],
                 "model": self.main_instance.kb.cfgs.get_most_accurate(),
+                # the model stays partial after a strict resume; do not let post-analysis conclude
+                # returning=False for truncated functions (it would poison a later full resume)
+                "treat_functions_as_complete": self.main_instance.cfg_resume_state is None,
             }
         )
 
