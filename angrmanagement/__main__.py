@@ -65,7 +65,7 @@ def set_windows_event_loop_policy() -> None:
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
-def start_management(filepath=None, use_daemon=None, profiling: bool = False) -> None:
+def start_management(filepath=None, use_daemon=None, profiling: bool = False, use_mcp=None, mcp_port=None) -> None:
     set_app_user_model_id()
     set_windows_event_loop_policy()
 
@@ -191,7 +191,9 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False) ->
     splash.setProgress(0.9, "Initializing main window")
     GlobalInfo.gui_thread = QThread.currentThread()
     file_to_open = filepath if filepath else None
-    main_window = MainWindow(app=app, use_daemon=use_daemon)
+    if mcp_port is not None:
+        Conf.mcp_server_port = mcp_port
+    main_window = MainWindow(app=app, use_daemon=use_daemon, use_mcp=use_mcp)
     QApplication.processEvents()  # Let the main window start up to correctly position early dialogs
 
     splash.setProgress(1.0, "")
@@ -240,6 +242,13 @@ def main() -> None:
         "-u", "--url", type=str, nargs="?", help="(internal) handle angr:// URLs. the daemon must be running."
     )
     parser.add_argument("-p", "--profiling", action="store_true", help="display profiling log messages.")
+    parser.add_argument(
+        "-m",
+        "--mcp",
+        action="store_true",
+        help="start the MCP server so AI agents can analyze the loaded binary and show results in the GUI.",
+    )
+    parser.add_argument("--mcp-port", type=int, help="the port for the MCP server (default: 8642).")
     parser.add_argument("-R", "--autoreload", action="store_true", help="Reload all python modules on each job start.")
     parser.add_argument("binary", nargs="?", help="the binary to open (for the GUI)")
 
@@ -282,7 +291,11 @@ def main() -> None:
         IPython.embed(banner1="")
     if not args.no_gui:
         start_management(
-            args.binary, use_daemon=True if args.with_daemon else None, profiling=True if args.profiling else None
+            args.binary,
+            use_daemon=True if args.with_daemon else None,
+            profiling=True if args.profiling else None,
+            use_mcp=True if args.mcp else None,
+            mcp_port=args.mcp_port,
         )
 
 

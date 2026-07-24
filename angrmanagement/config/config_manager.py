@@ -332,6 +332,9 @@ ENTRIES = [
     CE("llm_auto_rename_function", bool, False),
     CE("llm_auto_retype_variables", bool, False),
     CE("llm_auto_summarize", bool, False),
+    # MCP server
+    CE("mcp_server_port", int, 8642),
+    CE("mcp_server_autostart", bool, False),
 ]
 
 

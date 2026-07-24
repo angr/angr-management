@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 import PySide6QtAds as QtAds
 from angr.angrdb import AngrDB
 from PySide6.QtCore import QEvent, QObject, QSize, Qt, QUrl
-from PySide6.QtGui import QDesktopServices, QIcon, QKeySequence, QShortcut, QWindow
+from PySide6.QtGui import QDesktopServices, QGuiApplication, QIcon, QKeySequence, QShortcut, QWindow
 from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
@@ -61,6 +61,7 @@ if TYPE_CHECKING:
     from PySide6.QtWidgets import QApplication
 
     from angrmanagement.data.jobs import Job
+    from angrmanagement.mcp import MCPServerManager
 
 
 _l = logging.getLogger(name=__name__)
@@ -154,7 +155,12 @@ class MainWindow(QMainWindow):
     """
 
     def __init__(
-        self, app: QApplication | None = None, parent=None, show: bool = True, use_daemon: bool = False
+        self,
+        app: QApplication | None = None,
+        parent=None,
+        show: bool = True,
+        use_daemon: bool = False,
+        use_mcp: bool | None = None,
     ) -> None:
         super().__init__(parent)
         self.initialized = False
@@ -205,6 +211,9 @@ class MainWindow(QMainWindow):
         init_flirt_signatures()
 
         self._run_daemon(use_daemon=use_daemon)
+
+        self.mcp_server_manager: MCPServerManager | None = None
+        self._run_mcp(use_mcp=use_mcp)
 
         # I'm ready to show off!
         if show:
@@ -444,6 +453,69 @@ class MainWindow(QMainWindow):
         GlobalInfo.daemon_conn.root.register_client(GlobalInfo.client_id)
 
     #
+    # MCP server
+    #
+
+    def _run_mcp(self, use_mcp: bool | None = None) -> None:
+        if use_mcp is None:
+            # Load it from the configuration file
+            use_mcp = Conf.mcp_server_autostart
+
+        if not use_mcp:
+            return
+
+        self.start_mcp_server()
+
+    def start_mcp_server(self) -> None:
+        from angrmanagement.mcp import MCPServerManager, is_mcp_available  # pylint:disable=import-outside-toplevel
+
+        if not is_mcp_available():
+            QMessageBox.critical(
+                self,
+                "MCP server unavailable",
+                "The MCP server requires the fastmcp and uvicorn packages. "
+                'Install them with "pip install angr-management[mcp]".',
+            )
+            return
+
+        if self.mcp_server_manager is not None and self.mcp_server_manager.running:
+            self.statusBar().showMessage(f"The MCP server is already running at {self.mcp_server_manager.url}", 10000)
+            return
+
+        manager = MCPServerManager(self.workspace, port=Conf.mcp_server_port)
+        try:
+            manager.start()
+        except RuntimeError as ex:
+            QMessageBox.critical(self, "Failed to start MCP server", str(ex))
+            return
+
+        self.mcp_server_manager = manager
+        self.statusBar().showMessage(f"MCP server listening at {manager.url}", 10000)
+
+    def stop_mcp_server(self) -> None:
+        if self.mcp_server_manager is None or not self.mcp_server_manager.running:
+            self.statusBar().showMessage("The MCP server is not running", 5000)
+            return
+
+        self.mcp_server_manager.stop()
+        self.mcp_server_manager = None
+        self.statusBar().showMessage("MCP server stopped", 5000)
+
+    def copy_mcp_url(self) -> None:
+        if self.mcp_server_manager is not None and self.mcp_server_manager.running:
+            url = self.mcp_server_manager.url
+        else:
+            from angrmanagement.mcp.manager import (  # pylint:disable=import-outside-toplevel
+                DEFAULT_HOST,
+                DEFAULT_PATH,
+            )
+
+            url = f"http://{DEFAULT_HOST}:{Conf.mcp_server_port}{DEFAULT_PATH}"
+
+        QGuiApplication.clipboard().setText(url)
+        self.statusBar().showMessage(f"Copied to clipboard: {url}", 5000)
+
+    #
     # URL scheme handler setup
     #
 
@@ -499,6 +571,9 @@ class MainWindow(QMainWindow):
                     ("AI: LLM Suggest Function Name", self.llm_suggest_function_name),
                     ("AI: LLM Suggest Variable Types", self.llm_suggest_variable_types),
                     ("AI: LLM Summarize Function", self.llm_summarize_function),
+                    ("AI: Start MCP Server", self.start_mcp_server),
+                    ("AI: Stop MCP Server", self.stop_mcp_server),
+                    ("AI: Copy MCP Server URL", self.copy_mcp_url),
                     ("Analyze: Decompile", self.decompile_current_function),
                     ("Analyze: Run Analysis...", self.run_analysis),
                     ("File: Exit", self.quit),
@@ -575,6 +650,10 @@ class MainWindow(QMainWindow):
         for plugin in list(self.workspace.plugins.active_plugins.values()):
             self.workspace.plugins.deactivate_plugin(plugin)
         self.workspace.job_manager.quit()
+
+        if self.mcp_server_manager is not None:
+            self.mcp_server_manager.stop(timeout=2)
+            self.mcp_server_manager = None
 
         # force-close runtime db
         if (
