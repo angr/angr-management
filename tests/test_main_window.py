@@ -165,7 +165,7 @@ class TestShiftShiftEventFilter(AngrManagementTestCase):
 
 
 class TestOpenCloseGuards(AngrManagementTestCase):
-    """Opening a new binary is refused while one is loaded; Close binary clears it."""
+    """Opening a new binary is refused while one is loaded; Close project clears it."""
 
     def _load(self, name: str = "fauxware") -> None:
         instance = self.main.workspace.main_instance
@@ -184,21 +184,21 @@ class TestOpenCloseGuards(AngrManagementTestCase):
         assert warn.called
         assert instance.project.am_obj is before
 
-    def test_close_binary_confirmed_clears_project(self):
+    def test_close_project_confirmed_clears_project(self):
         self._load()
         instance = self.main.workspace.main_instance
         assert not instance.project.am_none
         with patch.object(QMessageBox, "exec_", return_value=QMessageBox.StandardButton.Yes):
-            self.main.close_binary()
+            self.main.close_project()
         for _ in range(10):
             QApplication.processEvents()
         assert instance.project.am_none
 
-    def test_close_binary_cancelled_keeps_project(self):
+    def test_close_project_cancelled_keeps_project(self):
         self._load()
         instance = self.main.workspace.main_instance
         with patch.object(QMessageBox, "exec_", return_value=QMessageBox.StandardButton.No):
-            self.main.close_binary()
+            self.main.close_project()
         assert not instance.project.am_none
 
 

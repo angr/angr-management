@@ -37,8 +37,8 @@ class FileMenu(Menu):
         self._project = main_window.workspace.main_instance.project
 
         self._close_entry = MenuEntry(
-            "&Close binary",
-            main_window.close_binary,
+            "&Close project",
+            main_window.close_project,
             shortcut=QKeySequence("Ctrl+W"),
         )
         self._save_entries = [

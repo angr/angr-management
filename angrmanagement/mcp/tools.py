@@ -419,7 +419,7 @@ def register_project_tools(server: FastMCP, workspace: Workspace) -> None:
 
         Use this when no binary is loaded yet: the file opens in angr management exactly as if the
         user had opened it, and subsequent tools operate on it. If a binary is already loaded, this
-        fails; call close_binary first to switch to a different one.
+        fails; call close_project first to switch to a different one.
 
         In the interactive GUI, the standard analysis-options dialog appears for the user to
         confirm; initial analysis (including CFG recovery) then runs. With wait_for_analysis=True
@@ -435,7 +435,7 @@ def register_project_tools(server: FastMCP, workspace: Workspace) -> None:
 
         if not workspace.main_instance.project.am_none:
             raise ToolError(
-                "A binary is already loaded in angr management. Call close_binary first to unload it "
+                "A binary is already loaded in angr management. Call close_project first to unload it "
                 "before loading a different one."
             )
 
@@ -492,11 +492,12 @@ def register_project_tools(server: FastMCP, workspace: Workspace) -> None:
         return info
 
     @server.tool()
-    def close_binary() -> dict[str, Any]:
+    def close_project() -> dict[str, Any]:
         """
         Close the binary currently loaded in angr management, returning the GUI to an empty state.
 
-        Use this when the user asks to unload the current binary. Does nothing if nothing is loaded.
+        Use this when the user asks to unload the current binary or project. Does nothing if
+        nothing is loaded.
         """
         if workspace.main_instance.project.am_none:
             return {"closed": False, "note": "No binary is loaded."}

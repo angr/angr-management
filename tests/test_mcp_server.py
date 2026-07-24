@@ -182,8 +182,8 @@ class TestMCPLoadBinary(MCPTestCase):
         self.run_client(scenario)
 
 
-class TestMCPCloseBinary(MCPTestCase):
-    """close_binary unloads the current binary and clears the views without errors."""
+class TestMCPCloseProject(MCPTestCase):
+    """close_project unloads the current binary and clears the views without errors."""
 
     def _open_and_populate_views(self):
         from angrmanagement.ui.views import DisassemblyView
@@ -212,7 +212,7 @@ class TestMCPCloseBinary(MCPTestCase):
         assert functions_model.rowCount() > 0
 
         async def scenario(client):
-            r = (await client.call_tool("close_binary", {})).data
+            r = (await client.call_tool("close_project", {})).data
             assert r["closed"] is True
             status = (await client.call_tool("get_server_status", {})).data
             assert status["project_loaded"] is False
@@ -249,7 +249,7 @@ class TestMCPCloseBinary(MCPTestCase):
         self._open_and_populate_views()
 
         async def scenario(client):
-            await client.call_tool("close_binary", {})
+            await client.call_tool("close_project", {})
             r = (
                 await client.call_tool("load_binary", {"binary_path": os.path.join(test_location, "x86_64", "true")})
             ).data
@@ -264,9 +264,9 @@ class TestMCPCloseBinary(MCPTestCase):
     def test_close_with_no_binary_is_noop(self):
         # close the fauxware loaded by setUp, then a second close is a no-op
         async def scenario(client):
-            first = (await client.call_tool("close_binary", {})).data
+            first = (await client.call_tool("close_project", {})).data
             assert first["closed"] is True
-            second = (await client.call_tool("close_binary", {})).data
+            second = (await client.call_tool("close_project", {})).data
             assert second["closed"] is False
 
         self.run_client(scenario)

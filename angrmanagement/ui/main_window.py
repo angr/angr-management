@@ -594,7 +594,7 @@ class MainWindow(QMainWindow):
                     ("AI: Copy MCP Server URL", self.copy_mcp_url),
                     ("Analyze: Decompile", self.decompile_current_function),
                     ("Analyze: Run Analysis...", self.run_analysis),
-                    ("File: Close binary", self.close_binary),
+                    ("File: Close project", self.close_project),
                     ("File: Exit", self.quit),
                     ("File: Load a new binary...", self.open_file_button),
                     ("File: Load a new trace...", self.load_trace),
@@ -715,17 +715,17 @@ class MainWindow(QMainWindow):
             return True
         QMessageBox.warning(
             self,
-            "A binary is already open",
-            "A binary is already loaded. Please close it first (File → Close Binary) before opening a new one.",
+            "A project is already open",
+            "A binary is already loaded. Please close it first (File → Close Project) before opening a new one.",
         )
         return False
 
-    def close_binary(self) -> None:
+    def close_project(self) -> None:
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return
         msgbox = QMessageBox(self)
-        msgbox.setWindowTitle("Close binary")
-        msgbox.setText("Close the current binary? Any unsaved analysis will be lost.")
+        msgbox.setWindowTitle("Close project")
+        msgbox.setText("Close the current project? Any unsaved analysis will be lost.")
         msgbox.setIcon(QMessageBox.Icon.Question)
         msgbox.setWindowIcon(self.windowIcon())
         msgbox.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
