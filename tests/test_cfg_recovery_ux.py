@@ -123,6 +123,28 @@ class TestResume(CfgRecoveryUxTestCase):
         # resuming with the captured resume state reproduces the exact function set of an uninterrupted run
         assert set(workspace.main_instance.kb.functions) == self.full_reference_functions()
 
+    def test_full_resume_after_strict_resume_converges(self):
+        # a strict resume-from-address job must not clobber the captured resume state; a full resume afterwards
+        # still converges to the uninterrupted function set
+        workspace = self.main.workspace
+        self.run_cfg_job(cancel_on_first_progress=True)
+        state = workspace.main_instance.cfg_resume_state
+        assert state is not None
+
+        missing = sorted(self.full_reference_functions() - set(workspace.main_instance.kb.functions))
+        assert missing
+        workspace.resume_cfg_recovery(missing[0])
+        workspace.job_manager.join_all_jobs()
+
+        # the strict resume completed but the captured resume state is preserved
+        assert workspace.main_instance.cfg_resume_state is state
+
+        workspace.resume_cfg_recovery_full()
+        workspace.job_manager.join_all_jobs()
+        assert set(workspace.main_instance.kb.functions) == self.full_reference_functions()
+        # the full resume consumed the state
+        assert workspace.main_instance.cfg_resume_state is None
+
     def test_can_resume_enablement(self):
         workspace = self.main.workspace
 
