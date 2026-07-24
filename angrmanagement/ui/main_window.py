@@ -6,11 +6,9 @@ import os
 import pickle
 import time
 import uuid
-from functools import partial
 from typing import TYPE_CHECKING
 
 import PySide6QtAds as QtAds
-from angr.angrdb import AngrDB
 from PySide6.QtCore import QEvent, QObject, QSize, Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QGuiApplication, QIcon, QKeySequence, QShortcut, QWindow
 from PySide6.QtWidgets import (
@@ -26,7 +24,7 @@ from angrmanagement.consts import IMG_LOCATION
 from angrmanagement.daemon import daemon_conn, daemon_exists, run_daemon_process
 from angrmanagement.daemon.client import ClientService
 from angrmanagement.data.jobs import DependencyAnalysisJob
-from angrmanagement.data.jobs.loading import LoadAngrDBJob, LoadBinaryJob
+from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.data.library_docs import LibraryDocs
 from angrmanagement.data.signatures import init_flirt_signatures
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
@@ -1019,64 +1017,10 @@ class MainWindow(QMainWindow):
         return ""
 
     def _load_database(self, file_path: str) -> None:
-        other_kbs = {}
-        extra_info = {}
-
-        job = LoadAngrDBJob(
-            self.workspace.main_instance,
-            file_path,
-            ["global"],
-            other_kbs=other_kbs,
-            extra_info=extra_info,
-        )
-        # TODO: make the job return what the callback wants
-        job._on_finish = partial(self._on_load_database_finished, job)
-        self.workspace.job_manager.add_job(job)
-
-    def _on_load_database_finished(self, job: LoadAngrDBJob, *args, **kwargs) -> None:  # pylint:disable=unused-argument
-        proj = job.project
-
-        if proj is None:
-            return
-
-        self._recent_file(job.file_path)
-
-        cfg = proj.kb.cfgs["CFGFast"]
-        cfb = proj.analyses.CFB()  # it will load functions from kb
-
-        self.workspace.main_instance.database_path = job.file_path
-
-        self.workspace.main_instance._reset_containers()
-        self.workspace.main_instance.project = proj
-        self.workspace.main_instance.cfg = cfg
-        self.workspace.main_instance.cfb = cfb
-        self.workspace.main_instance.project.am_event(initialized=True)
-
-        # trigger callbacks
-        self.workspace.reload()
-        self.workspace.main_instance.cfb.am_event()
-        self.workspace.main_instance.cfg.am_event()
-        self.workspace.on_cfg_generated()
-        self.workspace.plugins.angrdb_load_entries(job.extra_info)
+        self.workspace.load_database(file_path, on_loaded=self._recent_file)
 
     def _save_database(self, file_path) -> bool:
-        if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
-            return False
-
-        self.workspace.plugins.handle_project_save(file_path)
-
-        angrdb = AngrDB(project=self.workspace.main_instance.project)
-        extra_info = self.workspace.plugins.angrdb_store_entries()
-        angrdb.dump(
-            file_path,
-            kbs=[
-                self.workspace.main_instance.kb,
-            ],
-            extra_info=extra_info,
-        )
-
-        self.workspace.main_instance.database_path = file_path
-        return True
+        return self.workspace.save_database(file_path)
 
     def _raise_view(self, idx: int) -> None:
         """

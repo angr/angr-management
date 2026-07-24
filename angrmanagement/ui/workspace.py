@@ -4,6 +4,7 @@ import logging
 import os
 import time
 import traceback
+from functools import partial
 from typing import TYPE_CHECKING, TypeVar
 
 from angr import StateHierarchy
@@ -495,6 +496,62 @@ class Workspace:
         self.main_instance.database_path = None
         self.main_instance.analysis_configuration = None
         self.main_instance._reset_containers()
+
+    def save_database(self, file_path: str) -> bool:
+        """
+        Dump the current project and its knowledge base to an angr database (.adb) file.
+
+        :returns: True on success, False if no project is loaded.
+        """
+        from angr.angrdb import AngrDB  # pylint:disable=import-outside-toplevel
+
+        if self.main_instance.project.am_none:
+            return False
+
+        self.plugins.handle_project_save(file_path)
+        angrdb = AngrDB(project=self.main_instance.project.am_obj)
+        extra_info = self.plugins.angrdb_store_entries()
+        angrdb.dump(file_path, kbs=[self.main_instance.kb], extra_info=extra_info)
+        self.main_instance.database_path = file_path
+        return True
+
+    def load_database(self, file_path: str, on_loaded=None):
+        """
+        Load an angr database (.adb) into the workspace via a background job. When the load
+        finishes, the project/CFG/CFB containers are populated and views are refreshed, then the
+        optional ``on_loaded(file_path)`` callback is invoked.
+        """
+        from angrmanagement.data.jobs.loading import LoadAngrDBJob  # pylint:disable=import-outside-toplevel
+
+        job = LoadAngrDBJob(self.main_instance, file_path, ["global"], other_kbs={}, extra_info={})
+        job._on_finish = partial(self._on_database_loaded, job, on_loaded)
+        self.job_manager.add_job(job)
+        return job
+
+    def _on_database_loaded(self, job, on_loaded, *args, **kwargs) -> None:  # pylint:disable=unused-argument
+        proj = job.project
+        if proj is None:
+            return
+
+        cfg = proj.kb.cfgs["CFGFast"]
+        cfb = proj.analyses.CFB()  # it will load functions from kb
+
+        self.main_instance.database_path = job.file_path
+        self.main_instance._reset_containers()
+        self.main_instance.project = proj
+        self.main_instance.cfg = cfg
+        self.main_instance.cfb = cfb
+        self.main_instance.project.am_event(initialized=True)
+
+        # trigger callbacks
+        self.reload()
+        self.main_instance.cfb.am_event()
+        self.main_instance.cfg.am_event()
+        self.on_cfg_generated()
+        self.plugins.angrdb_load_entries(job.extra_info)
+
+        if on_loaded is not None:
+            on_loaded(job.file_path)
 
     def run_analysis(self) -> None:
         if self.main_instance.project.am_none:

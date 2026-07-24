@@ -512,6 +512,107 @@ def register_project_tools(server: FastMCP, workspace: Workspace) -> None:
             raise ToolError("The GUI thread did not respond while closing the project; it may be busy.")
         return {"closed": True}
 
+    @server.tool()
+    def load_database(
+        database_path: str,
+        wait_for_load: bool = True,
+        timeout_seconds: int = 600,
+    ) -> dict[str, Any]:
+        """
+        Load a saved angr database (.adb) into angr management, restoring a previous analysis
+        session (project, CFG, decompilations, renames, types, comments) and displaying it in the
+        GUI in front of the user.
+
+        Use this when no binary is loaded yet; if a binary is already loaded, this fails, so call
+        close_project first. angr databases are produced by save_database or by the user via
+        File → Save angr database.
+
+        Args:
+            database_path: Absolute path to the .adb file to load
+            wait_for_load: Wait until the database has finished loading before returning (default: True)
+            timeout_seconds: Maximum time to wait for the load (default: 600)
+        """
+        if not workspace.main_instance.project.am_none:
+            raise ToolError(
+                "A binary is already loaded in angr management. Call close_project first to unload it "
+                "before loading a database."
+            )
+
+        path = Path(database_path)
+        if not path.exists() or not path.is_file():
+            raise ToolError(f"No such file: {database_path}. Provide an absolute path to an .adb file on disk.")
+        resolved = str(path.resolve())
+
+        def start() -> bool:
+            workspace.load_database(resolved)
+            return True
+
+        if gui_thread_schedule(start, timeout=60) is None:
+            raise ToolError("The GUI thread did not respond while starting the database load; it may be busy.")
+
+        info: dict[str, Any] = {"database_path": resolved}
+        if not wait_for_load:
+            info["loaded"] = not workspace.main_instance.project.am_none
+            info["note"] = "The database is loading; poll get_project_info until cfg_built is true."
+            return info
+
+        deadline = time.monotonic() + timeout_seconds
+        while time.monotonic() < deadline:
+            instance = workspace.main_instance
+            if not instance.project.am_none and not instance.cfg.am_none:
+                proj = instance.project.am_obj
+                return {
+                    "database_path": resolved,
+                    "loaded": True,
+                    "binary_path": proj.filename,
+                    "arch": proj.arch.name,
+                    "entry_point": hex(proj.entry),
+                    "function_count": len(instance.kb.functions),
+                }
+            time.sleep(0.25)
+
+        if workspace.main_instance.project.am_none:
+            raise ToolError(
+                f"Failed to load the angr database within {timeout_seconds} seconds. It may be incompatible "
+                "or corrupt; check angr management for an error dialog."
+            )
+        info["loaded"] = True
+        info["note"] = "The database loaded but analysis is still finalizing; poll get_project_info."
+        return info
+
+    @server.tool()
+    def save_database(database_path: str, overwrite: bool = False) -> dict[str, Any]:
+        """
+        Save the current angr management project to an angr database (.adb), persisting the whole
+        analysis session (CFG, decompilations, and any renames, types, and comments) so it can be
+        restored later with load_database.
+
+        Args:
+            database_path: Absolute path to write the .adb file to
+            overwrite: If False (the default), refuse to overwrite an existing file; pass True to replace it
+        """
+        require_project(workspace)
+
+        path = Path(database_path)
+        if path.exists():
+            if not path.is_file():
+                raise ToolError(f"{database_path} exists and is not a regular file.")
+            if not overwrite:
+                raise ToolError(f"{database_path} already exists. Pass overwrite=true to replace it.")
+        elif not path.parent.exists():
+            raise ToolError(f"The directory {path.parent} does not exist.")
+        resolved = str(path.resolve())
+
+        def do_save() -> bool:
+            return workspace.save_database(resolved)
+
+        result = gui_thread_schedule(do_save, timeout=300)
+        if result is None:
+            raise ToolError("The GUI thread did not respond while saving the database; it may be busy.")
+        if result is False:
+            raise ToolError("No project is loaded, so there is nothing to save.")
+        return {"saved": True, "database_path": resolved}
+
 
 def register_view_tools(server: FastMCP, workspace: Workspace) -> None:
     """Register tools that run analyses through the GUI job system and control what the user sees."""

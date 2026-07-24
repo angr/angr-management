@@ -61,6 +61,11 @@ directly; editing tools run on the GUI thread and refresh the relevant views.
   it; use this when no binary is loaded yet. Fails if a binary is already loaded -- call
   ``close_project`` first to switch to a different one.
 * ``close_project`` -- unload the current binary, returning the GUI to an empty state.
+* ``load_database`` -- load a saved angr database (``.adb``), restoring a previous analysis session
+  (CFG, decompilations, renames, types, comments). Also fails if a binary is already loaded.
+* ``save_database`` -- save the current project to an angr database (``.adb``) so it can be restored
+  later. Requires an explicit path and refuses to overwrite an existing file unless ``overwrite`` is
+  true.
 
 **Inspection**
 

@@ -14,6 +14,8 @@ except ImportError:
 import asyncio
 import os
 import re
+import shutil
+import tempfile
 import threading
 import time
 import unittest
@@ -271,6 +273,92 @@ class TestMCPCloseProject(MCPTestCase):
 
         self.run_client(scenario)
         assert self.main.workspace.main_instance.project.am_none
+
+
+class TestMCPDatabase(MCPTestCase):
+    """save_database / load_database persist and restore the analysis session."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self._tmpdir, ignore_errors=True)
+        self.db_path = os.path.join(self._tmpdir, "session.adb")
+
+    def test_save_reload_roundtrip_preserves_edits(self):
+        async def scenario(client):
+            await client.call_tool("decompile_function", {"name": "authenticate", "focus": True})
+            await client.call_tool("rename_function", {"name": "authenticate", "new_name": "check_creds"})
+
+            saved = (await client.call_tool("save_database", {"database_path": self.db_path})).data
+            assert saved["saved"] is True
+            assert os.path.exists(self.db_path)
+
+            await client.call_tool("close_project", {})
+
+            loaded = (await client.call_tool("load_database", {"database_path": self.db_path})).data
+            assert loaded["loaded"] is True
+            assert loaded["function_count"] > 0
+
+            # the rename and its decompilation survived the round-trip
+            funcs = (await client.call_tool("list_functions", {"name_pattern": "check_creds"})).data
+            assert any(f["name"] == "check_creds" for f in funcs["functions"])
+            dec = (await client.call_tool("get_decompilation", {"name": "check_creds"})).data
+            assert "check_creds" in dec["code"]
+
+        self.run_client(scenario)
+        instance = self.main.workspace.main_instance
+        assert not instance.project.am_none
+        assert instance.kb.functions.function(name="check_creds") is not None
+
+    def test_save_refuses_overwrite_without_flag(self):
+        from fastmcp.exceptions import ToolError
+
+        async def scenario(client):
+            first = (await client.call_tool("save_database", {"database_path": self.db_path})).data
+            assert first["saved"] is True
+            with pytest.raises(ToolError):
+                await client.call_tool("save_database", {"database_path": self.db_path})
+            # overwrite=True succeeds
+            again = (await client.call_tool("save_database", {"database_path": self.db_path, "overwrite": True})).data
+            assert again["saved"] is True
+
+        self.run_client(scenario)
+
+    def test_load_database_refused_while_open(self):
+        from fastmcp.exceptions import ToolError
+
+        async def scenario(client):
+            await client.call_tool("save_database", {"database_path": self.db_path})
+            with pytest.raises(ToolError):
+                await client.call_tool("load_database", {"database_path": self.db_path})
+
+        self.run_client(scenario)
+
+
+class TestMCPDatabaseEmpty(MCPTestCase):
+    """Database tool error paths when no project is loaded."""
+
+    load_project = False
+
+    def test_save_without_project_errors(self):
+        from fastmcp.exceptions import ToolError
+
+        with tempfile.TemporaryDirectory() as td:
+
+            async def scenario(client):
+                with pytest.raises(ToolError):
+                    await client.call_tool("save_database", {"database_path": os.path.join(td, "x.adb")})
+
+            self.run_client(scenario)
+
+    def test_load_missing_database_errors(self):
+        from fastmcp.exceptions import ToolError
+
+        async def scenario(client):
+            with pytest.raises(ToolError):
+                await client.call_tool("load_database", {"database_path": "/nonexistent/session.adb"})
+
+        self.run_client(scenario)
 
 
 class TestMCPDecompileAndVisualize(MCPTestCase):
