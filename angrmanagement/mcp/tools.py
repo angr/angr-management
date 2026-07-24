@@ -7,6 +7,7 @@ touches views or fires GUI events must be marshalled through gui_thread_schedule
 from __future__ import annotations
 
 import re
+import time
 from typing import TYPE_CHECKING, Any
 
 import networkx as nx
@@ -20,6 +21,8 @@ from angr.mcp.serializers import (
     serialize_xref,
 )
 from fastmcp.exceptions import ToolError
+
+from angrmanagement.logic.threads import gui_thread_schedule, gui_thread_schedule_async
 
 if TYPE_CHECKING:
     import angr
@@ -371,3 +374,126 @@ def register_read_tools(server: FastMCP, workspace: Workspace) -> None:
             "nodes": nodes_out,
             "edges": edges_out,
         }
+
+
+def _submit_background_decompilation(workspace: Workspace, func: Function) -> None:
+    """Queue a decompilation of the given function without touching any views."""
+    # imported late to avoid pulling UI modules at server construction time
+    from angrmanagement.data.jobs import (  # pylint:disable=import-outside-toplevel
+        DecompileFunctionJob,
+        VariableRecoveryJob,
+    )
+
+    instance = workspace.main_instance
+
+    def submit_decomp(*_args, **_kwargs) -> None:
+        job = DecompileFunctionJob(instance, func, cfg=instance.cfg, flavor=PSEUDOCODE_FLAVOR)
+        workspace.job_manager.add_job(job)
+
+    if func.ran_cca is False and (func.prototype is None or func.is_prototype_guessed is True):
+        # run calling convention analysis for this function first, like the pseudocode view does
+        options = instance.analysis_configuration["varec"].to_dict() if instance.analysis_configuration else {}
+        options["workers"] = 0
+        varrec_job = VariableRecoveryJob(instance, **options, on_finish=submit_decomp, func_addr=func.addr)
+        workspace.job_manager.add_job(varrec_job)
+    else:
+        submit_decomp()
+
+
+def register_view_tools(server: FastMCP, workspace: Workspace) -> None:
+    """Register tools that run analyses through the GUI job system and control what the user sees."""
+
+    # pylint:disable=unused-variable
+
+    @server.tool()
+    def decompile_function(
+        address: str | None = None,
+        name: str | None = None,
+        focus: bool = True,
+        timeout_seconds: int = 300,
+    ) -> dict[str, Any]:
+        """
+        Decompile a function using the same pipeline and options as the angr management GUI,
+        and return the C-like pseudocode.
+
+        With focus=True (the default) the pseudocode view is opened on this function so the
+        user immediately sees the result. Use focus=False to decompile in the background
+        without changing what the user is looking at. Results are cached in the GUI session.
+
+        Specify either address (hex string; any address inside the function works) or name.
+        """
+        func = find_function(workspace, address=address, name=name)
+        kb = workspace.main_instance.kb
+        key = (func.addr, PSEUDOCODE_FLAVOR)
+
+        if focus:
+            gui_thread_schedule_async(workspace.decompile_function, (func,))
+        elif key not in kb.decompilations:
+            _submit_background_decompilation(workspace, func)
+
+        deadline = time.monotonic() + timeout_seconds
+        while time.monotonic() < deadline:
+            if key in kb.decompilations:
+                cache = kb.decompilations[key]
+                if cache.codegen is not None and cache.codegen.text:
+                    return {
+                        "function_address": hex(func.addr),
+                        "function_name": func.name,
+                        "shown_to_user": focus,
+                        "code": cache.codegen.text,
+                    }
+            time.sleep(0.2)
+
+        raise ToolError(
+            f"Decompilation of {func.name} did not complete within {timeout_seconds} seconds. "
+            "It may still be running; call get_decompilation to fetch the result later."
+        )
+
+    @server.tool()
+    def jump_to(address: str) -> dict[str, Any]:
+        """
+        Navigate the angr management disassembly view to the given address, in front of the user.
+
+        Args:
+            address: The address to jump to (hex string, e.g., "0x401000")
+        """
+        require_project(workspace)
+        addr = parse_address(address)
+        gui_thread_schedule_async(workspace.jump_to, (addr,))
+        return {"jumped_to": hex(addr)}
+
+    @server.tool()
+    def get_view_state() -> dict[str, Any]:
+        """
+        Get what the user is currently looking at in angr management: the focused view and the
+        functions shown in the disassembly and pseudocode views.
+
+        Call this to gain context before answering questions such as "what does this function do?".
+        """
+        require_project(workspace)
+
+        def collect() -> dict[str, Any]:
+            view_manager = workspace.view_manager
+            current = view_manager.current_tab
+            state: dict[str, Any] = {"current_view": current.category if current is not None else None}
+
+            disasm_view = view_manager.current_view_in_category("disassembly") or view_manager.first_view_in_category(
+                "disassembly"
+            )
+            if disasm_view is not None and not disasm_view.current_function.am_none:
+                func = disasm_view.current_function.am_obj
+                state["disassembly_view_function"] = {"address": hex(func.addr), "name": func.name}
+
+            code_view = view_manager.current_view_in_category("pseudocode") or view_manager.first_view_in_category(
+                "pseudocode"
+            )
+            if code_view is not None and not code_view.function.am_none:
+                func = code_view.function.am_obj
+                state["pseudocode_view_function"] = {"address": hex(func.addr), "name": func.name}
+
+            return state
+
+        result = gui_thread_schedule(collect, timeout=10)
+        if result is None:
+            raise ToolError("Timed out reading the GUI state; the GUI thread may be busy.")
+        return result
