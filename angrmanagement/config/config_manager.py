@@ -335,6 +335,8 @@ ENTRIES = [
     # MCP server
     CE("mcp_server_port", int, 8642),
     CE("mcp_server_autostart", bool, False),
+    CE("mcp_server_auth_enabled", bool, False),
+    CE("mcp_server_auth_token", str, ""),
 ]
 
 

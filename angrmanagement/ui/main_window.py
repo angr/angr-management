@@ -482,7 +482,15 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"The MCP server is already running at {self.mcp_server_manager.url}", 10000)
             return
 
-        manager = MCPServerManager(self.workspace, port=Conf.mcp_server_port)
+        auth_token = None
+        if Conf.mcp_server_auth_enabled:
+            auth_token = Conf.mcp_server_auth_token or MCPServerManager.generate_auth_token()
+            if not Conf.mcp_server_auth_token:
+                # persist the generated token so it stays stable across restarts
+                Conf.mcp_server_auth_token = auth_token
+                save_config()
+
+        manager = MCPServerManager(self.workspace, port=Conf.mcp_server_port, auth_token=auth_token)
         try:
             manager.start()
         except RuntimeError as ex:
@@ -490,7 +498,8 @@ class MainWindow(QMainWindow):
             return
 
         self.mcp_server_manager = manager
-        self.statusBar().showMessage(f"MCP server listening at {manager.url}", 10000)
+        auth_note = " (bearer-token auth enabled)" if auth_token else ""
+        self.statusBar().showMessage(f"MCP server listening at {manager.url}{auth_note}", 10000)
 
     def stop_mcp_server(self) -> None:
         if self.mcp_server_manager is None or not self.mcp_server_manager.running:
@@ -504,6 +513,7 @@ class MainWindow(QMainWindow):
     def copy_mcp_url(self) -> None:
         if self.mcp_server_manager is not None and self.mcp_server_manager.running:
             url = self.mcp_server_manager.url
+            auth_token = self.mcp_server_manager.auth_token
         else:
             from angrmanagement.mcp.manager import (  # pylint:disable=import-outside-toplevel
                 DEFAULT_HOST,
@@ -511,9 +521,17 @@ class MainWindow(QMainWindow):
             )
 
             url = f"http://{DEFAULT_HOST}:{Conf.mcp_server_port}{DEFAULT_PATH}"
+            auth_token = Conf.mcp_server_auth_token if Conf.mcp_server_auth_enabled else None
 
-        QGuiApplication.clipboard().setText(url)
-        self.statusBar().showMessage(f"Copied to clipboard: {url}", 5000)
+        if auth_token:
+            text = f"{url}\nAuthorization: Bearer {auth_token}"
+            message = "Copied MCP URL and auth token to clipboard"
+        else:
+            text = url
+            message = f"Copied to clipboard: {url}"
+
+        QGuiApplication.clipboard().setText(text)
+        self.statusBar().showMessage(message, 5000)
 
     #
     # URL scheme handler setup

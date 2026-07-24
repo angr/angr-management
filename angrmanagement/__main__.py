@@ -65,7 +65,15 @@ def set_windows_event_loop_policy() -> None:
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
-def start_management(filepath=None, use_daemon=None, profiling: bool = False, use_mcp=None, mcp_port=None) -> None:
+def start_management(
+    filepath=None,
+    use_daemon=None,
+    profiling: bool = False,
+    use_mcp=None,
+    mcp_port=None,
+    mcp_auth=None,
+    mcp_auth_token=None,
+) -> None:
     set_app_user_model_id()
     set_windows_event_loop_policy()
 
@@ -193,6 +201,11 @@ def start_management(filepath=None, use_daemon=None, profiling: bool = False, us
     file_to_open = filepath if filepath else None
     if mcp_port is not None:
         Conf.mcp_server_port = mcp_port
+    if mcp_auth:
+        Conf.mcp_server_auth_enabled = True
+    if mcp_auth_token is not None:
+        Conf.mcp_server_auth_enabled = True
+        Conf.mcp_server_auth_token = mcp_auth_token
     main_window = MainWindow(app=app, use_daemon=use_daemon, use_mcp=use_mcp)
     QApplication.processEvents()  # Let the main window start up to correctly position early dialogs
 
@@ -249,6 +262,17 @@ def main() -> None:
         help="start the MCP server so AI agents can analyze the loaded binary and show results in the GUI.",
     )
     parser.add_argument("--mcp-port", type=int, help="the port for the MCP server (default: 8642).")
+    parser.add_argument(
+        "--mcp-auth",
+        action="store_true",
+        help="require a bearer token to connect to the MCP server. A token is generated and "
+        "saved if one is not already configured.",
+    )
+    parser.add_argument(
+        "--mcp-auth-token",
+        type=str,
+        help="require this specific bearer token to connect to the MCP server (implies --mcp-auth).",
+    )
     parser.add_argument("-R", "--autoreload", action="store_true", help="Reload all python modules on each job start.")
     parser.add_argument("binary", nargs="?", help="the binary to open (for the GUI)")
 
@@ -296,6 +320,8 @@ def main() -> None:
             profiling=True if args.profiling else None,
             use_mcp=True if args.mcp else None,
             mcp_port=args.mcp_port,
+            mcp_auth=True if args.mcp_auth else None,
+            mcp_auth_token=args.mcp_auth_token,
         )
 
 
