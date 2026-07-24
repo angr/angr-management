@@ -59,6 +59,7 @@ directly; editing tools run on the GUI thread and refresh the relevant views.
 
 * ``load_binary`` -- load a binary into the GUI (starting analysis) so subsequent tools operate on
   it; use this when no binary is loaded yet. Replaces any currently loaded binary.
+* ``close_binary`` -- unload the current binary, returning the GUI to an empty state.
 
 **Inspection**
 

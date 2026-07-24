@@ -233,9 +233,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.redraw()
 
     def initialize(self) -> None:
-        if self.cfb.am_none:
-            return
-
         for obj in self.objects.values():
             if obj.isVisible():
                 obj.setVisible(False)
@@ -250,6 +247,11 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self._offset = None
         self._max_offset = None
         self._start_line_in_object = 0
+
+        # if no CFB is available (e.g., no binary is loaded), leave the viewer empty. The region maps
+        # are cleared above so prepare_objects will not walk into a None CFB.
+        if self.cfb.am_none:
+            return
 
         # enumerate memory regions
         byte_offset = 0
@@ -338,6 +340,9 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         :param int start_line:  The first line into the first object to display in the linear viewer.
         :return:                None
         """
+
+        if self.cfb.am_none:
+            return
 
         if offset is None:
             offset = 0

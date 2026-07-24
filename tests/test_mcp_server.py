@@ -180,6 +180,78 @@ class TestMCPLoadBinary(MCPTestCase):
                 await client.call_tool("load_binary", {"binary_path": "/nonexistent/binary/xyzzy"})
 
         self.run_client(scenario)
+
+
+class TestMCPCloseBinary(MCPTestCase):
+    """close_binary unloads the current binary and clears the views without errors."""
+
+    def _open_and_populate_views(self):
+        from angrmanagement.ui.views import DisassemblyView
+
+        ws = self.main.workspace
+        ws.show_functions_view()
+        ws.show_hex_view()
+        ws.show_linear_disassembly_view()
+        ws.show_graph_disassembly_view()
+        func = self.main.workspace.main_instance.kb.functions.function(name="main")
+        disasm = ws._get_or_create_view("disassembly", DisassemblyView)
+        disasm.display_disasm_graph()
+        disasm.display_function(func)
+        disasm.decompile_current_function()
+        ws.job_manager.join_all_jobs()
+        ws.show_pseudocode_view()
+        for _ in range(30):
+            QApplication.processEvents()
+        return disasm
+
+    def test_close_clears_project_and_views(self):
+        disasm = self._open_and_populate_views()
+        assert disasm._flow_graph.function_graph is not None
+
+        async def scenario(client):
+            r = (await client.call_tool("close_binary", {})).data
+            assert r["closed"] is True
+            status = (await client.call_tool("get_server_status", {})).data
+            assert status["project_loaded"] is False
+
+        self.run_client(scenario)
+
+        # let any queued repaints run; they must not raise
+        for _ in range(50):
+            QApplication.processEvents()
+
+        instance = self.main.workspace.main_instance
+        assert instance.project.am_none
+        assert instance.cfg.am_none
+        # the disassembly graph and linear viewer cleared themselves
+        assert disasm._flow_graph.function_graph is None
+        assert not disasm._linear_viewer.objects
+
+    def test_close_then_load_again(self):
+        self._open_and_populate_views()
+
+        async def scenario(client):
+            await client.call_tool("close_binary", {})
+            r = (
+                await client.call_tool("load_binary", {"binary_path": os.path.join(test_location, "x86_64", "true")})
+            ).data
+            assert r["cfg_built"] is True
+
+        self.run_client(scenario)
+
+        instance = self.main.workspace.main_instance
+        assert not instance.project.am_none
+        assert instance.project.am_obj.filename.endswith("true")
+
+    def test_close_with_no_binary_is_noop(self):
+        # close the fauxware loaded by setUp, then a second close is a no-op
+        async def scenario(client):
+            first = (await client.call_tool("close_binary", {})).data
+            assert first["closed"] is True
+            second = (await client.call_tool("close_binary", {})).data
+            assert second["closed"] is False
+
+        self.run_client(scenario)
         assert self.main.workspace.main_instance.project.am_none
 
 

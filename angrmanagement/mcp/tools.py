@@ -485,6 +485,29 @@ def register_project_tools(server: FastMCP, workspace: Workspace) -> None:
         )
         return info
 
+    @server.tool()
+    def close_binary() -> dict[str, Any]:
+        """
+        Close the binary currently loaded in angr management, returning the GUI to an empty state.
+
+        Use this when the user asks to unload the current binary. Does nothing if nothing is loaded.
+        """
+        if workspace.main_instance.project.am_none:
+            return {"closed": False, "note": "No binary is loaded."}
+
+        def clear() -> bool:
+            instance = workspace.main_instance
+            instance.binary_path = None
+            instance.original_binary_path = None
+            # _reset_containers() resets the project container to its default (None) and fires the
+            # event, clearing the loaded binary from the GUI. The data views clear themselves.
+            instance._reset_containers()
+            return True
+
+        if gui_thread_schedule(clear, timeout=60) is None:
+            raise ToolError("The GUI thread did not respond while closing the project; it may be busy.")
+        return {"closed": True}
+
 
 def register_view_tools(server: FastMCP, workspace: Workspace) -> None:
     """Register tools that run analyses through the GUI job system and control what the user sees."""
