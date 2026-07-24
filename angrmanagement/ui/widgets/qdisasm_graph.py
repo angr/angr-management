@@ -78,6 +78,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         self._arrows = []  # A list of references to QGraphArrow objects
 
         self.blocks = []
+        self.entry_block: QGraphBlock | None = None
         self._ail_disasms = SmartLRUCache(maxsize=1024)
         self._disasms = SmartLRUCache(maxsize=1024)
 
@@ -124,6 +125,8 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         selected_insns = old_infodock.selected_insns.am_obj if old_infodock is not None else set()
 
         self._reset_scene()
+        # _reset_scene() destroyed the C++ objects of the old block widgets; never keep a stale reference around
+        self.entry_block = None
         self._arrows.clear()
         self.blocks.clear()
         self._insaddr_to_block.clear()
@@ -201,6 +204,12 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
             for insn_addr in block.addr_to_insns:
                 self._insaddr_to_block[insn_addr] = block
+
+        if self.entry_block is None and self.blocks:
+            # no supernode starts exactly at the function address: the entry block may have been merged behind a
+            # lower-addressed block in the supergraph, or pruned. fall back to the block containing the function
+            # address, or the first block
+            self.entry_block = self._insaddr_to_block.get(self._function_graph.function.addr, self.blocks[0])
 
         self.request_relayout()
         self._update_scene_boundary()
@@ -378,6 +387,10 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     #
 
     def _initial_position(self):
+        if self.entry_block is None:
+            # the displayed function has no blocks (e.g., a function created at a call site during CFG recovery
+            # whose body has not been traced yet); center on whatever the scene contains
+            return self.scene().itemsBoundingRect().center()
         entry_block_rect = self.entry_block.mapRectToScene(self.entry_block.boundingRect())
         viewport_height = self.viewport().rect().height()
         min_rect = self.scene().itemsBoundingRect()

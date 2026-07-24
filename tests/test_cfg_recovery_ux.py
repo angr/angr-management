@@ -265,6 +265,38 @@ class TestGraphViewNormalization(CfgRecoveryUxTestCase):
             assert a1 + s1 <= a2, f"overlapping blocks rendered in the graph view: {a1:#x}+{s1:#x} overlaps {a2:#x}"
 
 
+class TestDisplayBlocklessFunction(CfgRecoveryUxTestCase):
+    def test_display_blockless_function_does_not_crash(self):
+        """
+        During CFG recovery, kb.functions contains functions that were created at call-processing time but whose
+        bodies have not been traced yet (no blocks). Displaying one in the graph view used to dereference a stale
+        entry_block widget whose C++ object had been deleted by the preceding scene reset (RuntimeError: Internal
+        C++ object (QGraphBlock) already deleted).
+        """
+        workspace = self.main.workspace
+        self.run_cfg_job()
+
+        disasm_view = workspace._get_or_create_view("disassembly", DisassemblyView)
+        disasm_view.display_disasm_graph()
+
+        # display a real function first so that entry_block is populated with a widget that the next scene reset
+        # will delete
+        main_func = workspace.main_instance.kb.functions.function(name="main")
+        assert main_func is not None
+        disasm_view.display_function(main_func)
+        assert disasm_view._flow_graph.entry_block is not None
+
+        # a block-less function, like the ones CFGFast creates at call sites before tracing their bodies
+        empty_func = workspace.main_instance.kb.functions.function(addr=0x400700, create=True)
+        assert not list(empty_func.blocks)
+        disasm_view.display_function(empty_func)  # must not raise
+        assert disasm_view._flow_graph.entry_block is None
+
+        # displaying a real function again restores a live entry block
+        disasm_view.display_function(main_func)
+        assert disasm_view._flow_graph.entry_block is not None
+
+
 class TestLinearViewNormalization(CfgRecoveryUxTestCase):
     def test_linear_view_renders_no_duplicate_instructions(self):
         """
