@@ -16,6 +16,18 @@ from angrmanagement.data.jobs.job import JobState
 from angrmanagement.ui.views import DisassemblyView
 
 
+def assert_no_overlap(cfb) -> None:
+    """
+    Assert that no two objects in the blanket overlap.
+    """
+    prev_key, prev_end = None, None
+    for key, obj in cfb._blanket.items():
+        size = obj.size if isinstance(getattr(obj, "size", None), int) else None
+        if prev_end is not None:
+            assert key >= prev_end, f"object at {key:#x} overlaps the object at {prev_key:#x} (ends at {prev_end:#x})"
+        prev_key, prev_end = key, key + max(size or 1, 1)
+
+
 class CfgRecoveryUxTestCase(AngrManagementTestCase):
     """
     Base class: loads fauxware without triggering the automatic analysis, so that tests fully control CFG generation.
@@ -179,6 +191,23 @@ class TestLiveViewportUpdates(CfgRecoveryUxTestCase):
         disasm_view._on_cfb_event(objects_added=[(addr_range[1] + 0x10000, SimpleNamespace(size=4))])
         QTest.qWait(200)
         assert not refreshes
+
+        # an object without a size must not crash the intersection check
+        disasm_view._refresh_linear_viewer_on_objects_added([(entry, SimpleNamespace(size=None))])
+
+
+class TestBlanketNonOverlap(CfgRecoveryUxTestCase):
+    def test_blanket_nonoverlapping_after_completed_recovery(self):
+        workspace = self.main.workspace
+        self.run_cfg_job()
+        assert not workspace.main_instance.cfb.am_none
+        assert_no_overlap(workspace.main_instance.cfb)
+
+    def test_blanket_nonoverlapping_after_cancelled_recovery(self):
+        workspace = self.main.workspace
+        self.run_cfg_job(cancel_on_first_progress=True)
+        assert not workspace.main_instance.cfb.am_none
+        assert_no_overlap(workspace.main_instance.cfb)
 
 
 class TestAskBeforeNavigating(CfgRecoveryUxTestCase):
