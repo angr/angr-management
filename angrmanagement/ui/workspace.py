@@ -482,6 +482,20 @@ class Workspace:
             # redraw
             disasm_view.current_graph.refresh()
 
+    def close_project(self) -> None:
+        """
+        Unload the currently loaded project, returning the workspace to an empty state. The data
+        views clear themselves in response to the container-reset events. Does nothing if no
+        project is loaded.
+        """
+        if self.main_instance.project.am_none:
+            return
+        self.main_instance.binary_path = None
+        self.main_instance.original_binary_path = None
+        self.main_instance.database_path = None
+        self.main_instance.analysis_configuration = None
+        self.main_instance._reset_containers()
+
     def run_analysis(self) -> None:
         if self.main_instance.project.am_none:
             return

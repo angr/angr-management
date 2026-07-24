@@ -50,6 +50,9 @@ class FunctionsView(InstanceView):
     def reload(self) -> None:
         if not self.instance.cfg.am_none:
             self._function_table.function_manager = self.instance.kb.functions
+        else:
+            # the project was closed (or no CFG yet): clear the table
+            self._function_table.function_manager = None
 
     def subscribe_func_select(self, callback) -> None:
         """

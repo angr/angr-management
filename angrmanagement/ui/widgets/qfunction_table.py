@@ -535,6 +535,8 @@ class QFunctionTableView(QFastTableView):
         Load all functions from FunctionManager and create table entries for them.
         """
         if self._functions is None:
+            # no function manager (e.g., the project was closed): empty the table
+            self._model.func_list = []
             return
         self._model.func_list = [FunctionTableEntry(self._functions, addr) for addr in self._functions]
         self._model.filter(self.filter_text, show_alignment=self.show_alignment_functions)
@@ -618,8 +620,7 @@ class QFunctionTable(QWidget):
 
     @function_manager.setter
     def function_manager(self, v):
-        if v is not None:
-            self._function_count = len(v)
+        self._function_count = len(v) if v is not None else 0
         if self._table_view is not None:
             self._table_view.function_manager = v
         else:

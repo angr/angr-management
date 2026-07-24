@@ -5,14 +5,16 @@ Test cases for MainWindow keyboard shortcuts and event filters.
 
 from __future__ import annotations
 
+import os
 import time
 import unittest
 from unittest.mock import MagicMock, patch
 
-from common import AngrManagementTestCase
+import angr
+from common import AngrManagementTestCase, test_location
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QKeyEvent, QWindow
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 
 from angrmanagement.ui.main_window import DockShortcutEventFilter, ShiftShiftEventFilter
 
@@ -160,6 +162,44 @@ class TestShiftShiftEventFilter(AngrManagementTestCase):
             assert result is False
             mock_show.assert_not_called()
             mock_widget.deleteLater()
+
+
+class TestOpenCloseGuards(AngrManagementTestCase):
+    """Opening a new binary is refused while one is loaded; Close binary clears it."""
+
+    def _load(self, name: str = "fauxware") -> None:
+        instance = self.main.workspace.main_instance
+        instance.project.am_obj = angr.Project(os.path.join(test_location, "x86_64", name), auto_load_libs=False)
+        instance.project.am_event()
+        self.main.workspace.job_manager.join_all_jobs()
+
+    def test_load_file_refused_when_project_open(self):
+        self._load()
+        instance = self.main.workspace.main_instance
+        before = instance.project.am_obj
+        with patch("angrmanagement.ui.main_window.QMessageBox.warning") as warn:
+            self.main.load_file(os.path.join(test_location, "x86_64", "true"))
+        for _ in range(10):
+            QApplication.processEvents()
+        assert warn.called
+        assert instance.project.am_obj is before
+
+    def test_close_binary_confirmed_clears_project(self):
+        self._load()
+        instance = self.main.workspace.main_instance
+        assert not instance.project.am_none
+        with patch.object(QMessageBox, "exec_", return_value=QMessageBox.StandardButton.Yes):
+            self.main.close_binary()
+        for _ in range(10):
+            QApplication.processEvents()
+        assert instance.project.am_none
+
+    def test_close_binary_cancelled_keeps_project(self):
+        self._load()
+        instance = self.main.workspace.main_instance
+        with patch.object(QMessageBox, "exec_", return_value=QMessageBox.StandardButton.No):
+            self.main.close_binary()
+        assert not instance.project.am_none
 
 
 if __name__ == "__main__":

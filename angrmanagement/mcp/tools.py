@@ -417,9 +417,9 @@ def register_project_tools(server: FastMCP, workspace: Workspace) -> None:
         Load a binary into angr management so it is analyzed and displayed in the GUI, in front
         of the user.
 
-        Use this when no binary is loaded yet (or to switch to a different one): the file opens
-        in angr management exactly as if the user had opened it, and subsequent tools operate on
-        it. This replaces any binary currently loaded in the GUI.
+        Use this when no binary is loaded yet: the file opens in angr management exactly as if the
+        user had opened it, and subsequent tools operate on it. If a binary is already loaded, this
+        fails; call close_binary first to switch to a different one.
 
         In the interactive GUI, the standard analysis-options dialog appears for the user to
         confirm; initial analysis (including CFG recovery) then runs. With wait_for_analysis=True
@@ -432,6 +432,12 @@ def register_project_tools(server: FastMCP, workspace: Workspace) -> None:
             timeout_seconds: Maximum time to wait for analysis (default: 600)
         """
         import angr  # pylint:disable=import-outside-toplevel,redefined-outer-name
+
+        if not workspace.main_instance.project.am_none:
+            raise ToolError(
+                "A binary is already loaded in angr management. Call close_binary first to unload it "
+                "before loading a different one."
+            )
 
         path = Path(binary_path)
         if not path.exists() or not path.is_file():
@@ -496,12 +502,9 @@ def register_project_tools(server: FastMCP, workspace: Workspace) -> None:
             return {"closed": False, "note": "No binary is loaded."}
 
         def clear() -> bool:
-            instance = workspace.main_instance
-            instance.binary_path = None
-            instance.original_binary_path = None
-            # _reset_containers() resets the project container to its default (None) and fires the
-            # event, clearing the loaded binary from the GUI. The data views clear themselves.
-            instance._reset_containers()
+            # close_project() clears the paths and resets the containers, clearing the binary from
+            # the GUI; the data views clear themselves in response.
+            workspace.close_project()
             return True
 
         if gui_thread_schedule(clear, timeout=60) is None:

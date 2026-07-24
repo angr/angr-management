@@ -594,6 +594,7 @@ class MainWindow(QMainWindow):
                     ("AI: Copy MCP Server URL", self.copy_mcp_url),
                     ("Analyze: Decompile", self.decompile_current_function),
                     ("Analyze: Run Analysis...", self.run_analysis),
+                    ("File: Close binary", self.close_binary),
                     ("File: Exit", self.quit),
                     ("File: Load a new binary...", self.open_file_button),
                     ("File: Load a new trace...", self.load_trace),
@@ -698,10 +699,40 @@ class MainWindow(QMainWindow):
         self.workspace.reload()
 
     def open_file_button(self) -> None:
+        if not self._ensure_no_open_project():
+            return
         file_path = self.open_mainfile_dialog()
         if not file_path:
             return
         self.load_file(file_path)
+
+    def _ensure_no_open_project(self) -> bool:
+        """
+        Return True if it is OK to open a new project. If a project is already loaded, inform the
+        user that it must be closed first and return False.
+        """
+        if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
+            return True
+        QMessageBox.warning(
+            self,
+            "A binary is already open",
+            "A binary is already loaded. Please close it first (File → Close Binary) before opening a new one.",
+        )
+        return False
+
+    def close_binary(self) -> None:
+        if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
+            return
+        msgbox = QMessageBox(self)
+        msgbox.setWindowTitle("Close binary")
+        msgbox.setText("Close the current binary? Any unsaved analysis will be lost.")
+        msgbox.setIcon(QMessageBox.Icon.Question)
+        msgbox.setWindowIcon(self.windowIcon())
+        msgbox.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msgbox.setDefaultButton(QMessageBox.StandardButton.No)
+        if msgbox.exec_() != QMessageBox.StandardButton.Yes:
+            return
+        self.workspace.close_project()
 
     def open_trace_file_button(self) -> None:
         file_path, _ = QFileDialog.getOpenFileName(
@@ -762,6 +793,10 @@ class MainWindow(QMainWindow):
                     self.workspace.load_trace_from_path(file_path)
                     return
 
+                # a trace attaches to the current project, but a binary or database replaces it
+                if not self._ensure_no_open_project():
+                    return
+
                 self.workspace.main_instance.binary_path = file_path
                 self.workspace.main_instance.original_binary_path = file_path
 
@@ -786,6 +821,8 @@ class MainWindow(QMainWindow):
                 )
         else:
             # url
+            if not self._ensure_no_open_project():
+                return
             r = QMessageBox.question(
                 self,
                 "Downloading a file",
@@ -816,6 +853,9 @@ class MainWindow(QMainWindow):
                     self.load_file(target_path)
 
     def load_database(self) -> None:
+        if not self._ensure_no_open_project():
+            return
+
         # Open File window
         file_path, _ = QFileDialog.getOpenFileName(
             self,

@@ -207,6 +207,9 @@ class TestMCPCloseBinary(MCPTestCase):
     def test_close_clears_project_and_views(self):
         disasm = self._open_and_populate_views()
         assert disasm._flow_graph.function_graph is not None
+        functions_view = self.main.workspace.view_manager.first_view_in_category("functions")
+        functions_model = functions_view._function_table._table_view._model
+        assert functions_model.rowCount() > 0
 
         async def scenario(client):
             r = (await client.call_tool("close_binary", {})).data
@@ -226,6 +229,21 @@ class TestMCPCloseBinary(MCPTestCase):
         # the disassembly graph and linear viewer cleared themselves
         assert disasm._flow_graph.function_graph is None
         assert not disasm._linear_viewer.objects
+        # the functions view cleared its table
+        assert functions_model.rowCount() == 0
+
+    def test_load_binary_refused_while_open(self):
+        from fastmcp.exceptions import ToolError
+
+        async def scenario(client):
+            with pytest.raises(ToolError):
+                await client.call_tool("load_binary", {"binary_path": os.path.join(test_location, "x86_64", "true")})
+
+        self.run_client(scenario)
+        # the originally loaded binary is untouched
+        instance = self.main.workspace.main_instance
+        assert not instance.project.am_none
+        assert instance.project.am_obj.filename.endswith("fauxware")
 
     def test_close_then_load_again(self):
         self._open_and_populate_views()
