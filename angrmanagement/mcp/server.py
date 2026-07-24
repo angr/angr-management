@@ -12,11 +12,14 @@ if TYPE_CHECKING:
 
 _l = logging.getLogger(__name__)
 
-INSTRUCTIONS = """This server exposes the binary currently loaded in a running angr management GUI.
+INSTRUCTIONS = """This server exposes a running angr management GUI and the binary loaded in it.
 
 Unprefixed tools operate on the live GUI session: analysis results and edits (renames, comments,
 type changes) made through them are immediately visible to the user in angr management. Use these
 tools when working with the binary the user has open.
+
+If no binary is loaded yet, call get_server_status to check, then load_binary to open one in the
+GUI; it will be analyzed and displayed to the user. Subsequent tools then operate on it.
 
 Tools prefixed with "angr_" belong to a standalone angr analysis server running in the same
 process. They manage their own separate project sessions (created via angr_load_binary) and do
@@ -49,8 +52,13 @@ def create_server(workspace: Workspace) -> FastMCP:
         }
 
     from .edit_tools import register_edit_tools  # pylint:disable=import-outside-toplevel
-    from .tools import register_read_tools, register_view_tools  # pylint:disable=import-outside-toplevel
+    from .tools import (  # pylint:disable=import-outside-toplevel
+        register_project_tools,
+        register_read_tools,
+        register_view_tools,
+    )
 
+    register_project_tools(server, workspace)
     register_read_tools(server, workspace)
     register_view_tools(server, workspace)
     register_edit_tools(server, workspace)

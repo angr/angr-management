@@ -51,13 +51,15 @@ class MCPTestCase(AngrManagementTestCase):
     binary = os.path.join(test_location, "x86_64", "fauxware")
     auth_token: str | None = None
     port = _PORT
+    load_project = True
 
     def setUp(self) -> None:
         super().setUp()
-        instance = self.main.workspace.main_instance
-        instance.project.am_obj = angr.Project(self.binary, auto_load_libs=False)
-        instance.project.am_event()
-        self.main.workspace.job_manager.join_all_jobs()
+        if self.load_project:
+            instance = self.main.workspace.main_instance
+            instance.project.am_obj = angr.Project(self.binary, auto_load_libs=False)
+            instance.project.am_event()
+            self.main.workspace.job_manager.join_all_jobs()
 
         self.manager = MCPServerManager(self.main.workspace, port=self.port, auth_token=self.auth_token)
         self.manager.start()
@@ -140,6 +142,45 @@ class TestMCPReadTools(MCPTestCase):
                 await client.call_tool("get_decompilation", {"name": "authenticate"})
 
         self.run_client(scenario)
+
+
+class TestMCPLoadBinary(MCPTestCase):
+    """The server is started with no project; the agent loads one via load_binary."""
+
+    load_project = False
+
+    def test_load_binary_into_empty_gui(self):
+        assert self.main.workspace.main_instance.project.am_none
+
+        async def scenario(client):
+            status = (await client.call_tool("get_server_status", {})).data
+            assert status["project_loaded"] is False
+
+            r = (await client.call_tool("load_binary", {"binary_path": self.binary})).data
+            assert r["loaded"] is True
+            assert r["cfg_built"] is True
+            assert r["function_count"] > 0
+
+            # the loaded binary is now queryable through the live tools
+            funcs = (await client.call_tool("list_functions", {"name_pattern": "main"})).data
+            assert any(f["name"] == "main" for f in funcs["functions"])
+
+        self.run_client(scenario)
+
+        instance = self.main.workspace.main_instance
+        assert not instance.project.am_none
+        assert instance.project.am_obj.filename.endswith("fauxware")
+        assert not instance.cfg.am_none
+
+    def test_load_binary_missing_path_errors(self):
+        from fastmcp.exceptions import ToolError
+
+        async def scenario(client):
+            with pytest.raises(ToolError):
+                await client.call_tool("load_binary", {"binary_path": "/nonexistent/binary/xyzzy"})
+
+        self.run_client(scenario)
+        assert self.main.workspace.main_instance.project.am_none
 
 
 class TestMCPDecompileAndVisualize(MCPTestCase):

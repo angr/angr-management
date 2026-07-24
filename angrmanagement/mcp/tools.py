@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import networkx as nx
@@ -398,6 +399,91 @@ def _submit_background_decompilation(workspace: Workspace, func: Function) -> No
         workspace.job_manager.add_job(varrec_job)
     else:
         submit_decomp()
+
+
+def register_project_tools(server: FastMCP, workspace: Workspace) -> None:
+    """Register tools that load or unload the binary shown in angr management."""
+
+    # pylint:disable=unused-variable
+
+    @server.tool()
+    def load_binary(
+        binary_path: str,
+        auto_load_libs: bool = False,
+        wait_for_analysis: bool = True,
+        timeout_seconds: int = 600,
+    ) -> dict[str, Any]:
+        """
+        Load a binary into angr management so it is analyzed and displayed in the GUI, in front
+        of the user.
+
+        Use this when no binary is loaded yet (or to switch to a different one): the file opens
+        in angr management exactly as if the user had opened it, and subsequent tools operate on
+        it. This replaces any binary currently loaded in the GUI.
+
+        In the interactive GUI, the standard analysis-options dialog appears for the user to
+        confirm; initial analysis (including CFG recovery) then runs. With wait_for_analysis=True
+        this call blocks until the CFG is ready or timeout_seconds elapses.
+
+        Args:
+            binary_path: Absolute path to the binary file to load
+            auto_load_libs: Whether to also load shared libraries (default: False)
+            wait_for_analysis: Wait until the CFG has been recovered before returning (default: True)
+            timeout_seconds: Maximum time to wait for analysis (default: 600)
+        """
+        import angr  # pylint:disable=import-outside-toplevel,redefined-outer-name
+
+        path = Path(binary_path)
+        if not path.exists() or not path.is_file():
+            raise ToolError(f"No such file: {binary_path}. Provide an absolute path to a binary on disk.")
+        resolved = str(path.resolve())
+
+        # Create the project off the GUI thread so loading a large binary does not freeze the UI.
+        try:
+            project = angr.Project(resolved, auto_load_libs=auto_load_libs)
+        except Exception as e:  # pylint:disable=broad-exception-caught
+            raise ToolError(f"angr failed to load {binary_path}: {e}") from e
+
+        def install() -> bool:
+            instance = workspace.main_instance
+            instance._reset_containers()
+            instance.binary_path = resolved
+            instance.original_binary_path = resolved
+            # Assigning the project and firing the event runs the same initialization as File -> Open,
+            # which kicks off the initial analyses (CFG recovery and friends).
+            instance.project.am_obj = project
+            instance.project.am_event()
+            return True
+
+        if gui_thread_schedule(install, timeout=60) is None:
+            raise ToolError("The GUI thread did not respond while installing the project; it may be busy.")
+
+        info: dict[str, Any] = {
+            "binary_path": resolved,
+            "arch": project.arch.name,
+            "entry_point": hex(project.entry),
+            "loaded": True,
+        }
+
+        if not wait_for_analysis:
+            info["cfg_built"] = not workspace.main_instance.cfg.am_none
+            info["note"] = "Analysis is starting; poll get_project_info until cfg_built is true."
+            return info
+
+        deadline = time.monotonic() + timeout_seconds
+        while time.monotonic() < deadline:
+            if not workspace.main_instance.cfg.am_none:
+                info["cfg_built"] = True
+                info["function_count"] = len(workspace.main_instance.kb.functions)
+                return info
+            time.sleep(0.25)
+
+        info["cfg_built"] = False
+        info["note"] = (
+            "The binary is loaded but analysis has not finished within the timeout. In the GUI the "
+            "user may still need to confirm the analysis-options dialog. Poll get_project_info later."
+        )
+        return info
 
 
 def register_view_tools(server: FastMCP, workspace: Workspace) -> None:

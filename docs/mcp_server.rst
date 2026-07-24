@@ -37,8 +37,9 @@ Claude Code, for example::
 
   claude mcp add --transport http angr-management http://localhost:8642/mcp
 
-Any MCP-capable client can connect the same way. Load a binary in angr-management first (or ask
-the agent to guide you), then let the agent call the tools below.
+Any MCP-capable client can connect the same way. You can start the server before opening any
+binary: the agent can call ``load_binary`` to open one itself, and it will be analyzed and shown
+in the GUI. If a binary is already loaded, the agent operates on it directly.
 
 Authentication
 --------------
@@ -53,6 +54,11 @@ Available tools
 --------------
 Tools that operate on the loaded binary are unprefixed. Reading tools access the analysis
 directly; editing tools run on the GUI thread and refresh the relevant views.
+
+**Project**
+
+* ``load_binary`` -- load a binary into the GUI (starting analysis) so subsequent tools operate on
+  it; use this when no binary is loaded yet. Replaces any currently loaded binary.
 
 **Inspection**
 
