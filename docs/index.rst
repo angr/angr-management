@@ -22,6 +22,7 @@ Table of Contents
    :maxdepth: 2
 
    quickstart
+   mcp_server
    development/index
 
 Indices and Tables
