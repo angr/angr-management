@@ -1494,6 +1494,17 @@ class DisassemblyView(SynchronizedFunctionView):
         elif self._current_view is self._flow_graph and the_func is not None:
             self._flow_graph.show_instruction(the_func.addr)
 
+        if the_func is not None:
+            if not the_func.block_addrs_set:
+                # the function has no blocks yet (e.g., it was created at a call site during CFG recovery before its
+                # body has been traced); an empty graph view is useless - show the location in the linear view
+                # instead, without changing the user's graph-view preference
+                if self._current_view is not self._linear_viewer:
+                    self.display_linear_viewer(prefer=False)
+            elif self._prefer_graph and self._current_view is self._linear_viewer:
+                # restore the preferred graph view (e.g., after a block-less function was routed to the linear view)
+                self.display_disasm_graph(prefer=False)
+
         if self._current_view is self._linear_viewer and the_func is not None:
             self._linear_viewer.navigate_to_addr(the_func.addr)
 

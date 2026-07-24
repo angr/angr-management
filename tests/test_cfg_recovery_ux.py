@@ -289,11 +289,19 @@ class TestDisplayBlocklessFunction(CfgRecoveryUxTestCase):
         # a block-less function, like the ones CFGFast creates at call sites before tracing their bodies
         empty_func = workspace.main_instance.kb.functions.function(addr=0x400700, create=True)
         assert not list(empty_func.blocks)
+        disasm_view.linear_viewer.resize(800, 600)
         disasm_view.display_function(empty_func)  # must not raise
         assert disasm_view._flow_graph.entry_block is None
+        # instead of an empty graph, the linear view is displayed at the function's address (without changing the
+        # user's graph-view preference)
+        assert disasm_view._current_view is disasm_view.linear_viewer
+        addr_range = disasm_view.linear_viewer.visible_addr_range()
+        assert addr_range is not None
+        assert addr_range[0] <= empty_func.addr < addr_range[1]
 
-        # displaying a real function again restores a live entry block
+        # displaying a real function again restores the preferred graph view and a live entry block
         disasm_view.display_function(main_func)
+        assert disasm_view._current_view is disasm_view._flow_graph
         assert disasm_view._flow_graph.entry_block is not None
 
 
