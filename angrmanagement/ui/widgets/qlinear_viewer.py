@@ -330,13 +330,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         """
         curr_offset = self._offset
         self._offset = None  # force a re-generation of objects
-        try:
-            self.prepare_objects(curr_offset, start_line=self._start_line_in_object)
-        except RuntimeError:
-            # the CFB may be mutated by the job thread while we iterate over it; skip this refresh, another one will
-            # follow shortly
-            self._offset = curr_offset
-            return
+        self.prepare_objects(curr_offset, start_line=self._start_line_in_object)
         self.redraw()
 
     #
@@ -363,8 +357,21 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         offset = 0 if self.offset is None else self.offset
         self.verticalScrollBar().setValue(offset)
 
+    def prepare_objects(self, offset: int, start_line: int = 0, adjust_start_line: bool = False) -> None:
+        """
+        Prepare objects to print based on offset and start_line, tolerating concurrent CFB mutation: during CFG
+        recovery, the job thread mutates the CFB while we iterate over it, which may surface RuntimeError, KeyError,
+        or IndexError from the underlying sorted containers. In that case this round is abandoned (restoring the
+        previous offset) and a following refresh retries.
+        """
+        prev_offset = self._offset
+        try:
+            self._prepare_objects(offset, start_line=start_line, adjust_start_line=adjust_start_line)
+        except (RuntimeError, KeyError, IndexError):
+            self._offset = prev_offset
+
     @timethis
-    def prepare_objects(self, offset: int, start_line: int = 0, adjust_start_line: bool = False) -> int | None:
+    def _prepare_objects(self, offset: int, start_line: int = 0, adjust_start_line: bool = False) -> None:
         """
         Prepare objects to print based on offset and start_line. Update self.objects, self._offset, and
         self._start_line_in_object.

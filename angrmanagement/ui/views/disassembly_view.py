@@ -375,7 +375,7 @@ class DisassemblyView(SynchronizedFunctionView):
         if addr_range is None:
             return
         range_start, range_end = addr_range
-        if any(addr < range_end and addr + max(obj.size, 1) > range_start for addr, obj in objects):
+        if any(addr < range_end and addr + max(obj.size or 1, 1) > range_start for addr, obj in objects):
             self._linear_viewer.refresh_objects()
 
     def on_synchronized_cursor_address_changed(self) -> None:
