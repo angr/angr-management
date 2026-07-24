@@ -209,8 +209,17 @@ class CFGGenerationJob(InstanceJob):
         )
         # if the job was cancelled, the CFG recovery was gracefully aborted and returned a finalized partial model;
         # remember the state it did not get to process so that the user may resume the recovery later
-        self.instance.cfg_resume_frontier = set(getattr(cfg, "unprocessed_job_addrs", None) or set())
-        self.instance.cfg_resume_state = getattr(cfg, "resume_state", None)
+        aborted_state = getattr(cfg, "resume_state", None)
+        if aborted_state is not None:
+            self.instance.cfg_resume_state = aborted_state
+            self.instance.cfg_resume_frontier = set(getattr(cfg, "unprocessed_job_addrs", None) or set())
+        elif "resume_state" in self.cfg_args or "model" not in self.cfg_args:
+            # a full recovery (initial, or one that consumed the captured resume state) completed: there is nothing
+            # left to resume
+            self.instance.cfg_resume_state = None
+            self.instance.cfg_resume_frontier = set()
+        # otherwise: an incremental job (resume-from-address, define/undefine code) completed; a previously captured
+        # resume state still describes the remaining unprocessed work of the cancelled recovery - keep it
         self._flush_cfb_objects()
         self._cfb = None
         # Build the real one
