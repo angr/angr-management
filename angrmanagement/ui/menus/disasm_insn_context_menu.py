@@ -51,6 +51,15 @@ class DisasmInsnContextMenu(Menu):
                 MenuEntry("&Patch...", self._popup_patch_dialog),
             ]
         )
+        self.resume_cfg_here_entry = MenuEntry("Resume CFG recovery from &here", self._resume_cfg_from_here)
+        self.resume_cfg_full_entry = MenuEntry("Resume f&ull CFG recovery", self._resume_cfg_full)
+        self.entries.extend(
+            [
+                MenuSeparator(),
+                self.resume_cfg_here_entry,
+                self.resume_cfg_full_entry,
+            ]
+        )
 
     @property
     def _disasm_view(self) -> DisassemblyView:
@@ -97,3 +106,9 @@ class DisasmInsnContextMenu(Menu):
 
     def _popup_patch_dialog(self) -> None:
         self._disasm_view.popup_patch_dialog()
+
+    def _resume_cfg_from_here(self) -> None:
+        self._disasm_view.resume_cfg_from(self.insn_addr)
+
+    def _resume_cfg_full(self) -> None:
+        self._disasm_view.resume_cfg_full()

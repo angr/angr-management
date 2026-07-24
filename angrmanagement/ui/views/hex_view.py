@@ -1849,26 +1849,33 @@ class HexView(SynchronizedInstanceView):
         cfb = self.instance.cfb
         is_arm = is_arm_arch(self.instance.project.arch) if not self.instance.project.am_none else False
         if self.smart_highlighting_enabled and not cfb.am_none:
-            for item in cfb.floor_items(self.inner_widget.hex.display_start_addr):
-                item_addr, item = item
-                if item.size is None:
-                    continue
-                if (item_addr + item.size) < self.inner_widget.hex.display_start_addr:
-                    continue
-                if item_addr >= self.inner_widget.hex.display_end_addr:
-                    break
-                if isinstance(item, MemoryData):
-                    is_string = item.sort in (MemoryDataSort.String, MemoryDataSort.UnicodeString)
-                    color = Conf.hex_view_string_color if is_string else Conf.hex_view_data_color
-                    regions.append(HexHighlightRegion(color, item.addr, item.size, str(item)))
-                elif isinstance(item, Block):
-                    try:
-                        for insn in item.disassembly.insns:
-                            s = f"{insn} in {item}"
-                            insn_addr = insn.address & 0xFFFF_FFFE if is_arm else insn.address
-                            regions.append(HexHighlightRegion(Conf.hex_view_instruction_color, insn_addr, insn.size, s))
-                    except angr.errors.SimEngineError:
-                        pass  # We may get a node in CFB to a non-decodeable address
+            try:
+                for item in cfb.floor_items(self.inner_widget.hex.display_start_addr):
+                    item_addr, item = item
+                    if item.size is None:
+                        continue
+                    if (item_addr + item.size) < self.inner_widget.hex.display_start_addr:
+                        continue
+                    if item_addr >= self.inner_widget.hex.display_end_addr:
+                        break
+                    if isinstance(item, MemoryData):
+                        is_string = item.sort in (MemoryDataSort.String, MemoryDataSort.UnicodeString)
+                        color = Conf.hex_view_string_color if is_string else Conf.hex_view_data_color
+                        regions.append(HexHighlightRegion(color, item.addr, item.size, str(item)))
+                    elif isinstance(item, Block):
+                        try:
+                            for insn in item.disassembly.insns:
+                                s = f"{insn} in {item}"
+                                insn_addr = insn.address & 0xFFFF_FFFE if is_arm else insn.address
+                                regions.append(
+                                    HexHighlightRegion(Conf.hex_view_instruction_color, insn_addr, insn.size, s)
+                                )
+                        except angr.errors.SimEngineError:
+                            pass  # We may get a node in CFB to a non-decodeable address
+            except (RuntimeError, KeyError, IndexError):
+                # the CFB may be mutated by the CFG recovery job thread while we iterate over it; keep what we have
+                # collected so far - a following event will refresh the regions
+                pass
         self._cfb_highlights = regions
         self._set_highlighted_regions()
 

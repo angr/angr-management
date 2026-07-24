@@ -35,6 +35,15 @@ class DisasmLabelContextMenu(Menu):
                 MenuEntry("&Find in execution...", self._find_in_execution),
             ]
         )
+        self.resume_cfg_here_entry = MenuEntry("Resume CFG recovery from &here", self._resume_cfg_from_here)
+        self.resume_cfg_full_entry = MenuEntry("Resume f&ull CFG recovery", self._resume_cfg_full)
+        self.entries.extend(
+            [
+                MenuSeparator(),
+                self.resume_cfg_here_entry,
+                self.resume_cfg_full_entry,
+            ]
+        )
 
     @property
     def _disasm_view(self):
@@ -59,3 +68,9 @@ class DisasmLabelContextMenu(Menu):
         if self._disasm_view is None or self._disasm_view._flow_graph is None:
             return
         self._disasm_view.popup_xref_dialog(addr=self.addr, variable=None, dst_addr=self.addr)
+
+    def _resume_cfg_from_here(self) -> None:
+        self._disasm_view.resume_cfg_from(self.addr)
+
+    def _resume_cfg_full(self) -> None:
+        self._disasm_view.resume_cfg_full()

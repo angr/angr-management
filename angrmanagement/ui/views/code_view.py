@@ -258,7 +258,10 @@ class CodeView(FunctionView):
                 self._focus_core(True, None)
         else:
             # try to find the right function
-            block_addr, _ = self.instance.cfb.floor_item(self.addr.am_obj)
+            try:
+                block_addr, _ = self.instance.cfb.floor_item(self.addr.am_obj)
+            except KeyError:
+                return
             block = self.instance.cfg.get_any_node(block_addr)
             if block is not None:
                 func = self.instance.kb.functions[block.function_address]

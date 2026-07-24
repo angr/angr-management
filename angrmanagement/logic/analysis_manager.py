@@ -69,7 +69,12 @@ class AnalysisManager(QObject):
         conf = instance.analysis_configuration
 
         if conf["cfg"].enabled:
-            job = CFGGenerationJob(instance, on_finish=self._on_cfg_generated, **conf["cfg"].to_dict())
+            job = CFGGenerationJob(
+                instance,
+                on_finish=self._on_cfg_generated,
+                on_cfb_available=self._on_cfg_recovery_started,
+                **conf["cfg"].to_dict(),
+            )
             self._schedule_job(job)
 
         if conf["flirt"].enabled:
@@ -114,8 +119,16 @@ class AnalysisManager(QObject):
             self._schedule_job(job)
 
     def generate_cfg(self, cfg_args=None) -> None:
-        job = CFGGenerationJob(self.workspace.main_instance, on_finish=self._on_cfg_generated, **(cfg_args or {}))
+        job = CFGGenerationJob(
+            self.workspace.main_instance,
+            on_finish=self._on_cfg_generated,
+            on_cfb_available=self._on_cfg_recovery_started,
+            **(cfg_args or {}),
+        )
         self._schedule_job(job)
+
+    def _on_cfg_recovery_started(self, cfb) -> None:
+        self.workspace.on_cfg_recovery_started(cfb)
 
     def _on_cfg_generated(self, cfg_result) -> None:
         cfg, cfb = cfg_result

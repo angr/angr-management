@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
@@ -16,7 +17,7 @@ from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import ViewCommand
 from angrmanagement.logic.disassembly import InfoDock, JumpHistory
-from angrmanagement.logic.threads import needs_gui_thread
+from angrmanagement.logic.threads import gui_thread_schedule_async, needs_gui_thread
 from angrmanagement.ui.dialogs.assemble_patch import AssemblePatchDialog
 from angrmanagement.ui.dialogs.dependson import DependsOn
 from angrmanagement.ui.dialogs.func_doc import FuncDocDialog
@@ -30,6 +31,7 @@ from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.menus import Menu
 from angrmanagement.ui.menus.disasm_insn_context_menu import DisasmInsnContextMenu
 from angrmanagement.ui.menus.disasm_label_context_menu import DisasmLabelContextMenu
+from angrmanagement.ui.menus.disasm_unknown_context_menu import DisasmUnknownContextMenu
 from angrmanagement.ui.views.symexec_view import SymexecView
 from angrmanagement.ui.widgets import (
     DisassemblyLevel,
@@ -57,6 +59,10 @@ if TYPE_CHECKING:
 
 _l = logging.getLogger(__name__)
 
+# the minimum interval (in seconds) between two viewport refreshes triggered by incremental CFB object additions
+# during CFG recovery
+MIN_OBJECTS_ADDED_REFRESH_INTERVAL = 0.25
+
 
 class DisassemblyView(SynchronizedFunctionView):
     """
@@ -81,6 +87,7 @@ class DisassemblyView(SynchronizedFunctionView):
 
         self._prefer_graph = True
         self._current_view: QLinearDisassembly | QDisassemblyGraph | None = None
+        self._last_objects_added_refresh: float = 0.0
 
         self._statusbar = None
         self.jump_history: JumpHistory = JumpHistory()
@@ -350,6 +357,26 @@ class DisassemblyView(SynchronizedFunctionView):
         if not kwargs:
             self._reload_current_function_if_changed()
             self._linear_viewer.reload()
+        elif "objects_added" in kwargs:
+            # incremental event during CFG recovery; note that this may run on the job worker thread
+            now = time.monotonic()
+            if now - self._last_objects_added_refresh < MIN_OBJECTS_ADDED_REFRESH_INTERVAL:
+                return
+            self._last_objects_added_refresh = now
+            gui_thread_schedule_async(self._refresh_linear_viewer_on_objects_added, args=(kwargs["objects_added"],))
+
+    def _refresh_linear_viewer_on_objects_added(self, objects) -> None:
+        """
+        Refresh the linear viewer if any of the newly added CFB objects land within the visible address range.
+        """
+        if self._current_view is not self._linear_viewer:
+            return
+        addr_range = self._linear_viewer.visible_addr_range()
+        if addr_range is None:
+            return
+        range_start, range_end = addr_range
+        if any(addr < range_end and addr + max(obj.size or 1, 1) > range_start for addr, obj in objects):
+            self._linear_viewer.refresh_objects()
 
     def on_synchronized_cursor_address_changed(self) -> None:
         """
@@ -388,6 +415,7 @@ class DisassemblyView(SynchronizedFunctionView):
 
         # pass in the instruction address
         self._insn_menu.insn_addr = insn.addr
+        self._update_resume_cfg_entries(self._insn_menu, insn.addr)
         # pop up the menu
         mnu = self._insn_menu.qmenu(
             extra_entries=list(self.workspace.plugins.build_context_menu_insn(insn)), cached=False
@@ -399,11 +427,41 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def label_context_menu(self, addr: int, pos) -> None:
         self._label_menu.addr = addr
+        self._update_resume_cfg_entries(self._label_menu, addr)
         mnu = self._label_menu.qmenu(
             extra_entries=list(self.workspace.plugins.build_context_menu_label(addr)), cached=False
         )
         self.append_view_menu_actions(mnu)
         mnu.exec_(pos)
+
+    def unknown_block_context_menu(self, addr: int, pos) -> None:
+        """
+        Display a context menu for undefined bytes in the linear view.
+        """
+        self._unknown_menu.addr = addr
+        self._update_resume_cfg_entries(self._unknown_menu, addr)
+        mnu = self._unknown_menu.qmenu(cached=False)
+        self.append_view_menu_actions(mnu)
+        mnu.exec_(pos)
+
+    def _update_resume_cfg_entries(self, menu, addr: int) -> None:
+        """
+        Enable or disable the resume-CFG-recovery entries of the given context menu based on the current state.
+        """
+        if self.workspace.can_resume_cfg_recovery(addr):
+            menu.resume_cfg_here_entry.enable()
+        else:
+            menu.resume_cfg_here_entry.disable()
+        if self.workspace.can_resume_cfg_recovery():
+            menu.resume_cfg_full_entry.enable()
+        else:
+            menu.resume_cfg_full_entry.disable()
+
+    def resume_cfg_from(self, addr: int) -> None:
+        self.workspace.resume_cfg_recovery(addr)
+
+    def resume_cfg_full(self) -> None:
+        self.workspace.resume_cfg_recovery_full()
 
     def rename_selected_object(self) -> None:
         """
@@ -657,6 +715,7 @@ class DisassemblyView(SynchronizedFunctionView):
     def display_function(self, function, send_event=True) -> None:
         if function is None:
             return
+        self.workspace.note_user_navigation()
         self.jump_history.jump_to(function.addr)
         self._display_function(function, send_event=send_event)
 
@@ -738,6 +797,8 @@ class DisassemblyView(SynchronizedFunctionView):
         if not self.instance.project.am_none and self.instance.project.loader.find_object_containing(addr) is None:
             return False
 
+        self.workspace.note_user_navigation()
+
         # Record the current instruction address
         if src_ins_addr is not None:
             self.jump_history.record_address(src_ins_addr)
@@ -750,16 +811,19 @@ class DisassemblyView(SynchronizedFunctionView):
     def jump_back(self) -> None:
         addr = self.jump_history.backtrack()
         if addr is not None:
+            self.workspace.note_user_navigation()
             self._jump_to(addr, use_animation=False)
 
     def jump_forward(self) -> None:
         addr = self.jump_history.forwardstep()
         if addr is not None:
+            self.workspace.note_user_navigation()
             self._jump_to(addr, use_animation=False)
 
     def jump_to_history_position(self, pos: int) -> None:
         addr = self.jump_history.step_position(pos)
         if addr is not None:
+            self.workspace.note_user_navigation()
             self._jump_to(addr, use_animation=False)
 
     def select_label(self, label_addr) -> None:
@@ -880,6 +944,7 @@ class DisassemblyView(SynchronizedFunctionView):
     def _init_menus(self) -> None:
         self._insn_menu = DisasmInsnContextMenu(self)
         self._label_menu = DisasmLabelContextMenu(self)
+        self._unknown_menu = DisasmUnknownContextMenu(self)
 
     def _register_events(self) -> None:
         # redraw the current graph if instruction/operand selection changes

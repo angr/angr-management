@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 from typing import TYPE_CHECKING
 
 from .block_objects import FunctionHeader, Label, PhiVariable, Variables
@@ -79,9 +78,20 @@ def get_block_objects(disasm, nodes, func_addr):
     :rtype:                                     list
     """
 
+    nodes = list(nodes)
     block_addrs = [node.addr for node in nodes]
     block_addr = block_addrs[0]
-    insn_addrs = list(itertools.chain.from_iterable(disasm.block_to_insn_addrs[addr] for addr in block_addrs))
+    # collect the instruction addresses of each node, clipped to the node's own span: the Disassembly analysis is
+    # built from the (possibly un-normalized) function, so its per-block instruction lists may extend past the end
+    # of a displayed node (e.g., a trimmed blanket entry in the linear view, or a normalized block in the graph
+    # view, whose raw counterpart also contains the instructions of an overlapping jump-target block)
+    insn_addrs = []
+    for node in nodes:
+        node_insn_addrs = disasm.block_to_insn_addrs[node.addr]
+        size = getattr(node, "size", None)
+        if isinstance(size, int) and size > 0:
+            node_insn_addrs = [a for a in node_insn_addrs if node.addr <= a < node.addr + size]
+        insn_addrs.extend(node_insn_addrs)
 
     lst = []
 

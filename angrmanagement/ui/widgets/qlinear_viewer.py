@@ -165,6 +165,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         :param QWheelEvent event:
         :return:
         """
+        self.disasm_view.workspace.note_user_navigation()
         delta = event.angleDelta().y()
         if delta < 0:
             # scroll down by some lines
@@ -187,6 +188,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             self.reload()
 
     def _on_vertical_scroll_bar_triggered(self, action) -> None:
+        self.disasm_view.workspace.note_user_navigation()
         action = QAbstractSlider.SliderAction(action)  # XXX: `action` is passed as an int
 
         if action == QAbstractSlider.SliderAction.SliderSingleStepAdd:
@@ -305,6 +307,32 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.verticalScrollBar().setValue(offset)
         self.prepare_objects(offset, start_line=0)
 
+    def visible_addr_range(self) -> tuple[int, int] | None:
+        """
+        Return a cheap superset of the address range that is currently visible in the viewport, or None if nothing is
+        displayed. The upper bound assumes the maximum line density (16 bytes per line, as used by memory data and
+        unknown-byte blocks).
+        """
+        if self._offset is None or not self._offset_to_region:
+            return None
+        base_offset, mr = self._region_from_offset(self._offset)
+        if mr is None:
+            return None
+        start_addr = self._addr_from_offset(mr, base_offset, self._offset)
+        viewable_lines = max(int(self.height() // self._line_height), 1)
+        return start_addr, start_addr + viewable_lines * 16
+
+    @needs_gui_thread
+    def refresh_objects(self) -> None:
+        """
+        Regenerate the objects of the current viewport without a full reload. Used to update the viewport when new
+        objects (blocks or memory data) land within the visible address range during CFG recovery.
+        """
+        curr_offset = self._offset
+        self._offset = None  # force a re-generation of objects
+        self.prepare_objects(curr_offset, start_line=self._start_line_in_object)
+        self.redraw()
+
     #
     # Private methods
     #
@@ -329,8 +357,21 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         offset = 0 if self.offset is None else self.offset
         self.verticalScrollBar().setValue(offset)
 
+    def prepare_objects(self, offset: int, start_line: int = 0, adjust_start_line: bool = False) -> None:
+        """
+        Prepare objects to print based on offset and start_line, tolerating concurrent CFB mutation: during CFG
+        recovery, the job thread mutates the CFB while we iterate over it, which may surface RuntimeError, KeyError,
+        or IndexError from the underlying sorted containers. In that case this round is abandoned (restoring the
+        previous offset) and a following refresh retries.
+        """
+        prev_offset = self._offset
+        try:
+            self._prepare_objects(offset, start_line=start_line, adjust_start_line=adjust_start_line)
+        except (RuntimeError, KeyError, IndexError):
+            self._offset = prev_offset
+
     @timethis
-    def prepare_objects(self, offset: int, start_line: int = 0, adjust_start_line: bool = False) -> int | None:
+    def _prepare_objects(self, offset: int, start_line: int = 0, adjust_start_line: bool = False) -> None:
         """
         Prepare objects to print based on offset and start_line. Update self.objects, self._offset, and
         self._start_line_in_object.
@@ -534,6 +575,10 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
             del self.objects[obj_addr]
 
         if isinstance(obj, Block):
+            if self.cfg.am_none:
+                # during CFG recovery, blocks may land in the CFB before the (partial) CFG model is first published;
+                # render them as raw bytes for now - they will be re-rendered once the CFG is available
+                return False, QUnknownBlock(self.instance, obj_addr, obj.bytes, disasm_view=self.disasm_view)
             cfg_node = self.cfg.get_any_node(obj_addr, force_fastpath=True)
             if cfg_node is not None:
                 func_addr = cfg_node.function_address
@@ -587,7 +632,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         elif isinstance(obj, MemoryData):
             qobject = QMemoryDataBlock(self.instance, self.disasm_view.infodock, obj_addr, obj, parent=None)
         elif isinstance(obj, Unknown):
-            qobject = QUnknownBlock(self.instance, obj_addr, obj.bytes)
+            qobject = QUnknownBlock(self.instance, obj_addr, obj.bytes, disasm_view=self.disasm_view)
         else:
             qobject = None
         return False, qobject
