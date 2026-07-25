@@ -452,6 +452,27 @@ class TestMCPHistory(MCPTestCase):
         assert view._table.rowCount() == 0
         assert len(self.main.workspace.mcp_history.am_obj) == 0
 
+    def test_history_limit_caps_records_and_table(self):
+        from angrmanagement.config import Conf
+
+        original = Conf.mcp_server_history_limit
+        Conf.mcp_server_history_limit = 3
+        try:
+
+            async def scenario(client):
+                for _ in range(7):
+                    await client.call_tool("get_server_status", {})
+
+            self.run_client(scenario)
+            self._pump()
+
+            view = self._history_view()
+            # only the most recent 3 calls are retained, in both the container and the table
+            assert len(self.main.workspace.mcp_history.am_obj) == 3
+            assert view._table.rowCount() == 3
+        finally:
+            Conf.mcp_server_history_limit = original
+
 
 class TestMCPDecompileAndVisualize(MCPTestCase):
     def test_focused_decompilation_updates_pseudocode_view(self):

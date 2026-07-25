@@ -337,6 +337,8 @@ ENTRIES = [
     CE("mcp_server_autostart", bool, False),
     CE("mcp_server_auth_enabled", bool, False),
     CE("mcp_server_auth_token", str, ""),
+    # Maximum number of MCP tool calls retained in the MCP History view (0 or less = unlimited).
+    CE("mcp_server_history_limit", int, 2000),
 ]
 
 

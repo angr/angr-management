@@ -442,6 +442,7 @@ class MCPSettings(Page):
 
         self._port_spin: QSpinBox
         self._autostart_chk: QCheckBox
+        self._history_limit_spin: QSpinBox
         self._auth_chk: QCheckBox
         self._token_edit: QLineEdit
 
@@ -471,6 +472,15 @@ class MCPSettings(Page):
 
         self._autostart_chk = QCheckBox("Start the MCP server automatically on launch")
         layout.addWidget(self._autostart_chk, 2, 0, 1, 2)
+
+        layout.addWidget(QLabel("History limit:"), 3, 0)
+        self._history_limit_spin = QSpinBox()
+        self._history_limit_spin.setRange(0, 1_000_000)
+        self._history_limit_spin.setSpecialValueText("Unlimited")  # shown when the value is 0
+        self._history_limit_spin.setToolTip(
+            "Maximum number of tool calls kept in the MCP History view (0 = unlimited)."
+        )
+        layout.addWidget(self._history_limit_spin, 3, 1)
 
         group.setLayout(layout)
 
@@ -508,6 +518,7 @@ class MCPSettings(Page):
     def _load_config(self) -> None:
         self._port_spin.setValue(Conf.mcp_server_port)
         self._autostart_chk.setChecked(Conf.mcp_server_autostart)
+        self._history_limit_spin.setValue(max(0, Conf.mcp_server_history_limit))
         self._auth_chk.setChecked(Conf.mcp_server_auth_enabled)
         self._token_edit.setText(Conf.mcp_server_auth_token)
         self._token_edit.setEnabled(Conf.mcp_server_auth_enabled)
@@ -515,6 +526,7 @@ class MCPSettings(Page):
     def save_config(self) -> None:
         Conf.mcp_server_port = self._port_spin.value()
         Conf.mcp_server_autostart = self._autostart_chk.isChecked()
+        Conf.mcp_server_history_limit = self._history_limit_spin.value()
         Conf.mcp_server_auth_enabled = self._auth_chk.isChecked()
         Conf.mcp_server_auth_token = self._token_edit.text().strip()
 

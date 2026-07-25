@@ -29,9 +29,10 @@ NOT affect what is displayed in the GUI. Use them only for scratch analysis of o
 
 def _install_history_recorder(server: FastMCP, workspace: Workspace) -> None:
     """Record every tool call into workspace.mcp_history so the GUI can display the agent's work."""
+    from angrmanagement.config import Conf  # pylint:disable=import-outside-toplevel
     from angrmanagement.logic.threads import gui_thread_schedule_async  # pylint:disable=import-outside-toplevel
 
-    from .history import MAX_HISTORY, MCPHistoryMiddleware  # pylint:disable=import-outside-toplevel
+    from .history import MCPHistoryMiddleware  # pylint:disable=import-outside-toplevel
 
     def record_call(record) -> None:
         # Mutate the history and notify the view on the GUI thread; the middleware runs on the
@@ -39,8 +40,10 @@ def _install_history_recorder(server: FastMCP, workspace: Workspace) -> None:
         def apply() -> None:
             history = workspace.mcp_history.am_obj
             history.append(record)
-            if len(history) > MAX_HISTORY:
-                del history[: len(history) - MAX_HISTORY]
+            # cap the retained history (read live so config changes take effect); <= 0 is unlimited
+            limit = Conf.mcp_server_history_limit
+            if limit > 0 and len(history) > limit:
+                del history[: len(history) - limit]
             workspace.mcp_history.am_event(added=record)
 
         gui_thread_schedule_async(apply)

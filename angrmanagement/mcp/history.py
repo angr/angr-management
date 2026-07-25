@@ -12,9 +12,6 @@ from fastmcp.server.middleware import Middleware
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-# Cap the retained history so a long-running session does not grow without bound.
-MAX_HISTORY = 2000
-
 
 @dataclass
 class MCPCallRecord:

@@ -108,6 +108,9 @@ class MCPHistoryView(InstanceView):
         # invoked on the GUI thread; the MCP server marshals its events here
         if added is not None:
             self._append_row(added)
+            # the container caps its length; drop leading rows so the table mirrors it
+            while self._table.rowCount() > len(self.workspace.mcp_history.am_obj):
+                self._table.removeRow(0)
         else:
             self._populate()
 
