@@ -79,7 +79,7 @@ def find_function(workspace: Workspace, address: str | int | None = None, name: 
         if func is None:
             # accept any address inside a function
             func = functions.floor_func(addr)
-            if func is not None and not (func.addr <= addr < func.addr + max(func.size, 1)):
+            if func is not None and (addr < func.addr or addr >= func.addr + max(func.size, 1)):
                 func = None
         if func is None:
             raise ToolError(f"No function found at address {hex(addr)}.")
