@@ -6,7 +6,7 @@ from __future__ import annotations
 import contextlib
 
 with contextlib.suppress(ImportError):
-    import fastmcp  # noqa: F401
+    import fastmcp  # noqa: F401  # pylint:disable=unused-import
 
 import sys
 import threading
