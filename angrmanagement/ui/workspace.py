@@ -93,6 +93,9 @@ class Workspace:
         self.view_manager: ViewManager = ViewManager(self)
         self.plugins: PluginManager = PluginManager(self)
         self._first_cfg_generation_callback_completed: bool = False
+        # one-shot: when set, the next auto-triggered initial analysis skips the options dialog and
+        # runs with default settings. Used by programmatic loads (e.g. the MCP load_binary tool).
+        self._suppress_analysis_options_dialog: bool = False
 
         self._main_instance = Instance()
 
@@ -553,15 +556,16 @@ class Workspace:
         if on_loaded is not None:
             on_loaded(job.file_path)
 
-    def run_analysis(self) -> None:
+    def run_analysis(self, use_default_options: bool = False) -> None:
         if self.main_instance.project.am_none:
             return
 
         if self.main_instance.analysis_configuration is None:
             self.main_instance.analysis_configuration = self.analysis_manager.get_default_analyses_configuration()
 
-        # If we are running headlessly (e.g. tests), just run with default configuration
-        if self.main_window.shown_at_start:
+        # Show the options dialog only in the GUI and only when the caller has not opted into the
+        # default settings (headless runs and programmatic loads use the defaults directly).
+        if self.main_window.shown_at_start and not use_default_options:
             dlg = AnalysisOptionsDialog(self.main_instance.analysis_configuration, self, self.main_window)
             dlg.setModal(True)
             if not dlg.exec_():
@@ -986,7 +990,10 @@ class Workspace:
 
         # trigger more analyses if we don't have at least one CFG available
         if not self.main_instance.kb.cfgs.cfgs:
-            gui_thread_schedule_async(self.run_analysis)
+            # consume the one-shot suppression flag set by programmatic loads
+            use_default_options = self._suppress_analysis_options_dialog
+            self._suppress_analysis_options_dialog = False
+            gui_thread_schedule_async(self.run_analysis, kwargs={"use_default_options": use_default_options})
 
         self.plugins.handle_project_initialization()
 

@@ -183,6 +183,41 @@ class TestMCPLoadBinary(MCPTestCase):
 
         self.run_client(scenario)
 
+    def test_load_uses_default_analysis_settings_without_prompting(self):
+        from unittest.mock import patch
+
+        # force the GUI code path that would normally pop the analysis-options dialog; reset it
+        # before teardown so closeEvent does not pop a modal save prompt
+        self.main.shown_at_start = True
+
+        async def scenario(client):
+            r = (await client.call_tool("load_binary", {"binary_path": self.binary})).data
+            assert r["cfg_built"] is True
+
+        try:
+            with patch("angrmanagement.ui.workspace.AnalysisOptionsDialog") as dialog:
+                self.run_client(scenario)
+                # default (show_analysis_options=False): the dialog is never constructed
+                assert dialog.call_count == 0
+        finally:
+            self.main.shown_at_start = False
+
+    def test_load_with_show_analysis_options_prompts(self):
+        from unittest.mock import MagicMock, patch
+
+        self.main.shown_at_start = True
+
+        async def scenario(client):
+            await client.call_tool("load_binary", {"binary_path": self.binary, "show_analysis_options": True})
+
+        try:
+            with patch("angrmanagement.ui.workspace.AnalysisOptionsDialog") as dialog:
+                dialog.return_value = MagicMock(**{"exec_.return_value": 1})  # user accepts
+                self.run_client(scenario)
+                assert dialog.call_count >= 1
+        finally:
+            self.main.shown_at_start = False
+
 
 class TestMCPCloseProject(MCPTestCase):
     """close_project unloads the current binary and clears the views without errors."""

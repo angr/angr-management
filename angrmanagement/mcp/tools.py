@@ -412,6 +412,7 @@ def register_project_tools(server: FastMCP, workspace: Workspace) -> None:
         auto_load_libs: bool = False,
         wait_for_analysis: bool = True,
         timeout_seconds: int = 600,
+        show_analysis_options: bool = False,
     ) -> dict[str, Any]:
         """
         Load a binary into angr management so it is analyzed and displayed in the GUI, in front
@@ -421,15 +422,18 @@ def register_project_tools(server: FastMCP, workspace: Workspace) -> None:
         user had opened it, and subsequent tools operate on it. If a binary is already loaded, this
         fails; call close_project first to switch to a different one.
 
-        In the interactive GUI, the standard analysis-options dialog appears for the user to
-        confirm; initial analysis (including CFG recovery) then runs. With wait_for_analysis=True
-        this call blocks until the CFG is ready or timeout_seconds elapses.
+        Initial analysis (including CFG recovery) runs with the default analysis settings so the
+        load proceeds without user interaction. With wait_for_analysis=True this call blocks until
+        the CFG is ready or timeout_seconds elapses.
 
         Args:
             binary_path: Absolute path to the binary file to load
             auto_load_libs: Whether to also load shared libraries (default: False)
             wait_for_analysis: Wait until the CFG has been recovered before returning (default: True)
             timeout_seconds: Maximum time to wait for analysis (default: 600)
+            show_analysis_options: If True, pop the analysis-options dialog in the GUI for the user
+                to choose settings (the load then waits for them); default False uses the default
+                analysis settings without prompting
         """
         import angr  # pylint:disable=import-outside-toplevel,redefined-outer-name
 
@@ -455,6 +459,9 @@ def register_project_tools(server: FastMCP, workspace: Workspace) -> None:
             instance._reset_containers()
             instance.binary_path = resolved
             instance.original_binary_path = resolved
+            # By default, skip the analysis-options dialog and use the default settings so the load
+            # does not block waiting for the user to choose.
+            workspace._suppress_analysis_options_dialog = not show_analysis_options
             # Assigning the project and firing the event runs the same initialization as File -> Open,
             # which kicks off the initial analyses (CFG recovery and friends).
             instance.project.am_obj = project
