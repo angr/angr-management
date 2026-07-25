@@ -31,6 +31,8 @@ from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import BasicCommand
 from angrmanagement.logic.threads import ExecuteCodeEvent
+from angrmanagement.mcp import MCPServerManager, is_mcp_available
+from angrmanagement.mcp.manager import DEFAULT_HOST, DEFAULT_PATH
 from angrmanagement.ui.dialogs.archive_loader import ArchiveLoaderDialog
 from angrmanagement.ui.dialogs.progress_dialog import ProgressDialog
 from angrmanagement.ui.views import DisassemblyView
@@ -59,7 +61,6 @@ if TYPE_CHECKING:
     from PySide6.QtWidgets import QApplication
 
     from angrmanagement.data.jobs import Job
-    from angrmanagement.mcp import MCPServerManager
 
 
 _l = logging.getLogger(name=__name__)
@@ -479,7 +480,6 @@ class MainWindow(QMainWindow):
                             dialog. When False (autostart at launch), errors are only logged and
                             surfaced in the status bar so they cannot block startup.
         """
-        from angrmanagement.mcp import MCPServerManager, is_mcp_available  # pylint:disable=import-outside-toplevel
 
         def report_error(title: str, message: str) -> None:
             if interactive:
@@ -533,11 +533,6 @@ class MainWindow(QMainWindow):
             url = self.mcp_server_manager.url
             auth_token = self.mcp_server_manager.auth_token
         else:
-            from angrmanagement.mcp.manager import (  # pylint:disable=import-outside-toplevel
-                DEFAULT_HOST,
-                DEFAULT_PATH,
-            )
-
             url = f"http://{DEFAULT_HOST}:{Conf.mcp_server_port}{DEFAULT_PATH}"
             auth_token = Conf.mcp_server_auth_token if Conf.mcp_server_auth_enabled else None
 

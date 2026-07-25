@@ -8,6 +8,7 @@ from functools import partial
 from typing import TYPE_CHECKING, TypeVar
 
 from angr import StateHierarchy
+from angr.angrdb import AngrDB
 from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
 from angr.knowledge_plugins.functions.function import Function
 from angr.knowledge_plugins.patches import Patch
@@ -25,6 +26,7 @@ from angrmanagement.data.jobs import (
     LoadBinaryJob,
 )
 from angrmanagement.data.jobs.job import JobState
+from angrmanagement.data.jobs.loading import LoadAngrDBJob
 from angrmanagement.data.trace import BintraceTrace, Trace
 from angrmanagement.logic.analysis_manager import AnalysisManager
 from angrmanagement.logic.commands import CommandManager
@@ -512,8 +514,6 @@ class Workspace:
 
         :returns: True on success, False if no project is loaded.
         """
-        from angr.angrdb import AngrDB  # pylint:disable=import-outside-toplevel
-
         if self.main_instance.project.am_none:
             return False
 
@@ -530,8 +530,6 @@ class Workspace:
         finishes, the project/CFG/CFB containers are populated and views are refreshed, then the
         optional ``on_loaded(file_path)`` callback is invoked.
         """
-        from angrmanagement.data.jobs.loading import LoadAngrDBJob  # pylint:disable=import-outside-toplevel
-
         job = LoadAngrDBJob(self.main_instance, file_path, ["global"], other_kbs={}, extra_info={})
         job._on_finish = partial(self._on_database_loaded, job, on_loaded)
         self.job_manager.add_job(job)

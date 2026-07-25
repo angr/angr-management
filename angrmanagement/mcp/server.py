@@ -7,8 +7,24 @@ from typing import TYPE_CHECKING, Any
 
 from fastmcp import FastMCP
 
+from angrmanagement.config import Conf
+from angrmanagement.logic.threads import gui_thread_schedule_async
+
+from .edit_tools import register_edit_tools
+from .history import MCPHistoryMiddleware
+from .tools import (
+    register_project_tools,
+    register_read_tools,
+    register_view_tools,
+)
+
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
+
+try:
+    from angr.mcp.server import mcp as _ANGR_MCP_SERVER
+except ImportError:
+    _ANGR_MCP_SERVER = None
 
 _l = logging.getLogger(__name__)
 
@@ -29,10 +45,6 @@ NOT affect what is displayed in the GUI. Use them only for scratch analysis of o
 
 def _install_history_recorder(server: FastMCP, workspace: Workspace) -> None:
     """Record every tool call into workspace.mcp_history so the GUI can display the agent's work."""
-    from angrmanagement.config import Conf  # pylint:disable=import-outside-toplevel
-    from angrmanagement.logic.threads import gui_thread_schedule_async  # pylint:disable=import-outside-toplevel
-
-    from .history import MCPHistoryMiddleware  # pylint:disable=import-outside-toplevel
 
     def record_call(record) -> None:
         # Mutate the history and notify the view on the GUI thread; the middleware runs on the
@@ -75,13 +87,6 @@ def create_server(workspace: Workspace) -> FastMCP:
             "cfg_built": not instance.cfg.am_none,
         }
 
-    from .edit_tools import register_edit_tools  # pylint:disable=import-outside-toplevel
-    from .tools import (  # pylint:disable=import-outside-toplevel
-        register_project_tools,
-        register_read_tools,
-        register_view_tools,
-    )
-
     register_project_tools(server, workspace)
     register_read_tools(server, workspace)
     register_view_tools(server, workspace)
@@ -89,11 +94,9 @@ def create_server(workspace: Workspace) -> FastMCP:
 
     _install_history_recorder(server, workspace)
 
-    try:
-        from angr.mcp.server import mcp as angr_mcp_server  # pylint:disable=import-outside-toplevel
-
-        server.mount(angr_mcp_server, namespace="angr")
-    except ImportError:
-        _l.warning("The standalone angr MCP server is unavailable; only live GUI tools are exposed.", exc_info=True)
+    if _ANGR_MCP_SERVER is not None:
+        server.mount(_ANGR_MCP_SERVER, namespace="angr")
+    else:
+        _l.warning("The standalone angr MCP server is unavailable; only live GUI tools are exposed.")
 
     return server

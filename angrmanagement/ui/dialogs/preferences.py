@@ -38,6 +38,7 @@ from angrmanagement.config.color_schemes import BASE_SCHEME, COLOR_SCHEMES
 from angrmanagement.config.config_manager import ENTRIES
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.url_scheme import AngrUrlScheme
+from angrmanagement.mcp import MCPServerManager
 from angrmanagement.ui.css import refresh_theme
 from angrmanagement.ui.widgets.qfont_option import QFontOption
 from angrmanagement.ui.widgets.qproperty_editor import (
@@ -511,8 +512,6 @@ class MCPSettings(Page):
         self._token_edit.setEnabled(checked)
 
     def _on_generate_token(self) -> None:
-        from angrmanagement.mcp import MCPServerManager  # pylint:disable=import-outside-toplevel
-
         self._token_edit.setText(MCPServerManager.generate_auth_token())
 
     def _load_config(self) -> None:

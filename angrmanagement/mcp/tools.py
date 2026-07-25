@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import angr
 import networkx as nx
 from angr.knowledge_plugins.cfg.memory_data import MemoryDataSort
 from angr.mcp.serializers import (
@@ -23,10 +24,10 @@ from angr.mcp.serializers import (
 )
 from fastmcp.exceptions import ToolError
 
+from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
 from angrmanagement.logic.threads import gui_thread_schedule, gui_thread_schedule_async
 
 if TYPE_CHECKING:
-    import angr
     from angr.knowledge_plugins.functions import Function
     from fastmcp import FastMCP
 
@@ -379,12 +380,6 @@ def register_read_tools(server: FastMCP, workspace: Workspace) -> None:
 
 def _submit_background_decompilation(workspace: Workspace, func: Function) -> None:
     """Queue a decompilation of the given function without touching any views."""
-    # imported late to avoid pulling UI modules at server construction time
-    from angrmanagement.data.jobs import (  # pylint:disable=import-outside-toplevel
-        DecompileFunctionJob,
-        VariableRecoveryJob,
-    )
-
     instance = workspace.main_instance
 
     def submit_decomp(*_args, **_kwargs) -> None:
@@ -435,8 +430,6 @@ def register_project_tools(server: FastMCP, workspace: Workspace) -> None:
                 to choose settings (the load then waits for them); default False uses the default
                 analysis settings without prompting
         """
-        import angr  # pylint:disable=import-outside-toplevel,redefined-outer-name
-
         if not workspace.main_instance.project.am_none:
             raise ToolError(
                 "A binary is already loaded in angr management. Call close_project first to unload it "
