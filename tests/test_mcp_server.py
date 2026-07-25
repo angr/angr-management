@@ -1,4 +1,4 @@
-# pylint:disable=missing-class-docstring,wrong-import-order,protected-access
+# pylint:disable=missing-class-docstring,wrong-import-order,protected-access,no-self-use
 from __future__ import annotations
 
 # Import fastmcp (and therefore pydantic) before PySide6 is loaded via `common`. PySide6's
@@ -6,10 +6,10 @@ from __future__ import annotations
 # producing a spurious circular ImportError.
 try:
     from fastmcp import Client
-
-    _MCP_IMPORT_OK = True
+    from fastmcp.exceptions import ToolError
 except ImportError:
-    _MCP_IMPORT_OK = False
+    Client = None
+    ToolError = Exception
 
 import asyncio
 import os
@@ -19,16 +19,19 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import MagicMock, patch
 
 import angr
 import pytest
-from common import AngrManagementTestCase, test_location
+from common import AngrManagementTestCase, create_qapp, test_location
+from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication
 
-if _MCP_IMPORT_OK:
-    from angrmanagement.mcp import MCPServerManager, is_mcp_available
-else:
-    is_mcp_available = lambda: False  # noqa: E731
+from angrmanagement.config import Conf
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.mcp import MCPServerManager, is_mcp_available
+from angrmanagement.ui.main_window import MainWindow
+from angrmanagement.ui.views import DisassemblyView
 
 pytestmark = pytest.mark.skipif(not is_mcp_available(), reason="fastmcp/uvicorn are not installed")
 
@@ -137,8 +140,6 @@ class TestMCPReadTools(MCPTestCase):
         assert isinstance(main_addr, str)
 
     def test_get_decompilation_requires_prior_decompilation(self):
-        from fastmcp.exceptions import ToolError
-
         async def scenario(client):
             with pytest.raises(ToolError):
                 await client.call_tool("get_decompilation", {"name": "authenticate"})
@@ -175,8 +176,6 @@ class TestMCPLoadBinary(MCPTestCase):
         assert not instance.cfg.am_none
 
     def test_load_binary_missing_path_errors(self):
-        from fastmcp.exceptions import ToolError
-
         async def scenario(client):
             with pytest.raises(ToolError):
                 await client.call_tool("load_binary", {"binary_path": "/nonexistent/binary/xyzzy"})
@@ -184,8 +183,6 @@ class TestMCPLoadBinary(MCPTestCase):
         self.run_client(scenario)
 
     def test_load_uses_default_analysis_settings_without_prompting(self):
-        from unittest.mock import patch
-
         # force the GUI code path that would normally pop the analysis-options dialog; reset it
         # before teardown so closeEvent does not pop a modal save prompt
         self.main.shown_at_start = True
@@ -203,8 +200,6 @@ class TestMCPLoadBinary(MCPTestCase):
             self.main.shown_at_start = False
 
     def test_load_with_show_analysis_options_prompts(self):
-        from unittest.mock import MagicMock, patch
-
         self.main.shown_at_start = True
 
         async def scenario(client):
@@ -223,8 +218,6 @@ class TestMCPCloseProject(MCPTestCase):
     """close_project unloads the current binary and clears the views without errors."""
 
     def _open_and_populate_views(self):
-        from angrmanagement.ui.views import DisassemblyView
-
         ws = self.main.workspace
         ws.show_functions_view()
         ws.show_hex_view()
@@ -270,8 +263,6 @@ class TestMCPCloseProject(MCPTestCase):
         assert functions_model.rowCount() == 0
 
     def test_load_binary_refused_while_open(self):
-        from fastmcp.exceptions import ToolError
-
         async def scenario(client):
             with pytest.raises(ToolError):
                 await client.call_tool("load_binary", {"binary_path": os.path.join(test_location, "x86_64", "true")})
@@ -346,8 +337,6 @@ class TestMCPDatabase(MCPTestCase):
         assert instance.kb.functions.function(name="check_creds") is not None
 
     def test_save_refuses_overwrite_without_flag(self):
-        from fastmcp.exceptions import ToolError
-
         async def scenario(client):
             first = (await client.call_tool("save_database", {"database_path": self.db_path})).data
             assert first["saved"] is True
@@ -360,8 +349,6 @@ class TestMCPDatabase(MCPTestCase):
         self.run_client(scenario)
 
     def test_load_database_refused_while_open(self):
-        from fastmcp.exceptions import ToolError
-
         async def scenario(client):
             await client.call_tool("save_database", {"database_path": self.db_path})
             with pytest.raises(ToolError):
@@ -376,8 +363,6 @@ class TestMCPDatabaseEmpty(MCPTestCase):
     load_project = False
 
     def test_save_without_project_errors(self):
-        from fastmcp.exceptions import ToolError
-
         with tempfile.TemporaryDirectory() as td:
 
             async def scenario(client):
@@ -387,8 +372,6 @@ class TestMCPDatabaseEmpty(MCPTestCase):
             self.run_client(scenario)
 
     def test_load_missing_database_errors(self):
-        from fastmcp.exceptions import ToolError
-
         async def scenario(client):
             with pytest.raises(ToolError):
                 await client.call_tool("load_database", {"database_path": "/nonexistent/session.adb"})
@@ -414,8 +397,6 @@ class TestMCPHistory(MCPTestCase):
         assert view.default_docking_position == "bottom"
 
     def test_calls_recorded_and_reflected_in_table(self):
-        from fastmcp.exceptions import ToolError
-
         view = self._history_view()
 
         async def scenario(client):
@@ -453,8 +434,6 @@ class TestMCPHistory(MCPTestCase):
         assert len(self.main.workspace.mcp_history.am_obj) == 0
 
     def test_history_limit_caps_records_and_table(self):
-        from angrmanagement.config import Conf
-
         original = Conf.mcp_server_history_limit
         Conf.mcp_server_history_limit = 3
         try:
@@ -559,15 +538,8 @@ class TestMCPAuth(unittest.TestCase):
     """Auth is exercised directly against the manager to keep it independent of a loaded project."""
 
     def setUp(self) -> None:
-        from common import create_qapp
-        from PySide6.QtCore import QThread
-
-        from angrmanagement.logic import GlobalInfo
-
         self.app = create_qapp()
         GlobalInfo.gui_thread = QThread.currentThread()
-        from angrmanagement.ui.main_window import MainWindow
-
         self.main = MainWindow(show=False)
         self.token = "unit-test-token"
         self.manager = MCPServerManager(self.main.workspace, port=_PORT + 1, auth_token=self.token)
