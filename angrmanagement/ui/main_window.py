@@ -9,7 +9,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 import PySide6QtAds as QtAds
-from PySide6.QtCore import QEvent, QObject, QSize, Qt, QUrl
+from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QGuiApplication, QIcon, QKeySequence, QShortcut, QWindow
 from PySide6.QtWidgets import (
     QDialog,
@@ -462,14 +462,34 @@ class MainWindow(QMainWindow):
         if not use_mcp:
             return
 
-        self.start_mcp_server()
+        # Defer the autostart until the event loop is running and the main window is shown. Starting
+        # it here (during __init__, while the always-on-top splash screen is up) would block startup
+        # and, on failure, pop a modal dialog hidden behind the splash. Autostart failures are
+        # reported non-modally so a busy port never blocks launch.
+        QTimer.singleShot(0, self._autostart_mcp_server)
 
-    def start_mcp_server(self) -> None:
+    def _autostart_mcp_server(self) -> None:
+        self.start_mcp_server(interactive=False)
+
+    def start_mcp_server(self, interactive: bool = True) -> None:
+        """
+        Start the embedded MCP server.
+
+        :param interactive: When True (a user action, e.g. the menu), errors are shown in a modal
+                            dialog. When False (autostart at launch), errors are only logged and
+                            surfaced in the status bar so they cannot block startup.
+        """
         from angrmanagement.mcp import MCPServerManager, is_mcp_available  # pylint:disable=import-outside-toplevel
 
+        def report_error(title: str, message: str) -> None:
+            if interactive:
+                QMessageBox.critical(self, title, message)
+            else:
+                _l.warning("%s: %s", title, message)
+                self.statusBar().showMessage(f"{title}: {message}", 10000)
+
         if not is_mcp_available():
-            QMessageBox.critical(
-                self,
+            report_error(
                 "MCP server unavailable",
                 "The MCP server requires the fastmcp and uvicorn packages. "
                 'Install them with "pip install angr-management[mcp]".',
@@ -492,7 +512,7 @@ class MainWindow(QMainWindow):
         try:
             manager.start()
         except RuntimeError as ex:
-            QMessageBox.critical(self, "Failed to start MCP server", str(ex))
+            report_error("Failed to start MCP server", str(ex))
             return
 
         self.mcp_server_manager = manager

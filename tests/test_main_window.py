@@ -6,6 +6,7 @@ Test cases for MainWindow keyboard shortcuts and event filters.
 from __future__ import annotations
 
 import os
+import socket
 import time
 import unittest
 from unittest.mock import MagicMock, patch
@@ -16,6 +17,8 @@ from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QKeyEvent, QWindow
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 
+from angrmanagement.config import Conf
+from angrmanagement.mcp import is_mcp_available
 from angrmanagement.ui.main_window import DockShortcutEventFilter, ShiftShiftEventFilter
 
 
@@ -200,6 +203,44 @@ class TestOpenCloseGuards(AngrManagementTestCase):
         with patch.object(QMessageBox, "exec_", return_value=QMessageBox.StandardButton.No):
             self.main.close_project()
         assert not instance.project.am_none
+
+
+class TestMCPAutostart(AngrManagementTestCase):
+    """Autostarting the MCP server must never block startup or pop a modal dialog."""
+
+    @unittest.skipUnless(is_mcp_available(), "fastmcp/uvicorn are not installed")
+    def test_autostart_with_busy_port_is_nonblocking_and_nonmodal(self):
+        # occupy a port so the MCP server fails to bind
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(("127.0.0.1", 0))
+        sock.listen(1)
+        port = sock.getsockname()[1]
+
+        original_port = Conf.mcp_server_port
+        Conf.mcp_server_port = port
+        try:
+            with patch("angrmanagement.ui.main_window.QMessageBox.critical") as critical:
+                # returns immediately: the autostart is deferred onto the event loop, not run inline
+                self.main._run_mcp(use_mcp=True)
+                assert self.main.mcp_server_manager is None
+
+                # pump the event loop so the deferred autostart runs and fails on the busy port
+                deadline = time.time() + 5
+                while (
+                    time.time() < deadline
+                    and "Failed to start MCP server" not in self.main.statusBar().currentMessage()
+                ):
+                    QApplication.processEvents()
+                    time.sleep(0.02)
+
+                # the failure was reported non-modally (status bar), not via a blocking dialog
+                assert "Failed to start MCP server" in self.main.statusBar().currentMessage()
+                assert self.main.mcp_server_manager is None
+                critical.assert_not_called()
+        finally:
+            Conf.mcp_server_port = original_port
+            sock.close()
 
 
 if __name__ == "__main__":

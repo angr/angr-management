@@ -81,7 +81,17 @@ class MCPServerManager:
 
         config = uvicorn.Config(app, host=self.host, port=self.port, log_level="warning", lifespan="on")
         self._server = uvicorn.Server(config)
-        self._thread = threading.Thread(target=self._server.run, name="angr-mcp-server", daemon=True)
+
+        def _serve() -> None:
+            try:
+                self._server.run()
+            except BaseException:  # pylint:disable=broad-exception-caught
+                # e.g. the port is already in use (uvicorn raises SystemExit on bind failure).
+                # start() detects the dead thread and raises a RuntimeError to the caller; log here
+                # so the exception is not unhandled.
+                _l.warning("The MCP server thread exited with an error.", exc_info=True)
+
+        self._thread = threading.Thread(target=_serve, name="angr-mcp-server", daemon=True)
         self._thread.start()
 
         deadline = time.monotonic() + startup_timeout
