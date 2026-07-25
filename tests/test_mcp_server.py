@@ -396,6 +396,63 @@ class TestMCPDatabaseEmpty(MCPTestCase):
         self.run_client(scenario)
 
 
+class TestMCPHistory(MCPTestCase):
+    """Tool calls are recorded and shown in the MCP History view, docked in the console group."""
+
+    def _history_view(self):
+        return self.main.workspace.view_manager.first_view_in_category("mcp_history")
+
+    def _pump(self, n: int = 60) -> None:
+        # let the deferred (GUI-thread) history events apply
+        for _ in range(n):
+            QApplication.processEvents()
+
+    def test_history_view_present_in_bottom_group(self):
+        view = self._history_view()
+        assert view is not None
+        assert view.base_caption == "MCP History"
+        assert view.default_docking_position == "bottom"
+
+    def test_calls_recorded_and_reflected_in_table(self):
+        from fastmcp.exceptions import ToolError
+
+        view = self._history_view()
+
+        async def scenario(client):
+            await client.call_tool("get_server_status", {})
+            await client.call_tool("list_functions", {"name_pattern": "main"})
+            with pytest.raises(ToolError):
+                await client.call_tool("get_function_info", {"name": "no_such_function_xyz"})
+
+        self.run_client(scenario)
+        self._pump()
+
+        records = list(self.main.workspace.mcp_history.am_obj)
+        tools = [r.tool for r in records]
+        assert "get_server_status" in tools
+        assert "list_functions" in tools
+        # the failing call is recorded with an error status
+        assert any(r.tool == "get_function_info" and r.status == "error" for r in records)
+        # the table shows one row per record
+        assert view._table.rowCount() == len(records)
+
+    def test_clear_empties_history_and_table(self):
+        async def scenario(client):
+            await client.call_tool("get_server_status", {})
+
+        self.run_client(scenario)
+        self._pump()
+
+        view = self._history_view()
+        assert len(self.main.workspace.mcp_history.am_obj) >= 1
+        assert view._table.rowCount() >= 1
+
+        view._on_clear_clicked()
+        QApplication.processEvents()
+        assert view._table.rowCount() == 0
+        assert len(self.main.workspace.mcp_history.am_obj) == 0
+
+
 class TestMCPDecompileAndVisualize(MCPTestCase):
     def test_focused_decompilation_updates_pseudocode_view(self):
         async def scenario(client):

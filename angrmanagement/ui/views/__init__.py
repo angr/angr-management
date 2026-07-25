@@ -11,6 +11,7 @@ from .functions_view import FunctionsView
 from .hex_view import HexView
 from .jobs_view import JobsView
 from .log_view import LogView
+from .mcp_history_view import MCPHistoryView
 from .patches_view import PatchesView
 from .proximity_view import ProximityView
 from .registers_view import RegistersView
@@ -36,6 +37,7 @@ __all__ = [
     "HexView",
     "JobsView",
     "LogView",
+    "MCPHistoryView",
     "PatchesView",
     "ProximityView",
     "RegistersView",

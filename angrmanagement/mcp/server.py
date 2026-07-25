@@ -27,6 +27,27 @@ NOT affect what is displayed in the GUI. Use them only for scratch analysis of o
 """
 
 
+def _install_history_recorder(server: FastMCP, workspace: Workspace) -> None:
+    """Record every tool call into workspace.mcp_history so the GUI can display the agent's work."""
+    from angrmanagement.logic.threads import gui_thread_schedule_async  # pylint:disable=import-outside-toplevel
+
+    from .history import MAX_HISTORY, MCPHistoryMiddleware  # pylint:disable=import-outside-toplevel
+
+    def record_call(record) -> None:
+        # Mutate the history and notify the view on the GUI thread; the middleware runs on the
+        # server thread. gui_thread_schedule_async is a no-op-safe fire-and-forget.
+        def apply() -> None:
+            history = workspace.mcp_history.am_obj
+            history.append(record)
+            if len(history) > MAX_HISTORY:
+                del history[: len(history) - MAX_HISTORY]
+            workspace.mcp_history.am_event(added=record)
+
+        gui_thread_schedule_async(apply)
+
+    server.add_middleware(MCPHistoryMiddleware(record_call))
+
+
 def create_server(workspace: Workspace) -> FastMCP:
     """Create the angr-management MCP server, bound to the given workspace."""
     server = FastMCP("angr-management", instructions=INSTRUCTIONS)
@@ -62,6 +83,8 @@ def create_server(workspace: Workspace) -> FastMCP:
     register_read_tools(server, workspace)
     register_view_tools(server, workspace)
     register_edit_tools(server, workspace)
+
+    _install_history_recorder(server, workspace)
 
     try:
         from angr.mcp.server import mcp as angr_mcp_server  # pylint:disable=import-outside-toplevel

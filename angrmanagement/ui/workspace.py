@@ -54,6 +54,7 @@ from .views import (
     HexView,
     JobsView,
     LogView,
+    MCPHistoryView,
     PatchesView,
     ProximityView,
     RegistersView,
@@ -113,6 +114,10 @@ class Workspace:
 
         self.current_screen = ObjectContainer(None, name="current_screen")
 
+        # history of MCP tool calls made by an AI agent; persists across project loads. Holds a
+        # list of angrmanagement.mcp.history.MCPCallRecord and is appended to by the MCP server.
+        self.mcp_history = ObjectContainer([], name="mcp_history")
+
         self.default_tabs = [
             DisassemblyView(self, "center", self._main_instance),
             HexView(self, "center", self._main_instance),
@@ -125,6 +130,7 @@ class Workspace:
             ConsoleView(self, "bottom", self._main_instance),
             LogView(self, "bottom", self._main_instance),
             JobsView(self, "bottom", self.main_instance),
+            MCPHistoryView(self, "bottom", self._main_instance),
         ]
         self.default_tabs += minimized_tabs
 
@@ -853,6 +859,9 @@ class Workspace:
 
     def show_jobs_view(self) -> None:
         self.show_view("jobs", JobsView, position="bottom")
+
+    def show_mcp_history_view(self) -> None:
+        self.show_view("mcp_history", MCPHistoryView, position="bottom")
 
     def create_and_show_hex_view(self):
         view = HexView(self, "center", self._main_instance)

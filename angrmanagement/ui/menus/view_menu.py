@@ -142,5 +142,6 @@ class ViewMenu(Menu):
                 MenuEntry("&Console", main_window.workspace.show_console_view, icon=icon("console-view")),
                 MenuEntry("&Log", main_window.workspace.show_log_view, icon=icon("log-view")),
                 MenuEntry("&Jobs", main_window.workspace.show_jobs_view, icon=icon("jobs-view")),
+                MenuEntry("&MCP History", main_window.workspace.show_mcp_history_view, icon=icon("mcp_history-view")),
             ]
         )

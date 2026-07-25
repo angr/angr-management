@@ -634,6 +634,7 @@ class MainWindow(QMainWindow):
                     ("View: Function Signatures", self.workspace.show_signatures_view),
                     ("View: Jobs", self.workspace.show_jobs_view),
                     ("View: Log", self.workspace.show_log_view),
+                    ("View: MCP History", self.workspace.show_mcp_history_view),
                     ("View: New Disassembly (Graph)", self.workspace.create_and_show_graph_disassembly_view),
                     ("View: New Disassembly (Linear)", self.workspace.create_and_show_linear_disassembly_view),
                     ("View: New Hex", self.workspace.create_and_show_hex_view),

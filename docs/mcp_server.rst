@@ -30,6 +30,13 @@ You can also start it from the command line when launching angr-management::
 Configuration lives under **File -> Preferences -> MCP Server**, where you can set the port, make
 the server start automatically on launch, and enable authentication.
 
+Watching the agent
+------------------
+The **MCP History** view (docked at the bottom of the window, in the same group as the Console)
+lists every tool call the agent makes -- the time, tool name, arguments, whether it succeeded, and
+how long it took -- so you can follow along with what the agent is doing. Open it from
+**View -> MCP History**; use its **Clear** button to reset the list.
+
 Connecting an agent
 -------------------
 The server speaks streamable HTTP at ``http://localhost:8642/mcp`` by default. To register it with
