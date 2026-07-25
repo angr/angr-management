@@ -41,11 +41,17 @@ class FunctionTableEntry:
     A single entry in the function table as a proxy for the actual Function object.
     """
 
-    __slots__ = ("_funcman", "addr")
+    __slots__ = ("_funcman", "addr", "_is_alignment")
 
     def __init__(self, funcman: FunctionManager, addr: int) -> None:
         self._funcman = funcman
         self.addr = addr
+        #
+        # cache
+        #
+        # caching is_alignment because it's used in filtering; otherwise every time we filter we would need to load
+        # the spilled function back up from RuntimeDb.
+        self._is_alignment = None
 
     def _meta_func(self) -> Function | None:
         try:
@@ -69,8 +75,10 @@ class FunctionTableEntry:
 
     @property
     def is_alignment(self) -> bool:
-        func = self._meta_func()
-        return bool(func.is_alignment) if func is not None else False
+        if self._is_alignment is None:
+            func = self._meta_func()
+            self._is_alignment = bool(func.is_alignment) if func is not None else False
+        return self._is_alignment
 
     @property
     def from_signature(self) -> str | None:
