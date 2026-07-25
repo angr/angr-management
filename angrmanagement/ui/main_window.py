@@ -492,7 +492,7 @@ class MainWindow(QMainWindow):
             report_error(
                 "MCP server unavailable",
                 "The MCP server requires the fastmcp and uvicorn packages. "
-                'Install them with "pip install angr-management[mcp]".',
+                'Install them with "pip install angr-management[llm]".',
             )
             return
 

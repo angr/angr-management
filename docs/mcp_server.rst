@@ -9,9 +9,9 @@ you -- the pseudocode view updates as the agent works.
 
 Installation
 ------------
-The MCP server needs a couple of extra packages. Install them with the ``mcp`` extra::
+The MCP server needs a couple of extra packages. Install them with the ``llm`` extra::
 
-  pip install angr-management[mcp]
+  pip install angr-management[llm]
 
 Starting the server
 -------------------

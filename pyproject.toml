@@ -40,8 +40,7 @@ Repository = "https://github.com/angr/angr-management"
 [project.optional-dependencies]
 bintrace = ["bintrace"]
 unicorn = ["angr[unicorn]"]
-llm = ["angr[llm]"]
-mcp = ["angr[llm]", "uvicorn"]
+llm = ["angr[llm]", "uvicorn"]
 keystone = ["angr[keystone]"]
 
 [dependency-groups]
