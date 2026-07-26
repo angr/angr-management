@@ -24,7 +24,9 @@ from PySide6.QtWidgets import (
     QListView,
     QListWidget,
     QListWidgetItem,
+    QPushButton,
     QSizePolicy,
+    QSpinBox,
     QSplitter,
     QStackedWidget,
     QVBoxLayout,
@@ -36,6 +38,7 @@ from angrmanagement.config.color_schemes import BASE_SCHEME, COLOR_SCHEMES
 from angrmanagement.config.config_manager import ENTRIES
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.url_scheme import AngrUrlScheme
+from angrmanagement.mcp import MCPServerManager
 from angrmanagement.ui.css import refresh_theme
 from angrmanagement.ui.widgets.qfont_option import QFontOption
 from angrmanagement.ui.widgets.qproperty_editor import (
@@ -427,6 +430,106 @@ class LLMSettings(Page):
             instance.project.am_obj.llm_client = None
 
 
+class MCPSettings(Page):
+    """
+    MCP server configuration page.
+    """
+
+    NAME = "MCP Server"
+
+    def __init__(self, workspace: Workspace | None = None, parent=None) -> None:
+        super().__init__(parent)
+        self.workspace = workspace
+
+        self._port_spin: QSpinBox
+        self._autostart_chk: QCheckBox
+        self._history_limit_spin: QSpinBox
+        self._auth_chk: QCheckBox
+        self._token_edit: QLineEdit
+
+        self._init_widgets()
+        self._load_config()
+
+    def _init_widgets(self) -> None:
+        group = QGroupBox("MCP Server")
+        layout = QGridLayout()
+
+        layout.addWidget(
+            QLabel(
+                "The MCP server lets an AI agent analyze the loaded binary and show results "
+                "(such as updated decompilation) live in angr management.\n"
+                "Start and stop it from the AI menu. It listens on localhost only."
+            ),
+            0,
+            0,
+            1,
+            2,
+        )
+
+        layout.addWidget(QLabel("Port:"), 1, 0)
+        self._port_spin = QSpinBox()
+        self._port_spin.setRange(1, 65535)
+        layout.addWidget(self._port_spin, 1, 1)
+
+        self._autostart_chk = QCheckBox("Start the MCP server automatically on launch")
+        layout.addWidget(self._autostart_chk, 2, 0, 1, 2)
+
+        layout.addWidget(QLabel("History limit:"), 3, 0)
+        self._history_limit_spin = QSpinBox()
+        self._history_limit_spin.setRange(0, 1_000_000)
+        self._history_limit_spin.setSpecialValueText("Unlimited")  # shown when the value is 0
+        self._history_limit_spin.setToolTip(
+            "Maximum number of tool calls kept in the MCP History view (0 = unlimited)."
+        )
+        layout.addWidget(self._history_limit_spin, 3, 1)
+
+        group.setLayout(layout)
+
+        auth_group = QGroupBox("Authentication")
+        auth_layout = QGridLayout()
+
+        self._auth_chk = QCheckBox("Require a bearer token to connect")
+        self._auth_chk.toggled.connect(self._on_auth_toggled)
+        auth_layout.addWidget(self._auth_chk, 0, 0, 1, 3)
+
+        auth_layout.addWidget(QLabel("Token:"), 1, 0)
+        self._token_edit = QLineEdit()
+        self._token_edit.setPlaceholderText("Leave empty to generate one when the server starts")
+        auth_layout.addWidget(self._token_edit, 1, 1)
+        generate_btn = QPushButton("Generate")
+        generate_btn.clicked.connect(self._on_generate_token)
+        auth_layout.addWidget(generate_btn, 1, 2)
+
+        auth_group.setLayout(auth_layout)
+
+        page_layout = QVBoxLayout()
+        page_layout.addWidget(group)
+        page_layout.addWidget(auth_group)
+        page_layout.addStretch()
+        self.setLayout(page_layout)
+
+    def _on_auth_toggled(self, checked: bool) -> None:
+        self._token_edit.setEnabled(checked)
+
+    def _on_generate_token(self) -> None:
+        self._token_edit.setText(MCPServerManager.generate_auth_token())
+
+    def _load_config(self) -> None:
+        self._port_spin.setValue(Conf.mcp_server_port)
+        self._autostart_chk.setChecked(Conf.mcp_server_autostart)
+        self._history_limit_spin.setValue(max(0, Conf.mcp_server_history_limit))
+        self._auth_chk.setChecked(Conf.mcp_server_auth_enabled)
+        self._token_edit.setText(Conf.mcp_server_auth_token)
+        self._token_edit.setEnabled(Conf.mcp_server_auth_enabled)
+
+    def save_config(self) -> None:
+        Conf.mcp_server_port = self._port_spin.value()
+        Conf.mcp_server_autostart = self._autostart_chk.isChecked()
+        Conf.mcp_server_history_limit = self._history_limit_spin.value()
+        Conf.mcp_server_auth_enabled = self._auth_chk.isChecked()
+        Conf.mcp_server_auth_token = self._token_edit.text().strip()
+
+
 class Preferences(QDialog):
     """
     Application preferences dialog.
@@ -459,6 +562,7 @@ class Preferences(QDialog):
         self._pages.append(ThemeAndColors())
         self._pages.append(Style())
         self._pages.append(LLMSettings(workspace=self.workspace))
+        self._pages.append(MCPSettings(workspace=self.workspace))
 
         pages = QStackedWidget()
         for idx, page in enumerate(self._pages):

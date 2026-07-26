@@ -348,6 +348,12 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def _on_cfb_event(self, **kwargs) -> None:
         if not kwargs:
+            if self.instance.project.am_none:
+                # the binary was closed: clear both the graph and linear viewer
+                self.function.am_obj = None
+                self._flow_graph.function_graph = None
+                self._linear_viewer.reload()
+                return
             self._reload_current_function_if_changed()
             self._linear_viewer.reload()
 
@@ -815,6 +821,9 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def fetch_qblock_annotations(self, qblock):
         addr_to_annotations = defaultdict(list)
+        if self.instance.project.am_none:
+            # the project may be momentarily unset while a binary is being loaded or closed
+            return QBlockAnnotations(addr_to_annotations, parent=qblock, disasm_view=self)
         for annotations_ in self.workspace.plugins.build_qblock_annotations(qblock):
             addr_to_annotations[annotations_.addr].append(annotations)
         for addr in qblock.addr_to_insns:

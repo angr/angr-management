@@ -36,6 +36,11 @@ class FileMenu(Menu):
         super().__init__("&File", parent=main_window)
         self._project = main_window.workspace.main_instance.project
 
+        self._close_entry = MenuEntry(
+            "&Close project",
+            main_window.close_project,
+            shortcut=QKeySequence("Ctrl+W"),
+        )
         self._save_entries = [
             MenuEntry(
                 "&Save angr database...",
@@ -51,6 +56,7 @@ class FileMenu(Menu):
             ),
             MenuEntry("Save patched binary as...", main_window.save_patched_binary_as),
         ]
+        self._project_entries = [self._close_entry, *self._save_entries]
         self._edit_save()
         self._project.am_subscribe(self._edit_save)
 
@@ -75,6 +81,7 @@ class FileMenu(Menu):
                 ),
                 self.recent_menu,
                 MenuSeparator(),
+                self._close_entry,
                 MenuEntry(
                     "&Load angr database...",
                     main_window.load_database,
@@ -99,7 +106,7 @@ class FileMenu(Menu):
 
     def _edit_save(self, **_) -> None:
         enable: bool = not self._project.am_none
-        for i in self._save_entries:
+        for i in self._project_entries:
             (i.enable if enable else i.disable)()
 
     def add_recent(self, path: str) -> None:

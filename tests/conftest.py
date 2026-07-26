@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+# Preload fastmcp (and therefore pydantic) before any test module imports PySide6. PySide6's
+# shiboken __feature__ import hook otherwise collides with pydantic's lazy imports under pytest,
+# breaking fastmcp import and causing test_mcp_server to skip depending on collection order.
+import contextlib
+
+with contextlib.suppress(ImportError):
+    import fastmcp  # noqa: F401  # pylint:disable=unused-import
+
 import sys
 import threading
 from functools import partial

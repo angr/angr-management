@@ -6,13 +6,11 @@ import os
 import pickle
 import time
 import uuid
-from functools import partial
 from typing import TYPE_CHECKING
 
 import PySide6QtAds as QtAds
-from angr.angrdb import AngrDB
-from PySide6.QtCore import QEvent, QObject, QSize, Qt, QUrl
-from PySide6.QtGui import QDesktopServices, QIcon, QKeySequence, QShortcut, QWindow
+from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer, QUrl
+from PySide6.QtGui import QDesktopServices, QGuiApplication, QIcon, QKeySequence, QShortcut, QWindow
 from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
@@ -26,13 +24,15 @@ from angrmanagement.consts import IMG_LOCATION
 from angrmanagement.daemon import daemon_conn, daemon_exists, run_daemon_process
 from angrmanagement.daemon.client import ClientService
 from angrmanagement.data.jobs import DependencyAnalysisJob
-from angrmanagement.data.jobs.loading import LoadAngrDBJob, LoadBinaryJob
+from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.data.library_docs import LibraryDocs
 from angrmanagement.data.signatures import init_flirt_signatures
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import BasicCommand
 from angrmanagement.logic.threads import ExecuteCodeEvent
+from angrmanagement.mcp import MCPServerManager, is_mcp_available
+from angrmanagement.mcp.manager import DEFAULT_HOST, DEFAULT_PATH
 from angrmanagement.ui.dialogs.archive_loader import ArchiveLoaderDialog
 from angrmanagement.ui.dialogs.progress_dialog import ProgressDialog
 from angrmanagement.ui.views import DisassemblyView
@@ -154,7 +154,12 @@ class MainWindow(QMainWindow):
     """
 
     def __init__(
-        self, app: QApplication | None = None, parent=None, show: bool = True, use_daemon: bool = False
+        self,
+        app: QApplication | None = None,
+        parent=None,
+        show: bool = True,
+        use_daemon: bool = False,
+        use_mcp: bool | None = None,
     ) -> None:
         super().__init__(parent)
         self.initialized = False
@@ -205,6 +210,9 @@ class MainWindow(QMainWindow):
         init_flirt_signatures()
 
         self._run_daemon(use_daemon=use_daemon)
+
+        self.mcp_server_manager: MCPServerManager | None = None
+        self._run_mcp(use_mcp=use_mcp)
 
         # I'm ready to show off!
         if show:
@@ -444,6 +452,101 @@ class MainWindow(QMainWindow):
         GlobalInfo.daemon_conn.root.register_client(GlobalInfo.client_id)
 
     #
+    # MCP server
+    #
+
+    def _run_mcp(self, use_mcp: bool | None = None) -> None:
+        if use_mcp is None:
+            # Load it from the configuration file
+            use_mcp = Conf.mcp_server_autostart
+
+        if not use_mcp:
+            return
+
+        # Defer the autostart until the event loop is running and the main window is shown. Starting
+        # it here (during __init__, while the always-on-top splash screen is up) would block startup
+        # and, on failure, pop a modal dialog hidden behind the splash. Autostart failures are
+        # reported non-modally so a busy port never blocks launch.
+        QTimer.singleShot(0, self._autostart_mcp_server)
+
+    def _autostart_mcp_server(self) -> None:
+        self.start_mcp_server(interactive=False)
+
+    def start_mcp_server(self, interactive: bool = True) -> None:
+        """
+        Start the embedded MCP server.
+
+        :param interactive: When True (a user action, e.g. the menu), errors are shown in a modal
+                            dialog. When False (autostart at launch), errors are only logged and
+                            surfaced in the status bar so they cannot block startup.
+        """
+
+        def report_error(title: str, message: str) -> None:
+            if interactive:
+                QMessageBox.critical(self, title, message)
+            else:
+                _l.warning("%s: %s", title, message)
+                self.statusBar().showMessage(f"{title}: {message}", 10000)
+
+        if not is_mcp_available():
+            report_error(
+                "MCP server unavailable",
+                "The MCP server requires the fastmcp and uvicorn packages. "
+                'Install them with "pip install angr-management[llm]".',
+            )
+            return
+
+        if self.mcp_server_manager is not None and self.mcp_server_manager.running:
+            self.statusBar().showMessage(f"The MCP server is already running at {self.mcp_server_manager.url}", 10000)
+            return
+
+        auth_token = None
+        if Conf.mcp_server_auth_enabled:
+            auth_token = Conf.mcp_server_auth_token or MCPServerManager.generate_auth_token()
+            if not Conf.mcp_server_auth_token:
+                # persist the generated token so it stays stable across restarts
+                Conf.mcp_server_auth_token = auth_token
+                save_config()
+
+        manager = MCPServerManager(self.workspace, port=Conf.mcp_server_port, auth_token=auth_token)
+        try:
+            manager.start()
+        except RuntimeError as ex:
+            report_error("Failed to start MCP server", str(ex))
+            return
+
+        self.mcp_server_manager = manager
+        auth_note = " (bearer-token auth enabled)" if auth_token else ""
+        self.statusBar().showMessage(f"MCP server listening at {manager.url}{auth_note}", 10000)
+
+    def stop_mcp_server(self) -> None:
+        if self.mcp_server_manager is None or not self.mcp_server_manager.running:
+            self.statusBar().showMessage("The MCP server is not running", 5000)
+            return
+
+        self.mcp_server_manager.stop()
+        self.mcp_server_manager = None
+        self.statusBar().showMessage("MCP server stopped", 5000)
+
+    def copy_mcp_url(self) -> None:
+        if self.mcp_server_manager is not None and self.mcp_server_manager.running:
+            url = self.mcp_server_manager.url
+            auth_token = self.mcp_server_manager.auth_token
+        else:
+            url = f"http://{DEFAULT_HOST}:{Conf.mcp_server_port}{DEFAULT_PATH}"
+            auth_token = Conf.mcp_server_auth_token if Conf.mcp_server_auth_enabled else None
+
+        if auth_token:
+            text = f"{url}\nAuthorization: Bearer {auth_token}"
+            message = "Copied MCP URL and auth token to clipboard"
+        else:
+            text = url
+            message = f"Copied to clipboard: {url}"
+
+        QGuiApplication.clipboard().setText(text)
+        self.statusBar().showMessage(message, 5000)
+
+    #
     # URL scheme handler setup
     #
 
@@ -499,8 +602,12 @@ class MainWindow(QMainWindow):
                     ("AI: LLM Suggest Function Name", self.llm_suggest_function_name),
                     ("AI: LLM Suggest Variable Types", self.llm_suggest_variable_types),
                     ("AI: LLM Summarize Function", self.llm_summarize_function),
+                    ("AI: Start MCP Server", self.start_mcp_server),
+                    ("AI: Stop MCP Server", self.stop_mcp_server),
+                    ("AI: Copy MCP Server URL", self.copy_mcp_url),
                     ("Analyze: Decompile", self.decompile_current_function),
                     ("Analyze: Run Analysis...", self.run_analysis),
+                    ("File: Close project", self.close_project),
                     ("File: Exit", self.quit),
                     ("File: Load a new binary...", self.open_file_button),
                     ("File: Load a new trace...", self.load_trace),
@@ -522,6 +629,7 @@ class MainWindow(QMainWindow):
                     ("View: Function Signatures", self.workspace.show_signatures_view),
                     ("View: Jobs", self.workspace.show_jobs_view),
                     ("View: Log", self.workspace.show_log_view),
+                    ("View: MCP History", self.workspace.show_mcp_history_view),
                     ("View: New Disassembly (Graph)", self.workspace.create_and_show_graph_disassembly_view),
                     ("View: New Disassembly (Linear)", self.workspace.create_and_show_linear_disassembly_view),
                     ("View: New Hex", self.workspace.create_and_show_hex_view),
@@ -576,6 +684,10 @@ class MainWindow(QMainWindow):
             self.workspace.plugins.deactivate_plugin(plugin)
         self.workspace.job_manager.quit()
 
+        if self.mcp_server_manager is not None:
+            self.mcp_server_manager.stop(timeout=2)
+            self.mcp_server_manager = None
+
         # force-close runtime db
         if (
             self.workspace.main_instance is not None
@@ -601,10 +713,40 @@ class MainWindow(QMainWindow):
         self.workspace.reload()
 
     def open_file_button(self) -> None:
+        if not self._ensure_no_open_project():
+            return
         file_path = self.open_mainfile_dialog()
         if not file_path:
             return
         self.load_file(file_path)
+
+    def _ensure_no_open_project(self) -> bool:
+        """
+        Return True if it is OK to open a new project. If a project is already loaded, inform the
+        user that it must be closed first and return False.
+        """
+        if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
+            return True
+        QMessageBox.warning(
+            self,
+            "A project is already open",
+            "A binary is already loaded. Please close it first (File → Close Project) before opening a new one.",
+        )
+        return False
+
+    def close_project(self) -> None:
+        if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
+            return
+        msgbox = QMessageBox(self)
+        msgbox.setWindowTitle("Close project")
+        msgbox.setText("Close the current project? Any unsaved analysis will be lost.")
+        msgbox.setIcon(QMessageBox.Icon.Question)
+        msgbox.setWindowIcon(self.windowIcon())
+        msgbox.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msgbox.setDefaultButton(QMessageBox.StandardButton.No)
+        if msgbox.exec_() != QMessageBox.StandardButton.Yes:
+            return
+        self.workspace.close_project()
 
     def open_trace_file_button(self) -> None:
         file_path, _ = QFileDialog.getOpenFileName(
@@ -665,6 +807,10 @@ class MainWindow(QMainWindow):
                     self.workspace.load_trace_from_path(file_path)
                     return
 
+                # a trace attaches to the current project, but a binary or database replaces it
+                if not self._ensure_no_open_project():
+                    return
+
                 self.workspace.main_instance.binary_path = file_path
                 self.workspace.main_instance.original_binary_path = file_path
 
@@ -689,6 +835,8 @@ class MainWindow(QMainWindow):
                 )
         else:
             # url
+            if not self._ensure_no_open_project():
+                return
             r = QMessageBox.question(
                 self,
                 "Downloading a file",
@@ -719,6 +867,9 @@ class MainWindow(QMainWindow):
                     self.load_file(target_path)
 
     def load_database(self) -> None:
+        if not self._ensure_no_open_project():
+            return
+
         # Open File window
         file_path, _ = QFileDialog.getOpenFileName(
             self,
@@ -882,64 +1033,10 @@ class MainWindow(QMainWindow):
         return ""
 
     def _load_database(self, file_path: str) -> None:
-        other_kbs = {}
-        extra_info = {}
-
-        job = LoadAngrDBJob(
-            self.workspace.main_instance,
-            file_path,
-            ["global"],
-            other_kbs=other_kbs,
-            extra_info=extra_info,
-        )
-        # TODO: make the job return what the callback wants
-        job._on_finish = partial(self._on_load_database_finished, job)
-        self.workspace.job_manager.add_job(job)
-
-    def _on_load_database_finished(self, job: LoadAngrDBJob, *args, **kwargs) -> None:  # pylint:disable=unused-argument
-        proj = job.project
-
-        if proj is None:
-            return
-
-        self._recent_file(job.file_path)
-
-        cfg = proj.kb.cfgs["CFGFast"]
-        cfb = proj.analyses.CFB()  # it will load functions from kb
-
-        self.workspace.main_instance.database_path = job.file_path
-
-        self.workspace.main_instance._reset_containers()
-        self.workspace.main_instance.project = proj
-        self.workspace.main_instance.cfg = cfg
-        self.workspace.main_instance.cfb = cfb
-        self.workspace.main_instance.project.am_event(initialized=True)
-
-        # trigger callbacks
-        self.workspace.reload()
-        self.workspace.main_instance.cfb.am_event()
-        self.workspace.main_instance.cfg.am_event()
-        self.workspace.on_cfg_generated()
-        self.workspace.plugins.angrdb_load_entries(job.extra_info)
+        self.workspace.load_database(file_path, on_loaded=self._recent_file)
 
     def _save_database(self, file_path) -> bool:
-        if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
-            return False
-
-        self.workspace.plugins.handle_project_save(file_path)
-
-        angrdb = AngrDB(project=self.workspace.main_instance.project)
-        extra_info = self.workspace.plugins.angrdb_store_entries()
-        angrdb.dump(
-            file_path,
-            kbs=[
-                self.workspace.main_instance.kb,
-            ],
-            extra_info=extra_info,
-        )
-
-        self.workspace.main_instance.database_path = file_path
-        return True
+        return self.workspace.save_database(file_path)
 
     def _raise_view(self, idx: int) -> None:
         """

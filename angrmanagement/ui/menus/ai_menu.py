@@ -41,5 +41,18 @@ class AIMenu(Menu):
                     "&Summarize Function",
                     main_window.llm_summarize_function,
                 ),
+                MenuSeparator(),
+                MenuEntry(
+                    "Start &MCP Server",
+                    main_window.start_mcp_server,
+                ),
+                MenuEntry(
+                    "Sto&p MCP Server",
+                    main_window.stop_mcp_server,
+                ),
+                MenuEntry(
+                    "&Copy MCP Server URL",
+                    main_window.copy_mcp_url,
+                ),
             ],
         )

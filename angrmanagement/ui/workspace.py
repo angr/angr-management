@@ -4,9 +4,11 @@ import logging
 import os
 import time
 import traceback
+from functools import partial
 from typing import TYPE_CHECKING, TypeVar
 
 from angr import StateHierarchy
+from angr.angrdb import AngrDB
 from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
 from angr.knowledge_plugins.functions.function import Function
 from angr.knowledge_plugins.patches import Patch
@@ -24,6 +26,7 @@ from angrmanagement.data.jobs import (
     LoadBinaryJob,
 )
 from angrmanagement.data.jobs.job import JobState
+from angrmanagement.data.jobs.loading import LoadAngrDBJob
 from angrmanagement.data.trace import BintraceTrace, Trace
 from angrmanagement.logic.analysis_manager import AnalysisManager
 from angrmanagement.logic.commands import CommandManager
@@ -53,6 +56,7 @@ from .views import (
     HexView,
     JobsView,
     LogView,
+    MCPHistoryView,
     PatchesView,
     ProximityView,
     RegistersView,
@@ -92,6 +96,9 @@ class Workspace:
         self.view_manager: ViewManager = ViewManager(self)
         self.plugins: PluginManager = PluginManager(self)
         self._first_cfg_generation_callback_completed: bool = False
+        # one-shot: when set, the next auto-triggered initial analysis skips the options dialog and
+        # runs with default settings. Used by programmatic loads (e.g. the MCP load_binary tool).
+        self._suppress_analysis_options_dialog: bool = False
 
         self._main_instance = Instance()
 
@@ -109,6 +116,10 @@ class Workspace:
 
         self.current_screen = ObjectContainer(None, name="current_screen")
 
+        # history of MCP tool calls made by an AI agent; persists across project loads. Holds a
+        # list of angrmanagement.mcp.history.MCPCallRecord and is appended to by the MCP server.
+        self.mcp_history = ObjectContainer([], name="mcp_history")
+
         self.default_tabs = [
             DisassemblyView(self, "center", self._main_instance),
             HexView(self, "center", self._main_instance),
@@ -121,6 +132,7 @@ class Workspace:
             ConsoleView(self, "bottom", self._main_instance),
             LogView(self, "bottom", self._main_instance),
             JobsView(self, "bottom", self.main_instance),
+            MCPHistoryView(self, "bottom", self._main_instance),
         ]
         self.default_tabs += minimized_tabs
 
@@ -482,15 +494,82 @@ class Workspace:
             # redraw
             disasm_view.current_graph.refresh()
 
-    def run_analysis(self) -> None:
+    def close_project(self) -> None:
+        """
+        Unload the currently loaded project, returning the workspace to an empty state. The data
+        views clear themselves in response to the container-reset events. Does nothing if no
+        project is loaded.
+        """
+        if self.main_instance.project.am_none:
+            return
+        self.main_instance.binary_path = None
+        self.main_instance.original_binary_path = None
+        self.main_instance.database_path = None
+        self.main_instance.analysis_configuration = None
+        self.main_instance._reset_containers()
+
+    def save_database(self, file_path: str) -> bool:
+        """
+        Dump the current project and its knowledge base to an angr database (.adb) file.
+
+        :returns: True on success, False if no project is loaded.
+        """
+        if self.main_instance.project.am_none:
+            return False
+
+        self.plugins.handle_project_save(file_path)
+        angrdb = AngrDB(project=self.main_instance.project.am_obj)
+        extra_info = self.plugins.angrdb_store_entries()
+        angrdb.dump(file_path, kbs=[self.main_instance.kb], extra_info=extra_info)
+        self.main_instance.database_path = file_path
+        return True
+
+    def load_database(self, file_path: str, on_loaded=None):
+        """
+        Load an angr database (.adb) into the workspace via a background job. When the load
+        finishes, the project/CFG/CFB containers are populated and views are refreshed, then the
+        optional ``on_loaded(file_path)`` callback is invoked.
+        """
+        job = LoadAngrDBJob(self.main_instance, file_path, ["global"], other_kbs={}, extra_info={})
+        job._on_finish = partial(self._on_database_loaded, job, on_loaded)
+        self.job_manager.add_job(job)
+        return job
+
+    def _on_database_loaded(self, job, on_loaded, *args, **kwargs) -> None:  # pylint:disable=unused-argument
+        proj = job.project
+        if proj is None:
+            return
+
+        cfg = proj.kb.cfgs["CFGFast"]
+        cfb = proj.analyses.CFB()  # it will load functions from kb
+
+        self.main_instance.database_path = job.file_path
+        self.main_instance._reset_containers()
+        self.main_instance.project = proj
+        self.main_instance.cfg = cfg
+        self.main_instance.cfb = cfb
+        self.main_instance.project.am_event(initialized=True)
+
+        # trigger callbacks
+        self.reload()
+        self.main_instance.cfb.am_event()
+        self.main_instance.cfg.am_event()
+        self.on_cfg_generated()
+        self.plugins.angrdb_load_entries(job.extra_info)
+
+        if on_loaded is not None:
+            on_loaded(job.file_path)
+
+    def run_analysis(self, use_default_options: bool = False) -> None:
         if self.main_instance.project.am_none:
             return
 
         if self.main_instance.analysis_configuration is None:
             self.main_instance.analysis_configuration = self.analysis_manager.get_default_analyses_configuration()
 
-        # If we are running headlessly (e.g. tests), just run with default configuration
-        if self.main_window.shown_at_start:
+        # Show the options dialog only in the GUI and only when the caller has not opted into the
+        # default settings (headless runs and programmatic loads use the defaults directly).
+        if self.main_window.shown_at_start and not use_default_options:
             dlg = AnalysisOptionsDialog(self.main_instance.analysis_configuration, self, self.main_window)
             dlg.setModal(True)
             if not dlg.exec_():
@@ -779,6 +858,9 @@ class Workspace:
     def show_jobs_view(self) -> None:
         self.show_view("jobs", JobsView, position="bottom")
 
+    def show_mcp_history_view(self) -> None:
+        self.show_view("mcp_history", MCPHistoryView, position="bottom")
+
     def create_and_show_hex_view(self):
         view = HexView(self, "center", self._main_instance)
         self.add_view(view)
@@ -915,7 +997,10 @@ class Workspace:
 
         # trigger more analyses if we don't have at least one CFG available
         if not self.main_instance.kb.cfgs.cfgs:
-            gui_thread_schedule_async(self.run_analysis)
+            # consume the one-shot suppression flag set by programmatic loads
+            use_default_options = self._suppress_analysis_options_dialog
+            self._suppress_analysis_options_dialog = False
+            gui_thread_schedule_async(self.run_analysis, kwargs={"use_default_options": use_default_options})
 
         self.plugins.handle_project_initialization()
 
