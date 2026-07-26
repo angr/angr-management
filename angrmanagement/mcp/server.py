@@ -54,7 +54,7 @@ def _install_history_recorder(server: FastMCP, workspace: Workspace) -> None:
             history.append(record)
             # cap the retained history (read live so config changes take effect); <= 0 is unlimited
             limit = Conf.mcp_server_history_limit
-            if limit > 0 and len(history) > limit:
+            if 0 < limit < len(history):
                 del history[: len(history) - limit]
             workspace.mcp_history.am_event(added=record)
 
