@@ -79,7 +79,7 @@ class LLMRefineJob(InstanceJob):
                 self._show_error_msgbox,
                 (
                     f"No cached decompilation found for this function and decompilation flavor {self.flavor}. "
-                    f"Please decompile the function first before running LLM refinement.",
+                    f"Please decompile the function first before running LLM refinement."
                 ),
             )
             return
@@ -90,7 +90,7 @@ class LLMRefineJob(InstanceJob):
                 self._show_error_msgbox,
                 (
                     f"No cached decompilation found for this function and decompilation flavor {self.flavor}. "
-                    f"Please decompile the function first before running LLM refinement.",
+                    f"Please decompile the function first before running LLM refinement."
                 ),
             )
             return
