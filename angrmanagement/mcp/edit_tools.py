@@ -1,23 +1,45 @@
 """MCP tools that modify the loaded binary's knowledge base and refresh the GUI live.
 
-Every mutation runs on the GUI thread (via gui_thread_schedule) and follows the same code
-paths as the corresponding GUI actions, including plugin hook dispatch and view refreshes,
-so the user sees the changes immediately.
+The knowledge-base mutations themselves live in angr's decompilation edit layer
+(:mod:`angr.analyses.decompiler.edits`), which the headless MCP server uses too. What stays here is
+the GUI half: marshalling onto the GUI thread, firing plugin notifications through
+:class:`WorkspaceEditHooks`, and refreshing the views.
+
+Everything runs on the GUI thread via gui_thread_schedule, and each mutation resolves its target
+*inside* that closure: kb.decompilations spills to LMDB, so a cache resolved outside can be evicted
+and reloaded as a different object before the closure runs.
 """
 
 from __future__ import annotations
 
-import re
 import time
 from typing import TYPE_CHECKING, Any
 
-from angr.analyses.decompiler.structured_codegen.c import CVariable
-from angr.knowledge_plugins.functions.function import PrototypeSource
-from angr.sim_type import parse_signature, parse_type
+from angr.analyses.decompiler.edits import (
+    DecompilationEditError,
+    require_cache,
+    restore_user_edits,
+)
+from angr.analyses.decompiler.edits import (
+    rename_function as core_rename_function,
+)
+from angr.analyses.decompiler.edits import (
+    rename_variable as core_rename_variable,
+)
+from angr.analyses.decompiler.edits import (
+    set_comment as core_set_comment,
+)
+from angr.analyses.decompiler.edits import (
+    set_function_prototype as core_set_function_prototype,
+)
+from angr.analyses.decompiler.edits import (
+    set_variable_type as core_set_variable_type,
+)
 from fastmcp.exceptions import ToolError
 
 from angrmanagement.logic.threads import gui_thread_schedule
 
+from .edit_hooks import WorkspaceEditHooks
 from .tools import (
     PSEUDOCODE_FLAVOR,
     _submit_background_decompilation,
@@ -37,8 +59,6 @@ if TYPE_CHECKING:
 
 GUI_TIMEOUT = 60
 
-_VALID_NAME_RE = re.compile(r"^\S+$")
-
 
 def _run_on_gui(func: Callable[[], dict[str, Any]]) -> dict[str, Any]:
     """Run a mutation on the GUI thread, propagating ToolErrors and guarding against timeouts."""
@@ -46,11 +66,6 @@ def _run_on_gui(func: Callable[[], dict[str, Any]]) -> dict[str, Any]:
     if result is None:
         raise ToolError("The GUI thread did not respond in time; angr management may be busy running an analysis.")
     return result
-
-
-def _validate_name(new_name: str) -> None:
-    if not new_name or _VALID_NAME_RE.match(new_name) is None:
-        raise ToolError(f"Invalid name {new_name!r}: names must be non-empty and contain no whitespace.")
 
 
 def _code_view_showing(workspace: Workspace, func_addr: int) -> CodeView | None:
@@ -65,33 +80,6 @@ def _cached_decompilation(workspace: Workspace, func_addr: int):
     kb = workspace.main_instance.kb
     key = (func_addr, PSEUDOCODE_FLAVOR)
     return kb.decompilations.get(key, None)
-
-
-def _require_cached_decompilation(workspace: Workspace, func: Function):
-    cache = _cached_decompilation(workspace, func.addr)
-    if cache is None or cache.codegen is None:
-        raise ToolError(
-            f"Function {func.name} has not been decompiled yet. Call decompile_function first "
-            "(use focus=False to avoid disturbing the user)."
-        )
-    return cache
-
-
-def _find_variable_node(codegen, variable_name: str) -> CVariable | None:
-    """Find a CVariable node in a codegen by its current display name."""
-    if codegen.map_pos_to_node is None:
-        return None
-    global_node = None
-    for _, item in codegen.map_pos_to_node.items():
-        obj = getattr(item, "obj", None)
-        if not isinstance(obj, CVariable):
-            continue
-        if obj.unified_variable is not None:
-            if obj.unified_variable.name == variable_name:
-                return obj
-        elif obj.variable is not None and not obj.variable.region and obj.variable.name == variable_name:
-            global_node = obj
-    return global_node
 
 
 def _refresh_pseudocode(workspace: Workspace, func_addr: int, codegen) -> None:
@@ -119,10 +107,25 @@ def _wait_for_decompilation(workspace: Workspace, func: Function, timeout_second
     )
 
 
+def _as_tool_error(func: Callable[[], dict[str, Any]]) -> Callable[[], dict[str, Any]]:
+    """Surface the edit layer's messages, which fastmcp would otherwise mask."""
+
+    def wrapper() -> dict[str, Any]:
+        try:
+            return func()
+        except DecompilationEditError as e:
+            raise ToolError(str(e)) from e
+
+    return wrapper
+
+
 def register_edit_tools(server: FastMCP, workspace: Workspace) -> None:
     """Register tools that modify the knowledge base with live GUI refresh."""
 
     # pylint:disable=unused-variable
+
+    def hooks() -> WorkspaceEditHooks:
+        return WorkspaceEditHooks(workspace)
 
     @server.tool()
     def rename_function(
@@ -136,32 +139,32 @@ def register_edit_tools(server: FastMCP, workspace: Workspace) -> None:
 
         Specify the function by address (hex string) or by its current name.
         """
-        _validate_name(new_name)
+        proj = require_project(workspace)
         func = find_function(workspace, address=address, name=name)
 
+        @_as_tool_error
         def apply() -> dict[str, Any]:
-            kb = workspace.main_instance.kb
-            old_name = func.name
-            kb.functions.get_by_addr(func.addr).name = new_name
-
-            cache = _cached_decompilation(workspace, func.addr)
-            if cache is not None and cache.codegen is not None and cache.codegen.cfunc is not None:
-                cache.codegen.cfunc.name = new_name
-                cache.codegen.cfunc.demangled_name = new_name
-
-            workspace.plugins.handle_function_renamed(func, old_name, new_name)
+            result = core_rename_function(
+                proj,
+                func,
+                new_name,
+                kb=workspace.main_instance.kb,
+                hooks=hooks(),
+                rerender=False,
+            )
 
             # re-render whatever the pseudocode view currently shows: both the renamed function
             # and call sites in other functions pick up the new name on regeneration
             view = workspace.view_manager.first_view_in_category("pseudocode")
             if view is not None and not view.codegen.am_none:
                 view.codegen.am_event()
+            cache = _cached_decompilation(workspace, func.addr)
             if cache is not None and cache.codegen is not None and _code_view_showing(workspace, func.addr) is None:
                 cache.codegen.regenerate_text()
 
             workspace.on_function_updated()
             workspace.refresh(["disassembly"])
-            return {"old_name": old_name}
+            return {"old_name": result.old}
 
         result = _run_on_gui(apply)
         return {"function_address": hex(func.addr), "old_name": result["old_name"], "new_name": new_name}
@@ -180,51 +183,31 @@ def register_edit_tools(server: FastMCP, workspace: Workspace) -> None:
         the function by address or name, and the variable by its current name as it appears in
         the pseudocode (e.g., "v4" or "a0").
         """
-        _validate_name(new_name)
+        proj = require_project(workspace)
         func = find_function(workspace, address=address, name=name)
-        cache = _require_cached_decompilation(workspace, func)
-        codegen = cache.codegen
 
+        @_as_tool_error
         def apply() -> dict[str, Any]:
-            node = _find_variable_node(codegen, variable_name)
-            if node is None:
-                raise ToolError(
-                    f"No variable named {variable_name!r} in the decompilation of {func.name}. "
-                    "Check get_decompilation for the current variable names."
-                )
-
-            if node.unified_variable is not None:
-                unified = node.unified_variable
-                if getattr(node.variable, "offset", None) is not None:
-                    workspace.plugins.handle_stack_var_renamed(func, node.variable.offset, variable_name, new_name)
-                elif unified.is_function_argument:
-                    workspace.plugins.handle_func_arg_renamed(func, 0, variable_name, new_name)
-                    cfunc = codegen.cfunc
-                    if cfunc is not None and cfunc.functy.arg_names:
-                        arg_names = list(cfunc.functy.arg_names)
-                        for idx, arg in enumerate(cfunc.arg_list):
-                            if arg is node and idx < len(arg_names):
-                                arg_names[idx] = new_name
-                                break
-                        cfunc.functy.arg_names = tuple(arg_names)
-                unified.name = new_name
-                unified.renamed = True
-                kind = "argument" if unified.is_function_argument else "local"
-            else:
-                workspace.plugins.handle_global_var_renamed(node.variable.addr, variable_name, new_name)
-                workspace.main_instance.kb.labels[node.variable.addr] = new_name
-                node.variable.name = new_name
-                node.variable.renamed = True
-                kind = "global"
-
-            _refresh_pseudocode(workspace, func.addr, codegen)
-            return {"kind": kind}
+            result = core_rename_variable(
+                proj,
+                func,
+                variable_name,
+                new_name,
+                kb=workspace.main_instance.kb,
+                hooks=hooks(),
+                rerender=False,
+            )
+            cache = _cached_decompilation(workspace, func.addr)
+            _refresh_pseudocode(workspace, func.addr, cache.codegen if cache is not None else None)
+            if result.refresh.disassembly_dirty:
+                workspace.refresh(["disassembly"])
+            return {"kind": result.detail.get("storage"), "is_argument": result.detail.get("is_argument")}
 
         result = _run_on_gui(apply)
         return {
             "function_address": hex(func.addr),
             "function_name": func.name,
-            "variable_kind": result["kind"],
+            "variable_kind": "argument" if result["is_argument"] else result["kind"],
             "old_name": variable_name,
             "new_name": new_name,
         }
@@ -241,59 +224,49 @@ def register_edit_tools(server: FastMCP, workspace: Workspace) -> None:
         updates immediately with re-flowed types.
 
         The function must have been decompiled already. c_type is a C type declaration such as
-        "unsigned int", "char *", or "struct my_struct *".
+        "unsigned int", "char *", or "struct my_struct *". Retyping a function argument rewrites
+        the function's prototype and re-decompiles it.
         """
         proj = require_project(workspace)
         func = find_function(workspace, address=address, name=name)
-        cache = _require_cached_decompilation(workspace, func)
-        codegen = cache.codegen
 
-        try:
-            new_type = parse_type(c_type).with_arch(proj.arch)
-        except Exception as e:  # pylint:disable=broad-exception-caught
-            raise ToolError(f"Could not parse C type {c_type!r}: {e}") from e
-
+        @_as_tool_error
         def apply() -> dict[str, Any]:
-            node = _find_variable_node(codegen, variable_name)
-            if node is None:
-                raise ToolError(
-                    f"No variable named {variable_name!r} in the decompilation of {func.name}. "
-                    "Check get_decompilation for the current variable names."
-                )
+            result = core_set_variable_type(
+                proj,
+                func,
+                variable_name,
+                c_type,
+                kb=workspace.main_instance.kb,
+                hooks=hooks(),
+            )
 
-            kb = workspace.main_instance.kb
-            dec_variables = kb.dec_variables
+            if func.addr in result.refresh.redecompile:
+                # an argument retype changed the prototype: the function has to be rebuilt
+                view = _code_view_showing(workspace, func.addr)
+                if view is not None:
+                    view.decompile(reset_cache=True)
+                    return {"mode": "view", "code": None}
+                return {"mode": "background", "code": None}
 
-            if node.unified_variable is not None and node.unified_variable.is_function_argument:
-                raise ToolError(
-                    f"{variable_name!r} is a function argument; change it by updating the whole "
-                    "prototype with set_function_prototype."
-                )
-
-            if node.unified_variable is not None:
-                dec_variables[func.addr].set_variable_type(node.variable, new_type, all_unified=True, mark_manual=True)
-            else:
-                dec_variables["global"].set_variable_type(node.variable, new_type, all_unified=False, mark_manual=True)
-
-            # re-flow variable types through the cached decompilation, like the GUI does
-            dec = proj.analyses.Decompiler(func, decompile=False, use_cache=True)
-            new_codegen = dec.reflow_variable_types(cache)
-            cache.codegen = new_codegen
-
+            cache = require_cache(workspace.main_instance.kb, func.addr, PSEUDOCODE_FLAVOR)
             view = _code_view_showing(workspace, func.addr)
             if view is not None:
-                view.codegen.am_obj = new_codegen
+                view.codegen.am_obj = cache.codegen
                 view.codegen.am_event(already_regenerated=True)
+            return {"mode": "reflow", "code": cache.codegen.text}
 
-            return {"code": new_codegen.text}
+        outcome = _run_on_gui(apply)
+        if outcome["mode"] == "background":
+            _submit_background_decompilation(workspace, func)
+        code = outcome["code"] if outcome["code"] is not None else _wait_for_decompilation(workspace, func, 300)
 
-        result = _run_on_gui(apply)
         return {
             "function_address": hex(func.addr),
             "function_name": func.name,
             "variable": variable_name,
             "new_type": c_type,
-            "code": result["code"],
+            "code": code,
         }
 
     @server.tool()
@@ -309,39 +282,52 @@ def register_edit_tools(server: FastMCP, workspace: Workspace) -> None:
 
         prototype is a full C signature, e.g. "int authenticate(char *username, char *password)".
         The function name inside the prototype is ignored; use rename_function to rename.
+        Variable renames and manual types set earlier are restored after the re-decompilation.
         """
         proj = require_project(workspace)
         func = find_function(workspace, address=address, name=name)
 
-        try:
-            new_proto = parse_signature(prototype).with_arch(proj.arch)
-        except Exception as e:  # pylint:disable=broad-exception-caught
-            raise ToolError(f"Could not parse C prototype {prototype!r}: {e}") from e
-
+        @_as_tool_error
         def apply() -> dict[str, Any]:
-            func.prototype = new_proto
-            func.prototype_source = PrototypeSource.USER
-            func.ran_cca = True
+            result = core_set_function_prototype(
+                proj,
+                func,
+                prototype,
+                kb=workspace.main_instance.kb,
+                hooks=hooks(),
+            )
 
             view = _code_view_showing(workspace, func.addr)
             if view is not None:
                 # the pseudocode view is showing this function: let it drive re-decompilation,
                 # re-deriving variables so the new prototype's argument names take effect
                 view.decompile(reset_cache=True)
-                return {"mode": "view"}
+                return {"mode": "view", "user_edits": result.detail.get("user_edits") or {}}
+            return {"mode": "background", "user_edits": result.detail.get("user_edits") or {}}
 
-            kb = workspace.main_instance.kb
-            kb.decompilations.discard((func.addr, PSEUDOCODE_FLAVOR))
-            dec_variables = kb.dec_variables
-            if dec_variables.has_function_manager(func.addr):
-                del dec_variables[func.addr]
-            return {"mode": "background"}
-
-        result = _run_on_gui(apply)
-        if result["mode"] == "background":
+        outcome = _run_on_gui(apply)
+        if outcome["mode"] == "background":
             _submit_background_decompilation(workspace, func)
 
         code = _wait_for_decompilation(workspace, func, timeout_seconds)
+
+        # dropping the variable manager is what makes the new argument names take effect, but it
+        # also discards earlier renames and manual types; put them back now that variables exist
+        if outcome["user_edits"]:
+
+            def restore() -> dict[str, Any]:
+                kb = workspace.main_instance.kb
+                restored, _ = restore_user_edits(kb, func.addr, outcome["user_edits"])
+                if restored:
+                    cache = _cached_decompilation(workspace, func.addr)
+                    _refresh_pseudocode(workspace, func.addr, cache.codegen if cache is not None else None)
+                    return {"code": cache.codegen.text if cache is not None and cache.codegen else None}
+                return {"code": None}
+
+            restored = _run_on_gui(restore)
+            if restored["code"]:
+                code = restored["code"]
+
         return {
             "function_address": hex(func.addr),
             "function_name": func.name,
@@ -360,36 +346,28 @@ def register_edit_tools(server: FastMCP, workspace: Workspace) -> None:
             address: The address to comment (hex string, e.g., "0x401000")
             comment: The comment text; an empty string removes the comment
         """
-        require_project(workspace)
+        proj = require_project(workspace)
         addr = parse_address(address)
 
+        @_as_tool_error
         def apply() -> dict[str, Any]:
-            workspace.set_comment(addr, comment)
+            result = core_set_comment(
+                proj,
+                addr,
+                comment,
+                kb=workspace.main_instance.kb,
+                hooks=hooks(),
+                rerender=False,
+            )
 
-            # also attach it to the decompilation of the containing function, if cached
-            kb = workspace.main_instance.kb
-            func = kb.functions.floor_func(addr)
-            in_pseudocode = False
-            if func is not None:
-                cache = _cached_decompilation(workspace, func.addr)
-                if cache is not None and cache.codegen is not None:
-                    # The function-entry address is rendered as a header comment sourced from
-                    # kb.comments (already set above), so only mirror non-entry addresses into
-                    # the per-statement comment map to avoid a duplicate.
-                    if addr == func.addr:
-                        in_pseudocode = True
-                    else:
-                        cdict = cache.codegen.stmt_comments
-                        old = cdict.get(addr, "")
-                        if comment:
-                            workspace.plugins.handle_comment_changed(addr, old, comment, addr not in cdict, True)
-                            cdict[addr] = comment
-                            in_pseudocode = True
-                        elif addr in cdict:
-                            workspace.plugins.handle_comment_changed(addr, old, "", False, True)
-                            del cdict[addr]
-                    _refresh_pseudocode(workspace, func.addr, cache.codegen)
-            return {"in_pseudocode": in_pseudocode}
+            if result.func_addr is not None:
+                cache = _cached_decompilation(workspace, result.func_addr)
+                _refresh_pseudocode(workspace, result.func_addr, cache.codegen if cache is not None else None)
+
+            # the disassembly redraw that Workspace.set_comment used to do; the knowledge-base
+            # write and its notification already happened in the edit layer
+            workspace.refresh(["disassembly"])
+            return {"in_pseudocode": result.detail["shown_in_pseudocode"]}
 
         result = _run_on_gui(apply)
         return {
