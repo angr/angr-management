@@ -30,6 +30,7 @@ from PySide6.QtWidgets import QApplication
 from angrmanagement.config import Conf
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.mcp import MCPServerManager, is_mcp_available
+from angrmanagement.plugins import BasePlugin
 from angrmanagement.ui.main_window import MainWindow
 from angrmanagement.ui.views import DisassemblyView
 
@@ -587,3 +588,84 @@ class TestMCPAuth(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class _RecordingPlugin(BasePlugin):
+    """Records the edit notifications the MCP tools fire."""
+
+    DISPLAY_NAME = "Recording plugin"
+
+    def __init__(self, workspace):
+        super().__init__(workspace)
+        self.calls = []
+
+    def handle_function_renamed(self, func, old_name, new_name):
+        self.calls.append(("function_renamed", old_name, new_name))
+        return False
+
+    def handle_stack_var_renamed(self, func, offset, old_name, new_name):
+        self.calls.append(("stack_var_renamed", offset, old_name, new_name))
+        return False
+
+    def handle_func_arg_renamed(self, func, offset, old_name, new_name):
+        self.calls.append(("func_arg_renamed", offset, old_name, new_name))
+        return False
+
+    def handle_comment_changed(self, address, old_cmt, new_cmt, created, decomp):
+        self.calls.append(("comment_changed", old_cmt, new_cmt, created, decomp))
+        return False
+
+
+class TestMCPEditDelegation(MCPTestCase):
+    """The edit tools run angr's shared edit layer; these guard what the GUI half must preserve."""
+
+    def test_set_variable_type_updates_view_text(self):
+        """Reflowing types must also re-render; the tool used to return the pre-edit text."""
+
+        async def scenario(client):
+            await client.call_tool("decompile_function", {"name": "authenticate", "focus": True})
+            dec = (await client.call_tool("get_decompilation", {"name": "authenticate"})).data
+            m = re.search(r"\b(v\d+)\b", dec["code"])
+            assert m, dec["code"]
+            var = m.group(1)
+
+            r = (
+                await client.call_tool(
+                    "set_variable_type",
+                    {"name": "authenticate", "variable_name": var, "c_type": "long long"},
+                )
+            ).data
+            assert f"long long {var}" in r["code"], r["code"]
+
+        self.run_client(scenario)
+
+        code_view = self.main.workspace.view_manager.first_view_in_category("pseudocode")
+        assert code_view is not None and not code_view.codegen.am_none
+        assert "long long" in code_view.codegen.text
+
+    def test_plugin_hooks_still_fire(self):
+        """Plugins must keep seeing renames and comments, with the old value still readable."""
+        plugin = _RecordingPlugin(self.main.workspace)
+        self.main.workspace.plugins.register_active_plugin("recording_test_plugin", plugin)
+
+        async def scenario(client):
+            await client.call_tool("decompile_function", {"name": "authenticate", "focus": True})
+            await client.call_tool("rename_function", {"name": "authenticate", "new_name": "check_creds"})
+            fi = (await client.call_tool("get_function_info", {"name": "check_creds"})).data
+            await client.call_tool("set_comment", {"address": fi["address"], "comment": "a note"})
+
+        self.run_client(scenario)
+
+        kinds = [c[0] for c in plugin.calls]
+        assert "function_renamed" in kinds
+        assert "comment_changed" in kinds
+
+        renamed = next(c for c in plugin.calls if c[0] == "function_renamed")
+        # the hook sees the OLD name, which means it fired before the mutation
+        assert renamed[1] == "authenticate"
+        assert renamed[2] == "check_creds"
+
+        comment = next(c for c in plugin.calls if c[0] == "comment_changed")
+        assert comment[1] == ""
+        assert comment[2] == "a note"
+        assert comment[3] is True
