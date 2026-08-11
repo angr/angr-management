@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QRect, Qt
 from PySide6.QtWidgets import QMessageBox
 
 if TYPE_CHECKING:
@@ -56,6 +56,28 @@ class QDisassemblyBaseControl:
         use_animation: bool = False,
     ):
         raise NotImplementedError
+
+    def instruction_widget_rect(self, insn_addr: int):  # pylint:disable=unused-argument
+        """
+        Where the instruction is currently drawn, in this control's own coordinates, or None if it
+        is not laid out. Used to anchor floating editors to an instruction.
+        """
+        return None
+
+    def _instruction_widget_rect(self, insn_addr: int, gview, mapper=None):
+        block = self._insaddr_to_block.get(insn_addr, None)
+        addr_to_insns = getattr(block, "addr_to_insns", None)
+        if addr_to_insns is None:
+            return None
+        insn = addr_to_insns.get(insn_addr, None)
+        if insn is None:
+            return None
+        top_left = gview.mapFromScene(insn.mapToScene(0, 0))
+        bottom_right = gview.mapFromScene(insn.mapToScene(insn.width, insn.height))
+        if mapper is not None:
+            top_left = mapper(top_left)
+            bottom_right = mapper(bottom_right)
+        return QRect(top_left, bottom_right)
 
     #
     # Public methods

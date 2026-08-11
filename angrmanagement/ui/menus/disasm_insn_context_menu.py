@@ -42,6 +42,12 @@ class DisasmInsnContextMenu(Menu):
             )
         self.entries.extend(
             [
+                MenuEntry("&Comment", self._begin_inline_comment),
+                MenuEntry("Comment (&multi-line)...", self._popup_comment_dialog),
+                MenuEntry("Set &function comment", self._set_function_comment),
+                MenuEntry("Toggle &repeatable comment", self._toggle_repeatable_comment),
+                MenuEntry("Toggle book&mark", self._toggle_bookmark),
+                MenuSeparator(),
                 MenuEntry("E&xecute symbolically...", self._popup_newstate_dialog),
                 MenuEntry("&Avoid in execution", self._avoid_in_execution),
                 MenuEntry("&Find in execution", self._find_in_execution),
@@ -79,6 +85,21 @@ class DisasmInsnContextMenu(Menu):
 
     def _add_hook(self) -> None:
         self._disasm_view.popup_hook_dialog()
+
+    def _begin_inline_comment(self) -> None:
+        self._disasm_view.begin_inline_comment(self.insn_addr)
+
+    def _popup_comment_dialog(self) -> None:
+        self._disasm_view.popup_comment_dialog()
+
+    def _set_function_comment(self) -> None:
+        self._disasm_view.set_function_comment(self.insn_addr)
+
+    def _toggle_repeatable_comment(self) -> None:
+        self._disasm_view.toggle_repeatable_comment(self.insn_addr)
+
+    def _toggle_bookmark(self) -> None:
+        self._disasm_view.workspace.toggle_bookmark(self.insn_addr)
 
     def _view_docs(self) -> None:
         if self._disasm_view is None:
