@@ -637,6 +637,7 @@ class MainWindow(QMainWindow):
                     ("View: Proximity", self.workspace.view_proximity_for_current_function),
                     ("View: Pseudocode", self.workspace.show_pseudocode_view),
                     ("View: Registers", self.workspace.show_registers_view),
+                    ("View: Search", self.workspace.show_search_view),
                     ("View: Stack", self.workspace.show_stack_view),
                     ("View: States", self.workspace.show_states_view),
                     ("View: Strings", self.workspace.show_strings_view),

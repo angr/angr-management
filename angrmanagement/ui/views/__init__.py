@@ -15,6 +15,7 @@ from .mcp_history_view import MCPHistoryView
 from .patches_view import PatchesView
 from .proximity_view import ProximityView
 from .registers_view import RegistersView
+from .search_view import SearchView
 from .signatures_view import SignaturesView
 from .stack_view import StackView
 from .states_view import StatesView
@@ -41,6 +42,7 @@ __all__ = [
     "PatchesView",
     "ProximityView",
     "RegistersView",
+    "SearchView",
     "StackView",
     "StatesView",
     "StringsView",

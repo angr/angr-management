@@ -60,6 +60,7 @@ from .views import (
     PatchesView,
     ProximityView,
     RegistersView,
+    SearchView,
     SignaturesView,
     StackView,
     StatesView,
@@ -818,6 +819,12 @@ class Workspace:
 
     def show_strings_view(self) -> None:
         self.show_view("strings", StringsView)
+
+    def show_search_view(self) -> None:
+        view = self._get_or_create_view("search", SearchView)
+        view.reload()
+        self.raise_view(view)
+        view.focus_query_box()
 
     def show_patches_view(self) -> None:
         self.show_view("patches", PatchesView)

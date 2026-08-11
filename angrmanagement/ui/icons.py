@@ -30,6 +30,7 @@ NAME_TO_QTAWESOME_NAME = {
     "pseudocode-view": "msc.json",
     "run-analysis": "mdi.arrow-right-drop-circle",
     "search": "fa5s.search",
+    "search-view": "fa5s.search",
     "strings-view": "msc.symbol-string",
     "traces-view": "mdi.go-kart-track",
     "types-view": "msc.symbol-class",
