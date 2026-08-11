@@ -31,6 +31,7 @@ from PySide6.QtWidgets import (
 from angrmanagement.config import Conf
 from angrmanagement.data.jobs import DecompileFunctionJob, LLMPreloadCalleesJob, LLMRefineJob, VariableRecoveryJob
 from angrmanagement.data.object_container import ObjectContainer
+from angrmanagement.logic.commands import ViewCommand
 from angrmanagement.logic.disassembly import JumpHistory
 from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.ui.documents import QCodeDocument
@@ -96,6 +97,22 @@ class CodeView(FunctionView):
         self.codegen.am_subscribe(self._on_codegen_changes)
         self.addr.am_subscribe(self._on_new_addr)
         self.current_node.am_subscribe(self._on_new_node)
+
+    @classmethod
+    def register_commands(cls, workspace: Workspace) -> None:
+        """
+        Register commands that can be run for this view.
+        """
+        workspace.command_manager.register_commands(
+            [
+                ViewCommand("code_view_" + action.__name__, "Pseudocode: " + caption, action, cls, workspace)
+                for caption, action in [
+                    ("Find", cls.show_find_bar),
+                    ("Find Next", cls.find_next),
+                    ("Find Previous", cls.find_previous),
+                ]
+            ]
+        )
 
     def _focus_core(self, focus: bool, focus_addr: int | None) -> None:
         if focus:

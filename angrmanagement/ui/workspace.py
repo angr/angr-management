@@ -151,6 +151,7 @@ class Workspace:
         self.on_debugger_state_updated()
 
         DisassemblyView.register_commands(self)
+        CodeView.register_commands(self)
 
         self.main_instance.patches.am_subscribe(self._on_patch_event)
 
