@@ -15,7 +15,7 @@ from angr.analyses.decompiler.structured_codegen.rust import RustConstant, RustF
 from angr.knowledge_plugins.functions.function import Function
 from angr.sim_variable import SimMemoryVariable
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QTextCursor
+from PySide6.QtGui import QKeySequence, QShortcut, QTextCursor
 from PySide6.QtWidgets import (
     QComboBox,
     QDockWidget,
@@ -37,6 +37,7 @@ from angrmanagement.ui.documents import QCodeDocument
 from angrmanagement.ui.toolbars import NavToolbar
 from angrmanagement.ui.widgets.qccode_edit import QCCodeEdit
 from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
+from angrmanagement.ui.widgets.qfind_bar import QFindBar
 
 from .view import FunctionView
 
@@ -79,7 +80,14 @@ class CodeView(FunctionView):
 
         self.vars_must_struct: set[str] = set()
 
+        self._find_bar: QFindBar | None = None
+        self._find_matches: list[tuple[int, int]] = []
+        self._find_index: int = -1
+        self._chunk_selections: list[QTextEdit.ExtraSelection] = []
+        self._find_selections: list[QTextEdit.ExtraSelection] = []
+
         self._init_widgets()
+        self._init_shortcuts()
 
         self._textedit.cursorPositionChanged.connect(self._on_cursor_position_changed)
         self._textedit.selectionChanged.connect(self._on_cursor_position_changed)
@@ -211,15 +219,79 @@ class CodeView(FunctionView):
             decomp()
 
     def highlight_chunks(self, chunks) -> None:
-        extra_selections = []
-        for start, end in chunks:
-            sel = QTextEdit.ExtraSelection()
-            sel.cursor = self._textedit.textCursor()
-            sel.cursor.setPosition(start)
-            sel.cursor.setPosition(end, QTextCursor.MoveMode.KeepAnchor)
-            sel.format.setBackground(Conf.pseudocode_highlight_color)
-            extra_selections.append(sel)
-        self._textedit.setExtraSelections(extra_selections)
+        color = Conf.pseudocode_highlight_color
+        self._chunk_selections = [self._make_selection(start, end, color) for start, end in chunks]
+        self._apply_extra_selections()
+
+    #
+    # Find in view
+    #
+
+    def show_find_bar(self) -> None:
+        """
+        Open the incremental find bar, seeded with the current selection if there is one.
+        """
+        selected = self._textedit.textCursor().selectedText()
+        self._find_bar.activate(selected if selected and " " not in selected else None)
+        self._update_find_matches()
+
+    def find_next(self) -> None:
+        self._step_find_match(1)
+
+    def find_previous(self) -> None:
+        self._step_find_match(-1)
+
+    def _update_find_matches(self) -> None:
+        pattern = self._find_bar.compile_query()
+        text = self._textedit.toPlainText()
+        self._find_matches = [(m.start(), m.end()) for m in pattern.finditer(text)] if pattern is not None else []
+        self._find_index = -1
+        color = Conf.disasm_view_operand_highlight_color
+        self._find_selections = [self._make_selection(start, end, color) for start, end in self._find_matches]
+        self._apply_extra_selections()
+        if self._find_matches:
+            # jump to the first match at or after the cursor
+            pos = self._textedit.textCursor().position()
+            index = next((i for i, (s, _) in enumerate(self._find_matches) if s >= pos), 0)
+            self._select_find_match(index)
+        else:
+            self._find_bar.set_match_status(0, 0)
+
+    def _step_find_match(self, delta: int) -> None:
+        if not self._find_matches:
+            self._update_find_matches()
+            if not self._find_matches:
+                return
+            if delta > 0:
+                return
+        self._select_find_match((self._find_index + delta) % len(self._find_matches))
+
+    def _select_find_match(self, index: int) -> None:
+        self._find_index = index
+        start, end = self._find_matches[index]
+        cursor = self._textedit.textCursor()
+        cursor.setPosition(start)
+        cursor.setPosition(end, QTextCursor.MoveMode.KeepAnchor)
+        self._textedit.setTextCursor(cursor)
+        self._find_bar.set_match_status(index, len(self._find_matches))
+
+    def _on_find_bar_closed(self) -> None:
+        self._find_matches = []
+        self._find_index = -1
+        self._find_selections = []
+        self._apply_extra_selections()
+        self._textedit.setFocus()
+
+    def _make_selection(self, start: int, end: int, color) -> QTextEdit.ExtraSelection:
+        sel = QTextEdit.ExtraSelection()
+        sel.cursor = self._textedit.textCursor()
+        sel.cursor.setPosition(start)
+        sel.cursor.setPosition(end, QTextCursor.MoveMode.KeepAnchor)
+        sel.format.setBackground(color)
+        return sel
+
+    def _apply_extra_selections(self) -> None:
+        self._textedit.setExtraSelections(self._chunk_selections + self._find_selections)
 
     def variable_manager(self, func_addr: int | Literal["global"] | None = None) -> VariableManagerInternal | None:
         if self.codegen is None or self.codegen.am_none:
@@ -599,8 +671,16 @@ class CodeView(FunctionView):
         inner_widget = QWidget()
         inner_widget.setLayout(inner_layout)
 
+        # find bar
+        self._find_bar = QFindBar(self)
+        self._find_bar.query_changed.connect(self._update_find_matches)
+        self._find_bar.find_next.connect(self.find_next)
+        self._find_bar.find_previous.connect(self.find_previous)
+        self._find_bar.closed.connect(self._on_find_bar_closed)
+
         outer_layout = QVBoxLayout()
         outer_layout.addWidget(status_bar)
+        outer_layout.addWidget(self._find_bar)
         outer_layout.addWidget(inner_widget)
         outer_layout.setContentsMargins(0, 0, 0, 0)
         outer_layout.setSpacing(0)
@@ -610,6 +690,15 @@ class CodeView(FunctionView):
         self._textedit.focusWidget()
 
         self.workspace.plugins.instrument_code_view(self)
+
+    def _init_shortcuts(self) -> None:
+        for sequence, handler in [
+            (QKeySequence.StandardKey.Find, self.show_find_bar),
+            (QKeySequence(Qt.Key.Key_F3), self.find_next),
+            (QKeySequence("Shift+F3"), self.find_previous),
+        ]:
+            shortcut = QShortcut(sequence, self, handler)
+            shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
 
     def _update_function_summary(self) -> None:
         """Update the function summary text box from the decompilation cache."""

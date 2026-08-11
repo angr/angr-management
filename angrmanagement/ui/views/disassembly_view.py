@@ -6,13 +6,14 @@ from typing import TYPE_CHECKING
 
 from angr.block import Block
 from angr.knowledge_plugins.cfg import MemoryData
-from archinfo.arch_arm import is_arm_arch
+from archinfo.arch_arm import get_real_address_if_arm, is_arm_arch
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QAction, QCursor
+from PySide6.QtGui import QAction, QCursor, QKeySequence, QShortcut
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QMenu, QMessageBox, QVBoxLayout
 
 from angrmanagement.data.function_graph import FunctionGraph
 from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
+from angrmanagement.data.search import Searcher
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import ViewCommand
 from angrmanagement.logic.disassembly import InfoDock, JumpHistory
@@ -41,6 +42,7 @@ from angrmanagement.ui.widgets import (
     QLinearDisassembly,
 )
 from angrmanagement.ui.widgets.block_code_objects import QVariableObj
+from angrmanagement.ui.widgets.qfind_bar import QFindBar
 from angrmanagement.ui.widgets.qinst_annotation import QBreakAnnotation, QHookAnnotation
 from angrmanagement.utils import locate_function
 
@@ -96,9 +98,14 @@ class DisassemblyView(SynchronizedFunctionView):
         self.width_hint = 800
         self.height_hint = 800
 
+        self._find_bar: QFindBar | None = None
+        self._find_matches: list[tuple[int, str]] = []
+        self._find_index: int = -1
+
         self._init_widgets()
         self._init_menus()
         self._register_events()
+        self._init_shortcuts()
 
     @classmethod
     def register_commands(cls, workspace: Workspace) -> None:
@@ -120,6 +127,9 @@ class DisassemblyView(SynchronizedFunctionView):
                     ("Toggle Smart Highlighting", cls.toggle_smart_highlighting),
                     ("Toggle Variable Identifiers", cls.toggle_show_variable_identifier),
                     ("Toggle Variables", cls.toggle_show_variable),
+                    ("Find in Function", cls.show_find_bar),
+                    ("Find Next", cls.find_next),
+                    ("Find Previous", cls.find_previous),
                     ("View AIL", cls.set_disassembly_level_ail),
                     ("View Lifter IR", cls.set_disassembly_level_lifter_ir),
                     ("View Machine Code", cls.set_disassembly_level_machine_code),
@@ -842,6 +852,69 @@ class DisassemblyView(SynchronizedFunctionView):
 
         return QBlockAnnotations(addr_to_annotations, parent=qblock, disasm_view=self)
 
+    #
+    # Find in view
+    #
+
+    # highlighting every hit of a very common mnemonic would repaint the whole function
+    FIND_HIGHLIGHT_LIMIT = 512
+
+    def show_find_bar(self) -> None:
+        """
+        Open the incremental find bar, which searches the text of the current function.
+        """
+        self._find_bar.activate()
+        self._update_find_matches()
+
+    def find_next(self) -> None:
+        self._step_find_match(1)
+
+    def find_previous(self) -> None:
+        self._step_find_match(-1)
+
+    def _iter_function_text(self) -> list[tuple[int, str]]:
+        func = self.function.am_obj
+        if func is None or self.instance.project.am_none:
+            return []
+        searcher = Searcher(self.instance.project.am_obj, kb=self.instance.kb)
+        return list(searcher.iter_instruction_texts(func))
+
+    def _update_find_matches(self) -> None:
+        pattern = self._find_bar.compile_query()
+        if pattern is None:
+            self._find_matches = []
+            self._find_index = -1
+            self._find_bar.set_match_status(0, 0)
+            return
+        self._find_matches = [(addr, text) for addr, text in self._iter_function_text() if pattern.search(text)]
+        self._find_index = -1
+        if self._find_matches:
+            self._step_find_match(1)
+        else:
+            self._find_bar.set_match_status(0, 0)
+
+    def _step_find_match(self, delta: int) -> None:
+        if not self._find_matches:
+            self._find_bar.set_match_status(0, 0)
+            return
+        index = (self._find_index + delta) % len(self._find_matches)
+        self._find_index = index
+        addr = self._find_matches[index][0]
+
+        highlighted = {a for a, _ in self._find_matches[: self.FIND_HIGHLIGHT_LIMIT]}
+        highlighted.add(addr)
+        self.infodock.unselect_all_labels()
+        self.infodock.selected_insns.am_obj = highlighted
+        self.set_synchronized_cursor_address(get_real_address_if_arm(self.instance.project.arch, addr))
+        self.infodock.selected_insns.am_event(insn_addr=addr)
+        self._current_view.show_instruction(addr, use_animation=False)
+        self._find_bar.set_match_status(index, len(self._find_matches))
+
+    def _on_find_bar_closed(self) -> None:
+        self._find_matches = []
+        self._find_index = -1
+        self._current_view.setFocus()
+
     def update_highlight_regions_for_synchronized_views(self, **kwargs) -> None:  # pylint: disable=unused-argument
         """
         Highlight each selected instruction in synchronized views.
@@ -864,8 +937,15 @@ class DisassemblyView(SynchronizedFunctionView):
         self._flow_graph = QDisassemblyGraph(self.instance, self, parent=self)
         self._statusbar = QDisasmStatusBar(self, parent=self)
 
+        self._find_bar = QFindBar(self)
+        self._find_bar.query_changed.connect(self._update_find_matches)
+        self._find_bar.find_next.connect(self.find_next)
+        self._find_bar.find_previous.connect(self.find_previous)
+        self._find_bar.closed.connect(self._on_find_bar_closed)
+
         vlayout = QVBoxLayout()
         vlayout.addWidget(self._statusbar)
+        vlayout.addWidget(self._find_bar)
         vlayout.addWidget(self._flow_graph)
         vlayout.addWidget(self._linear_viewer)
         vlayout.setSpacing(0)
@@ -889,6 +969,15 @@ class DisassemblyView(SynchronizedFunctionView):
     def _init_menus(self) -> None:
         self._insn_menu = DisasmInsnContextMenu(self)
         self._label_menu = DisasmLabelContextMenu(self)
+
+    def _init_shortcuts(self) -> None:
+        for sequence, handler in [
+            (QKeySequence.StandardKey.Find, self.show_find_bar),
+            (QKeySequence(Qt.Key.Key_F3), self.find_next),
+            (QKeySequence("Shift+F3"), self.find_previous),
+        ]:
+            shortcut = QShortcut(sequence, self, handler)
+            shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
 
     def _register_events(self) -> None:
         # redraw the current graph if instruction/operand selection changes
