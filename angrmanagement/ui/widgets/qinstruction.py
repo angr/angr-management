@@ -7,7 +7,7 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QBrush, QCursor, QPainter
 from PySide6.QtWidgets import QApplication, QGraphicsSceneMouseEvent, QGraphicsSimpleTextItem
 
-from angrmanagement.utils import get_comment_for_display, get_string_for_display, should_display_string_label
+from angrmanagement.utils import get_string_for_display, should_display_string_label
 
 from .qgraph_object import QCachedGraphicsItem
 from .qoperand import QOperand
@@ -140,6 +140,9 @@ class QInstruction(QCachedGraphicsItem):
             if len(patches):
                 return Qt.darkYellow
 
+        if self.instance.annotations.has_bookmark(self.insn.addr):
+            return self._config.disasm_view_bookmark_color
+
         return None  # None here means transparent, reusing the block color
 
     @property
@@ -176,8 +179,16 @@ class QInstruction(QCachedGraphicsItem):
     def load_comment(self) -> None:
         if self.instance.kb is None:
             self._comment = None
-        else:
-            self._comment = get_comment_for_display(self.instance.kb, self.insn.addr)
+            return
+
+        annotations = self.instance.annotations
+        lines = []
+        own = annotations.inline_comment(self.insn.addr)
+        if own:
+            lines.append(own)
+        # repeatable comments belonging to whatever this instruction references
+        lines.extend(text for _, text in annotations.repeatable_comments_at(self.insn.addr))
+        self._comment = "\n".join(lines) if lines else None
 
     def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
         painter.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
