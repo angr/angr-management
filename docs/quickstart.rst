@@ -44,8 +44,19 @@ angr-management's window is partitioned into "views" of information about the bi
 * Console - iPython terminal for working with the angr project and the angr-management workspace.
 * Strings - Table of all strings found in the binary.
 * Patches - Table of patches made to the binary.
+* Search - Byte pattern, string, value, disassembly text and decompilation text search over the binary.
 
 Views can be opened from the main View menu and rearranged by click+dragging on the view title bar.
+
+Searching
+---------
+Ctrl+Shift+F opens the Search view. Pick what to search for (a byte pattern with ``?``/``??``
+wildcards, a literal or regular expression string, an integer or floating point value, instruction
+text, or decompiled pseudocode), the scope to search in, then press Enter. Searches run in the
+background and can be cancelled; double-click a result or press Enter to jump to it.
+
+Ctrl+F opens an incremental find bar in the pseudocode and disassembly views, searching the
+currently displayed function. F3 and Shift+F3 move to the next and previous match.
 
 Command Palette
 ---------------
