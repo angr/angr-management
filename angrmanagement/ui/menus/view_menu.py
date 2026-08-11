@@ -134,6 +134,8 @@ class ViewMenu(Menu):
                 MenuEntry("&Patches", main_window.workspace.show_patches_view, icon=icon("patches-view")),
                 MenuEntry("&Types", main_window.workspace.show_types_view, icon=icon("types-view")),
                 MenuEntry("&Functions", main_window.workspace.show_functions_view, icon=icon("functions-view")),
+                MenuEntry("Co&mments", main_window.workspace.show_comments_view, icon=icon("comments-view")),
+                MenuEntry("Book&marks", main_window.workspace.show_bookmarks_view, icon=icon("bookmarks-view")),
                 MenuEntry("Function Si&gnatures", main_window.workspace.show_signatures_view),
                 MenuEntry("&Traces", main_window.workspace.show_traces_view, icon=icon("traces-view")),
                 MenuEntry("Trace &Map", main_window.workspace.show_trace_map_view),

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from .bookmarks_view import BookmarksView
 from .breakpoints_view import BreakpointsView
 from .call_explorer_view import CallExplorerView
 from .code_view import CodeView
+from .comments_view import CommentsView
 from .console_view import ConsoleView
 from .data_dep_view import DataDepView
 from .dep_view import DependencyView
@@ -27,9 +29,11 @@ from .types_view import TypesView
 from .view import BaseView, InstanceView
 
 __all__ = [
+    "BookmarksView",
     "BreakpointsView",
     "CallExplorerView",
     "CodeView",
+    "CommentsView",
     "ConsoleView",
     "DataDepView",
     "DependencyView",

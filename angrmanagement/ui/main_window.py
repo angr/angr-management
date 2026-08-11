@@ -392,6 +392,10 @@ class MainWindow(QMainWindow):
         # Run
         QShortcut(QKeySequence(Qt.Key.Key_F9), self, self.workspace.continue_forward)
 
+        # Bookmarks
+        QShortcut(QKeySequence("Ctrl+M"), self, self.workspace.toggle_bookmark)
+        QShortcut(QKeySequence("Ctrl+Shift+M"), self, self.workspace.goto_next_bookmark)
+
     def init_shortcuts_on_dock(self, dock_widget) -> None:
         """
         Installs an event filter on the dock widget to support floating dock global shortcuts (e.g. command palette).
@@ -619,8 +623,10 @@ class MainWindow(QMainWindow):
                     ("File: Save patched binary as...", self.save_patched_binary_as),
                     ("Help: About", self.open_about_dialog),
                     ("Help: Documentation", self.open_doc_link),
+                    ("View: Bookmarks", self.workspace.show_bookmarks_view),
                     ("View: Breakpoints", self.workspace.show_breakpoints_view),
                     ("View: Call Explorer", self.workspace.show_call_explorer_view),
+                    ("View: Comments", self.workspace.show_comments_view),
                     ("View: Console", self.workspace.show_console_view),
                     ("View: Disassembly (Graph)", self.workspace.show_graph_disassembly_view),
                     ("View: Disassembly (Linear)", self.workspace.show_linear_disassembly_view),
