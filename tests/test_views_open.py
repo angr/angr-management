@@ -5,9 +5,11 @@ import unittest
 from common import AngrManagementTestCase, ProjectOpenTestCase
 
 from angrmanagement.ui.views import (
+    BookmarksView,
     BreakpointsView,
     CallExplorerView,
     CodeView,
+    CommentsView,
     ConsoleView,
     DataDepView,
     DependencyView,
@@ -31,8 +33,14 @@ from angrmanagement.ui.views import (
 class TestViewsOpen(AngrManagementTestCase):
     """Tests that all views open, without first opening a project."""
 
+    def test_bookmarks_view(self):
+        self.main.workspace.show_view("bookmarks", BookmarksView)
+
     def test_breakpoints_view(self):
         self.main.workspace.show_view("breakpoints", BreakpointsView)
+
+    def test_comments_view(self):
+        self.main.workspace.show_view("comments", CommentsView)
 
     def test_call_explorer_view(self):
         self.main.workspace.show_view("call_explorer", CallExplorerView)

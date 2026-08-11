@@ -45,9 +45,11 @@ from angrmanagement.utils.daemon_thread import start_daemon_thread
 from .view_manager import ViewManager
 from .views import (
     BaseView,
+    BookmarksView,
     BreakpointsView,
     CallExplorerView,
     CodeView,
+    CommentsView,
     ConsoleView,
     DataDepView,
     DependencyView,
@@ -74,6 +76,7 @@ from .views import (
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from angrmanagement.data.annotations import CommentKind
     from angrmanagement.ui.main_window import MainWindow
 
 
@@ -489,13 +492,28 @@ class Workspace:
         bp = Breakpoint(bp_type_map[type_], addr, size)
         self.main_instance.breakpoint_mgr.add_breakpoint(bp)
 
-    def set_comment(self, addr: int, comment_text) -> None:
-        self.main_instance.set_comment(addr, comment_text)
+    def set_comment(self, addr: int, comment_text, kind: CommentKind | None = None) -> None:
+        self.main_instance.set_comment(addr, comment_text, kind=kind)
+        self.refresh_after_comment_change(addr)
 
+    def refresh_after_comment_change(self, addr: int) -> None:
+        """
+        Redraw whatever displays the comment at ``addr``: the disassembly, and the pseudocode view
+        of the containing function if one is open.
+        """
         disasm_view = self._get_or_create_view("disassembly", DisassemblyView)
         if disasm_view._flow_graph.disasm is not None:
-            # redraw
             disasm_view.current_graph.refresh()
+
+        kb = self.main_instance.kb
+        if kb is None:
+            return
+        func = kb.functions.floor_func(addr)
+        if func is None:
+            return
+        for view in self.view_manager.views_by_category["pseudocode"]:
+            if view.function.am_obj is not None and view.function.addr == func.addr and not view.codegen.am_none:
+                view.codegen.am_event()
 
     def close_project(self) -> None:
         """
@@ -523,6 +541,7 @@ class Workspace:
         self.plugins.handle_project_save(file_path)
         angrdb = AngrDB(project=self.main_instance.project.am_obj)
         extra_info = self.plugins.angrdb_store_entries()
+        extra_info.update(self.main_instance.annotations.serialize())
         angrdb.dump(file_path, kbs=[self.main_instance.kb], extra_info=extra_info)
         self.main_instance.database_path = file_path
         return True
@@ -558,6 +577,7 @@ class Workspace:
         self.main_instance.cfb.am_event()
         self.main_instance.cfg.am_event()
         self.on_cfg_generated()
+        self.main_instance.annotations.deserialize(job.extra_info)
         self.plugins.angrdb_load_entries(job.extra_info)
 
         if on_loaded is not None:
@@ -855,6 +875,12 @@ class Workspace:
     def show_breakpoints_view(self) -> None:
         self.show_view("breakpoints", BreakpointsView)
 
+    def show_comments_view(self) -> None:
+        self.show_view("comments", CommentsView, position="bottom")
+
+    def show_bookmarks_view(self) -> None:
+        self.show_view("bookmarks", BookmarksView, position="bottom")
+
     def show_call_explorer_view(self) -> None:
         self.show_view("call_explorer", CallExplorerView)
 
@@ -885,6 +911,46 @@ class Workspace:
             if selected_insns:
                 for insn in selected_insns:
                     self.main_instance.breakpoint_mgr.toggle_exec_breakpoint(insn)
+
+    def current_address(self) -> int | None:
+        """
+        The address the user is looking at, taken from the focused view and falling back to any
+        disassembly or pseudocode view that has a cursor.
+        """
+        views = [self.view_manager.most_recently_focused_view]
+        views += self.view_manager.views_by_category["disassembly"]
+        views += self.view_manager.views_by_category["pseudocode"]
+        for view in views:
+            if view is None:
+                continue
+            if view.category == "disassembly":
+                addr = view._instruction_address_in_selection()
+                if addr is not None:
+                    return addr
+            elif view.category == "pseudocode" and not view.addr.am_none:
+                return view.addr.am_obj
+        return None
+
+    def toggle_bookmark(self, addr: int | None = None) -> None:
+        """
+        Add or remove a bookmark at ``addr``, defaulting to the current address.
+        """
+        if self.main_instance.project.am_none:
+            return
+        if addr is None:
+            addr = self.current_address()
+        if addr is None:
+            return
+        self.main_instance.annotations.toggle_bookmark(addr)
+        self.refresh(["disassembly", "pseudocode"])
+
+    def goto_next_bookmark(self) -> None:
+        """
+        Jump to the next bookmark by address, wrapping around at the end.
+        """
+        bookmark = self.main_instance.annotations.next_bookmark(self.current_address())
+        if bookmark is not None:
+            self.jump_to(bookmark.addr)
 
     def step_forward(self, until_addr: int | None = None) -> None:
         if self.main_instance is None:
