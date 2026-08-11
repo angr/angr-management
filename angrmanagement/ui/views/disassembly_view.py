@@ -9,11 +9,12 @@ from typing import TYPE_CHECKING
 from angr.block import Block
 from angr.knowledge_plugins.cfg import MemoryData
 from archinfo.arch_arm import get_real_address_if_arm, is_arm_arch
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QPoint, Qt, Signal
 from PySide6.QtGui import QAction, QCursor, QKeySequence, QShortcut
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QMenu, QMessageBox, QVBoxLayout
 
 from angrmanagement.config import Conf
+from angrmanagement.data.annotations import CommentKind
 from angrmanagement.data.function_graph import FunctionGraph
 from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
 from angrmanagement.data.search import BytePattern, Searcher, SearchError
@@ -46,6 +47,7 @@ from angrmanagement.ui.widgets import (
 )
 from angrmanagement.ui.widgets.block_code_objects import QVariableObj
 from angrmanagement.ui.widgets.qfind_bar import QFindBar
+from angrmanagement.ui.widgets.qinline_comment_editor import QInlineCommentEditor
 from angrmanagement.ui.widgets.qinst_annotation import QBreakAnnotation, QHookAnnotation
 from angrmanagement.utils import get_label_text, locate_function
 
@@ -100,6 +102,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._label_menu: DisasmLabelContextMenu | None = None
 
         self._insn_addr_on_context_menu = None
+        self._inline_comment_editor: QInlineCommentEditor | None = None
 
         self.width_hint = 800
         self.height_hint = 800
@@ -127,7 +130,11 @@ class DisassemblyView(SynchronizedFunctionView):
             [
                 ViewCommand("disassembly_view_" + action.__name__, "Disassembly: " + caption, action, cls, workspace)
                 for caption, action in [
-                    ("Comment", cls.popup_comment_dialog),
+                    ("Comment", cls.begin_inline_comment),
+                    ("Comment (multi-line)...", cls.popup_comment_dialog),
+                    ("Comment: Set as function comment", cls.set_function_comment),
+                    ("Comment: Toggle repeatable", cls.toggle_repeatable_comment),
+                    ("Toggle Bookmark", cls.toggle_bookmark_at_selection),
                     ("Jump Back", cls.jump_back),
                     ("Jump Forward", cls.jump_forward),
                     ("Jump To", cls.popup_jumpto_dialog),
@@ -315,12 +322,16 @@ class DisassemblyView(SynchronizedFunctionView):
             # decompile
             self.decompile_current_function()
             return
+        elif key == Qt.Key.Key_Semicolon and event.modifiers() == Qt.KeyboardModifier.NoModifier:
+            # edit the comment in place
+            self.begin_inline_comment()
+            return
         elif (
             key == Qt.Key.Key_Semicolon
             or key == Qt.Key.Key_Slash
             and event.modifiers() == Qt.KeyboardModifier.ControlModifier
         ):
-            # add comment
+            # add comment, with the multi-line dialog
             self.popup_comment_dialog()
             return
         elif key == Qt.Key.Key_Space:
@@ -508,6 +519,77 @@ class DisassemblyView(SynchronizedFunctionView):
 
         dialog = SetComment(self.workspace, comment_addr, parent=self)
         dialog.exec_()
+
+    def begin_inline_comment(self, addr: int | None = None) -> QInlineCommentEditor | None:
+        """
+        Start editing the comment at ``addr`` in place. Multi-line comments fall back to the dialog,
+        which is the only editor that can handle them.
+        """
+        if addr is None:
+            addr = self._comment_address_in_selection()
+        if addr is None:
+            return None
+
+        kb = self.instance.kb
+        text = "" if kb is None else kb.comments.get(addr, "")
+        if "\n" in text:
+            self._insn_addr_on_context_menu = addr
+            try:
+                self.popup_comment_dialog()
+            finally:
+                self._insn_addr_on_context_menu = None
+            return None
+
+        if self._inline_comment_editor is not None:
+            self._inline_comment_editor.cancel()
+
+        editor = QInlineCommentEditor(self.current_graph, addr, text, self._commit_inline_comment)
+        rect = self.current_graph.instruction_widget_rect(addr)
+        if rect is None:
+            pos = QPoint(0, 0)
+            width = 0
+        else:
+            pos = QPoint(rect.left(), rect.top())
+            width = max(rect.width(), 0)
+        editor.show_at(pos, width)
+        self._inline_comment_editor = editor
+        return editor
+
+    def set_function_comment(self, addr: int | None = None) -> None:
+        """
+        Edit the comment shown as a header block above the containing function.
+        """
+        if addr is None:
+            addr = self._comment_address_in_selection()
+        if addr is None:
+            return
+        kb = self.instance.kb
+        if kb is None:
+            return
+        func = kb.functions.floor_func(addr)
+        if func is None:
+            return
+        self.instance.annotations.set_kind(func.addr, CommentKind.FUNCTION)
+        self.begin_inline_comment(func.addr)
+
+    def toggle_repeatable_comment(self, addr: int | None = None) -> None:
+        """
+        Flip the comment at ``addr`` between repeatable and its default kind.
+        """
+        if addr is None:
+            addr = self._comment_address_in_selection()
+        if addr is None:
+            return
+        annotations = self.instance.annotations
+        is_repeatable = annotations.kind_of(addr) == CommentKind.REPEATABLE
+        annotations.set_kind(addr, None if is_repeatable else CommentKind.REPEATABLE)
+        annotations.notify_comments_changed(addr)
+        self.refresh()
+
+    def toggle_bookmark_at_selection(self) -> None:
+        addr = self._comment_address_in_selection()
+        if addr is not None:
+            self.workspace.toggle_bookmark(addr)
 
     def popup_newstate_dialog(self) -> None:
         addr = self._instruction_address_in_selection()
@@ -1424,6 +1506,22 @@ class DisassemblyView(SynchronizedFunctionView):
             if ty == "func_name":
                 return ty, addr
         return None
+
+    def _comment_address_in_selection(self) -> int | None:
+        """
+        The address to comment on: the selected instruction, or the function whose name is selected.
+        """
+        addr = self._instruction_address_in_selection()
+        if addr is not None:
+            return addr
+        selection = self._address_in_selection()
+        if selection is not None and selection[0] == "func_name":
+            return selection[1]
+        return None
+
+    def _commit_inline_comment(self, addr: int, text: str) -> None:
+        self._inline_comment_editor = None
+        self.workspace.set_comment(addr, text)
 
     def _instruction_address_in_selection(self) -> int | None:
         if self._insn_addr_on_context_menu is not None:

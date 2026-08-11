@@ -211,10 +211,17 @@ class TestKeyboardShortcuts(TestDisassemblyViewBase):
             self.disasm_view.keyPressEvent(key_event)
             mock_popup.assert_called_once()
 
-    def test_semicolon_key_calls_popup_comment(self):
-        """Test that pressing ';' key calls popup_comment_dialog."""
-        with patch.object(self.disasm_view, "popup_comment_dialog") as mock_popup:
+    def test_semicolon_key_starts_inline_comment(self):
+        """Test that pressing ';' key starts editing the comment in place."""
+        with patch.object(self.disasm_view, "begin_inline_comment") as mock_inline:
             key_event = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_Semicolon, Qt.KeyboardModifier.NoModifier)
+            self.disasm_view.keyPressEvent(key_event)
+            mock_inline.assert_called_once()
+
+    def test_ctrl_slash_key_calls_popup_comment(self):
+        """Test that pressing Ctrl+'/' opens the multi-line comment dialog."""
+        with patch.object(self.disasm_view, "popup_comment_dialog") as mock_popup:
+            key_event = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_Slash, Qt.KeyboardModifier.ControlModifier)
             self.disasm_view.keyPressEvent(key_event)
             mock_popup.assert_called_once()
 
