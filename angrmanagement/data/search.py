@@ -82,11 +82,6 @@ VALUE_FORMATS: dict[str, tuple[str, int]] = {
     "double": ("d", 8),
 }
 
-STRING_ENCODINGS: dict[str, str] = {
-    "ascii": "ascii",
-    "utf-16le": "utf_16_le",
-}
-
 
 class SearchError(Exception):
     """
@@ -530,8 +525,8 @@ class Searcher:
                     yield SearchResult(
                         addr=addr,
                         kind=label,
-                        text=filter_string_for_display(decoded),
-                        context=filter_string_for_display(hit.group()),
+                        text=filter_string_for_display(hit.group()),
+                        context=filter_string_for_display(decoded),
                         func_addr=func.addr if func is not None else None,
                         func_name=func.name if func is not None else "",
                     )
@@ -576,8 +571,8 @@ class Searcher:
             yield SearchResult(
                 addr=md.addr,
                 kind=f"{label} (known)",
-                text=filter_string_for_display(decoded),
-                context=filter_string_for_display(hit.group()),
+                text=filter_string_for_display(hit.group()),
+                context=filter_string_for_display(decoded),
                 func_addr=func.addr if func is not None else None,
                 func_name=func.name if func is not None else "",
             )
