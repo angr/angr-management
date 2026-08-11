@@ -611,6 +611,8 @@ class MainWindow(QMainWindow):
                     ("AI: Copy MCP Server URL", self.copy_mcp_url),
                     ("Analyze: Decompile", self.decompile_current_function),
                     ("Analyze: Run Analysis...", self.run_analysis),
+                    ("Bookmarks: Go to next bookmark", self.workspace.goto_next_bookmark),
+                    ("Bookmarks: Toggle bookmark", self.workspace.toggle_bookmark),
                     ("File: Close project", self.close_project),
                     ("File: Exit", self.quit),
                     ("File: Load a new binary...", self.open_file_button),
