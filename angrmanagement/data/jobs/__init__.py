@@ -21,6 +21,7 @@ from .overview import OverviewConfiguration
 from .prototype_finding import PrototypeFindingJob
 from .rust_symbol_recovery import RustSymbolRecoveryConfiguration, RustSymbolRecoveryJob
 from .rust_typedb_loader import RustTypeDBLoaderConfiguration, RustTypeDBLoaderJob
+from .search import SearchJob
 from .simgr_explore import SimgrExploreJob
 from .simgr_step import SimgrStepJob
 from .variable_recovery import VariableRecoveryConfiguration, VariableRecoveryJob
@@ -51,6 +52,7 @@ __all__ = [
     "RustSymbolRecoveryJob",
     "RustTypeDBLoaderConfiguration",
     "RustTypeDBLoaderJob",
+    "SearchJob",
     "SimgrExploreJob",
     "SimgrStepJob",
     "VariableRecoveryConfiguration",
