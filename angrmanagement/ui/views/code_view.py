@@ -267,8 +267,10 @@ class CodeView(FunctionView):
         self._find_selections = [self._make_selection(start, end, color) for start, end in self._find_matches]
         self._apply_extra_selections()
         if self._find_matches:
-            # jump to the first match at or after the cursor
-            pos = self._textedit.textCursor().position()
+            # jump to the first match at or after the selection start, so that recompiling the
+            # query (typing, toggling case/regex) keeps the current match when it still matches
+            cursor = self._textedit.textCursor()
+            pos = min(cursor.anchor(), cursor.position())
             index = next((i for i, (s, _) in enumerate(self._find_matches) if s >= pos), 0)
             self._select_find_match(index)
         else:

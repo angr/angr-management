@@ -144,6 +144,20 @@ class TestCodeViewFindBar(FindBarTestCase):
         assert self.code_view._find_matches == []
         assert self.code_view._find_selections == []
 
+    def test_option_toggle_keeps_current_match(self):
+        self.code_view.textedit.setPlainText("foo foo foo", "text/x-csrc", "utf-8")
+        self.code_view.show_find_bar()
+        self.code_view._find_bar._query_box.setText("foo")
+        assert len(self.code_view._find_matches) == 3
+        assert self.code_view._find_index == 0
+        start = self.code_view.textedit.textCursor().selectionStart()
+        for box in (self.code_view._find_bar._case_box, self.code_view._find_bar._regex_box):
+            for checked in (True, False):
+                box.setChecked(checked)
+                assert len(self.code_view._find_matches) == 3
+                assert self.code_view._find_index == 0
+                assert self.code_view.textedit.textCursor().selectionStart() == start
+
 
 if __name__ == "__main__":
     unittest.main()
