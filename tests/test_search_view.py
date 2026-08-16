@@ -159,6 +159,21 @@ class TestSearchView(SearchTestCase):
         assert self.view._query_box.text()
         assert self.view._format_combo.currentText() in ("float", "double", "int32", "int64")
 
+    def test_decompiled_count_label(self):
+        self.view._kind_combo.setCurrentIndex(list(SearchKind).index(SearchKind.DECOMPILATION))
+        assert self.view._decomp_count_label.isVisibleTo(self.view)
+        assert self.view._decomp_count_label.text() == "0 functions decompiled"
+        # the label is hidden for other kinds
+        self.view._kind_combo.setCurrentIndex(list(SearchKind).index(SearchKind.STRING))
+        assert not self.view._decomp_count_label.isVisibleTo(self.view)
+
+        func = self.instance.kb.functions.get_by_addr(0x4016A0)
+        self.instance.project.am_obj.analyses.Decompiler(
+            func, cfg=self.instance.cfg.am_obj, flavor="pseudocode", use_cache=True
+        )
+        self.view._kind_combo.setCurrentIndex(list(SearchKind).index(SearchKind.DECOMPILATION))
+        assert self.view._decomp_count_label.text() == "1 function decompiled"
+
     def test_case_and_regex_checkboxes_are_unified(self):
         from angrmanagement.ui.views.strings_view import StringsView
         from angrmanagement.ui.widgets.qfind_bar import QFindBar

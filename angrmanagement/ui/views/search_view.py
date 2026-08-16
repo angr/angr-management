@@ -69,6 +69,7 @@ class SearchView(InstanceView):
     def on_focused(self) -> None:
         # keep the "Current function" scope in sync with the disassembly view
         self._reload_scopes()
+        self._update_decomp_count()
         super().on_focused()
 
     def sizeHint(self) -> QSize:
@@ -192,6 +193,8 @@ class SearchView(InstanceView):
         self._table.set_results(list(results))
         self._job = None
         self._update_status()
+        # decompile-on-demand searches grow the decompilation cache
+        self._update_decomp_count()
 
     def _on_job_exception(self, job, ex: BaseException) -> None:
         if job is not self._job:
@@ -206,6 +209,7 @@ class SearchView(InstanceView):
         self._table.set_results([])
         self._set_status("")
         self._reload_scopes()
+        self._update_decomp_count()
 
     def _on_kind_changed(self) -> None:
         kind = self._kind_combo.currentData()
@@ -221,7 +225,11 @@ class SearchView(InstanceView):
         alignment_kind = kind in (SearchKind.BYTES, SearchKind.IMMEDIATE)
         self._alignment_label.setVisible(alignment_kind)
         self._alignment_box.setVisible(alignment_kind)
-        self._decompile_box.setVisible(kind is SearchKind.DECOMPILATION)
+        decompilation_kind = kind is SearchKind.DECOMPILATION
+        self._decompile_box.setVisible(decompilation_kind)
+        self._decomp_count_label.setVisible(decompilation_kind)
+        if decompilation_kind:
+            self._update_decomp_count()
         self._query_box.setPlaceholderText(self._placeholder_for(kind))
 
     def _on_filter_changed(self, text: str) -> None:
@@ -262,6 +270,15 @@ class SearchView(InstanceView):
         idx = self._scope_combo.findText(previous)
         self._scope_combo.setCurrentIndex(max(idx, 0))
         self._scope_combo.blockSignals(False)
+
+    def _update_decomp_count(self) -> None:
+        count = 0
+        if not self.instance.project.am_none:
+            decompilations = getattr(self.instance.kb, "decompilations", None)
+            if decompilations is not None:
+                count = len({key[0] for key in decompilations.cached if isinstance(key, tuple) and len(key) == 2})
+        plural = "" if count == 1 else "s"
+        self._decomp_count_label.setText(f"{count} function{plural} decompiled")
 
     def _set_status(self, text: str) -> None:
         self._status_label.setText(text)
@@ -323,6 +340,10 @@ class SearchView(InstanceView):
         self._decompile_box.setToolTip(
             "Decompile functions that have not been decompiled yet. This can be very slow on large binaries."
         )
+        self._decomp_count_label = QLabel("", self)
+        self._decomp_count_label.setToolTip(
+            'Functions with a cached decompilation. Without "Decompile on demand", only these are searched.'
+        )
 
         self._search_button = QPushButton("Search", self)
         self._search_button.clicked.connect(self.search)
@@ -353,6 +374,7 @@ class SearchView(InstanceView):
         options_layout.addWidget(self._alignment_label)
         options_layout.addWidget(self._alignment_box)
         options_layout.addWidget(self._decompile_box)
+        options_layout.addWidget(self._decomp_count_label)
         options_layout.addStretch(1)
         options_layout.setContentsMargins(3, 0, 3, 3)
         options_layout.setSpacing(3)
