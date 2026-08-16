@@ -77,7 +77,7 @@ class FileMenu(Menu):
                 MenuEntry(
                     "Load a &FLIRT signature file...",
                     main_window.load_signature_button,
-                    shortcut=QKeySequence("Ctrl+Shift+F"),
+                    shortcut=QKeySequence("Ctrl+Alt+F"),
                 ),
                 self.recent_menu,
                 MenuSeparator(),
