@@ -105,6 +105,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._find_index: int = -1
         self._find_highlighted: bool = False
         self._find_text_cache: dict[int, list[tuple[int, str]]] = {}
+        self._in_find_refresh: bool = False
 
         self._init_widgets()
         self._init_menus()
@@ -924,6 +925,43 @@ class DisassemblyView(SynchronizedFunctionView):
         else:
             self._step_find_match(1)
 
+    def _on_linear_viewport_changed(self) -> None:
+        """
+        Re-apply the find query to the functions that are visible after the linear view scrolled.
+        """
+        if (
+            self._find_bar is None
+            or self._find_bar.isHidden()
+            or self._current_view is not self._linear_viewer
+            or self._in_find_refresh
+            or not self._find_bar.query
+        ):
+            return
+        self._in_find_refresh = True
+        try:
+            self._refresh_find_matches()
+        finally:
+            self._in_find_refresh = False
+
+    def _refresh_find_matches(self) -> None:
+        pattern = self._find_bar.compile_query(loose_whitespace=True)
+        if pattern is None:
+            return
+        current_addr = (
+            self._find_matches[self._find_index][0] if 0 <= self._find_index < len(self._find_matches) else None
+        )
+        self._find_matches = [(addr, text) for addr, text in self._iter_function_text() if pattern.search(text)]
+        if not self._find_matches:
+            self._find_index = -1
+            self._clear_find_highlights()
+            self._find_bar.set_match_status(0, 0)
+            return
+        addrs = [addr for addr, _ in self._find_matches]
+        self._find_index = (
+            addrs.index(current_addr) if current_addr in addrs else self._first_match_at_or_after_viewport_top()
+        )
+        self._apply_find_highlights()
+
     def _first_match_at_or_after_viewport_top(self) -> int:
         top = self._linear_viewer.first_visible_instruction_addr
         if top is None:
@@ -1031,6 +1069,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._find_bar.find_next.connect(self.find_next)
         self._find_bar.find_previous.connect(self.find_previous)
         self._find_bar.closed.connect(self._on_find_bar_closed)
+        self._linear_viewer.viewport_changed.connect(self._on_linear_viewport_changed)
 
         vlayout = QVBoxLayout()
         vlayout.addWidget(self._statusbar)

@@ -8,7 +8,7 @@ from angr.analyses.cfg.cfb import MemoryRegion, Unknown
 from angr.block import Block
 from angr.knowledge_plugins.cfg.memory_data import MemoryData
 from angr.utils.timing import timethis
-from PySide6.QtCore import QEvent, QRect, QRectF, Qt
+from PySide6.QtCore import QEvent, QRect, QRectF, Qt, Signal
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QAbstractScrollArea, QAbstractSlider, QGraphicsScene, QHBoxLayout
 from sortedcontainers import SortedDict
@@ -69,6 +69,9 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
 
 class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     OBJECT_PADDING = 0
+
+    # emitted whenever the displayed page changes (scrolling, navigation, reloads)
+    viewport_changed = Signal()
 
     def __init__(self, instance: Instance, disasm_view, parent=None) -> None:
         QDisassemblyBaseControl.__init__(self, instance, disasm_view, QAbstractScrollArea)
@@ -532,6 +535,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         # Update properties
         self._offset = offset
         self._start_line_in_object = start_line_in_object
+
+        self.viewport_changed.emit()
 
     def _validate_cached_qobj(
         self, obj, cached_qobj: QAlignmentBlock | QLinearBlock | QMemoryDataBlock | QUnknownBlock

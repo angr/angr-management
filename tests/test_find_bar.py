@@ -141,6 +141,22 @@ class TestDisassemblyFindBar(FindBarTestCase):
         # the displayed function is off screen now, so it must not contribute matches
         assert not any(in_displayed(addr) for addr, _ in self.disasm._find_matches)
 
+    def test_linear_scroll_reapplies_query(self):
+        other = self._distant_function()
+        in_other = lambda a: other.addr <= a < other.addr + other.size  # noqa: E731
+
+        self.disasm.display_linear_viewer()
+        self.disasm.show_find_bar()
+        query = next(iter(other.blocks)).capstone.insns[0].mnemonic
+        self.disasm._find_bar._query_box.setText(query)
+        # the distant function is off screen, so it contributes no matches yet
+        assert not any(in_other(addr) for addr, _ in self.disasm._find_matches)
+
+        # scrolling the viewport to the distant function re-applies the query
+        self.disasm._linear_viewer.navigate_to_addr(other.addr)
+        assert any(in_other(addr) for addr, _ in self.disasm._find_matches)
+        assert any(in_other(addr) for addr in self.disasm.infodock.selected_insns)
+
     def test_linear_typing_does_not_navigate(self):
         self.disasm.display_linear_viewer()
         self.disasm.show_find_bar()
