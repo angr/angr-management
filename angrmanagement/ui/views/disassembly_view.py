@@ -913,19 +913,43 @@ class DisassemblyView(SynchronizedFunctionView):
             return
         self._find_matches = [(addr, text) for addr, text in self._iter_function_text() if pattern.search(text)]
         self._find_index = -1
-        if self._find_matches:
-            self._step_find_match(1)
-        else:
+        if not self._find_matches:
             self._clear_find_highlights()
             self._find_bar.set_match_status(0, 0)
+        elif self._current_view is self._linear_viewer:
+            # do not move the viewport while typing; the current match starts at the first match
+            # at or after the top of the page
+            self._find_index = self._first_match_at_or_after_viewport_top()
+            self._apply_find_highlights()
+        else:
+            self._step_find_match(1)
+
+    def _first_match_at_or_after_viewport_top(self) -> int:
+        top = self._linear_viewer.first_visible_instruction_addr
+        if top is None:
+            return 0
+        return next((i for i, (addr, _) in enumerate(self._find_matches) if addr >= top), 0)
+
+    def _apply_find_highlights(self) -> None:
+        """
+        Apply the highlight set and the match counter for the current match list, without moving
+        the viewport.
+        """
+        highlighted = {a for a, _ in self._find_matches[: self.FIND_HIGHLIGHT_LIMIT]}
+        if 0 <= self._find_index < len(self._find_matches):
+            highlighted.add(self._find_matches[self._find_index][0])
+        self._find_highlighted = True
+        self.infodock.unselect_all_labels()
+        self.infodock.selected_insns.am_obj = highlighted
+        self.infodock.selected_insns.am_event()
+        self._find_bar.set_match_status(self._find_index, len(self._find_matches))
 
     def _step_find_match(self, delta: int) -> None:
         if not self._find_matches:
             self._find_bar.set_match_status(0, 0)
             return
-        index = (self._find_index + delta) % len(self._find_matches)
-        self._find_index = index
-        addr = self._find_matches[index][0]
+        self._find_index = (self._find_index + delta) % len(self._find_matches)
+        addr = self._find_matches[self._find_index][0]
 
         highlighted = {a for a, _ in self._find_matches[: self.FIND_HIGHLIGHT_LIMIT]}
         highlighted.add(addr)
@@ -934,8 +958,9 @@ class DisassemblyView(SynchronizedFunctionView):
         self.infodock.selected_insns.am_obj = highlighted
         self.set_synchronized_cursor_address(get_real_address_if_arm(self.instance.project.arch, addr))
         self.infodock.selected_insns.am_event(insn_addr=addr)
+        # navigating may scroll the linear view, which re-applies the query and remaps _find_index
         self._current_view.show_instruction(addr, use_animation=False)
-        self._find_bar.set_match_status(index, len(self._find_matches))
+        self._find_bar.set_match_status(self._find_index, len(self._find_matches))
 
     def _clear_find_highlights(self) -> None:
         if self._find_highlighted:

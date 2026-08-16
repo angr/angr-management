@@ -7,6 +7,7 @@ from __future__ import annotations
 import os
 import unittest
 from collections import Counter
+from unittest.mock import patch
 
 import angr
 from common import AngrManagementTestCase, test_location
@@ -139,6 +140,20 @@ class TestDisassemblyFindBar(FindBarTestCase):
         assert any(in_other(addr) for addr, _ in self.disasm._find_matches)
         # the displayed function is off screen now, so it must not contribute matches
         assert not any(in_displayed(addr) for addr, _ in self.disasm._find_matches)
+
+    def test_linear_typing_does_not_navigate(self):
+        self.disasm.display_linear_viewer()
+        self.disasm.show_find_bar()
+        with patch.object(self.disasm._linear_viewer, "show_instruction") as nav:
+            self.disasm._find_bar._query_box.setText("mov")
+            nav.assert_not_called()
+        assert self.disasm._find_matches
+        assert self.disasm.infodock.selected_insns
+        assert self.disasm._find_bar._status_label.text().endswith(f"of {len(self.disasm._find_matches)}")
+        # explicit stepping still navigates
+        with patch.object(self.disasm._linear_viewer, "show_instruction") as nav:
+            self.disasm.find_next()
+            nav.assert_called()
 
     def test_find_is_whitespace_tolerant(self):
         # capstone renders "lea rdi, [rip + 0x2059d9]"; the query is typed without spaces, the

@@ -164,6 +164,14 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         """
         return getattr(self._insaddr_to_block.get(insn_addr), "func_addr", None)
 
+    @property
+    def first_visible_instruction_addr(self) -> int | None:
+        """
+        The address of the first instruction on the displayed page, or None if the page shows no
+        instructions.
+        """
+        return next(iter(self._insaddr_to_block), None)
+
     #
     # Events
     #
