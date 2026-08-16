@@ -956,6 +956,29 @@ class DisassemblyView(SynchronizedFunctionView):
         self._find_index = -1
         self._current_view.setFocus()
 
+    def _on_insn_selection_changed(self, **kwargs) -> None:
+        """
+        In linear view, make the current function follow the selected instruction so the status
+        bar and function-scoped actions refer to the function that was actually clicked.
+        """
+        if self._current_view is not self._linear_viewer or self.instance.project.am_none:
+            return
+        insn_addr = kwargs.get("insn_addr")
+        if insn_addr is None:
+            return
+        func = None
+        func_addr = self._linear_viewer.function_addr_of_instruction(insn_addr)
+        if func_addr is not None:
+            with contextlib.suppress(KeyError):
+                func = self.instance.kb.functions.get_by_addr(func_addr)
+        if func is None:
+            func = locate_function(self.instance, insn_addr)
+        if func is None or (not self.function.am_none and self.function.am_obj.addr == func.addr):
+            return
+        # update quietly: firing the container event would navigate away and clear the selection
+        self.function.am_obj = func
+        self._statusbar.function = func
+
     def update_highlight_regions_for_synchronized_views(self, **kwargs) -> None:  # pylint: disable=unused-argument
         """
         Highlight each selected instruction in synchronized views.
@@ -1024,6 +1047,7 @@ class DisassemblyView(SynchronizedFunctionView):
         # redraw the current graph if instruction/operand selection changes
         self.infodock.selected_insns.am_subscribe(self.redraw_current_graph)
         self.infodock.selected_insns.am_subscribe(self.update_highlight_regions_for_synchronized_views)
+        self.infodock.selected_insns.am_subscribe(self._on_insn_selection_changed)
         self.infodock.selected_operands.am_subscribe(self.redraw_current_graph)
         self.infodock.selected_blocks.am_subscribe(self.redraw_current_graph)
         self.infodock.hovered_block.am_subscribe(self.redraw_current_graph)
@@ -1042,6 +1066,7 @@ class DisassemblyView(SynchronizedFunctionView):
     def _unregister_events(self) -> None:
         self.infodock.selected_insns.am_unsubscribe(self.redraw_current_graph)
         self.infodock.selected_insns.am_unsubscribe(self.update_highlight_regions_for_synchronized_views)
+        self.infodock.selected_insns.am_unsubscribe(self._on_insn_selection_changed)
         self.infodock.selected_operands.am_unsubscribe(self.redraw_current_graph)
         self.infodock.selected_blocks.am_unsubscribe(self.redraw_current_graph)
         self.infodock.hovered_block.am_unsubscribe(self.redraw_current_graph)

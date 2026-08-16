@@ -157,6 +157,13 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 addrs.append(func_addr)
         return addrs
 
+    def function_addr_of_instruction(self, insn_addr: int) -> int | None:
+        """
+        The address of the function owning an instruction on the displayed page, or None if the
+        instruction is not on the page.
+        """
+        return getattr(self._insaddr_to_block.get(insn_addr), "func_addr", None)
+
     #
     # Events
     #
