@@ -101,6 +101,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._find_bar: QFindBar | None = None
         self._find_matches: list[tuple[int, str]] = []
         self._find_index: int = -1
+        self._find_highlighted: bool = False
 
         self._init_widgets()
         self._init_menus()
@@ -891,6 +892,7 @@ class DisassemblyView(SynchronizedFunctionView):
         if self._find_matches:
             self._step_find_match(1)
         else:
+            self._clear_find_highlights()
             self._find_bar.set_match_status(0, 0)
 
     def _step_find_match(self, delta: int) -> None:
@@ -903,12 +905,18 @@ class DisassemblyView(SynchronizedFunctionView):
 
         highlighted = {a for a, _ in self._find_matches[: self.FIND_HIGHLIGHT_LIMIT]}
         highlighted.add(addr)
+        self._find_highlighted = True
         self.infodock.unselect_all_labels()
         self.infodock.selected_insns.am_obj = highlighted
         self.set_synchronized_cursor_address(get_real_address_if_arm(self.instance.project.arch, addr))
         self.infodock.selected_insns.am_event(insn_addr=addr)
         self._current_view.show_instruction(addr, use_animation=False)
         self._find_bar.set_match_status(index, len(self._find_matches))
+
+    def _clear_find_highlights(self) -> None:
+        if self._find_highlighted:
+            self._find_highlighted = False
+            self.infodock.unselect_all_instructions()
 
     def _on_find_bar_closed(self) -> None:
         self._find_matches = []
