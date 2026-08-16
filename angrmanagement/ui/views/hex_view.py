@@ -1350,6 +1350,7 @@ class HexView(SynchronizedInstanceView):
         self._find_index: int = -1
         self._find_highlights: Sequence[HexHighlightRegion] = []
         self._find_regions: list[tuple[int, bytes]] | None = None
+        self._find_capped: bool = False
 
         self._init_widgets()
         self.instance.cfb.am_subscribe(self._on_cfb_event)
@@ -1822,8 +1823,6 @@ class HexView(SynchronizedInstanceView):
     # Find in view
     #
 
-    # stop collecting matches beyond this; a short pattern can match almost everywhere
-    FIND_MATCH_LIMIT = 10000
     # highlighting every match of a very common pattern would repaint the whole view
     FIND_HIGHLIGHT_LIMIT = 512
 
@@ -1852,13 +1851,15 @@ class HexView(SynchronizedInstanceView):
 
     def _compute_find_matches(self, query: str) -> list[tuple[int, int]]:
         matches: list[tuple[int, int]] = []
+        limit = Conf.find_match_limit
         if self._find_bar.mode == "Hex":
             pattern = BytePattern.parse(query)
             for start, data in self._iter_find_regions():
                 for addr in pattern.finditer(data, base=start):
-                    matches.append((addr, len(pattern)))
-                    if len(matches) >= self.FIND_MATCH_LIMIT:
+                    if len(matches) >= limit:
+                        self._find_capped = True
                         return matches
+                    matches.append((addr, len(pattern)))
         else:
             regex = self._find_bar.compile_query()
             if regex is None:
@@ -1866,9 +1867,10 @@ class HexView(SynchronizedInstanceView):
             for start, data in self._iter_find_regions():
                 text = data.decode("latin-1")
                 for match in regex.finditer(text):
-                    matches.append((start + match.start(), max(match.end() - match.start(), 1)))
-                    if len(matches) >= self.FIND_MATCH_LIMIT:
+                    if len(matches) >= limit:
+                        self._find_capped = True
                         return matches
+                    matches.append((start + match.start(), max(match.end() - match.start(), 1)))
         return matches
 
     def _update_find_matches(self) -> None:
@@ -1876,6 +1878,7 @@ class HexView(SynchronizedInstanceView):
         query = self._find_bar.query
         self._find_index = -1
         self._find_matches = []
+        self._find_capped = False
         if not self.instance.project.am_none and query:
             try:
                 self._find_matches = self._compute_find_matches(query)
@@ -1897,7 +1900,7 @@ class HexView(SynchronizedInstanceView):
         self._find_index = (self._find_index + delta) % len(self._find_matches)
         addr, _size = self._find_matches[self._find_index]
         self.set_cursor(addr)
-        self._find_bar.set_match_status(self._find_index, len(self._find_matches))
+        self._find_bar.set_match_status(self._find_index, len(self._find_matches), capped=self._find_capped)
 
     def _update_find_highlights(self) -> None:
         self._find_highlights = [

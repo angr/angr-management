@@ -13,6 +13,7 @@ import angr
 from common import AngrManagementTestCase, test_location
 from PySide6.QtWidgets import QApplication
 
+from angrmanagement.config import Conf
 from angrmanagement.ui.views.disassembly_view import DisassemblyView
 
 # a small function, so that displaying and decompiling it stays cheap
@@ -219,6 +220,31 @@ class TestDisassemblyFindBar(FindBarTestCase):
         tokens[1] = "??"
         self.disasm._find_bar._query_box.setText(" ".join(tokens))
         assert insn.address in [a for a, _ in self.disasm._find_matches]
+
+    def test_byte_pattern_matches_across_instructions(self):
+        func = self.instance.kb.functions.get_by_addr(SMALL_FUNC_ADDR)
+        insns = next(iter(func.blocks)).capstone.insns
+        first, second = insns[0], insns[1]
+        assert first.address + first.size == second.address
+        raw = bytes(first.insn.bytes) + bytes(second.insn.bytes)
+        self.disasm.show_find_bar()
+        self.disasm._find_bar._mode_combo.setCurrentText("Byte pattern")
+        self.disasm._find_bar._query_box.setText(raw.hex(" "))
+        assert first.address in [a for a, _ in self.disasm._find_matches]
+
+    def test_byte_pattern_match_limit(self):
+        func = self.instance.kb.functions.get_by_addr(SMALL_FUNC_ADDR)
+        assert sum(1 for b in func.blocks for _ in b.capstone.insns) > 5
+        old_limit = Conf.find_match_limit
+        Conf.find_match_limit = 5
+        try:
+            self.disasm.show_find_bar()
+            self.disasm._find_bar._mode_combo.setCurrentText("Byte pattern")
+            self.disasm._find_bar._query_box.setText("??")
+            assert len(self.disasm._find_matches) == 5
+            assert "of 5+" in self.disasm._find_bar._status_label.text()
+        finally:
+            Conf.find_match_limit = old_limit
 
     def test_byte_pattern_invalid_reports_error(self):
         self.disasm.show_find_bar()

@@ -59,8 +59,10 @@ Ctrl+F opens an incremental find bar in the pseudocode, disassembly, and hex vie
 bar searches the displayed pseudocode. The disassembly bar searches the current function in graph
 mode and every function (and data item) visible on the current page in linear mode; its search
 type is selectable: instruction text with comments and data, instruction text alone, or a hex byte
-pattern with ``?``/``??`` wildcards. The hex bar searches memory as a hex byte pattern or as text.
-F3 and Shift+F3 move to the next and previous match.
+pattern with ``?``/``??`` wildcards; byte patterns can match across instruction and data
+boundaries. The hex bar searches memory as a hex byte pattern or as text. F3 and Shift+F3 move to
+the next and previous match. Find bars stop collecting matches at the configurable
+``find_match_limit`` (Preferences), shown as "N+" in the match counter.
 
 Command Palette
 ---------------

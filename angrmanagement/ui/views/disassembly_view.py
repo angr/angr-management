@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import bisect
 import contextlib
 import logging
 from collections import defaultdict
@@ -12,6 +13,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QAction, QCursor, QKeySequence, QShortcut
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QMenu, QMessageBox, QVBoxLayout
 
+from angrmanagement.config import Conf
 from angrmanagement.data.function_graph import FunctionGraph
 from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
 from angrmanagement.data.search import BytePattern, Searcher, SearchError
@@ -105,6 +107,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._find_bar: QFindBar | None = None
         self._find_matches: list[tuple[int, str]] = []
         self._find_data_matches: dict[int, int] = {}  # match addr -> owning data item addr
+        self._find_matches_capped: bool = False
         self._find_index: int = -1
         self._find_highlighted: bool = False
         self._find_text_cache: dict[int, list[tuple[int, str, bytes]]] = {}
@@ -869,8 +872,6 @@ class DisassemblyView(SynchronizedFunctionView):
 
     # highlighting every hit of a very common mnemonic would repaint the whole function
     FIND_HIGHLIGHT_LIMIT = 512
-    # a tiny byte pattern can match at almost every offset of a large data item
-    FIND_DATA_MATCH_LIMIT_PER_ITEM = 256
 
     FIND_MODE_TEXT = "Text"
     FIND_MODE_TEXT_INSN = "Text (instruction only)"
@@ -939,6 +940,7 @@ class DisassemblyView(SynchronizedFunctionView):
     ) -> tuple[list[tuple[int, str]], dict[int, int]]:
         matches: list[tuple[int, str]] = []
         data_matches: dict[int, int] = {}
+        limit = Conf.find_match_limit
         searcher = Searcher(self.instance.project.am_obj, kb=self.instance.kb)
         comments = getattr(self.instance.kb, "comments", None) if not instructions_only else None
         for func in self._find_scope_functions():
@@ -947,11 +949,19 @@ class DisassemblyView(SynchronizedFunctionView):
                 if comment:
                     text = f"{text} ; {comment}"
                 if regex.search(text):
+                    if len(matches) >= limit:
+                        self._find_matches_capped = True
+                        break
                     matches.append((addr, text))
-        if not instructions_only:
+            if self._find_matches_capped:
+                break
+        if not instructions_only and not self._find_matches_capped:
             for addr, data, label in self._visible_data_items():
                 text = f"{label} {data.decode('latin-1')}".strip()
                 if regex.search(text):
+                    if len(matches) >= limit:
+                        self._find_matches_capped = True
+                        break
                     matches.append((addr, text))
                     data_matches[addr] = addr
         matches.sort(key=lambda match: match[0])
@@ -960,18 +970,56 @@ class DisassemblyView(SynchronizedFunctionView):
     def _collect_byte_matches(self, pattern: BytePattern) -> tuple[list[tuple[int, str]], dict[int, int]]:
         matches: list[tuple[int, str]] = []
         data_matches: dict[int, int] = {}
+        limit = Conf.find_match_limit
         searcher = Searcher(self.instance.project.am_obj, kb=self.instance.kb)
+
+        # collect the byte pieces of the scope: every instruction, plus the visible data items
+        pieces: list[tuple[int, bytes, bool, str]] = []  # (addr, bytes, is_data, text)
+        seen_addrs: set[int] = set()
         for func in self._find_scope_functions():
             for addr, text, raw in self._function_details(searcher, func):
-                if raw and next(pattern.finditer(raw), None) is not None:
-                    matches.append((addr, text))
+                if raw and addr not in seen_addrs:
+                    seen_addrs.add(addr)
+                    pieces.append((addr, raw, False, text))
         for item_addr, data, _ in self._visible_data_items():
-            for count, match_addr in enumerate(pattern.finditer(data, base=item_addr)):
-                if count >= self.FIND_DATA_MATCH_LIMIT_PER_ITEM:
+            if item_addr not in seen_addrs:
+                pieces.append((item_addr, data, True, ""))
+        pieces.sort(key=lambda piece: piece[0])
+
+        # merge contiguous pieces into runs so the pattern can match across instruction and
+        # instruction/data boundaries
+        runs: list[tuple[int, bytearray, list[tuple[int, bool, str]]]] = []
+        for addr, raw, is_data, text in pieces:
+            if runs and addr == runs[-1][0] + len(runs[-1][1]):
+                runs[-1][1].extend(raw)
+                runs[-1][2].append((addr, is_data, text))
+            elif runs and addr < runs[-1][0] + len(runs[-1][1]):
+                continue  # e.g. a block shared by two scope functions
+            else:
+                runs.append((addr, bytearray(raw), [(addr, is_data, text)]))
+
+        capped = False
+        seen_anchors: set[int] = set()
+        for run_start, run_bytes, units in runs:
+            unit_starts = [unit[0] for unit in units]
+            for match_addr in pattern.finditer(bytes(run_bytes), base=run_start):
+                unit_addr, is_data, text = units[bisect.bisect_right(unit_starts, match_addr) - 1]
+                # instruction matches are anchored at the instruction containing the match start
+                if not is_data and unit_addr in seen_anchors:
+                    continue
+                if len(matches) >= limit:
+                    capped = True
                     break
-                offset = match_addr - item_addr
-                matches.append((match_addr, data[offset : offset + len(pattern)].hex(" ")))
-                data_matches[match_addr] = item_addr
+                if is_data:
+                    offset = match_addr - run_start
+                    matches.append((match_addr, run_bytes[offset : offset + len(pattern)].hex(" ")))
+                    data_matches[match_addr] = unit_addr
+                else:
+                    seen_anchors.add(unit_addr)
+                    matches.append((unit_addr, text))
+            if capped:
+                break
+        self._find_matches_capped = capped
         matches.sort(key=lambda match: match[0])
         return matches, data_matches
 
@@ -980,6 +1028,7 @@ class DisassemblyView(SynchronizedFunctionView):
         Compute the match list for the find bar's current mode and query. Returns None if the
         query is malformed (with the error flagged on the bar).
         """
+        self._find_matches_capped = False
         query = self._find_bar.query
         if not query or self.instance.project.am_none:
             self._find_bar.set_error(False)
@@ -1086,7 +1135,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self.infodock.unselect_all_labels()
         self.infodock.selected_insns.am_obj = highlighted
         self.infodock.selected_insns.am_event()
-        self._find_bar.set_match_status(self._find_index, len(self._find_matches))
+        self._find_bar.set_match_status(self._find_index, len(self._find_matches), capped=self._find_matches_capped)
 
     def _find_insn_highlight_set(self) -> set[int]:
         return {
@@ -1116,7 +1165,7 @@ class DisassemblyView(SynchronizedFunctionView):
             self.infodock.selected_insns.am_event(insn_addr=addr)
         # navigating may scroll the linear view, which re-applies the query and remaps _find_index
         self._current_view.show_instruction(addr, use_animation=False)
-        self._find_bar.set_match_status(self._find_index, len(self._find_matches))
+        self._find_bar.set_match_status(self._find_index, len(self._find_matches), capped=self._find_matches_capped)
 
     def _clear_find_highlights(self) -> None:
         if self._find_highlighted:

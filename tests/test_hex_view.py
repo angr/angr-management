@@ -2914,6 +2914,19 @@ class TestHexViewFindBar(AngrManagementTestCase):
         assert not self.view._find_highlights
         assert self.view._find_bar.isHidden()
 
+    def test_match_limit_is_configurable(self):
+        from angrmanagement.config import Conf
+
+        old_limit = Conf.find_match_limit
+        Conf.find_match_limit = 5
+        try:
+            self.view.show_find_bar()
+            self.view._find_bar._query_box.setText("??")
+            assert len(self.view._find_matches) == 5
+            assert "of 5+" in self.view._find_bar._status_label.text()
+        finally:
+            Conf.find_match_limit = old_limit
+
     def test_text_options_hidden_in_hex_mode(self):
         self.view.show_find_bar()
         assert not self.view._find_bar._case_box.isVisibleTo(self.view._find_bar)

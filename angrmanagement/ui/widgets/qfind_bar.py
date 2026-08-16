@@ -97,13 +97,17 @@ class QFindBar(QWidget):
         self._query_box.setFocus()
         self._query_box.selectAll()
 
-    def set_match_status(self, current: int, total: int) -> None:
+    def set_match_status(self, current: int, total: int, capped: bool = False) -> None:
+        """
+        Update the match counter. ``capped`` marks that matching stopped at ``total`` (the
+        configured limit) with more hits available, shown as "N+".
+        """
         if not self.query:
             self._status_label.setText("")
         elif total == 0:
             self._status_label.setText("No matches")
         else:
-            self._status_label.setText(f"{current + 1} of {total}")
+            self._status_label.setText(f"{current + 1} of {total}{'+' if capped else ''}")
 
     def set_text_options_visible(self, visible: bool) -> None:
         """
