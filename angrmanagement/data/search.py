@@ -703,18 +703,26 @@ class Searcher:
                     func_name=func.name,
                 )
 
+    def iter_instruction_details(self, func: Function) -> Iterator[tuple[int, str, bytes]]:
+        """
+        Yield ``(address, text, bytes)`` for every instruction of ``func``, without comments.
+        """
+        for insn in self._iter_capstone_insns(func):
+            raw = getattr(insn, "insn", insn)
+            raw_bytes = bytes(getattr(raw, "bytes", None) or b"")
+            yield insn.address, f"{insn.mnemonic} {insn.op_str}".strip(), raw_bytes
+
     def iter_instruction_texts(self, func: Function) -> Iterator[tuple[int, str]]:
         """
         Yield ``(address, text)`` for every instruction of ``func``, including any user comment
         attached to the instruction.
         """
         comments = getattr(self.kb, "comments", None)
-        for insn in self._iter_capstone_insns(func):
-            text = f"{insn.mnemonic} {insn.op_str}".strip()
-            comment = comments.get(insn.address) if comments is not None else None
+        for addr, text, _ in self.iter_instruction_details(func):
+            comment = comments.get(addr) if comments is not None else None
             if comment:
                 text = f"{text} ; {comment}"
-            yield insn.address, text
+            yield addr, text
 
     def _iter_capstone_insns(self, func: Function):
         for block in func.blocks:

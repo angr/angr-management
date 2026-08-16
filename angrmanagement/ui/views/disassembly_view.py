@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QApplication, QHBoxLayout, QMenu, QMessageBox, QVB
 
 from angrmanagement.data.function_graph import FunctionGraph
 from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
-from angrmanagement.data.search import Searcher
+from angrmanagement.data.search import BytePattern, Searcher, SearchError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import ViewCommand
 from angrmanagement.logic.disassembly import InfoDock, JumpHistory
@@ -45,11 +45,13 @@ from angrmanagement.ui.widgets import (
 from angrmanagement.ui.widgets.block_code_objects import QVariableObj
 from angrmanagement.ui.widgets.qfind_bar import QFindBar
 from angrmanagement.ui.widgets.qinst_annotation import QBreakAnnotation, QHookAnnotation
-from angrmanagement.utils import locate_function
+from angrmanagement.utils import get_label_text, locate_function
 
 from .view import SynchronizedFunctionView
 
 if TYPE_CHECKING:
+    import re
+
     import PySide6
     from angr.knowledge_plugins import VariableManager
     from angr.knowledge_plugins.functions import Function
@@ -102,9 +104,10 @@ class DisassemblyView(SynchronizedFunctionView):
 
         self._find_bar: QFindBar | None = None
         self._find_matches: list[tuple[int, str]] = []
+        self._find_data_matches: dict[int, int] = {}  # match addr -> owning data item addr
         self._find_index: int = -1
         self._find_highlighted: bool = False
-        self._find_text_cache: dict[int, list[tuple[int, str]]] = {}
+        self._find_text_cache: dict[int, list[tuple[int, str, bytes]]] = {}
         self._in_find_refresh: bool = False
 
         self._init_widgets()
@@ -656,6 +659,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._flow_graph.setFocus()
         self.view_visibility_changed.emit()
         self._flow_graph.refresh()
+        self._refresh_find_matches_for_view_switch()
 
     @needs_gui_thread
     def display_linear_viewer(self, prefer: bool = True) -> None:
@@ -675,6 +679,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._linear_viewer.setFocus()
         self.view_visibility_changed.emit()
         self._linear_viewer.refresh()
+        self._refresh_find_matches_for_view_switch()
 
     def display_function(self, function, send_event=True) -> None:
         if function is None:
@@ -864,12 +869,20 @@ class DisassemblyView(SynchronizedFunctionView):
 
     # highlighting every hit of a very common mnemonic would repaint the whole function
     FIND_HIGHLIGHT_LIMIT = 512
+    # a tiny byte pattern can match at almost every offset of a large data item
+    FIND_DATA_MATCH_LIMIT_PER_ITEM = 256
+
+    FIND_MODE_TEXT = "Text"
+    FIND_MODE_TEXT_INSN = "Text (instruction only)"
+    FIND_MODE_BYTES = "Byte pattern"
 
     def show_find_bar(self) -> None:
         """
-        Open the incremental find bar. In graph mode it searches the text of the current function;
-        in linear mode it searches every function with at least one instruction on the displayed
-        page.
+        Open the incremental find bar. In graph mode it searches the current function; in linear
+        mode it searches every function with at least one instruction on the displayed page, plus
+        the data items on the page. The bar's mode selects what is matched: instruction text and
+        comments and data ("Text"), instruction text alone, or a hex byte pattern with ``?``/``??``
+        wildcards.
         """
         self._find_text_cache.clear()
         self._find_bar.activate()
@@ -893,27 +906,105 @@ class DisassemblyView(SynchronizedFunctionView):
         func = self.function.am_obj
         return [func] if func is not None else []
 
-    def _iter_function_text(self) -> list[tuple[int, str]]:
+    def _function_details(self, searcher: Searcher, func: Function) -> list[tuple[int, str, bytes]]:
+        cached = self._find_text_cache.get(func.addr)
+        if cached is None:
+            cached = list(searcher.iter_instruction_details(func))
+            self._find_text_cache[func.addr] = cached
+        return cached
+
+    def _visible_data_items(self) -> list[tuple[int, bytes, str]]:
+        """
+        ``(address, bytes, label)`` for every data item on the displayed linear page.
+        """
+        if self._current_view is not self._linear_viewer or self.instance.project.am_none:
+            return []
+        items = []
+        for addr, memory_data in self._linear_viewer.visible_memory_data:
+            data = b""
+            if memory_data.content:
+                data = bytes(memory_data.content)[: memory_data.size or None]
+            if memory_data.size and len(data) < memory_data.size:
+                with contextlib.suppress(KeyError):
+                    data += bytes(
+                        self.instance.project.loader.memory.load(addr + len(data), memory_data.size - len(data))
+                    )
+            if not data:
+                continue
+            items.append((addr, data, get_label_text(addr, self.instance.kb) or ""))
+        return items
+
+    def _collect_text_matches(
+        self, regex: re.Pattern, instructions_only: bool
+    ) -> tuple[list[tuple[int, str]], dict[int, int]]:
+        matches: list[tuple[int, str]] = []
+        data_matches: dict[int, int] = {}
         searcher = Searcher(self.instance.project.am_obj, kb=self.instance.kb)
-        texts = []
+        comments = getattr(self.instance.kb, "comments", None) if not instructions_only else None
         for func in self._find_scope_functions():
-            cached = self._find_text_cache.get(func.addr)
-            if cached is None:
-                cached = list(searcher.iter_instruction_texts(func))
-                self._find_text_cache[func.addr] = cached
-            texts.extend(cached)
-        return texts
+            for addr, text, _ in self._function_details(searcher, func):
+                comment = comments.get(addr) if comments is not None else None
+                if comment:
+                    text = f"{text} ; {comment}"
+                if regex.search(text):
+                    matches.append((addr, text))
+        if not instructions_only:
+            for addr, data, label in self._visible_data_items():
+                text = f"{label} {data.decode('latin-1')}".strip()
+                if regex.search(text):
+                    matches.append((addr, text))
+                    data_matches[addr] = addr
+        matches.sort(key=lambda match: match[0])
+        return matches, data_matches
+
+    def _collect_byte_matches(self, pattern: BytePattern) -> tuple[list[tuple[int, str]], dict[int, int]]:
+        matches: list[tuple[int, str]] = []
+        data_matches: dict[int, int] = {}
+        searcher = Searcher(self.instance.project.am_obj, kb=self.instance.kb)
+        for func in self._find_scope_functions():
+            for addr, text, raw in self._function_details(searcher, func):
+                if raw and next(pattern.finditer(raw), None) is not None:
+                    matches.append((addr, text))
+        for item_addr, data, _ in self._visible_data_items():
+            for count, match_addr in enumerate(pattern.finditer(data, base=item_addr)):
+                if count >= self.FIND_DATA_MATCH_LIMIT_PER_ITEM:
+                    break
+                offset = match_addr - item_addr
+                matches.append((match_addr, data[offset : offset + len(pattern)].hex(" ")))
+                data_matches[match_addr] = item_addr
+        matches.sort(key=lambda match: match[0])
+        return matches, data_matches
+
+    def _compute_find_matches(self) -> tuple[list[tuple[int, str]], dict[int, int]] | None:
+        """
+        Compute the match list for the find bar's current mode and query. Returns None if the
+        query is malformed (with the error flagged on the bar).
+        """
+        query = self._find_bar.query
+        if not query or self.instance.project.am_none:
+            self._find_bar.set_error(False)
+            return [], {}
+        if self._find_bar.mode == self.FIND_MODE_BYTES:
+            try:
+                pattern = BytePattern.parse(query)
+            except SearchError:
+                self._find_bar.set_error(True)
+                return None
+            self._find_bar.set_error(False)
+            return self._collect_byte_matches(pattern)
+        regex = self._find_bar.compile_query(loose_whitespace=True)
+        if regex is None:
+            return None
+        return self._collect_text_matches(regex, instructions_only=self._find_bar.mode == self.FIND_MODE_TEXT_INSN)
 
     def _update_find_matches(self) -> None:
-        pattern = self._find_bar.compile_query(loose_whitespace=True)
-        if pattern is None:
-            self._find_matches = []
-            self._find_index = -1
-            self._clear_find_highlights()
-            self._find_bar.set_match_status(0, 0)
-            return
-        self._find_matches = [(addr, text) for addr, text in self._iter_function_text() if pattern.search(text)]
+        self._find_bar.set_text_options_visible(self._find_bar.mode != self.FIND_MODE_BYTES)
         self._find_index = -1
+        self._find_matches = []
+        self._find_data_matches = {}
+        result = self._compute_find_matches()
+        if result is not None:
+            self._find_matches, self._find_data_matches = result
         if not self._find_matches:
             self._clear_find_highlights()
             self._find_bar.set_match_status(0, 0)
@@ -943,14 +1034,27 @@ class DisassemblyView(SynchronizedFunctionView):
         finally:
             self._in_find_refresh = False
 
+    def _refresh_find_matches_for_view_switch(self) -> None:
+        """
+        The find scope depends on the display mode, so recompute the matches when the view
+        toggles between graph and linear (without navigating).
+        """
+        if self._find_bar is None or self._find_bar.isHidden() or not self._find_bar.query or self._in_find_refresh:
+            return
+        self._in_find_refresh = True
+        try:
+            self._refresh_find_matches()
+        finally:
+            self._in_find_refresh = False
+
     def _refresh_find_matches(self) -> None:
-        pattern = self._find_bar.compile_query(loose_whitespace=True)
-        if pattern is None:
+        result = self._compute_find_matches()
+        if result is None:
             return
         current_addr = (
             self._find_matches[self._find_index][0] if 0 <= self._find_index < len(self._find_matches) else None
         )
-        self._find_matches = [(addr, text) for addr, text in self._iter_function_text() if pattern.search(text)]
+        self._find_matches, self._find_data_matches = result
         if not self._find_matches:
             self._find_index = -1
             self._clear_find_highlights()
@@ -973,14 +1077,21 @@ class DisassemblyView(SynchronizedFunctionView):
         Apply the highlight set and the match counter for the current match list, without moving
         the viewport.
         """
-        highlighted = {a for a, _ in self._find_matches[: self.FIND_HIGHLIGHT_LIMIT]}
+        highlighted = self._find_insn_highlight_set()
         if 0 <= self._find_index < len(self._find_matches):
-            highlighted.add(self._find_matches[self._find_index][0])
+            current = self._find_matches[self._find_index][0]
+            if current not in self._find_data_matches:
+                highlighted.add(current)
         self._find_highlighted = True
         self.infodock.unselect_all_labels()
         self.infodock.selected_insns.am_obj = highlighted
         self.infodock.selected_insns.am_event()
         self._find_bar.set_match_status(self._find_index, len(self._find_matches))
+
+    def _find_insn_highlight_set(self) -> set[int]:
+        return {
+            addr for addr, _ in self._find_matches[: self.FIND_HIGHLIGHT_LIMIT] if addr not in self._find_data_matches
+        }
 
     def _step_find_match(self, delta: int) -> None:
         if not self._find_matches:
@@ -989,13 +1100,20 @@ class DisassemblyView(SynchronizedFunctionView):
         self._find_index = (self._find_index + delta) % len(self._find_matches)
         addr = self._find_matches[self._find_index][0]
 
-        highlighted = {a for a, _ in self._find_matches[: self.FIND_HIGHLIGHT_LIMIT]}
-        highlighted.add(addr)
+        highlighted = self._find_insn_highlight_set()
+        data_item_addr = self._find_data_matches.get(addr)
         self._find_highlighted = True
-        self.infodock.unselect_all_labels()
-        self.infodock.selected_insns.am_obj = highlighted
-        self.set_synchronized_cursor_address(get_real_address_if_arm(self.instance.project.arch, addr))
-        self.infodock.selected_insns.am_event(insn_addr=addr)
+        if data_item_addr is not None:
+            # a data match: highlight the data item's label, keep the instruction highlights
+            self.infodock.select_label(data_item_addr)
+            self.infodock.selected_insns.am_obj = highlighted
+            self.infodock.selected_insns.am_event()
+        else:
+            highlighted.add(addr)
+            self.infodock.unselect_all_labels()
+            self.infodock.selected_insns.am_obj = highlighted
+            self.set_synchronized_cursor_address(get_real_address_if_arm(self.instance.project.arch, addr))
+            self.infodock.selected_insns.am_event(insn_addr=addr)
         # navigating may scroll the linear view, which re-applies the query and remaps _find_index
         self._current_view.show_instruction(addr, use_animation=False)
         self._find_bar.set_match_status(self._find_index, len(self._find_matches))
@@ -1004,6 +1122,7 @@ class DisassemblyView(SynchronizedFunctionView):
         if self._find_highlighted:
             self._find_highlighted = False
             self.infodock.unselect_all_instructions()
+            self.infodock.unselect_all_labels()
 
     def _on_find_bar_closed(self) -> None:
         self._find_text_cache.clear()
@@ -1011,11 +1130,16 @@ class DisassemblyView(SynchronizedFunctionView):
         if self._find_highlighted and 0 <= self._find_index < len(self._find_matches):
             addr = self._find_matches[self._find_index][0]
             self._find_highlighted = False
-            self.infodock.selected_insns.am_obj = {addr}
-            self.infodock.selected_insns.am_event(insn_addr=addr)
+            if addr in self._find_data_matches:
+                # the data item's label selection is the current match; drop the rest
+                self.infodock.unselect_all_instructions()
+            else:
+                self.infodock.selected_insns.am_obj = {addr}
+                self.infodock.selected_insns.am_event(insn_addr=addr)
         else:
             self._clear_find_highlights()
         self._find_matches = []
+        self._find_data_matches = {}
         self._find_index = -1
         self._current_view.setFocus()
 
@@ -1064,7 +1188,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._flow_graph = QDisassemblyGraph(self.instance, self, parent=self)
         self._statusbar = QDisasmStatusBar(self, parent=self)
 
-        self._find_bar = QFindBar(self)
+        self._find_bar = QFindBar(self, modes=[self.FIND_MODE_TEXT, self.FIND_MODE_TEXT_INSN, self.FIND_MODE_BYTES])
         self._find_bar.query_changed.connect(self._update_find_matches)
         self._find_bar.find_next.connect(self.find_next)
         self._find_bar.find_previous.connect(self.find_previous)

@@ -186,6 +186,93 @@ class TestDisassemblyFindBar(FindBarTestCase):
         assert self.disasm._find_matches
         assert all(func.addr <= addr < func.addr + func.size for addr, _ in self.disasm._find_matches)
 
+    def test_find_mode_dropdown(self):
+        combo = self.disasm._find_bar._mode_combo
+        assert combo is not None
+        modes = [combo.itemText(i) for i in range(combo.count())]
+        assert modes == ["Text", "Text (instruction only)", "Byte pattern"]
+
+    def test_text_mode_searches_comments(self):
+        func = self.instance.kb.functions.get_by_addr(SMALL_FUNC_ADDR)
+        addr = next(iter(func.blocks)).capstone.insns[0].address
+        self.instance.kb.comments[addr] = "FINDME_COMMENT"
+        self.disasm.show_find_bar()
+        self.disasm._find_bar._query_box.setText("FINDME_COMMENT")
+        assert [a for a, _ in self.disasm._find_matches] == [addr]
+        # the instruction-only mode ignores comments
+        self.disasm._find_bar._mode_combo.setCurrentText("Text (instruction only)")
+        assert self.disasm._find_matches == []
+        # ... but still matches instruction text
+        self.disasm._find_bar._query_box.setText("mov")
+        assert self.disasm._find_matches
+
+    def test_byte_pattern_matches_instruction_bytes(self):
+        func = self.instance.kb.functions.get_by_addr(SMALL_FUNC_ADDR)
+        insn = next(i for b in func.blocks for i in b.capstone.insns if i.size >= 2)
+        raw = bytes(insn.insn.bytes)
+        self.disasm.show_find_bar()
+        self.disasm._find_bar._mode_combo.setCurrentText("Byte pattern")
+        self.disasm._find_bar._query_box.setText(raw.hex(" "))
+        assert insn.address in [a for a, _ in self.disasm._find_matches]
+        # wildcard bytes are supported
+        tokens = raw.hex(" ").split()
+        tokens[1] = "??"
+        self.disasm._find_bar._query_box.setText(" ".join(tokens))
+        assert insn.address in [a for a, _ in self.disasm._find_matches]
+
+    def test_byte_pattern_invalid_reports_error(self):
+        self.disasm.show_find_bar()
+        self.disasm._find_bar._mode_combo.setCurrentText("Byte pattern")
+        self.disasm._find_bar._query_box.setText("zz")
+        assert self.disasm._find_matches == []
+        assert self.disasm._find_bar._query_box.toolTip()
+
+    def _string_memory_data(self):
+        from angr.knowledge_plugins.cfg import MemoryDataSort
+
+        cfg = self.instance.cfg.am_obj
+        for md in cfg.memory_data.values():
+            if md.sort == MemoryDataSort.String and md.content and len(md.content) >= 6 and md.size:
+                return md
+        raise AssertionError("no string memory data found")
+
+    def test_linear_text_search_covers_data(self):
+        md = self._string_memory_data()
+        self.disasm.display_linear_viewer()
+        self.disasm._linear_viewer.navigate_to_addr(md.addr)
+        self.disasm.show_find_bar()
+        snippet = md.content[:6].decode("latin-1")
+        self.disasm._find_bar._query_box.setText(snippet)
+        assert md.addr in [a for a, _ in self.disasm._find_matches]
+        assert md.addr in self.disasm._find_data_matches
+        # graph mode shows no data blocks, so data must not be searched there
+        self.disasm.display_disasm_graph()
+        assert md.addr not in [a for a, _ in self.disasm._find_matches]
+
+    def test_linear_byte_pattern_covers_data(self):
+        md = self._string_memory_data()
+        self.disasm.display_linear_viewer()
+        self.disasm._linear_viewer.navigate_to_addr(md.addr)
+        self.disasm.show_find_bar()
+        self.disasm._find_bar._mode_combo.setCurrentText("Byte pattern")
+        self.disasm._find_bar._query_box.setText(bytes(md.content[:6]).hex(" "))
+        data_hits = [a for a, _ in self.disasm._find_matches if a in self.disasm._find_data_matches]
+        assert any(md.addr <= a < md.addr + md.size for a in data_hits)
+
+    def test_stepping_to_data_match_selects_label(self):
+        md = self._string_memory_data()
+        self.disasm.display_linear_viewer()
+        self.disasm._linear_viewer.navigate_to_addr(md.addr)
+        self.disasm.show_find_bar()
+        self.disasm._find_bar._query_box.setText(md.content[:6].decode("latin-1"))
+        addrs = [a for a, _ in self.disasm._find_matches]
+        idx = next(i for i, a in enumerate(addrs) if a in self.disasm._find_data_matches)
+        self.disasm._find_index = (idx - 1) % len(addrs)
+        self.disasm.find_next()
+        current = self.disasm._find_matches[self.disasm._find_index][0]
+        assert current in self.disasm._find_data_matches
+        assert self.disasm.infodock.is_label_selected(self.disasm._find_data_matches[current])
+
 
 class TestCodeViewFindBar(FindBarTestCase):
     """Tests for Ctrl+F in the pseudocode view."""

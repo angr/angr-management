@@ -175,6 +175,19 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         """
         return next(iter(self._insaddr_to_block), None)
 
+    @property
+    def visible_memory_data(self) -> list[tuple[int, MemoryData]]:
+        """
+        ``(address, MemoryData)`` of the data items on the displayed page, in address order.
+        """
+        items = [
+            (addr, obj.memory_data)
+            for addr, obj in self.objects.items()
+            if isinstance(obj, QMemoryDataBlock) and obj.isVisible()
+        ]
+        items.sort(key=lambda item: item[0])
+        return items
+
     #
     # Events
     #
