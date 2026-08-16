@@ -159,6 +159,20 @@ class TestSearchView(SearchTestCase):
         assert self.view._query_box.text()
         assert self.view._format_combo.currentText() in ("float", "double", "int32", "int64")
 
+    def test_case_and_regex_checkboxes_are_unified(self):
+        from angrmanagement.ui.views.strings_view import StringsView
+        from angrmanagement.ui.widgets.qfind_bar import QFindBar
+
+        find_bar = QFindBar()
+        strings_view = StringsView(self.workspace, "center", self.instance)
+
+        case_boxes = [find_bar._case_box, self.view._case_box]
+        regex_boxes = [find_bar._regex_box, self.view._regex_box, strings_view._regex_checkbox]
+        assert all(box.text() == "Aa" for box in case_boxes)
+        assert all(box.toolTip() == "Case sensitive" for box in case_boxes)
+        assert all(box.text() == ".*" for box in regex_boxes)
+        assert all(box.toolTip() == "Regular expression" for box in regex_boxes)
+
 
 if __name__ == "__main__":
     unittest.main()

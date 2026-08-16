@@ -286,10 +286,10 @@ class SearchView(InstanceView):
         self._scope_combo = QComboBox(self)
         self._scope_combo.setMinimumWidth(160)
 
-        self._case_box = QCheckBox("Case", self)
+        self._case_box = QCheckBox("Aa", self)
         self._case_box.setToolTip("Case sensitive")
-        self._regex_box = QCheckBox("Regex", self)
-        self._regex_box.setToolTip("Interpret the query as a regular expression")
+        self._regex_box = QCheckBox(".*", self)
+        self._regex_box.setToolTip("Regular expression")
 
         self._format_label = QLabel("Type:", self)
         self._format_combo = QComboBox(self)
