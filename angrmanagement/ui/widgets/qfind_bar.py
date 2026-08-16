@@ -5,12 +5,14 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QPalette
-from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QLineEdit, QToolButton, QWidget
+from PySide6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QLineEdit, QToolButton, QWidget
 
 from angrmanagement.data.search import loose_whitespace_regex
 from angrmanagement.ui.icons import icon
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from PySide6.QtGui import QKeyEvent
 
 
@@ -18,7 +20,9 @@ class QFindBar(QWidget):
     """
     An incremental find bar: query box, previous/next, case and regex toggles, a match counter and
     a close button. It owns no search logic; the host connects to :attr:`query_changed`,
-    :attr:`find_next` and :attr:`find_previous` and calls :meth:`set_match_status` back.
+    :attr:`find_next` and :attr:`find_previous` and calls :meth:`set_match_status` back. A host may
+    pass ``modes`` to add a mode selector (e.g. hex pattern vs. text); mode changes are reported
+    through :attr:`query_changed` as well.
     """
 
     query_changed = Signal()
@@ -26,10 +30,12 @@ class QFindBar(QWidget):
     find_previous = Signal()
     closed = Signal()
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None, modes: Sequence[str] | None = None) -> None:
         super().__init__(parent)
         self._status_label: QLabel
         self._query_box: QLineEdit
+        self._modes = list(modes) if modes else None
+        self._mode_combo: QComboBox | None = None
         self._init_widgets()
         self.hide()
 
@@ -48,6 +54,10 @@ class QFindBar(QWidget):
     @property
     def use_regex(self) -> bool:
         return self._regex_box.isChecked()
+
+    @property
+    def mode(self) -> str | None:
+        return self._mode_combo.currentText() if self._mode_combo is not None else None
 
     #
     # Public methods
@@ -94,6 +104,13 @@ class QFindBar(QWidget):
             self._status_label.setText("No matches")
         else:
             self._status_label.setText(f"{current + 1} of {total}")
+
+    def set_text_options_visible(self, visible: bool) -> None:
+        """
+        Show or hide the case/regex toggles, for modes where they do not apply.
+        """
+        self._case_box.setVisible(visible)
+        self._regex_box.setVisible(visible)
 
     def set_error(self, is_error: bool) -> None:
         palette = self._query_box.palette()
@@ -173,8 +190,15 @@ class QFindBar(QWidget):
         close_button.setToolTip("Close (Esc)")
         close_button.clicked.connect(self.close_bar)
 
+        if self._modes:
+            self._mode_combo = QComboBox(self)
+            self._mode_combo.addItems(self._modes)
+            self._mode_combo.currentIndexChanged.connect(self._on_option_changed)
+
         layout = QHBoxLayout()
         layout.addWidget(QLabel("Find:", self))
+        if self._mode_combo is not None:
+            layout.addWidget(self._mode_combo)
         layout.addWidget(self._query_box, 1)
         layout.addWidget(self._prev_button)
         layout.addWidget(self._next_button)

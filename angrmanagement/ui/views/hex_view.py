@@ -13,7 +13,7 @@ from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
 from angr.knowledge_plugins.patches import Patch
 from archinfo.arch_arm import is_arm_arch
 from PySide6.QtCore import QEvent, QMarginsF, QPointF, QRectF, QSizeF, Qt, QTimer, Signal
-from PySide6.QtGui import QAction, QColor, QCursor, QFont, QPainterPath, QPen, QWheelEvent
+from PySide6.QtGui import QAction, QColor, QCursor, QFont, QKeySequence, QPainterPath, QPen, QShortcut, QWheelEvent
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
     QAbstractSlider,
@@ -37,9 +37,12 @@ from PySide6.QtWidgets import (
 
 from angrmanagement.config import Conf
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
+from angrmanagement.data.search import SCOPE_ALL, BytePattern, Searcher, SearchError
+from angrmanagement.logic.commands import ViewCommand
 from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.ui.dialogs.input_prompt import InputPromptDialog
 from angrmanagement.ui.dialogs.jumpto import JumpTo
+from angrmanagement.ui.widgets.qfind_bar import QFindBar
 from angrmanagement.utils import is_printable
 
 from .view import SynchronizedInstanceView
@@ -1342,6 +1345,11 @@ class HexView(SynchronizedInstanceView):
         self._patch_highlights: Sequence[PatchHighlightRegion] = []
         self._changed_data_highlights: Sequence[HexHighlightRegion] = []
         self._breakpoint_highlights: Sequence[BreakpointHighlightRegion] = []
+        self._find_bar: QFindBar | None = None
+        self._find_matches: list[tuple[int, int]] = []
+        self._find_index: int = -1
+        self._find_highlights: Sequence[HexHighlightRegion] = []
+        self._find_regions: list[tuple[int, bytes]] | None = None
 
         self._init_widgets()
         self.instance.cfb.am_subscribe(self._on_cfb_event)
@@ -1355,9 +1363,28 @@ class HexView(SynchronizedInstanceView):
         self._dbg_watcher = DebuggerWatcher(self._on_debugger_state_updated, self._dbg_manager.debugger)
         self._on_debugger_state_updated()
 
+    @classmethod
+    def register_commands(cls, workspace: Workspace) -> None:
+        """
+        Register commands that can be run for this view.
+        """
+        workspace.command_manager.register_commands(
+            [
+                ViewCommand("hex_view_" + action.__name__, "Hex: " + caption, action, cls, workspace)
+                for caption, action in [
+                    ("Find", cls.show_find_bar),
+                    ("Find Next", cls.find_next),
+                    ("Find Previous", cls.find_previous),
+                ]
+            ]
+        )
+
     def _on_cfb_event(self, **kwargs) -> None:
         if not kwargs:
+            self._find_regions = None
             self._reload_data()
+            if self._find_bar is not None and not self._find_bar.isHidden():
+                self._update_find_matches()
 
     def closeEvent(self, event) -> None:
         self._dbg_watcher.shutdown()
@@ -1372,6 +1399,7 @@ class HexView(SynchronizedInstanceView):
         self._patch_highlights = []
         self._changed_data_highlights = []
         self._breakpoint_highlights = []
+        self._find_highlights = []
 
     def _reload_data(self):
         """
@@ -1589,15 +1617,31 @@ class HexView(SynchronizedInstanceView):
 
         status_bar.setLayout(status_lyt)
 
+        self._find_bar = QFindBar(self, modes=["Hex", "Text"])
+        self._find_bar.set_text_options_visible(False)  # the default mode is Hex
+        self._find_bar.query_changed.connect(self._update_find_matches)
+        self._find_bar.find_next.connect(self.find_next)
+        self._find_bar.find_previous.connect(self.find_previous)
+        self._find_bar.closed.connect(self._on_find_bar_closed)
+
         self.inner_widget = HexGraphicsView(parent=self)
         lyt = QVBoxLayout()
         lyt.addWidget(status_bar)
+        lyt.addWidget(self._find_bar)
         lyt.addWidget(self.inner_widget)
         lyt.setContentsMargins(0, 0, 0, 0)
         lyt.setSpacing(0)
         self.setLayout(lyt)
         self.inner_widget.cursor_changed.connect(self.on_cursor_changed)
         self.inner_widget.hex.viewport_changed.connect(self.on_cursor_changed)
+
+        for sequence, handler in [
+            (QKeySequence.StandardKey.Find, self.show_find_bar),
+            (QKeySequence(Qt.Key.Key_F3), self.find_next),
+            (QKeySequence("Shift+F3"), self.find_previous),
+        ]:
+            shortcut = QShortcut(sequence, self, handler)
+            shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
 
         self._widgets_initialized = True
 
@@ -1774,6 +1818,101 @@ class HexView(SynchronizedInstanceView):
         mnu.addMenu(self.get_synchronize_with_submenu())
         mnu.exec_(QCursor.pos())
 
+    #
+    # Find in view
+    #
+
+    # stop collecting matches beyond this; a short pattern can match almost everywhere
+    FIND_MATCH_LIMIT = 10000
+    # highlighting every match of a very common pattern would repaint the whole view
+    FIND_HIGHLIGHT_LIMIT = 512
+
+    def show_find_bar(self) -> None:
+        """
+        Open the incremental find bar. It searches the project (loader) memory, either as a hex
+        byte pattern with ``?``/``??`` wildcards or as text.
+        """
+        self._find_bar.activate()
+        self._update_find_matches()
+
+    def find_next(self) -> None:
+        self._step_find_match(1)
+
+    def find_previous(self) -> None:
+        self._step_find_match(-1)
+
+    def _iter_find_regions(self) -> list[tuple[int, bytes]]:
+        if self._find_regions is None:
+            if self.instance.project.am_none:
+                self._find_regions = []
+            else:
+                searcher = Searcher(self.instance.project.am_obj, kb=self.instance.kb)
+                self._find_regions = list(searcher.iter_regions(SCOPE_ALL))
+        return self._find_regions
+
+    def _compute_find_matches(self, query: str) -> list[tuple[int, int]]:
+        matches: list[tuple[int, int]] = []
+        if self._find_bar.mode == "Hex":
+            pattern = BytePattern.parse(query)
+            for start, data in self._iter_find_regions():
+                for addr in pattern.finditer(data, base=start):
+                    matches.append((addr, len(pattern)))
+                    if len(matches) >= self.FIND_MATCH_LIMIT:
+                        return matches
+        else:
+            regex = self._find_bar.compile_query()
+            if regex is None:
+                raise SearchError("Malformed query")
+            for start, data in self._iter_find_regions():
+                text = data.decode("latin-1")
+                for match in regex.finditer(text):
+                    matches.append((start + match.start(), max(match.end() - match.start(), 1)))
+                    if len(matches) >= self.FIND_MATCH_LIMIT:
+                        return matches
+        return matches
+
+    def _update_find_matches(self) -> None:
+        self._find_bar.set_text_options_visible(self._find_bar.mode != "Hex")
+        query = self._find_bar.query
+        self._find_index = -1
+        self._find_matches = []
+        if not self.instance.project.am_none and query:
+            try:
+                self._find_matches = self._compute_find_matches(query)
+                self._find_bar.set_error(False)
+            except SearchError:
+                self._find_bar.set_error(True)
+        else:
+            self._find_bar.set_error(False)
+        self._update_find_highlights()
+        if self._find_matches:
+            self._step_find_match(1)
+        else:
+            self._find_bar.set_match_status(0, 0)
+
+    def _step_find_match(self, delta: int) -> None:
+        if not self._find_matches:
+            self._find_bar.set_match_status(0, 0)
+            return
+        self._find_index = (self._find_index + delta) % len(self._find_matches)
+        addr, _size = self._find_matches[self._find_index]
+        self.set_cursor(addr)
+        self._find_bar.set_match_status(self._find_index, len(self._find_matches))
+
+    def _update_find_highlights(self) -> None:
+        self._find_highlights = [
+            HexHighlightRegion(Conf.disasm_view_operand_highlight_color, addr, size, "Find match")
+            for addr, size in self._find_matches[: self.FIND_HIGHLIGHT_LIMIT]
+        ]
+        self._set_highlighted_regions()
+
+    def _on_find_bar_closed(self) -> None:
+        self._find_matches = []
+        self._find_index = -1
+        self._find_regions = None
+        self._update_find_highlights()
+        self.inner_widget.setFocus()
+
     def set_cursor(self, addr: int) -> None:
         """
         Move cursor to specific address and clear any active selection.
@@ -1919,6 +2058,8 @@ class HexView(SynchronizedInstanceView):
         source = self._data_source_combo.currentData()
         if source == HexDataSource.Loader:
             regions.extend(self._patch_highlights)
+            # find matches come from loader memory, so they may not reflect debugger memory
+            regions.extend(self._find_highlights)
         elif source == HexDataSource.Debugger:
             regions.extend(self._changed_data_highlights)
         regions.extend(self._breakpoint_highlights)

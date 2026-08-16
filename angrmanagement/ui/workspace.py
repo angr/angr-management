@@ -152,6 +152,7 @@ class Workspace:
 
         DisassemblyView.register_commands(self)
         CodeView.register_commands(self)
+        HexView.register_commands(self)
 
         self.main_instance.patches.am_subscribe(self._on_patch_event)
 
