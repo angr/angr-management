@@ -904,7 +904,7 @@ class DisassemblyView(SynchronizedFunctionView):
         return texts
 
     def _update_find_matches(self) -> None:
-        pattern = self._find_bar.compile_query()
+        pattern = self._find_bar.compile_query(loose_whitespace=True)
         if pattern is None:
             self._find_matches = []
             self._find_index = -1

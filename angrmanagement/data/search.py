@@ -187,20 +187,51 @@ class BytePattern:
 #
 
 
+def _is_word_token(token: str) -> bool:
+    return bool(re.match(r"\w", token))
+
+
+def loose_whitespace_regex(text: str) -> str:
+    """
+    Build a regex source for a literal query that tolerates whitespace differences around
+    punctuation: "-0x20" matches capstone's "rbp - 0x20", and "[rbp-0x20]" matches
+    "[rbp - 0x20]". Whitespace between two word tokens is still required.
+    """
+    tokens = re.findall(r"\w+|\S", text)
+    if not tokens:
+        return re.escape(text)
+    parts = [re.escape(tokens[0])]
+    for prev, cur in zip(tokens, tokens[1:], strict=False):
+        parts.append(r"\s+" if _is_word_token(prev) and _is_word_token(cur) else r"\s*")
+        parts.append(re.escape(cur))
+    return "".join(parts)
+
+
 class TextMatcher:
     """
-    A literal-or-regex, case-sensitive-or-not text matcher.
+    A literal-or-regex, case-sensitive-or-not text matcher. With ``loose_whitespace``, a literal
+    pattern tolerates whitespace differences around punctuation (for disassembly text, where
+    renderers disagree on spacing inside operands).
     """
 
-    __slots__ = ("pattern", "regex", "case_sensitive", "_regex")
+    __slots__ = ("pattern", "regex", "case_sensitive", "loose_whitespace", "_regex")
 
-    def __init__(self, pattern: str, *, regex: bool = False, case_sensitive: bool = False) -> None:
+    def __init__(
+        self, pattern: str, *, regex: bool = False, case_sensitive: bool = False, loose_whitespace: bool = False
+    ) -> None:
         self.pattern = pattern
         self.regex = regex
         self.case_sensitive = case_sensitive
+        self.loose_whitespace = loose_whitespace
         flags = 0 if case_sensitive else re.IGNORECASE
+        if regex:
+            source = pattern
+        elif loose_whitespace:
+            source = loose_whitespace_regex(pattern)
+        else:
+            source = re.escape(pattern)
         try:
-            self._regex = re.compile(pattern if regex else re.escape(pattern), flags)
+            self._regex = re.compile(source, flags)
         except re.error as ex:
             raise SearchError(f"Invalid regular expression: {ex}") from ex
 
@@ -653,7 +684,7 @@ class Searcher:
     #
 
     def _search_disassembly(self, query: SearchQuery, progress) -> Iterator[SearchResult]:
-        matcher = TextMatcher(query.text, regex=query.regex, case_sensitive=query.case_sensitive)
+        matcher = TextMatcher(query.text, regex=query.regex, case_sensitive=query.case_sensitive, loose_whitespace=True)
         functions = self.iter_functions(query.scope)
         total = len(functions) or 1
         for idx, func in enumerate(functions):

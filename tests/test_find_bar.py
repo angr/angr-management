@@ -140,6 +140,13 @@ class TestDisassemblyFindBar(FindBarTestCase):
         # the displayed function is off screen now, so it must not contribute matches
         assert not any(in_displayed(addr) for addr, _ in self.disasm._find_matches)
 
+    def test_find_is_whitespace_tolerant(self):
+        # capstone renders "lea rdi, [rip + 0x2059d9]"; the query is typed without spaces, the
+        # way the disassembly view renders operands
+        self.disasm.show_find_bar()
+        self.disasm._find_bar._query_box.setText("[rip+0x2059d9]")
+        assert self.disasm._find_matches
+
     def test_graph_find_stays_in_current_function(self):
         self.disasm.display_disasm_graph()
         func = self.instance.kb.functions.get_by_addr(SMALL_FUNC_ADDR)

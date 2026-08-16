@@ -88,6 +88,21 @@ class TestTextMatcher(unittest.TestCase):
         with self.assertRaises(SearchError):
             TextMatcher("(unclosed", regex=True)
 
+    def test_loose_whitespace_literal(self):
+        text = "mov dword ptr [rbp - 0x20], edi"
+        assert TextMatcher("-0x20", loose_whitespace=True).search(text) is not None
+        assert TextMatcher("[rbp-0x20]", loose_whitespace=True).search(text) is not None
+        assert TextMatcher("[rbp - 0x20],edi", loose_whitespace=True).search(text) is not None
+        assert TextMatcher("mov dword", loose_whitespace=True).search(text) is not None
+        assert TextMatcher("movdword", loose_whitespace=True).search(text) is None
+        # without the flag the query has to match the text exactly
+        assert TextMatcher("-0x20").search(text) is None
+
+    def test_loose_whitespace_leaves_regex_alone(self):
+        matcher = TextMatcher(r"rbp - 0x2\d", regex=True, loose_whitespace=True)
+        assert matcher.search("mov [rbp - 0x20]") is not None
+        assert matcher.search("mov [rbp-0x20]") is None
+
 
 class TestSearcher(unittest.TestCase):
     """Tests for the search strategies against a real binary."""
@@ -167,6 +182,12 @@ class TestSearcher(unittest.TestCase):
         assert results
         assert all("xor" in r.context for r in results)
         assert all(r.func_addr is not None for r in results)
+
+    def test_disassembly_search_is_whitespace_tolerant(self):
+        # capstone renders "lea rdi, [rip + 0x2059d9]" but the query is typed the way the
+        # disassembly view renders operands, without spaces
+        results = self.searcher.run(SearchQuery(SearchKind.DISASSEMBLY, "[rip+0x2059d9]"))
+        assert 0x4016A0 in [r.addr for r in results]
 
     def test_disassembly_regex_search(self):
         results = self.searcher.run(SearchQuery(SearchKind.DISASSEMBLY, r"^mov\s+r[a-d]x", regex=True))

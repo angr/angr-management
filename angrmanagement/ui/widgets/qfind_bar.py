@@ -7,6 +7,7 @@ from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QLineEdit, QToolButton, QWidget
 
+from angrmanagement.data.search import loose_whitespace_regex
 from angrmanagement.ui.icons import icon
 
 if TYPE_CHECKING:
@@ -52,17 +53,24 @@ class QFindBar(QWidget):
     # Public methods
     #
 
-    def compile_query(self) -> re.Pattern | None:
+    def compile_query(self, loose_whitespace: bool = False) -> re.Pattern | None:
         """
-        Compile the current query into a regex, or return None if it is empty or malformed.
+        Compile the current query into a regex, or return None if it is empty or malformed. With
+        ``loose_whitespace``, a literal query tolerates whitespace differences around punctuation.
         """
         text = self.query
         if not text:
             self.set_error(False)
             return None
         flags = 0 if self.case_sensitive else re.IGNORECASE
+        if self.use_regex:
+            source = text
+        elif loose_whitespace:
+            source = loose_whitespace_regex(text)
+        else:
+            source = re.escape(text)
         try:
-            pattern = re.compile(text if self.use_regex else re.escape(text), flags)
+            pattern = re.compile(source, flags)
         except re.error:
             self.set_error(True)
             return None
