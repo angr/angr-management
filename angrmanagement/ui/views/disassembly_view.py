@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING
@@ -51,6 +52,7 @@ from .view import SynchronizedFunctionView
 if TYPE_CHECKING:
     import PySide6
     from angr.knowledge_plugins import VariableManager
+    from angr.knowledge_plugins.functions import Function
 
     from angrmanagement.data.instance import Instance, ObjectContainer
     from angrmanagement.logic.disassembly.info_dock import OperandDescriptor
@@ -102,6 +104,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._find_matches: list[tuple[int, str]] = []
         self._find_index: int = -1
         self._find_highlighted: bool = False
+        self._find_text_cache: dict[int, list[tuple[int, str]]] = {}
 
         self._init_widgets()
         self._init_menus()
@@ -128,7 +131,7 @@ class DisassemblyView(SynchronizedFunctionView):
                     ("Toggle Smart Highlighting", cls.toggle_smart_highlighting),
                     ("Toggle Variable Identifiers", cls.toggle_show_variable_identifier),
                     ("Toggle Variables", cls.toggle_show_variable),
-                    ("Find in Function", cls.show_find_bar),
+                    ("Find", cls.show_find_bar),
                     ("Find Next", cls.find_next),
                     ("Find Previous", cls.find_previous),
                     ("View AIL", cls.set_disassembly_level_ail),
@@ -359,6 +362,7 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def _on_cfb_event(self, **kwargs) -> None:
         if not kwargs:
+            self._find_text_cache.clear()
             if self.instance.project.am_none:
                 # the binary was closed: clear both the graph and linear viewer
                 self.function.am_obj = None
@@ -862,8 +866,11 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def show_find_bar(self) -> None:
         """
-        Open the incremental find bar, which searches the text of the current function.
+        Open the incremental find bar. In graph mode it searches the text of the current function;
+        in linear mode it searches every function with at least one instruction on the displayed
+        page.
         """
+        self._find_text_cache.clear()
         self._find_bar.activate()
         self._update_find_matches()
 
@@ -873,12 +880,28 @@ class DisassemblyView(SynchronizedFunctionView):
     def find_previous(self) -> None:
         self._step_find_match(-1)
 
-    def _iter_function_text(self) -> list[tuple[int, str]]:
-        func = self.function.am_obj
-        if func is None or self.instance.project.am_none:
+    def _find_scope_functions(self) -> list[Function]:
+        if self.instance.project.am_none:
             return []
+        if self._current_view is self._linear_viewer:
+            functions = []
+            for func_addr in self._linear_viewer.visible_function_addrs:
+                with contextlib.suppress(KeyError):
+                    functions.append(self.instance.kb.functions.get_by_addr(func_addr))
+            return functions
+        func = self.function.am_obj
+        return [func] if func is not None else []
+
+    def _iter_function_text(self) -> list[tuple[int, str]]:
         searcher = Searcher(self.instance.project.am_obj, kb=self.instance.kb)
-        return list(searcher.iter_instruction_texts(func))
+        texts = []
+        for func in self._find_scope_functions():
+            cached = self._find_text_cache.get(func.addr)
+            if cached is None:
+                cached = list(searcher.iter_instruction_texts(func))
+                self._find_text_cache[func.addr] = cached
+            texts.extend(cached)
+        return texts
 
     def _update_find_matches(self) -> None:
         pattern = self._find_bar.compile_query()
@@ -920,6 +943,7 @@ class DisassemblyView(SynchronizedFunctionView):
             self.infodock.unselect_all_instructions()
 
     def _on_find_bar_closed(self) -> None:
+        self._find_text_cache.clear()
         # keep only the current match selected
         if self._find_highlighted and 0 <= self._find_index < len(self._find_matches):
             addr = self._find_matches[self._find_index][0]

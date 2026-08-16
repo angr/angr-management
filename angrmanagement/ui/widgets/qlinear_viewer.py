@@ -142,6 +142,21 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     def scene(self):
         return self._viewer._scene
 
+    @property
+    def visible_function_addrs(self) -> list[int]:
+        """
+        Addresses of the functions with at least one instruction on the currently displayed page,
+        in display order.
+        """
+        addrs = []
+        seen = set()
+        for block in self._insaddr_to_block.values():
+            func_addr = getattr(block, "func_addr", None)
+            if func_addr is not None and func_addr not in seen:
+                seen.add(func_addr)
+                addrs.append(func_addr)
+        return addrs
+
     #
     # Events
     #

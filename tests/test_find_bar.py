@@ -117,6 +117,37 @@ class TestDisassemblyFindBar(FindBarTestCase):
         self.disasm._find_bar.close_bar()
         assert set(self.disasm.infodock.selected_insns) == {current}
 
+    def _distant_function(self):
+        """A function at least a page away from SMALL_FUNC_ADDR."""
+        kb = self.instance.kb
+        candidates = [kb.functions.get_by_addr(addr) for addr in kb.functions if abs(addr - SMALL_FUNC_ADDR) > 0x1000]
+        candidates = [f for f in candidates if not f.is_simprocedure and not f.is_alignment and f.size > 0]
+        assert candidates
+        return max(candidates, key=lambda f: abs(f.addr - SMALL_FUNC_ADDR))
+
+    def test_linear_find_covers_visible_functions(self):
+        other = self._distant_function()
+        in_other = lambda a: other.addr <= a < other.addr + other.size  # noqa: E731
+        in_displayed = lambda a: SMALL_FUNC_ADDR <= a < SMALL_FUNC_ADDR + 0x1000  # noqa: E731
+
+        self.disasm.display_linear_viewer()
+        self.disasm.jump_to(other.addr)
+        query = next(iter(other.blocks)).capstone.insns[0].mnemonic
+
+        self.disasm.show_find_bar()
+        self.disasm._find_bar._query_box.setText(query)
+        assert any(in_other(addr) for addr, _ in self.disasm._find_matches)
+        # the displayed function is off screen now, so it must not contribute matches
+        assert not any(in_displayed(addr) for addr, _ in self.disasm._find_matches)
+
+    def test_graph_find_stays_in_current_function(self):
+        self.disasm.display_disasm_graph()
+        func = self.instance.kb.functions.get_by_addr(SMALL_FUNC_ADDR)
+        self.disasm.show_find_bar()
+        self.disasm._find_bar._query_box.setText("mov")
+        assert self.disasm._find_matches
+        assert all(func.addr <= addr < func.addr + func.size for addr, _ in self.disasm._find_matches)
+
 
 class TestCodeViewFindBar(FindBarTestCase):
     """Tests for Ctrl+F in the pseudocode view."""

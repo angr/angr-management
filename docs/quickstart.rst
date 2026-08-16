@@ -55,8 +55,10 @@ wildcards, a literal or regular expression string, an integer or floating point 
 text, or decompiled pseudocode), the scope to search in, then press Enter. Searches run in the
 background and can be cancelled; double-click a result or press Enter to jump to it.
 
-Ctrl+F opens an incremental find bar in the pseudocode and disassembly views, searching the
-currently displayed function. F3 and Shift+F3 move to the next and previous match.
+Ctrl+F opens an incremental find bar in the pseudocode and disassembly views. The pseudocode bar
+searches the displayed pseudocode; the disassembly bar searches the current function in graph mode
+and every function visible on the current page in linear mode. F3 and Shift+F3 move to the next
+and previous match.
 
 Command Palette
 ---------------
