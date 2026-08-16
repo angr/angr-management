@@ -101,6 +101,22 @@ class TestDisassemblyFindBar(FindBarTestCase):
         assert self.disasm._find_matches == []
         assert not self.disasm.infodock.selected_insns
 
+    def test_cleared_query_clears_highlights(self):
+        self.disasm.show_find_bar()
+        self.disasm._find_bar._query_box.setText("mov")
+        assert self.disasm.infodock.selected_insns
+        self.disasm._find_bar._query_box.setText("")
+        assert self.disasm._find_matches == []
+        assert not self.disasm.infodock.selected_insns
+
+    def test_close_keeps_only_current_match(self):
+        self.disasm.show_find_bar()
+        self.disasm._find_bar._query_box.setText("mov")
+        current = self.disasm._find_matches[self.disasm._find_index][0]
+        assert len(self.disasm.infodock.selected_insns) > 1
+        self.disasm._find_bar.close_bar()
+        assert set(self.disasm.infodock.selected_insns) == {current}
+
 
 class TestCodeViewFindBar(FindBarTestCase):
     """Tests for Ctrl+F in the pseudocode view."""

@@ -885,6 +885,7 @@ class DisassemblyView(SynchronizedFunctionView):
         if pattern is None:
             self._find_matches = []
             self._find_index = -1
+            self._clear_find_highlights()
             self._find_bar.set_match_status(0, 0)
             return
         self._find_matches = [(addr, text) for addr, text in self._iter_function_text() if pattern.search(text)]
@@ -919,6 +920,14 @@ class DisassemblyView(SynchronizedFunctionView):
             self.infodock.unselect_all_instructions()
 
     def _on_find_bar_closed(self) -> None:
+        # keep only the current match selected
+        if self._find_highlighted and 0 <= self._find_index < len(self._find_matches):
+            addr = self._find_matches[self._find_index][0]
+            self._find_highlighted = False
+            self.infodock.selected_insns.am_obj = {addr}
+            self.infodock.selected_insns.am_event(insn_addr=addr)
+        else:
+            self._clear_find_highlights()
         self._find_matches = []
         self._find_index = -1
         self._current_view.setFocus()
