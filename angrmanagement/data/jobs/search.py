@@ -13,10 +13,7 @@ if TYPE_CHECKING:
 
 
 class SearchJob(InstanceJob):
-    """
-    Runs a :class:`SearchQuery` in the worker thread. Progress reporting doubles as the
-    cancellation check: ``JobContext.set_progress()`` raises once the job is cancelled.
-    """
+    """Runs a :class:`SearchQuery` in the worker thread."""
 
     def __init__(self, instance: Instance, query: SearchQuery, on_finish=None) -> None:
         super().__init__("Searching", instance, on_finish=on_finish)
