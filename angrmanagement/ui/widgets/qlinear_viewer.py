@@ -148,8 +148,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     @property
     def visible_function_addrs(self) -> list[int]:
         """
-        Addresses of the functions with at least one instruction on the currently displayed page,
-        in display order.
+        Addresses of the functions with at least one instruction on the currently displayed page, in display order.
         """
         addrs = []
         seen = set()

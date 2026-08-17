@@ -1366,9 +1366,6 @@ class HexView(SynchronizedInstanceView):
 
     @classmethod
     def register_commands(cls, workspace: Workspace) -> None:
-        """
-        Register commands that can be run for this view.
-        """
         workspace.command_manager.register_commands(
             [
                 ViewCommand("hex_view_" + action.__name__, "Hex: " + caption, action, cls, workspace)
@@ -1823,14 +1820,10 @@ class HexView(SynchronizedInstanceView):
     # Find in view
     #
 
-    # highlighting every match of a very common pattern would repaint the whole view
     FIND_HIGHLIGHT_LIMIT = 512
 
     def show_find_bar(self) -> None:
-        """
-        Open the incremental find bar. It searches the project (loader) memory, either as a hex
-        byte pattern with ``?``/``??`` wildcards or as text.
-        """
+        """Open the incremental find bar."""
         self._find_bar.activate()
         self._update_find_matches()
 

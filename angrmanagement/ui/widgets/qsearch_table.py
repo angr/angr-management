@@ -17,8 +17,8 @@ if TYPE_CHECKING:
 
 class QSearchTableModel(QAbstractTableModel):
     """
-    Table model over a list of :class:`SearchResult`. Rows are plain dataclasses and the view only
-    paints what is visible, so a result set of tens of thousands of hits costs nothing to display.
+    Table model over a list of :class:`SearchResult`. Rows are plain dataclasses and the view only paints what is
+    visible, so a result set of tens of thousands of hits costs nothing to display.
     """
 
     HEADER = ["Address", "Kind", "Function", "Match", "Context"]
@@ -139,9 +139,7 @@ class QSearchTableModel(QAbstractTableModel):
 
 
 class QSearchTable(QFastTableView):
-    """
-    Lazily-rendered, sortable and filterable table of search results.
-    """
+    """Lazily-rendered, sortable, and filterable table of search results."""
 
     def __init__(self, parent, view) -> None:
         header = QHeaderView(Qt.Orientation.Horizontal)

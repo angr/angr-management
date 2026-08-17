@@ -17,12 +17,11 @@ if TYPE_CHECKING:
 
 
 class QFindBar(QWidget):
-    """
-    An incremental find bar: query box, previous/next, case and regex toggles, a match counter and
-    a close button. It owns no search logic; the host connects to :attr:`query_changed`,
-    :attr:`find_next` and :attr:`find_previous` and calls :meth:`set_match_status` back. A host may
-    pass ``modes`` to add a mode selector (e.g. hex pattern vs. text); mode changes are reported
-    through :attr:`query_changed` as well.
+    """An incremental find bar.
+
+    This find bar does not own any search logic. The host connects to :attr:`query_changed`, :attr:`find_next` and
+    :attr:`find_previous` and calls :meth:`set_match_status` back. A host may pass ``modes`` to add a mode selector
+    (e.g.  hex pattern vs. text); mode changes are reported through :attr:`query_changed`.
     """
 
     query_changed = Signal()
@@ -64,9 +63,9 @@ class QFindBar(QWidget):
     #
 
     def compile_query(self, loose_whitespace: bool = False) -> re.Pattern | None:
-        """
-        Compile the current query into a regex, or return None if it is empty or malformed. With
-        ``loose_whitespace``, a literal query tolerates whitespace differences around punctuation.
+        """Compile the current query into a regex, or return None if it is empty or malformed.
+
+        With ``loose_whitespace``, a literal query tolerates whitespace differences around punctuation.
         """
         text = self.query
         if not text:
@@ -99,8 +98,8 @@ class QFindBar(QWidget):
 
     def set_match_status(self, current: int, total: int, capped: bool = False) -> None:
         """
-        Update the match counter. ``capped`` marks that matching stopped at ``total`` (the
-        configured limit) with more hits available, shown as "N+".
+        Update the match counter. ``capped`` marks that matching stopped at ``total`` (the configured limit) with more
+        hits available, shown as "N+".
         """
         if not self.query:
             self._status_label.setText("")

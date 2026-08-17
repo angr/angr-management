@@ -879,11 +879,8 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def show_find_bar(self) -> None:
         """
-        Open the incremental find bar. In graph mode it searches the current function; in linear
-        mode it searches every function with at least one instruction on the displayed page, plus
-        the data items on the page. The bar's mode selects what is matched: instruction text and
-        comments and data ("Text"), instruction text alone, or a hex byte pattern with ``?``/``??``
-        wildcards.
+        Open the incremental find bar. In graph mode it searches the current function; in linear mode it searches every
+        function with at least one instruction on the displayed page, plus the data items on the page.
         """
         self._find_text_cache.clear()
         self._find_bar.activate()
@@ -986,8 +983,7 @@ class DisassemblyView(SynchronizedFunctionView):
                 pieces.append((item_addr, data, True, ""))
         pieces.sort(key=lambda piece: piece[0])
 
-        # merge contiguous pieces into runs so the pattern can match across instruction and
-        # instruction/data boundaries
+        # merge contiguous pieces into runs so the pattern can match across instruction and instruction/data boundaries
         runs: list[tuple[int, bytearray, list[tuple[int, bool, str]]]] = []
         for addr, raw, is_data, text in pieces:
             if runs and addr == runs[-1][0] + len(runs[-1][1]):
@@ -1025,8 +1021,8 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def _compute_find_matches(self) -> tuple[list[tuple[int, str]], dict[int, int]] | None:
         """
-        Compute the match list for the find bar's current mode and query. Returns None if the
-        query is malformed (with the error flagged on the bar).
+        Compute the match list for the find bar's current mode and query. Returns None if the query is malformed (with
+        the error flagged on the bar).
         """
         self._find_matches_capped = False
         query = self._find_bar.query
@@ -1085,8 +1081,8 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def _refresh_find_matches_for_view_switch(self) -> None:
         """
-        The find scope depends on the display mode, so recompute the matches when the view
-        toggles between graph and linear (without navigating).
+        The find scope depends on the display mode, so recompute the matches when the view toggles between graph and
+        linear (without navigating).
         """
         if self._find_bar is None or self._find_bar.isHidden() or not self._find_bar.query or self._in_find_refresh:
             return
@@ -1122,10 +1118,7 @@ class DisassemblyView(SynchronizedFunctionView):
         return next((i for i, (addr, _) in enumerate(self._find_matches) if addr >= top), 0)
 
     def _apply_find_highlights(self) -> None:
-        """
-        Apply the highlight set and the match counter for the current match list, without moving
-        the viewport.
-        """
+        """Apply the highlight set and the match counter for the current match list, without moving the viewport."""
         highlighted = self._find_insn_highlight_set()
         if 0 <= self._find_index < len(self._find_matches):
             current = self._find_matches[self._find_index][0]
@@ -1194,8 +1187,8 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def _on_insn_selection_changed(self, **kwargs) -> None:
         """
-        In linear view, make the current function follow the selected instruction so the status
-        bar and function-scoped actions refer to the function that was actually clicked.
+        In linear view, make the current function follow the selected instruction so the status bar and function-scoped
+        actions refer to the function that was actually clicked.
         """
         if self._current_view is not self._linear_viewer or self.instance.project.am_none:
             return

@@ -119,8 +119,7 @@ class SearchView(InstanceView):
 
     def build_query(self) -> SearchQuery:
         """
-        Build and validate a query from the current widget state. Raises SearchError if the query
-        cannot be compiled.
+        Build and validate a query from the current widget state. Raises SearchError if the query cannot be compiled.
         """
         kind = self._kind_combo.currentData()
         scope_idx = self._scope_combo.currentIndex()

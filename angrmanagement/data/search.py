@@ -95,11 +95,9 @@ class SearchError(Exception):
 
 
 class BytePattern:
-    """
-    A byte sequence with per-byte wildcard support, e.g. ``48 8b ?? 41`` or ``4? 8b``.
+    """A byte sequence with per-byte wildcard support, e.g. ``48 8b ?? 41`` or ``4? 8b``.
 
-    Matching is delegated to a compiled bytes regex so the actual scan runs at C speed. The regex
-    is wrapped in a lookahead so that overlapping occurrences are all reported.
+    The regex is wrapped in a lookahead so that overlapping occurrences are all reported.
     """
 
     __slots__ = ("values", "masks", "_regex")
@@ -208,10 +206,9 @@ def loose_whitespace_regex(text: str) -> str:
 
 
 class TextMatcher:
-    """
-    A literal-or-regex, case-sensitive-or-not text matcher. With ``loose_whitespace``, a literal
-    pattern tolerates whitespace differences around punctuation (for disassembly text, where
-    renderers disagree on spacing inside operands).
+    """A literal-or-regex, case-sensitive-or-not text matcher. With ``loose_whitespace``, a literal pattern tolerates
+    whitespace differences around punctuation. This is useful for disassembly text, where renderers disagree on spacing
+    inside operands).
     """
 
     __slots__ = ("pattern", "regex", "case_sensitive", "loose_whitespace", "_regex")
@@ -355,17 +352,13 @@ class Searcher:
     that it can be driven from a job, a test, or a script.
     """
 
-    # scanning primitives are C-speed, but the per-function work is not: report progress this often
+    # Report per-function search progress this often
     PROGRESS_EVERY = 64
 
     def __init__(self, project: angr.Project, kb: KnowledgeBase | None = None, cfg=None) -> None:
         self.project = project
         self.kb = kb if kb is not None else project.kb
         self.cfg = cfg
-
-    #
-    # Public API
-    #
 
     def validate(self, query: SearchQuery) -> None:
         """
@@ -569,8 +562,8 @@ class Searcher:
         self, query: SearchQuery, matcher: TextMatcher, seen: set[tuple[int, str]]
     ) -> Iterator[SearchResult]:
         """
-        Also report strings that the CFG recovered but the raw-memory scan missed (e.g. strings
-        shorter than the minimum length).
+        Also report strings that the CFG recovered but the raw-memory scan missed (e.g., strings shorter than the
+        minimum length).
         """
         cfg = self.cfg
         memory_data = getattr(cfg, "memory_data", None) if cfg is not None else None
