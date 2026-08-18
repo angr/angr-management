@@ -236,10 +236,12 @@ def get_string_for_display(cfg, insn_addr, project: Project, max_size: int = 20)
         return None
 
     if memory_data.sort == "string":
-        try:
-            str_content = memory_data.content.decode("utf-8")
-        except UnicodeDecodeError:
-            str_content = "<unicode-decoding-failure>"
+        str_content = ""
+        if memory_data.content:
+            try:
+                str_content = memory_data.content.decode("utf-8")
+            except UnicodeDecodeError:
+                str_content = "<unicode-decoding-failure>"
     elif memory_data.sort == "pointer-array":
         ptr = fast_memory_load_pointer(project, memory_data.address)
         if ptr in cfg.memory_data:
