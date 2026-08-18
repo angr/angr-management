@@ -138,6 +138,7 @@ class Workspace:
             LogView(self, "bottom", self._main_instance),
             JobsView(self, "bottom", self.main_instance),
             MCPHistoryView(self, "bottom", self._main_instance),
+            CommentsView(self, "bottom", self._main_instance),
         ]
         self.default_tabs += minimized_tabs
 
