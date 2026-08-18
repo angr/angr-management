@@ -464,7 +464,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         y = -start_line * self._line_height
 
         for obj_addr, obj in self.cfb.floor_items(addr=addr):
-            if obj_addr + obj.size <= addr and (obj.size > 0 or obj_addr < addr):
+            obj_size = 0 if obj.size is None else obj.size
+            if obj_addr + obj_size <= addr and (obj_size > 0 or obj_addr < addr):
                 # top_obj_addr lands after the current object; let's move on to the next object instead
                 continue
 
@@ -497,13 +498,13 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                 # this object should be skipped. ignore it
                 start_line -= object_lines
                 # adjust the offset as well
-                if obj.size == 0:
+                if obj_size == 0:
                     offset += 1
-                elif obj_addr <= addr < obj_addr + obj.size:
-                    offset += obj_addr + obj.size - addr
+                elif obj_addr <= addr < obj_addr + obj_size:
+                    offset += obj_addr + obj_size - addr
                 else:
-                    offset = base_offset + (obj_addr + obj.size - mr.addr)
-                _l.debug("Skipping %s (size=%d). New offset: %d.", obj, obj.size, offset)
+                    offset = base_offset + (obj_addr + obj_size - mr.addr)
+                _l.debug("Skipping %s (size=%d). New offset: %d.", obj, obj_size, offset)
                 y = -start_line * self._line_height
             else:
                 if start_line > 0:
@@ -511,7 +512,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
                         "First object to paint: %s (size %d). Current offset %d. Start printing from line %d. "
                         "Y pos %d.",
                         obj,
-                        obj.size,
+                        obj_size,
                         offset,
                         start_line,
                         y,
