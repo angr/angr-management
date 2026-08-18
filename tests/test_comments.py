@@ -117,7 +117,7 @@ class TestCommentKinds(ProjectOpenTestCase):
         )
         self.workspace.set_comment(callee_addr, "the callee", kind=CommentKind.REPEATABLE)
 
-        referencing = self.annotations._referencing_insns(self.project.kb, callee_addr)
+        referencing = self.project.kb.comments._referencing_insns(callee_addr)
         assert referencing, "expected at least one referencing instruction"
         for ins_addr in referencing:
             shown = [text for _, text in self.annotations.repeatable_comments_at(ins_addr)]
@@ -127,7 +127,7 @@ class TestCommentKinds(ProjectOpenTestCase):
         callgraph = self.project.kb.functions.callgraph
         callee_addr = next(addr for addr in callgraph.nodes if list(callgraph.predecessors(addr)))
         self.workspace.set_comment(callee_addr, "not repeated", kind=CommentKind.PLAIN)
-        for ins_addr in self.annotations._referencing_insns(self.project.kb, callee_addr):
+        for ins_addr in self.project.kb.comments._referencing_insns(callee_addr):
             assert self.annotations.repeatable_comments_at(ins_addr) == []
 
 

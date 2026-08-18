@@ -268,17 +268,12 @@ class Instance:
             self.project.am_obj,
             addr,
             comment_text,
+            kind=kind,
             kb=self.kb,
             hooks=_InstanceEditHooks(self),
             mirror_to_pseudocode=False,
             rerender=False,
         )
-
-        if comment_text:
-            if kind is not None:
-                self.annotations.set_kind(addr, kind)
-        else:
-            self.annotations.set_kind(addr, None)
         self.annotations.notify_comments_changed(addr)
 
         # TODO: can this be removed?

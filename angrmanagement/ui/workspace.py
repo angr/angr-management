@@ -543,7 +543,6 @@ class Workspace:
         self.plugins.handle_project_save(file_path)
         angrdb = AngrDB(project=self.main_instance.project.am_obj)
         extra_info = self.plugins.angrdb_store_entries()
-        extra_info.update(self.main_instance.annotations.serialize())
         angrdb.dump(file_path, kbs=[self.main_instance.kb], extra_info=extra_info)
         self.main_instance.database_path = file_path
         return True
