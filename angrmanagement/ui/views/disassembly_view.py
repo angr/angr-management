@@ -939,7 +939,7 @@ class DisassemblyView(SynchronizedFunctionView):
         data_matches: dict[int, int] = {}
         limit = Conf.find_match_limit
         searcher = Searcher(self.instance.project.am_obj, kb=self.instance.kb)
-        comments = getattr(self.instance.kb, "comments", None) if not instructions_only else None
+        comments = self.instance.kb.comments if not instructions_only else None
         for func in self._find_scope_functions():
             for addr, text, _ in self._function_details(searcher, func):
                 comment = comments.get(addr) if comments is not None else None

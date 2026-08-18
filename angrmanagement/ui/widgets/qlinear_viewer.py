@@ -153,7 +153,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         addrs = []
         seen = set()
         for block in self._insaddr_to_block.values():
-            func_addr = getattr(block, "func_addr", None)
+            func_addr = block.func_addr
             if func_addr is not None and func_addr not in seen:
                 seen.add(func_addr)
                 addrs.append(func_addr)
@@ -164,7 +164,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         The address of the function owning an instruction on the displayed page, or None if the
         instruction is not on the page.
         """
-        return getattr(self._insaddr_to_block.get(insn_addr), "func_addr", None)
+        block = self._insaddr_to_block.get(insn_addr)
+        return block.func_addr if block is not None else None
 
     @property
     def first_visible_instruction_addr(self) -> int | None:

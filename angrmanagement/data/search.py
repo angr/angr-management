@@ -8,6 +8,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from angr.knowledge_plugins.cfg.memory_data import MemoryDataSort
+from cle.backends.elf.regions import ELFSection
 
 from angrmanagement.utils import filter_string_for_display
 
@@ -283,12 +284,16 @@ def available_scopes(project: angr.Project | None, current_func_addr: int | None
                 max(main_object.max_addr - main_object.min_addr + 1, 0),
             )
         )
-        regions = list(getattr(main_object, "sections", []) or []) or list(getattr(main_object, "segments", []) or [])
+        regions = []
+        if hasattr(main_object, "sections"):
+            regions = list(main_object.sections)
+        elif hasattr(main_object, "segments"):
+            regions = list(main_object.segments)
         for idx, region in enumerate(regions):
-            size = getattr(region, "memsize", 0)
-            if not size or getattr(region, "only_contains_uninitialized_data", False):
+            size = region.memsize
+            if not size or region.only_contains_uninitialized_data:
                 continue
-            if not getattr(region, "occupies_memory", True):
+            if isinstance(region, ELFSection) and not region.occupies_memory:
                 continue
             name = getattr(region, "name", None) or f"segment {idx}"
             scopes.append(SearchScope(f"Section: {name}", "range", region.vaddr, size))
@@ -407,10 +412,7 @@ class Searcher:
             if func is None:
                 return
             for block in func.blocks:
-                try:
-                    yield block.addr, block.bytes
-                except Exception:  # pylint:disable=broad-except
-                    continue
+                yield block.addr, block.bytes
             return
 
         if scope.kind == "range" and scope.start is not None and scope.size:
@@ -467,10 +469,7 @@ class Searcher:
     def _get_function(self, addr: int | None) -> Function | None:
         if addr is None:
             return None
-        try:
-            return self.kb.functions.get_by_addr(addr)
-        except KeyError:
-            return None
+        return self.kb.functions.get_by_addr(addr) if self.kb.functions.contains_addr(addr) else None
 
     def _function_at(self, addr: int) -> Function | None:
         func = self.kb.functions.floor_func(addr)
@@ -566,7 +565,7 @@ class Searcher:
         minimum length).
         """
         cfg = self.cfg
-        memory_data = getattr(cfg, "memory_data", None) if cfg is not None else None
+        memory_data = cfg.memory_data if cfg is not None else None
         if not memory_data:
             return
         for md in list(memory_data.values()):
@@ -646,19 +645,16 @@ class Searcher:
             if progress is not None and idx % self.PROGRESS_EVERY == 0:
                 progress(100.0 * idx / total, f"Scanning {func.name}")
             for insn in self._iter_capstone_insns(func):
-                raw = getattr(insn, "insn", insn)
-                try:
-                    operands = raw.operands
-                except Exception:  # pylint:disable=broad-except
-                    continue
+                raw = insn.insn
+                operands = raw.operands
                 for op in operands:
                     value = None
                     label = "operand"
                     if op.type == capstone.CS_OP_IMM:
                         value = op.imm
                     elif op.type == capstone.CS_OP_MEM:
-                        mem = getattr(op, "mem", None)
-                        value = getattr(mem, "disp", None) if mem is not None else None
+                        mem = op.mem
+                        value = mem.disp if mem is not None else None
                         label = "displacement"
                     if value is None or (value & mask) != wanted:
                         continue
@@ -701,8 +697,8 @@ class Searcher:
         Yield ``(address, text, bytes)`` for every instruction of ``func``, without comments.
         """
         for insn in self._iter_capstone_insns(func):
-            raw = getattr(insn, "insn", insn)
-            raw_bytes = bytes(getattr(raw, "bytes", None) or b"")
+            raw = insn.insn
+            raw_bytes = bytes(raw.bytes or b"")
             yield insn.address, f"{insn.mnemonic} {insn.op_str}".strip(), raw_bytes
 
     def iter_instruction_texts(self, func: Function) -> Iterator[tuple[int, str]]:
@@ -710,7 +706,7 @@ class Searcher:
         Yield ``(address, text)`` for every instruction of ``func``, including any user comment
         attached to the instruction.
         """
-        comments = getattr(self.kb, "comments", None)
+        comments = self.kb.comments
         for addr, text, _ in self.iter_instruction_details(func):
             comment = comments.get(addr) if comments is not None else None
             if comment:
@@ -719,11 +715,9 @@ class Searcher:
 
     def _iter_capstone_insns(self, func: Function):
         for block in func.blocks:
-            try:
-                insns = block.capstone.insns
-            except Exception:  # pylint:disable=broad-except
+            if block.capstone is None:
                 continue
-            yield from insns
+            yield from block.capstone.insns
 
     #
     # Decompilation text search
@@ -731,7 +725,7 @@ class Searcher:
 
     def _search_decompilation(self, query: SearchQuery, progress) -> Iterator[SearchResult]:
         matcher = TextMatcher(query.text, regex=query.regex, case_sensitive=query.case_sensitive)
-        decompilations = getattr(self.kb, "decompilations", None)
+        decompilations = self.kb.decompilations
         if decompilations is None:
             return
 
@@ -758,7 +752,7 @@ class Searcher:
             codegen = self._get_codegen(addr, flavor, decompile=query.decompile_on_demand)
             if codegen is None:
                 continue
-            text = getattr(codegen, "text", None)
+            text = codegen.text
             if not text:
                 continue
             func = self._get_function(addr)
@@ -775,20 +769,14 @@ class Searcher:
 
     def _get_codegen(self, addr: int, flavor: str, decompile: bool):
         decompilations = self.kb.decompilations
-        try:
-            cache = decompilations[(addr, flavor)]
-        except (KeyError, TypeError):
-            cache = None
+        cache = decompilations[(addr, flavor)] if (addr, flavor) in decompilations else None  # noqa: SIM401
         if cache is None and decompile:
             func = self._get_function(addr)
             if func is None:
                 return None
-            try:
-                self.project.analyses.Decompiler(func, cfg=self.cfg, flavor=flavor, use_cache=True)
-                cache = decompilations[(addr, flavor)]
-            except Exception:  # pylint:disable=broad-except
-                return None
-        return getattr(cache, "codegen", None) if cache is not None else None
+            self.project.analyses.Decompiler(func, cfg=self.cfg, flavor=flavor, use_cache=True)
+            cache = decompilations[(addr, flavor)]
+        return cache.codegen if cache is not None else None
 
     @staticmethod
     def _codegen_addr(codegen, pos: int, fallback: int) -> int:
@@ -800,13 +788,10 @@ class Searcher:
             posmap = getattr(codegen, attr, None)
             if posmap is None:
                 continue
-            try:
-                node = posmap.get_node(pos)
-            except Exception:  # pylint:disable=broad-except
-                continue
+            node = posmap.get_node(pos)
             if isinstance(node, int):
                 return node
-            tags = getattr(node, "tags", None)
+            tags = node.tags
             if tags and isinstance(tags.get("ins_addr"), int):
                 return tags["ins_addr"]
         return fallback
