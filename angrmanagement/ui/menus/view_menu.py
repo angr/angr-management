@@ -125,6 +125,12 @@ class ViewMenu(Menu):
                 MenuEntry("Pro&ximity", main_window.view_proximity_for_current_function),
                 MenuEntry("Pseudo&code", main_window.workspace.show_pseudocode_view, icon=icon("pseudocode-view")),
                 MenuEntry("&Strings", main_window.workspace.show_strings_view, icon=icon("strings-view")),
+                MenuEntry(
+                    "S&earch",
+                    main_window.workspace.show_search_view,
+                    shortcut=QKeySequence("Ctrl+Shift+F"),
+                    icon=icon("search-view"),
+                ),
                 MenuEntry("&Patches", main_window.workspace.show_patches_view, icon=icon("patches-view")),
                 MenuEntry("&Types", main_window.workspace.show_types_view, icon=icon("types-view")),
                 MenuEntry("&Functions", main_window.workspace.show_functions_view, icon=icon("functions-view")),

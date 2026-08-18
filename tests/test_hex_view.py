@@ -5,15 +5,17 @@ Test cases for HexView.
 
 from __future__ import annotations
 
+import os
 import unittest
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+import angr  # type: ignore[import-untyped]
 import angr.errors  # type: ignore[import-untyped]
 from angr import Block  # type: ignore[attr-defined]
 from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort  # type: ignore[import-untyped]
 from angr.knowledge_plugins.patches import Patch  # type: ignore[import-untyped]
-from common import ProjectOpenTestCase, create_qapp
+from common import AngrManagementTestCase, ProjectOpenTestCase, create_qapp, test_location
 from PySide6.QtCore import QEvent, QPoint, QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QImage, QKeyEvent, QMouseEvent, QPainter, QPolygonF, QResizeEvent, QWheelEvent
 from PySide6.QtWidgets import (
@@ -23,6 +25,7 @@ from PySide6.QtWidgets import (
     QStyleOptionGraphicsItem,
 )
 
+from angrmanagement.config import Conf
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
 from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.ui.views.hex_view import (
@@ -2835,6 +2838,100 @@ class TestKeyPressEventFallthrough(HexGraphicsObjectTestCase):
             # 'g' is not a hex digit
             event = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_G, Qt.KeyboardModifier.NoModifier, "g")
             self.hex_obj.keyPressEvent(event)
+
+
+class TestHexViewFindBar(AngrManagementTestCase):
+    """Tests for Ctrl+F in the hex view."""
+
+    def setUp(self):
+        super().setUp()
+        instance = self.main.workspace.main_instance
+        instance.project.am_obj = angr.Project(os.path.join(test_location, "x86_64", "true"), auto_load_libs=False)
+        instance.project.am_event()
+        self.main.workspace.job_manager.join_all_jobs(wait_period=0.3)
+        self.view = HexView(self.main.workspace, "center", instance)
+
+    @property
+    def min_addr(self) -> int:
+        return self.main.workspace.main_instance.project.am_obj.loader.main_object.min_addr
+
+    def test_find_bar_hidden_until_activated(self):
+        assert self.view._find_bar.isHidden()
+        self.view.show_find_bar()
+        assert not self.view._find_bar.isHidden()
+
+    def test_hex_pattern_search(self):
+        self.view.show_find_bar()
+        self.view._find_bar._query_box.setText("7f 45 4c 46")
+        assert (self.min_addr, 4) in self.view._find_matches
+        # the cursor lands on the first match, and matches are highlighted
+        assert self.view.inner_widget.hex.cursor == self.view._find_matches[0][0]
+        assert self.view._find_highlights
+        assert self.view._find_bar._status_label.text() == f"1 of {len(self.view._find_matches)}"
+
+    def test_hex_wildcard_pattern(self):
+        self.view.show_find_bar()
+        self.view._find_bar._query_box.setText("7f ?? 4c 46")
+        assert any(addr == self.min_addr for addr, _ in self.view._find_matches)
+
+    def test_text_search_and_stepping(self):
+        self.view.show_find_bar()
+        self.view._find_bar._mode_combo.setCurrentText("Text")
+        self.view._find_bar._query_box.setText("GLIBC")
+        assert len(self.view._find_matches) > 1
+        first = self.view.inner_widget.hex.cursor
+        self.view.find_next()
+        assert self.view.inner_widget.hex.cursor != first
+        self.view.find_previous()
+        assert self.view.inner_widget.hex.cursor == first
+
+    def test_invalid_hex_pattern_reports_error(self):
+        self.view.show_find_bar()
+        self.view._find_bar._query_box.setText("zz")
+        assert not self.view._find_matches
+        assert self.view._find_bar._query_box.toolTip()
+
+    def test_no_match_clears_highlights(self):
+        self.view.show_find_bar()
+        self.view._find_bar._query_box.setText("7f 45 4c 46")
+        assert self.view._find_highlights
+        self.view._find_bar._query_box.setText("de ad be ef 99 88 77 66 55")
+        assert not self.view._find_matches
+        assert not self.view._find_highlights
+
+    def test_cleared_query_clears_highlights(self):
+        self.view.show_find_bar()
+        self.view._find_bar._query_box.setText("7f 45 4c 46")
+        assert self.view._find_highlights
+        self.view._find_bar._query_box.setText("")
+        assert not self.view._find_matches
+        assert not self.view._find_highlights
+
+    def test_close_clears_highlights(self):
+        self.view.show_find_bar()
+        self.view._find_bar._query_box.setText("7f 45 4c 46")
+        self.view._find_bar.close_bar()
+        assert not self.view._find_matches
+        assert not self.view._find_highlights
+        assert self.view._find_bar.isHidden()
+
+    def test_match_limit_is_configurable(self):
+        old_limit = Conf.find_match_limit
+        Conf.find_match_limit = 5
+        try:
+            self.view.show_find_bar()
+            self.view._find_bar._query_box.setText("??")
+            assert len(self.view._find_matches) == 5
+            assert "of 5+" in self.view._find_bar._status_label.text()
+        finally:
+            Conf.find_match_limit = old_limit
+
+    def test_text_options_hidden_in_hex_mode(self):
+        self.view.show_find_bar()
+        assert not self.view._find_bar._case_box.isVisibleTo(self.view._find_bar)
+        self.view._find_bar._mode_combo.setCurrentText("Text")
+        assert self.view._find_bar._case_box.isVisibleTo(self.view._find_bar)
+        assert self.view._find_bar._regex_box.isVisibleTo(self.view._find_bar)
 
 
 if __name__ == "__main__":

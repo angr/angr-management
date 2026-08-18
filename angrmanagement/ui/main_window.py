@@ -378,7 +378,7 @@ class MainWindow(QMainWindow):
             QShortcut(QKeySequence(f"Alt+{i}"), self, lambda idx=i: self._raise_view(idx - 1))
         QShortcut(QKeySequence("Alt+0"), self, lambda: self._raise_view(9))
 
-        QShortcut(QKeySequence("Ctrl+I"), self, self.workspace.job_manager.interrupt_current_job)
+        QShortcut(QKeySequence("Ctrl+Shift+I"), self, self.workspace.job_manager.interrupt_current_job)
 
         # Raise the DisassemblyView after everything has initialized
         self._raise_view(0)
@@ -637,6 +637,7 @@ class MainWindow(QMainWindow):
                     ("View: Proximity", self.workspace.view_proximity_for_current_function),
                     ("View: Pseudocode", self.workspace.show_pseudocode_view),
                     ("View: Registers", self.workspace.show_registers_view),
+                    ("View: Search", self.workspace.show_search_view),
                     ("View: Stack", self.workspace.show_stack_view),
                     ("View: States", self.workspace.show_states_view),
                     ("View: Strings", self.workspace.show_strings_view),

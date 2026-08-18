@@ -60,6 +60,7 @@ from .views import (
     PatchesView,
     ProximityView,
     RegistersView,
+    SearchView,
     SignaturesView,
     StackView,
     StatesView,
@@ -150,6 +151,8 @@ class Workspace:
         self.on_debugger_state_updated()
 
         DisassemblyView.register_commands(self)
+        CodeView.register_commands(self)
+        HexView.register_commands(self)
 
         self.main_instance.patches.am_subscribe(self._on_patch_event)
 
@@ -818,6 +821,12 @@ class Workspace:
 
     def show_strings_view(self) -> None:
         self.show_view("strings", StringsView)
+
+    def show_search_view(self) -> None:
+        view = self._get_or_create_view("search", SearchView)
+        view.reload()
+        self.raise_view(view)
+        view.focus_query_box()
 
     def show_patches_view(self) -> None:
         self.show_view("patches", PatchesView)

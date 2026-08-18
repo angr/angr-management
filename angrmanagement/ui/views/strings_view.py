@@ -98,7 +98,8 @@ class StringsView(InstanceView):
         )
 
         self._filter_string = QLineEdit(self)
-        self._regex_checkbox = QCheckBox("Regex", self)
+        self._regex_checkbox = QCheckBox(".*", self)
+        self._regex_checkbox.setToolTip("Regular expression")
         self._filter_string.textChanged.connect(self.on_filter_change)
         self._regex_checkbox.stateChanged.connect(self.on_filter_change)
 

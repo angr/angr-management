@@ -5,10 +5,12 @@ Test cases for DisassemblyView.
 from __future__ import annotations
 
 import contextlib
+import os
 import unittest
 from unittest.mock import MagicMock, call, patch
 
-from common import ProjectOpenTestCase
+import angr
+from common import AngrManagementTestCase, ProjectOpenTestCase, test_location
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import QDialog
@@ -464,6 +466,53 @@ class TestContextMenus(TestDisassemblyViewBase):
         with patch.object(self.disasm_view, "popup_xref_dialog") as mock_popup:
             self.disasm_view._label_menu._popup_xrefs()
             mock_popup.assert_called_once_with(addr=0x2000, variable=None, dst_addr=0x2000)
+
+
+class TestLinearViewFunctionTracking(AngrManagementTestCase):
+    """Selecting an instruction of another function in linear view updates the current function."""
+
+    def setUp(self):
+        super().setUp()
+        instance = self.main.workspace.main_instance
+        instance.project.am_obj = angr.Project(os.path.join(test_location, "x86_64", "true"), auto_load_libs=False)
+        instance.project.am_event()
+        self.main.workspace.job_manager.join_all_jobs(wait_period=0.3)
+        self.workspace = self.main.workspace
+        self.instance = instance
+
+    def _real_functions(self):
+        kb = self.instance.kb
+        functions = [kb.functions.get_by_addr(addr) for addr in kb.functions]
+        return [f for f in functions if not f.is_simprocedure and not f.is_alignment and f.size > 0]
+
+    def test_linear_selection_updates_current_function(self):
+        view = DisassemblyView(self.workspace, "center", self.instance)
+        functions = sorted(self._real_functions(), key=lambda f: f.addr)
+        func_a, func_b = functions[0], functions[-1]
+        assert func_a.addr != func_b.addr
+
+        view.display_function(func_a)
+        view.display_linear_viewer()
+        assert view.function.am_obj.addr == func_a.addr
+
+        view.infodock.select_instruction(func_b.addr)
+        assert view.function.am_obj is not None
+        assert view.function.am_obj.addr == func_b.addr
+        assert view._statusbar.function is not None
+        assert view._statusbar.function.addr == func_b.addr
+        # the click selection must survive the function switch
+        assert func_b.addr in view.infodock.selected_insns
+
+    def test_graph_selection_does_not_switch_function(self):
+        view = DisassemblyView(self.workspace, "center", self.instance)
+        functions = sorted(self._real_functions(), key=lambda f: f.addr)
+        func_a, func_b = functions[0], functions[-1]
+
+        view.display_function(func_a)
+        view.display_disasm_graph()
+        view.infodock.selected_insns.am_obj = {func_b.addr}
+        view.infodock.selected_insns.am_event(insn_addr=func_b.addr)
+        assert view.function.am_obj.addr == func_a.addr
 
 
 if __name__ == "__main__":

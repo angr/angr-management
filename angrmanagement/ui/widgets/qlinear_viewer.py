@@ -8,7 +8,7 @@ from angr.analyses.cfg.cfb import MemoryRegion, Unknown
 from angr.block import Block
 from angr.knowledge_plugins.cfg.memory_data import MemoryData
 from angr.utils.timing import timethis
-from PySide6.QtCore import QEvent, QRect, QRectF, Qt
+from PySide6.QtCore import QEvent, QRect, QRectF, Qt, Signal
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QAbstractScrollArea, QAbstractSlider, QGraphicsScene, QHBoxLayout
 from sortedcontainers import SortedDict
@@ -69,6 +69,9 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
 
 class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     OBJECT_PADDING = 0
+
+    # emitted whenever the displayed page changes (scrolling, navigation, reloads)
+    viewport_changed = Signal()
 
     def __init__(self, instance: Instance, disasm_view, parent=None) -> None:
         QDisassemblyBaseControl.__init__(self, instance, disasm_view, QAbstractScrollArea)
@@ -141,6 +144,49 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
     @property
     def scene(self):
         return self._viewer._scene
+
+    @property
+    def visible_function_addrs(self) -> list[int]:
+        """
+        Addresses of the functions with at least one instruction on the currently displayed page, in display order.
+        """
+        addrs = []
+        seen = set()
+        for block in self._insaddr_to_block.values():
+            func_addr = block.func_addr
+            if func_addr is not None and func_addr not in seen:
+                seen.add(func_addr)
+                addrs.append(func_addr)
+        return addrs
+
+    def function_addr_of_instruction(self, insn_addr: int) -> int | None:
+        """
+        The address of the function owning an instruction on the displayed page, or None if the
+        instruction is not on the page.
+        """
+        block = self._insaddr_to_block.get(insn_addr)
+        return block.func_addr if block is not None else None
+
+    @property
+    def first_visible_instruction_addr(self) -> int | None:
+        """
+        The address of the first instruction on the displayed page, or None if the page shows no
+        instructions.
+        """
+        return next(iter(self._insaddr_to_block), None)
+
+    @property
+    def visible_memory_data(self) -> list[tuple[int, MemoryData]]:
+        """
+        ``(address, MemoryData)`` of the data items on the displayed page, in address order.
+        """
+        items = [
+            (addr, obj.memory_data)
+            for addr, obj in self.objects.items()
+            if isinstance(obj, QMemoryDataBlock) and obj.isVisible()
+        ]
+        items.sort(key=lambda item: item[0])
+        return items
 
     #
     # Events
@@ -502,6 +548,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         # Update properties
         self._offset = offset
         self._start_line_in_object = start_line_in_object
+
+        self.viewport_changed.emit()
 
     def _validate_cached_qobj(
         self, obj, cached_qobj: QAlignmentBlock | QLinearBlock | QMemoryDataBlock | QUnknownBlock
