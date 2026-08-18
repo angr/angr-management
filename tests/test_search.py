@@ -1,3 +1,4 @@
+# pylint:disable=no-self-use
 from __future__ import annotations
 
 import os
@@ -196,7 +197,7 @@ class TestSearcher(unittest.TestCase):
 
     def test_decompilation_search_only_uses_cache(self):
         # nothing has been decompiled yet, so there is nothing to search
-        assert self.searcher.run(SearchQuery(SearchKind.DECOMPILATION, "return")) == []
+        assert not self.searcher.run(SearchQuery(SearchKind.DECOMPILATION, "return"))
 
     def test_scope_restricts_results(self):
         scopes = available_scopes(self.proj)

@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QStyleOptionGraphicsItem,
 )
 
+from angrmanagement.config import Conf
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
 from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.ui.views.hex_view import (
@@ -2887,7 +2888,7 @@ class TestHexViewFindBar(AngrManagementTestCase):
     def test_invalid_hex_pattern_reports_error(self):
         self.view.show_find_bar()
         self.view._find_bar._query_box.setText("zz")
-        assert self.view._find_matches == []
+        assert not self.view._find_matches
         assert self.view._find_bar._query_box.toolTip()
 
     def test_no_match_clears_highlights(self):
@@ -2895,7 +2896,7 @@ class TestHexViewFindBar(AngrManagementTestCase):
         self.view._find_bar._query_box.setText("7f 45 4c 46")
         assert self.view._find_highlights
         self.view._find_bar._query_box.setText("de ad be ef 99 88 77 66 55")
-        assert self.view._find_matches == []
+        assert not self.view._find_matches
         assert not self.view._find_highlights
 
     def test_cleared_query_clears_highlights(self):
@@ -2903,20 +2904,18 @@ class TestHexViewFindBar(AngrManagementTestCase):
         self.view._find_bar._query_box.setText("7f 45 4c 46")
         assert self.view._find_highlights
         self.view._find_bar._query_box.setText("")
-        assert self.view._find_matches == []
+        assert not self.view._find_matches
         assert not self.view._find_highlights
 
     def test_close_clears_highlights(self):
         self.view.show_find_bar()
         self.view._find_bar._query_box.setText("7f 45 4c 46")
         self.view._find_bar.close_bar()
-        assert self.view._find_matches == []
+        assert not self.view._find_matches
         assert not self.view._find_highlights
         assert self.view._find_bar.isHidden()
 
     def test_match_limit_is_configurable(self):
-        from angrmanagement.config import Conf
-
         old_limit = Conf.find_match_limit
         Conf.find_match_limit = 5
         try:

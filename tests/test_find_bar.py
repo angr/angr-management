@@ -10,6 +10,7 @@ from collections import Counter
 from unittest.mock import patch
 
 import angr
+from angr.knowledge_plugins.cfg import MemoryDataSort
 from common import AngrManagementTestCase, test_location
 from PySide6.QtWidgets import QApplication
 
@@ -22,6 +23,14 @@ SMALL_FUNC_ADDR = 0x4016A0
 # ProjectOpenTestCase drains the job queue with the default two-second idle window, which dominates
 # the runtime of these tests. The analyses we need are all done well before that.
 JOB_DRAIN_PERIOD = 0.3
+
+
+def in_other(other, a) -> bool:
+    return other.addr <= a < other.addr + other.size
+
+
+def in_displayed(a) -> bool:
+    return SMALL_FUNC_ADDR <= a < SMALL_FUNC_ADDR + 0x1000
 
 
 class FindBarTestCase(AngrManagementTestCase):
@@ -129,34 +138,29 @@ class TestDisassemblyFindBar(FindBarTestCase):
 
     def test_linear_find_covers_visible_functions(self):
         other = self._distant_function()
-        in_other = lambda a: other.addr <= a < other.addr + other.size  # noqa: E731
-        in_displayed = lambda a: SMALL_FUNC_ADDR <= a < SMALL_FUNC_ADDR + 0x1000  # noqa: E731
-
         self.disasm.display_linear_viewer()
         self.disasm.jump_to(other.addr)
         query = next(iter(other.blocks)).capstone.insns[0].mnemonic
 
         self.disasm.show_find_bar()
         self.disasm._find_bar._query_box.setText(query)
-        assert any(in_other(addr) for addr, _ in self.disasm._find_matches)
+        assert any(in_other(other, addr) for addr, _ in self.disasm._find_matches)
         # the displayed function is off screen now, so it must not contribute matches
         assert not any(in_displayed(addr) for addr, _ in self.disasm._find_matches)
 
     def test_linear_scroll_reapplies_query(self):
         other = self._distant_function()
-        in_other = lambda a: other.addr <= a < other.addr + other.size  # noqa: E731
-
         self.disasm.display_linear_viewer()
         self.disasm.show_find_bar()
         query = next(iter(other.blocks)).capstone.insns[0].mnemonic
         self.disasm._find_bar._query_box.setText(query)
         # the distant function is off screen, so it contributes no matches yet
-        assert not any(in_other(addr) for addr, _ in self.disasm._find_matches)
+        assert not any(in_other(other, addr) for addr, _ in self.disasm._find_matches)
 
         # scrolling the viewport to the distant function re-applies the query
         self.disasm._linear_viewer.navigate_to_addr(other.addr)
-        assert any(in_other(addr) for addr, _ in self.disasm._find_matches)
-        assert any(in_other(addr) for addr in self.disasm.infodock.selected_insns)
+        assert any(in_other(other, addr) for addr, _ in self.disasm._find_matches)
+        assert any(in_other(other, addr) for addr in self.disasm.infodock.selected_insns)
 
     def test_linear_typing_does_not_navigate(self):
         self.disasm.display_linear_viewer()
@@ -254,8 +258,6 @@ class TestDisassemblyFindBar(FindBarTestCase):
         assert self.disasm._find_bar._query_box.toolTip()
 
     def _string_memory_data(self):
-        from angr.knowledge_plugins.cfg import MemoryDataSort
-
         cfg = self.instance.cfg.am_obj
         for md in cfg.memory_data.values():
             if md.sort == MemoryDataSort.String and md.content and len(md.content) >= 6 and md.size:

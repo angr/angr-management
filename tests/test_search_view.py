@@ -1,7 +1,4 @@
-"""
-Test cases for the Search view and its result model.
-"""
-
+# pylint:disable=no-self-use
 from __future__ import annotations
 
 import os
@@ -14,6 +11,8 @@ from PySide6.QtWidgets import QApplication
 
 from angrmanagement.data.search import SearchKind, SearchResult
 from angrmanagement.ui.views.search_view import SearchView
+from angrmanagement.ui.views.strings_view import StringsView
+from angrmanagement.ui.widgets.qfind_bar import QFindBar
 from angrmanagement.ui.widgets.qsearch_table import QSearchTableModel
 
 # ProjectOpenTestCase drains the job queue with the default two-second idle window, which dominates
@@ -175,9 +174,6 @@ class TestSearchView(SearchTestCase):
         assert self.view._decomp_count_label.text() == "1 function decompiled"
 
     def test_case_and_regex_checkboxes_are_unified(self):
-        from angrmanagement.ui.views.strings_view import StringsView
-        from angrmanagement.ui.widgets.qfind_bar import QFindBar
-
         find_bar = QFindBar()
         strings_view = StringsView(self.workspace, "center", self.instance)
 

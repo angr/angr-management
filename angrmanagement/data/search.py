@@ -713,7 +713,8 @@ class Searcher:
                 text = f"{text} ; {comment}"
             yield addr, text
 
-    def _iter_capstone_insns(self, func: Function):
+    @staticmethod
+    def _iter_capstone_insns(func: Function):
         for block in func.blocks:
             if block.capstone is None:
                 continue
