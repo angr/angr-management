@@ -12,7 +12,7 @@ from angrmanagement.data.jobs import IndirectJumpResolutionConfiguration, Indire
 from angrmanagement.data.jobs.job import JobState
 from angrmanagement.logic.jobmanager import JobCancelled
 from angrmanagement.ui.views import IndirectJumpsView
-from angrmanagement.ui.views.indirect_jumps_view import TARGET_ROLE
+from angrmanagement.ui.views.indirect_jumps_view import SITE_ROLE, TARGET_ROLE
 
 BINARY = os.path.join(test_location, "x86_64", "fpijr_global_table")
 # a callback registered at run time: nothing but the whole-binary analysis resolves it, and its provenance runs
@@ -229,6 +229,58 @@ class TestIndirectJumpsView(AngrManagementTestCase):
 
         self.view._filter_string.setText("")
         assert self._rows()
+
+    def test_context_menu_offers_both_views(self):
+        model = self.view._tree.model()
+        row = next(r for r in range(model.rowCount()) if model.item(r, 0).rowCount())
+        site_index = model.index(row, 0)
+        site = site_index.data(SITE_ROLE)
+        target_index = model.index(0, 0, site_index)
+        target = target_index.data(TARGET_ROLE)
+
+        entries = [a.text() for a in self.view.build_context_menu(target_index).actions() if not a.isSeparator()]
+        # everything worth navigating to is reachable in either view
+        for what, addr in (
+            ("target", target),
+            ("site", site.address),
+            ("function", site.func_addr),
+        ):
+            label = f"function {self.view._function_name(addr)}" if what == "function" else f"{what} {addr:#x}"
+            assert f"Jump to {label} in disassembly view" in entries
+            assert f"Jump to {label} in pseudocode" in entries
+
+        # a site row has no target of its own to offer
+        entries = [a.text() for a in self.view.build_context_menu(site_index).actions() if not a.isSeparator()]
+        assert not [e for e in entries if e.startswith("Jump to target")]
+        assert f"Jump to site {site.address:#x} in pseudocode" in entries
+
+    def test_jumping_to_the_disassembly_and_the_pseudocode(self):
+        model = self.view._tree.model()
+        row = next(r for r in range(model.rowCount()) if model.item(r, 0).rowCount())
+        site_index = model.index(row, 0)
+        site = site_index.data(SITE_ROLE)
+        target = model.index(0, 0, site_index).data(TARGET_ROLE)
+
+        # a target is a function of its own, and gets decompiled as one
+        self.view.jump_to_in_pseudocode(target)
+        code_view = self.main.workspace.view_manager.first_view_in_category("pseudocode")
+        assert code_view.function.am_obj is self.instance.kb.functions.get_by_addr(target)
+
+        # a site is an instruction inside a function, so the function around it is what gets decompiled
+        self.view.jump_to_in_pseudocode(site.address, site.func_addr)
+        assert code_view.function.am_obj is self.instance.kb.functions.get_by_addr(site.func_addr)
+
+        self.view.jump_to_in_disassembly(site.address)
+        disasm_view = self.main.workspace.view_manager.first_view_in_category("disassembly")
+        assert disasm_view.function.am_obj is self.instance.kb.functions.get_by_addr(site.func_addr)
+
+    def test_pseudocode_is_not_offered_without_a_function(self):
+        # an address outside every known function has nothing to decompile
+        assert self.view._function_containing(0xDEADBEEF) is None
+        code_view = self.main.workspace.view_manager.first_view_in_category("pseudocode")
+        before = code_view.function.am_obj
+        self.view.jump_to_in_pseudocode(0xDEADBEEF)
+        assert code_view.function.am_obj is before
 
     def test_shows_results_of_the_analysis(self):
         before = self.view._status_label.text()

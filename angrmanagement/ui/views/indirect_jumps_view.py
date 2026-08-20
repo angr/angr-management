@@ -227,6 +227,42 @@ class IndirectJumpsView(InstanceView):
         """
         self.workspace.analysis_manager.resolve_indirect_jumps()
 
+    def jump_to_in_disassembly(self, addr: int) -> None:
+        """
+        Show the given address in the disassembly view.
+        """
+        self.workspace.jump_to(addr)
+
+    def jump_to_in_pseudocode(self, addr: int, func_addr: int | None = None) -> None:
+        """
+        Show the given address in the pseudocode view, decompiling the function that contains it.
+
+        :param func_addr: The function to decompile, when it is already known; otherwise the function containing
+                          ``addr`` is looked up.
+        """
+        func = self._function_containing(func_addr if func_addr is not None else addr)
+        if func is None:
+            _l.warning("Cannot show %#x in the pseudocode view: it is not inside a known function.", addr)
+            return
+        self.workspace.decompile_function(func, curr_ins=addr)
+
+    def _function_containing(self, addr: int) -> Function | None:
+        """
+        The function the given address belongs to, whether it is the function's entry point or an address inside it.
+        """
+        kb = self.instance.kb
+        if kb is None:
+            return None
+        if addr in kb.functions:
+            return kb.functions.get_by_addr(addr)
+
+        # not a function entry point - a jump table target, for instance, is the address of a block inside one
+        cfg_model = None if self.instance.cfg.am_none else self.instance.cfg.am_obj
+        node = cfg_model.get_any_node(addr, anyaddr=True) if cfg_model is not None else None
+        if node is not None and node.function_address in kb.functions:
+            return kb.functions.get_by_addr(node.function_address)
+        return None
+
     def provenance_of(self, site: IndirectJumpSite, target: int) -> list[ProvenanceEntry]:
         """
         How the given target reached the given site: the chain of steps that carried the code pointer there, oldest
@@ -666,25 +702,41 @@ class IndirectJumpsView(InstanceView):
         if addr is not None:
             self.workspace.jump_to(addr)
 
+    def _add_jump_actions(self, menu: QMenu, what: str, addr: int, func_addr: int | None = None) -> None:
+        """
+        Add the pair of actions that take the user to ``addr``, in either of the two views that can show it.
+        """
+        menu.addAction(f"Jump to {what} in disassembly view", lambda: self.jump_to_in_disassembly(addr))
+        action = menu.addAction(f"Jump to {what} in pseudocode", lambda: self.jump_to_in_pseudocode(addr, func_addr))
+        if self._function_containing(func_addr if func_addr is not None else addr) is None:
+            # nothing to decompile: the address is not inside a function angr knows about
+            action.setEnabled(False)
+
     def _on_context_menu(self, pos) -> None:
-        index = self._tree.indexAt(pos)
+        menu = self.build_context_menu(self._tree.indexAt(pos))
+        menu.exec_(self._tree.viewport().mapToGlobal(pos))
+
+    def build_context_menu(self, index) -> QMenu:
+        """
+        The context menu for a row of the list.
+        """
         menu = QMenu("", self)
 
         if index.isValid():
             site = index.data(SITE_ROLE)
             target = index.data(TARGET_ROLE)
             if target is not None:
-                menu.addAction(f"Jump to target {target:#x}", lambda: self.workspace.jump_to(target))
+                self._add_jump_actions(menu, f"target {target:#x}", target)
+                menu.addSeparator()
             if site is not None:
-                menu.addAction(f"Jump to site {site.address:#x}", lambda: self.workspace.jump_to(site.address))
-                if target is not None:
-                    menu.addAction("Show how this target was resolved", lambda: self.show_provenance(site, target))
+                self._add_jump_actions(menu, f"site {site.address:#x}", site.address, site.func_addr)
                 if site.func_addr is not None:
-                    menu.addAction(
-                        f"Jump to function {self._function_name(site.func_addr)}",
-                        lambda: self.workspace.jump_to(site.func_addr),
-                    )
+                    menu.addSeparator()
+                    self._add_jump_actions(menu, f"function {self._function_name(site.func_addr)}", site.func_addr)
+                if target is not None:
+                    menu.addSeparator()
+                    menu.addAction("Show how this target was resolved", lambda: self.show_provenance(site, target))
             menu.addSeparator()
 
         menu.addAction("Resolve indirect jumps across the binary", self.run_analysis)
-        menu.exec_(self._tree.viewport().mapToGlobal(pos))
+        return menu
