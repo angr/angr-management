@@ -9,6 +9,7 @@ from .dep_view import DependencyView
 from .disassembly_view import DisassemblyView
 from .functions_view import FunctionsView
 from .hex_view import HexView
+from .indirect_jumps_view import IndirectJumpsView
 from .jobs_view import JobsView
 from .log_view import LogView
 from .mcp_history_view import MCPHistoryView
@@ -36,6 +37,7 @@ __all__ = [
     "DisassemblyView",
     "FunctionsView",
     "HexView",
+    "IndirectJumpsView",
     "JobsView",
     "LogView",
     "MCPHistoryView",

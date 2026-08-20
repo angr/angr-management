@@ -22,6 +22,7 @@ NAME_TO_QTAWESOME_NAME = {
     "file-save": "mdi.floppy",
     "functions-view": "mdi.function",
     "hex-view": "mdi.hexadecimal",
+    "indirect_jumps-view": "mdi.call-split",
     "jobs-view": "fa5s.hammer",
     "log-view": "mdi.message-bulleted",
     "patches-view": "mdi.sticker-outline",

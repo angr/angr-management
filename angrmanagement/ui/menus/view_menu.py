@@ -135,6 +135,11 @@ class ViewMenu(Menu):
                 MenuEntry("&Types", main_window.workspace.show_types_view, icon=icon("types-view")),
                 MenuEntry("&Functions", main_window.workspace.show_functions_view, icon=icon("functions-view")),
                 MenuEntry("Function Si&gnatures", main_window.workspace.show_signatures_view),
+                MenuEntry(
+                    "&Indirect Jumps",
+                    main_window.workspace.show_indirect_jumps_view,
+                    icon=icon("indirect_jumps-view"),
+                ),
                 MenuEntry("&Traces", main_window.workspace.show_traces_view, icon=icon("traces-view")),
                 MenuEntry("Trace &Map", main_window.workspace.show_trace_map_view),
                 MenuSeparator(),

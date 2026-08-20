@@ -14,6 +14,7 @@ from angrmanagement.ui.views import (
     DisassemblyView,
     FunctionsView,
     HexView,
+    IndirectJumpsView,
     JobsView,
     LogView,
     PatchesView,
@@ -57,6 +58,9 @@ class TestViewsOpen(AngrManagementTestCase):
 
     def test_hex_view(self):
         self.main.workspace.show_view("hex", HexView)
+
+    def test_indirect_jumps_view(self):
+        self.main.workspace.show_view("indirect_jumps", IndirectJumpsView)
 
     def test_jobs_view(self):
         self.main.workspace.show_view("jobs", JobsView)

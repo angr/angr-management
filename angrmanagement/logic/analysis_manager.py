@@ -106,11 +106,7 @@ class AnalysisManager(QObject):
             self._schedule_job(RustTypeDBLoaderJob(instance))
 
         if conf["indirect_jumps"].enabled:
-            self._schedule_job(
-                IndirectJumpResolutionJob(
-                    instance, **conf["indirect_jumps"].to_dict(), on_finish=self._on_indirect_jumps_resolved
-                )
-            )
+            self.resolve_indirect_jumps(**conf["indirect_jumps"].to_dict())
 
         if conf["varec"].enabled:
             job = VariableRecoveryJob(
@@ -123,6 +119,16 @@ class AnalysisManager(QObject):
                 job.prioritize_function(disassembly_view.function.addr)
 
             self._schedule_job(job)
+
+    def resolve_indirect_jumps(self, **kwargs) -> None:
+        """
+        Schedule a whole-binary indirect jump resolution run.
+        """
+        self._schedule_job(
+            IndirectJumpResolutionJob(
+                self.workspace.main_instance, on_finish=self._on_indirect_jumps_resolved, **kwargs
+            )
+        )
 
     def generate_cfg(self, cfg_args=None) -> None:
         job = CFGGenerationJob(self.workspace.main_instance, on_finish=self._on_cfg_generated, **(cfg_args or {}))

@@ -54,6 +54,7 @@ from .views import (
     DisassemblyView,
     FunctionsView,
     HexView,
+    IndirectJumpsView,
     JobsView,
     LogView,
     MCPHistoryView,
@@ -842,6 +843,9 @@ class Workspace:
 
     def show_signatures_view(self) -> None:
         self.show_view("signatures", SignaturesView)
+
+    def show_indirect_jumps_view(self) -> None:
+        self.show_view("indirect_jumps", IndirectJumpsView)
 
     def show_trace_map_view(self) -> None:
         self.show_view("tracemap", TraceMapView, position="top")
