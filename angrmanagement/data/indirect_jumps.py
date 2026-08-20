@@ -41,6 +41,9 @@ class IndirectJumpResolutionResult:
                        ``kb.indirect_jumps`` keys the same sites.
     :ivar provenance:  ``(site instruction address, target)`` to the chain of steps that got the pointer there,
                        oldest step first. Missing for a pair whose provenance was not recorded.
+    :ivar preexisting: Block address to the targets ``kb.indirect_jumps`` already had for it before this run, so
+                       that what the run actually contributed can be told apart afterwards. The run publishes its
+                       results into the same place, which would otherwise make the two indistinguishable.
     :ivar summary:     One-line summary of the run.
     :ivar aborted:     Whether the run stopped early, making everything above partial.
     """
@@ -49,22 +52,28 @@ class IndirectJumpResolutionResult:
     sites: dict[int, tuple[int, str]] = field(default_factory=dict)
     block_addrs: dict[int, int] = field(default_factory=dict)
     provenance: dict[tuple[int, int], list[ProvenanceEntry]] = field(default_factory=dict)
+    preexisting: dict[int, set[int]] = field(default_factory=dict)
     summary: str = ""
     aborted: bool = False
 
     @classmethod
     def from_analysis(
-        cls, analysis: FullProgramIndirectJumpResolution, cfg_model: CFGModel | None = None
+        cls,
+        analysis: FullProgramIndirectJumpResolution,
+        cfg_model: CFGModel | None = None,
+        preexisting: dict[int, set[int]] | None = None,
     ) -> IndirectJumpResolutionResult:
         """
         Distill a finished (or aborted) analysis into a result snapshot.
 
-        :param cfg_model: Used to map each site back onto the block that contains it, which is how the same sites are
-                          keyed in ``kb.indirect_jumps``. Without it the snapshot simply has no block addresses.
+        :param cfg_model:   Used to map each site back onto the block that contains it, which is how the same sites
+                            are keyed in ``kb.indirect_jumps``. Without it the snapshot simply has no block addresses.
+        :param preexisting: What ``kb.indirect_jumps.resolved`` held before the run, captured by the caller.
         """
         result = cls(
             resolutions={site: set(targets) for site, targets in analysis.resolved_indirect_jumps.items()},
             sites=dict(analysis.indirect_sites),
+            preexisting=preexisting or {},
             summary=analysis.stats.summary(),
             aborted=analysis.stats.aborted,
         )

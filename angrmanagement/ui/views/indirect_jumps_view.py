@@ -16,8 +16,12 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMenu,
     QPushButton,
+    QSplitter,
     QTreeView,
+    QTreeWidget,
+    QTreeWidgetItem,
     QVBoxLayout,
+    QWidget,
 )
 
 from angrmanagement.ui.widgets.qfunction_combobox import QFunctionComboBox
@@ -27,6 +31,7 @@ from .view import FunctionView, InstanceView
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg import CFGModel
 
+    from angrmanagement.data.indirect_jumps import ProvenanceEntry
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
 
@@ -84,11 +89,15 @@ class IndirectJumpSite:
 
     def source_of(self, target: int) -> str:
         """
-        Where the given target came from.
+        Where the given target came from. Both may claim it: control-flow recovery and the whole-binary analysis
+        resolve some of the same sites by quite different means.
         """
+        sources = []
         if target in self.cfg_targets:
-            return "CFG"
-        return "Indirect jump analysis"
+            sources.append("CFG")
+        if target in self.analysis_targets:
+            sources.append("Indirect jump analysis")
+        return ", ".join(sources)
 
     @property
     def source(self) -> str:
@@ -98,7 +107,7 @@ class IndirectJumpSite:
         sources = []
         if self.cfg_targets:
             sources.append("CFG")
-        if self.analysis_targets - self.cfg_targets:
+        if self.analysis_targets:
             sources.append("Indirect jump analysis")
         return ", ".join(sources)
 
@@ -218,6 +227,57 @@ class IndirectJumpsView(InstanceView):
         """
         self.workspace.analysis_manager.resolve_indirect_jumps()
 
+    def provenance_of(self, site: IndirectJumpSite, target: int) -> list[ProvenanceEntry]:
+        """
+        How the given target reached the given site: the chain of steps that carried the code pointer there, oldest
+        first. Empty when nothing recorded it.
+        """
+        result = self.instance.indirect_jump_resolution.am_obj
+        if result is None:
+            return []
+        for ins_addr in site.analysis_sites:
+            chain = result.provenance_of(ins_addr, target)
+            if chain:
+                return chain
+        return []
+
+    def show_provenance(self, site: IndirectJumpSite | None, target: int | None) -> None:
+        """
+        Show, in the provenance pane, why the given site may go to the given target.
+        """
+        self._provenance_tree.clear()
+
+        if site is None or target is None:
+            self._provenance_label.setText("Select a resolved target to see how it was resolved.")
+            return
+
+        chain = self.provenance_of(site, target)
+        self._provenance_label.setText(
+            f"How {site.address:#x} reaches {target:#x} ({self._function_name(target)})"
+            if chain
+            else self._why_no_provenance(site, target)
+        )
+        for index, step in enumerate(chain, start=1):
+            item = QTreeWidgetItem([str(index), step.text, f"{step.addr:#x}" if step.addr is not None else ""])
+            if step.addr is not None:
+                item.setData(0, ADDRESS_ROLE, step.addr)
+            self._provenance_tree.addTopLevelItem(item)
+        for col in range(self._provenance_tree.columnCount()):
+            self._provenance_tree.resizeColumnToContents(col)
+
+    def _why_no_provenance(self, site: IndirectJumpSite, target: int) -> str:
+        """
+        Say why there is nothing to show, since there are several quite different reasons for it.
+        """
+        result = self.instance.indirect_jump_resolution.am_obj
+        if result is None:
+            return "Run the indirect jump analysis to see how a target was resolved."
+        if not result.provenance:
+            return "The last analysis run did not record provenance."
+        if target in site.cfg_targets and target not in site.analysis_targets:
+            return "This target came from control-flow recovery, which does not record how it got there."
+        return "Nothing recorded how this target reached this site."
+
     #
     # Data collection
     #
@@ -265,8 +325,7 @@ class IndirectJumpsView(InstanceView):
             if site.func_addr is None:
                 self._fill_in_from_cfg(site, cfg_model)
 
-        # overlay the whole-binary analysis. Its targets are attributed to it only where the CFG did not already have
-        # them: publishing merges the two in the knowledge base, so this is the honest split.
+        # overlay the whole-binary analysis
         if result is not None:
             for ins_addr, (func_addr, kind) in result.sites.items():
                 block_addr = result.block_addrs.get(ins_addr)
@@ -281,6 +340,12 @@ class IndirectJumpsView(InstanceView):
                 site.kind = kind
                 site.analysis_sites.append(ins_addr)
                 site.analysis_targets |= result.resolutions.get(ins_addr, set())
+
+            # the analysis published its findings into kb.indirect_jumps, so everything it found is sitting in the
+            # targets read back above. Hand back to control-flow recovery only what it had before the run.
+            for site in sites.values():
+                preexisting = result.preexisting.get(site.block_addr, set()) if site.block_addr is not None else set()
+                site.cfg_targets -= site.analysis_targets - preexisting
 
         return sorted(sites.values(), key=lambda s: s.address)
 
@@ -351,6 +416,10 @@ class IndirectJumpsView(InstanceView):
         self._tree.sortByColumn(self.COL_ADDRESS, Qt.SortOrder.AscendingOrder)
         for col in range(len(self.HEADERS) - 1):
             self._tree.resizeColumnToContents(col)
+
+        # setModel() hands out a new selection model, so this has to be reconnected every time
+        self._tree.selectionModel().selectionChanged.connect(self._on_selection_changed)
+        self.show_provenance(None, None)
 
     def _site_row(self, site: IndirectJumpSite) -> list[QStandardItem]:
         address = self._item(f"{site.address:#x}", sort_value=site.address, addr=site.address)
@@ -471,16 +540,41 @@ class IndirectJumpsView(InstanceView):
         self._tree.header().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         self._tree.header().setStretchLastSection(True)
 
+        self._provenance_label = QLabel(self)
+        self._provenance_label.setWordWrap(True)
+        self._provenance_tree = QTreeWidget(self)
+        self._provenance_tree.setColumnCount(3)
+        self._provenance_tree.setHeaderLabels(["Step", "What happened", "Address"])
+        self._provenance_tree.setRootIsDecorated(False)
+        self._provenance_tree.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self._provenance_tree.itemDoubleClicked.connect(self._on_provenance_double_click)
+
+        provenance_widget = QWidget(self)
+        provenance_layout = QVBoxLayout()
+        provenance_layout.addWidget(self._provenance_label)
+        provenance_layout.addWidget(self._provenance_tree)
+        provenance_layout.setContentsMargins(3, 3, 3, 3)
+        provenance_layout.setSpacing(3)
+        provenance_widget.setLayout(provenance_layout)
+
+        splitter = QSplitter(Qt.Orientation.Vertical, self)
+        splitter.addWidget(self._tree)
+        splitter.addWidget(provenance_widget)
+        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(1, 1)
+
         self._status_label = QLabel(self)
         self._status_label.setWordWrap(True)
 
         layout = QVBoxLayout()
         layout.addLayout(filter_layout)
-        layout.addWidget(self._tree)
+        layout.addWidget(splitter)
         layout.addWidget(self._status_label)
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
+
+        self.show_provenance(None, None)
 
     #
     # Synchronization
@@ -547,6 +641,24 @@ class IndirectJumpsView(InstanceView):
     def _on_filter_changed(self, *args) -> None:  # pylint:disable=unused-argument
         self._rebuild_model()
 
+    def _on_selection_changed(self, *args) -> None:  # pylint:disable=unused-argument
+        indexes = self._tree.selectionModel().selectedIndexes()
+        if not indexes:
+            self.show_provenance(None, None)
+            return
+        index = indexes[0]
+        site = index.data(SITE_ROLE)
+        target = index.data(TARGET_ROLE)
+        if target is None and site is not None and len(site.targets) == 1:
+            # a site with a single target has nothing to disambiguate
+            target = next(iter(site.targets))
+        self.show_provenance(site, target)
+
+    def _on_provenance_double_click(self, item: QTreeWidgetItem, column: int) -> None:  # pylint:disable=unused-argument
+        addr = item.data(0, ADDRESS_ROLE)
+        if addr is not None:
+            self.workspace.jump_to(addr)
+
     def _on_double_click(self, index) -> None:
         addr = index.siblingAtColumn(self.COL_ADDRESS).data(ADDRESS_ROLE)
         if addr is None:
@@ -565,6 +677,8 @@ class IndirectJumpsView(InstanceView):
                 menu.addAction(f"Jump to target {target:#x}", lambda: self.workspace.jump_to(target))
             if site is not None:
                 menu.addAction(f"Jump to site {site.address:#x}", lambda: self.workspace.jump_to(site.address))
+                if target is not None:
+                    menu.addAction("Show how this target was resolved", lambda: self.show_provenance(site, target))
                 if site.func_addr is not None:
                     menu.addAction(
                         f"Jump to function {self._function_name(site.func_addr)}",

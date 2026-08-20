@@ -5,14 +5,19 @@ import unittest
 
 import angr
 from common import AngrManagementTestCase, test_location
+from PySide6.QtCore import QItemSelectionModel
 
 from angrmanagement.data.indirect_jumps import IndirectJumpResolutionResult
 from angrmanagement.data.jobs import IndirectJumpResolutionConfiguration, IndirectJumpResolutionJob
 from angrmanagement.data.jobs.job import JobState
 from angrmanagement.logic.jobmanager import JobCancelled
 from angrmanagement.ui.views import IndirectJumpsView
+from angrmanagement.ui.views.indirect_jumps_view import TARGET_ROLE
 
 BINARY = os.path.join(test_location, "x86_64", "fpijr_global_table")
+# a callback registered at run time: nothing but the whole-binary analysis resolves it, and its provenance runs
+# across three functions
+CALLBACK_BINARY = os.path.join(test_location, "x86_64", "fpijr_global_callback")
 
 
 class TestIndirectJumpResolutionJob(AngrManagementTestCase):
@@ -305,6 +310,109 @@ class TestIndirectJumpsViewSync(AngrManagementTestCase):
         self.main.workspace.view_manager.remove_view(disassembly)
         self.view._populate_sync_combo()
         assert self.view.synced_view is None
+
+
+class TestIndirectJumpsViewProvenance(AngrManagementTestCase):
+    """Tests for querying why a target was resolved."""
+
+    def setUp(self):
+        super().setUp()
+        self.main.workspace.main_instance.project.am_obj = angr.Project(CALLBACK_BINARY, auto_load_libs=False)
+        self.main.workspace.main_instance.project.am_event()
+        self.main.workspace.job_manager.join_all_jobs()
+        self.main.workspace.show_view("indirect_jumps", IndirectJumpsView)
+        self.view: IndirectJumpsView = self.main.workspace.view_manager.first_view_in_category("indirect_jumps")
+
+    @property
+    def instance(self):
+        return self.main.workspace.main_instance
+
+    def _dispatch_site(self):
+        dispatch = self.instance.kb.functions["dispatch"]
+        return next(s for s in self.view._sites if s.func_addr == dispatch.addr)
+
+    def _run_analysis(self) -> None:
+        self.main.workspace.analysis_manager.resolve_indirect_jumps()
+        self.main.workspace.job_manager.join_all_jobs()
+
+    def test_nothing_to_show_before_the_analysis_has_run(self):
+        assert "Select a resolved target" in self.view._provenance_label.text()
+
+        # control-flow recovery never even records the tail call in dispatch(), so the site is not listed yet
+        dispatch = self.instance.kb.functions["dispatch"]
+        assert not [s for s in self.view._sites if s.func_addr == dispatch.addr]
+
+        site = self.view._sites[0]
+        self.view.show_provenance(site, self.instance.kb.functions["h1"].addr)
+        assert "Run the indirect jump analysis" in self.view._provenance_label.text()
+
+    def test_the_analysis_adds_sites_the_cfg_never_recorded(self):
+        dispatch = self.instance.kb.functions["dispatch"]
+        self._run_analysis()
+        site = self._dispatch_site()
+        assert site.func_addr == dispatch.addr
+        assert site.analysis_targets
+
+    def test_shows_the_chain_that_carried_the_pointer(self):
+        self._run_analysis()
+        site = self._dispatch_site()
+        h1 = self.instance.kb.functions["h1"].addr
+        assert h1 in site.targets
+
+        chain = self.view.provenance_of(site, h1)
+        # the pointer is taken as a constant in main, passed to register_cb, stored into a global by it, and read
+        # back at the indirect jump: every one of those steps has to be there
+        assert len(chain) >= 4
+        assert "constant" in chain[0].text
+        assert any("argument" in step.text for step in chain)
+        assert any("stored to" in step.text for step in chain)
+        assert "indirect target" in chain[-1].text
+        # and each step points at the instruction it happened at, so it can be jumped to
+        assert all(step.addr is not None for step in chain)
+
+        self.view.show_provenance(site, h1)
+        assert f"{site.address:#x}" in self.view._provenance_label.text()
+        assert self.view._provenance_tree.topLevelItemCount() == len(chain)
+        first = self.view._provenance_tree.topLevelItem(0)
+        assert first.text(1) == chain[0].text
+        assert first.text(2) == f"{chain[0].addr:#x}"
+
+    def test_selecting_a_target_row_shows_its_provenance(self):
+        self._run_analysis()
+        site = self._dispatch_site()
+
+        model = self.view._tree.model()
+        row = next(r for r in range(model.rowCount()) if model.item(r, 0).text() == f"{site.address:#x}")
+        parent = model.index(row, 0)
+        child = model.index(0, 0, parent)
+        target = child.data(TARGET_ROLE)
+        assert target is not None
+
+        self.view._tree.selectionModel().select(
+            child, QItemSelectionModel.SelectionFlag.ClearAndSelect | QItemSelectionModel.SelectionFlag.Rows
+        )
+        assert f"{target:#x}" in self.view._provenance_label.text()
+        assert self.view._provenance_tree.topLevelItemCount() == len(self.view.provenance_of(site, target))
+
+    def test_targets_are_attributed_to_whoever_found_them(self):
+        self._run_analysis()
+        site = self._dispatch_site()
+        # this site is invisible to control-flow recovery, so the analysis alone gets the credit even though the
+        # analysis published its findings into the same place the view reads
+        assert site.analysis_targets
+        assert not site.cfg_targets
+        for target in site.targets:
+            assert site.source_of(target) == "Indirect jump analysis"
+
+    def test_provenance_recording_can_be_switched_off(self):
+        self.main.workspace.analysis_manager.resolve_indirect_jumps(track_provenance=False)
+        self.main.workspace.job_manager.join_all_jobs()
+
+        site = self._dispatch_site()
+        target = next(iter(site.targets))
+        assert self.view.provenance_of(site, target) == []
+        self.view.show_provenance(site, target)
+        assert "did not record provenance" in self.view._provenance_label.text()
 
 
 if __name__ == "__main__":
