@@ -238,5 +238,74 @@ class TestIndirectJumpsView(AngrManagementTestCase):
         assert any(site.analysis_sites for site in self.view._sites)
 
 
+class TestIndirectJumpsViewSync(AngrManagementTestCase):
+    """Tests for following another view's function from the indirect jumps view."""
+
+    def setUp(self):
+        super().setUp()
+        self.main.workspace.main_instance.project.am_obj = angr.Project(BINARY, auto_load_libs=False)
+        self.main.workspace.main_instance.project.am_event()
+        self.main.workspace.job_manager.join_all_jobs()
+        self.main.workspace.show_view("indirect_jumps", IndirectJumpsView)
+        self.view: IndirectJumpsView = self.main.workspace.view_manager.first_view_in_category("indirect_jumps")
+
+    @property
+    def instance(self):
+        return self.main.workspace.main_instance
+
+    def _functions_shown(self) -> set[str]:
+        model = self.view._tree.model()
+        return {model.item(row, IndirectJumpsView.COL_FUNCTION).text() for row in range(model.rowCount())}
+
+    def test_sync_is_off_by_default_and_offers_the_open_views(self):
+        assert self.view.synced_view is None
+
+        self.view._populate_sync_combo()
+        offered = [self.view._sync_combo.itemText(i) for i in range(self.view._sync_combo.count())]
+        assert offered[0] == "None"
+        # both the disassembly and the pseudocode views show one function at a time, so both can be followed
+        assert "Disassembly" in offered
+        assert "Pseudocode" in offered
+        # and the view never offers to follow itself
+        assert self.view.caption not in offered
+
+    def test_following_a_view_selects_its_function(self):
+        disassembly = self.main.workspace.view_manager.first_view_in_category("disassembly")
+        dispatch = self.instance.kb.functions["dispatch"]
+        disassembly.function = dispatch
+
+        self.view.sync_with_view(disassembly)
+        assert self.view.synced_view is disassembly
+        # following it adopts whatever function it is already on
+        assert self._functions_shown() == {"dispatch"}
+
+        # and it keeps up as that view moves
+        main_func = self.instance.kb.functions["main"]
+        disassembly.function = main_func
+        assert self.view._selected_function is main_func
+
+        # unfollowing leaves the last selection in place but stops tracking
+        self.view.sync_with_view(None)
+        assert self.view.synced_view is None
+        disassembly.function = dispatch
+        assert self.view._selected_function is main_func
+
+    def test_following_the_pseudocode_view(self):
+        code_view = self.main.workspace.view_manager.first_view_in_category("pseudocode")
+        assert code_view is not None
+
+        self.view.sync_with_view(code_view)
+        code_view.function = self.instance.kb.functions["dispatch"]
+        assert self._functions_shown() == {"dispatch"}
+
+    def test_closing_the_followed_view_stops_the_sync(self):
+        disassembly = self.main.workspace.view_manager.first_view_in_category("disassembly")
+        self.view.sync_with_view(disassembly)
+
+        self.main.workspace.view_manager.remove_view(disassembly)
+        self.view._populate_sync_combo()
+        assert self.view.synced_view is None
+
+
 if __name__ == "__main__":
     unittest.main()

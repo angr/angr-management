@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from angr.knowledge_plugins import Function
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSignalBlocker, QSize, Qt
 from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
 
 from angrmanagement.ui.widgets.qfunction_combobox import QFunctionComboBox
 
-from .view import InstanceView
+from .view import FunctionView, InstanceView
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.cfg import CFGModel
@@ -117,6 +117,21 @@ class QIndirectJumpTreeItem(QStandardItem):
         return mine < theirs
 
 
+class QSyncViewComboBox(QComboBox):
+    """
+    Combo box listing the views this one can follow. Views come and go, so it rebuilds its contents every time it is
+    opened rather than trying to keep up with them.
+    """
+
+    def __init__(self, populate, parent=None) -> None:
+        super().__init__(parent)
+        self._populate = populate
+
+    def showPopup(self) -> None:
+        self._populate()
+        super().showPopup()
+
+
 class IndirectJumpsView(InstanceView):
     """
     Lists the indirect jumps and calls in the binary, resolved and unresolved, as recorded in ``kb.indirect_jumps``
@@ -138,6 +153,7 @@ class IndirectJumpsView(InstanceView):
         self._sites: list[IndirectJumpSite] = []
         self._selected_function: Function | None = None
         self._kind_cache: dict[int, str] = {}
+        self._synced_view: FunctionView | None = None
 
         self._init_widgets()
 
@@ -150,6 +166,7 @@ class IndirectJumpsView(InstanceView):
         return QSize(700, 400)
 
     def closeEvent(self, event) -> None:
+        self.sync_with_view(None)
         self.instance.cfg.am_unsubscribe(self._on_data_updated)
         self.instance.indirect_jump_resolution.am_unsubscribe(self._on_data_updated)
         super().closeEvent(event)
@@ -171,6 +188,29 @@ class IndirectJumpsView(InstanceView):
         Show only the sites inside the given function, or all of them when given None.
         """
         self._function_list.select_function(func if func is not None else "all")
+
+    def sync_with_view(self, view: FunctionView | None) -> None:
+        """
+        Follow the function shown by another view, so that walking through the disassembly or the pseudocode keeps
+        this view on the indirect jumps of whatever function is on screen. Pass None to stop following.
+        """
+        if view is self._synced_view:
+            return
+
+        if self._synced_view is not None:
+            self._synced_view.function.am_unsubscribe(self._on_synced_function_changed)
+        self._synced_view = view
+        if view is not None:
+            view.function.am_subscribe(self._on_synced_function_changed)
+            self._adopt_synced_function()
+        self._update_sync_combo_selection()
+
+    @property
+    def synced_view(self) -> FunctionView | None:
+        """
+        The view this one is following, if any.
+        """
+        return self._synced_view
 
     def run_analysis(self) -> None:
         """
@@ -385,6 +425,13 @@ class IndirectJumpsView(InstanceView):
         )
         self._function_list.setToolTip("Show only the indirect jumps and calls inside this function")
 
+        self._sync_combo = QSyncViewComboBox(self._populate_sync_combo, self)
+        self._sync_combo.setToolTip(
+            "Follow the function shown by another view, so that this view keeps up as you move through the binary"
+        )
+        self._populate_sync_combo()
+        self._sync_combo.currentIndexChanged.connect(self._on_sync_view_selected)
+
         self._status_filter = QComboBox(self)
         self._status_filter.addItem("All", "all")
         self._status_filter.addItem("Resolved", "resolved")
@@ -405,6 +452,8 @@ class IndirectJumpsView(InstanceView):
         filter_layout = QHBoxLayout()
         filter_layout.addWidget(QLabel("Function:", self))
         filter_layout.addWidget(self._function_list, 10)
+        filter_layout.addWidget(QLabel("Sync with:", self))
+        filter_layout.addWidget(self._sync_combo)
         filter_layout.addWidget(QLabel("Status:", self))
         filter_layout.addWidget(self._status_filter)
         filter_layout.addWidget(QLabel("Filter:", self))
@@ -434,8 +483,59 @@ class IndirectJumpsView(InstanceView):
         self.setLayout(layout)
 
     #
+    # Synchronization
+    #
+
+    def _syncable_views(self) -> list[FunctionView]:
+        """
+        The open views that show one function at a time: the disassembly and pseudocode views.
+        """
+        return [
+            view for view in self.workspace.view_manager.views if isinstance(view, FunctionView) and view is not self
+        ]
+
+    def _populate_sync_combo(self) -> None:
+        """
+        Rebuild the list of views that can be followed, keeping the current choice selected if it is still open.
+        """
+        views = self._syncable_views()
+        if self._synced_view is not None and self._synced_view not in views:
+            # the view we were following has been closed
+            self.sync_with_view(None)
+
+        with QSignalBlocker(self._sync_combo):
+            self._sync_combo.clear()
+            self._sync_combo.addItem("None", None)
+            for view in views:
+                self._sync_combo.addItem(view.caption, view)
+            self._update_sync_combo_selection()
+
+    def _update_sync_combo_selection(self) -> None:
+        index = self._sync_combo.findData(self._synced_view)
+        with QSignalBlocker(self._sync_combo):
+            self._sync_combo.setCurrentIndex(index if index >= 0 else 0)
+
+    def _adopt_synced_function(self) -> None:
+        """
+        Show the function the followed view is on.
+        """
+        if self._synced_view is None:
+            return
+        function = self._synced_view.function.am_obj
+        self.select_function(function if isinstance(function, Function) else None)
+
+    #
     # Event handlers
     #
+
+    def _on_sync_view_selected(self, index: int) -> None:
+        self.sync_with_view(self._sync_combo.itemData(index))
+
+    def _on_synced_function_changed(self, **kwargs) -> None:  # pylint:disable=unused-argument
+        if self._synced_view is not None and self._synced_view not in self.workspace.view_manager.views:
+            self.sync_with_view(None)
+            return
+        self._adopt_synced_function()
 
     def _on_data_updated(self, **kwargs) -> None:  # pylint:disable=unused-argument
         self.reload()
