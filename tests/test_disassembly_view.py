@@ -515,5 +515,35 @@ class TestLinearViewFunctionTracking(AngrManagementTestCase):
         assert view.function.am_obj.addr == func_a.addr
 
 
+class TestFunctionChangeNotification(TestLinearViewFunctionTracking):
+    """Setting the displayed function notifies whoever is watching the function container."""
+
+    def test_setting_the_function_notifies_subscribers(self):
+        view = DisassemblyView(self.workspace, "center", self.instance)
+        functions = sorted(self._real_functions(), key=lambda f: f.addr)
+        func_a, func_b = functions[0], functions[-1]
+
+        seen = []
+        view.function.am_subscribe(lambda **kwargs: seen.append(view.function.am_obj))
+
+        view.function = func_a
+        view.display_function(func_b)
+        assert seen == [func_a, func_b]
+
+        # each change is announced exactly once, and the view is displaying what it announced
+        assert view.function.am_obj is func_b
+        assert not view._notifying_function_change
+
+    def test_the_view_still_follows_the_container(self):
+        # setting the container directly, as code outside the view does, still makes the view display the function
+        view = DisassemblyView(self.workspace, "center", self.instance)
+        func = sorted(self._real_functions(), key=lambda f: f.addr)[-1]
+
+        view.function.am_obj = func
+        view.function.am_event()
+        assert view._flow_graph.function_graph is not None
+        assert view._flow_graph.function_graph.function is func
+
+
 if __name__ == "__main__":
     unittest.main()

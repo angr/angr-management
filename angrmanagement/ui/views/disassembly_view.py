@@ -112,6 +112,9 @@ class DisassemblyView(SynchronizedFunctionView):
         self._find_highlighted: bool = False
         self._find_text_cache: dict[int, list[tuple[int, str, bytes]]] = {}
         self._in_find_refresh: bool = False
+        # set while this view is the one announcing a function change, so that its own subscription to the function
+        # container does not turn around and display it a second time
+        self._notifying_function_change: bool = False
 
         self._init_widgets()
         self._init_menus()
@@ -249,7 +252,7 @@ class DisassemblyView(SynchronizedFunctionView):
 
     @SynchronizedFunctionView.function.setter
     def function(self, v) -> None:
-        self.display_function(v, send_event=False)
+        self.display_function(v)
 
     #
     # Callbacks
@@ -1288,7 +1291,13 @@ class DisassemblyView(SynchronizedFunctionView):
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
         self.instance.cfb.am_subscribe(self._on_cfb_event)
-        self.function.am_subscribe(lambda: self.display_function(self.function.am_obj, send_event=False))
+        self.function.am_subscribe(self._on_function_container_updated)
+
+    def _on_function_container_updated(self, **kwargs) -> None:  # pylint:disable=unused-argument
+        if self._notifying_function_change:
+            # we are the ones who just announced it, and we are already displaying it
+            return
+        self.display_function(self.function.am_obj, send_event=False)
 
     def _on_breakpoints_updated(self, **kwargs) -> None:  # pylint:disable=unused-argument
         self.refresh()
@@ -1322,7 +1331,11 @@ class DisassemblyView(SynchronizedFunctionView):
 
         self.function.am_obj = the_func
         if send_event:
-            self.function.am_event()
+            self._notifying_function_change = True
+            try:
+                self.function.am_event()
+            finally:
+                self._notifying_function_change = False
 
         # set status bar
         self._statusbar.function = the_func
