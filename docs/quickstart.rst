@@ -45,8 +45,27 @@ angr-management's window is partitioned into "views" of information about the bi
 * Strings - Table of all strings found in the binary.
 * Patches - Table of patches made to the binary.
 * Search - Byte pattern, string, value, disassembly text and decompilation text search over the binary.
+* Indirect Jumps - Table of the binary's indirect jumps and calls, resolved and unresolved.
 
 Views can be opened from the main View menu and rearranged by click+dragging on the view title bar.
+
+Indirect jumps
+--------------
+The Indirect Jumps view lists every indirect jump and call in the binary, with the targets recovered
+for each one as child rows. Sites can be narrowed down by the function they live in, by whether they
+are resolved, and by a text match over addresses and function names; the view can also follow the
+disassembly or pseudocode view, so that it keeps to whichever function is on screen.
+
+Control-flow graph recovery resolves jump tables and little else. To resolve the rest -- calls
+through function pointers registered at run time, callbacks passed as arguments, virtual calls
+through vtables -- run the "Resolve Indirect Jumps and Calls Across the Binary" analysis, either
+from the Run Analysis dialog or from the button in the view. It decompiles every function in the
+binary, so it costs about as much as decompiling the whole program; it reports progress as it goes
+and can be cancelled, which stops it early but keeps whatever it resolved.
+
+Selecting a resolved target shows how it got there: where the function address was first taken, and
+the copies, argument passes and stores that carried it to the indirect jump. Double-clicking a step
+jumps to the instruction it happened at.
 
 Searching
 ---------
