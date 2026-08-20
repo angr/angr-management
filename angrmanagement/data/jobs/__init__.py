@@ -13,6 +13,7 @@ from .deobfuscation import (
 )
 from .dependency_analysis import DependencyAnalysisJob
 from .flirt_signature_recognition import FlirtAnalysisConfiguration, FlirtSignatureRecognitionJob
+from .indirect_jump_resolution import IndirectJumpResolutionConfiguration, IndirectJumpResolutionJob
 from .job import Job
 from .llm_preload import LLMPreloadCalleesJob
 from .llm_refine import LLMRefineJob
@@ -43,6 +44,8 @@ __all__ = [
     "DependencyAnalysisJob",
     "FlirtAnalysisConfiguration",
     "FlirtSignatureRecognitionJob",
+    "IndirectJumpResolutionConfiguration",
+    "IndirectJumpResolutionJob",
     "Job",
     "LLMPreloadCalleesJob",
     "LLMRefineJob",

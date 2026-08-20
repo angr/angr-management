@@ -60,6 +60,13 @@ class Instance:
         self.register_container("current_trace", lambda: None, type[Trace], "Currently selected trace")
         self.register_container("traces", list, list[Trace], "Global traces list")
 
+        self.register_container(
+            "indirect_jump_resolution",
+            lambda: None,
+            "IndirectJumpResolutionResult | None",
+            "Results of the last whole-binary indirect jump resolution",
+        )
+
         self.register_container("active_view_state", lambda: None, "ViewState", "Currently focused view state")
 
         self.breakpoint_mgr = BreakpointManager()

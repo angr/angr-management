@@ -14,6 +14,8 @@ from angrmanagement.data.jobs import (
     CodeTaggingJob,
     FlirtAnalysisConfiguration,
     FlirtSignatureRecognitionJob,
+    IndirectJumpResolutionConfiguration,
+    IndirectJumpResolutionJob,
     Job,
     OverviewConfiguration,
     PrototypeFindingJob,
@@ -37,6 +39,7 @@ class AnalysisManager(QObject):
     cc_recovered = Signal(object)
     functions_tagged = Signal()
     variable_recovered = Signal(object)
+    indirect_jumps_resolved = Signal()
 
     def __init__(self, workspace):
         super().__init__()
@@ -56,6 +59,7 @@ class AnalysisManager(QObject):
                     CallingConventionRecoveryConfiguration,
                     RustSymbolRecoveryConfiguration,
                     RustTypeDBLoaderConfiguration,
+                    IndirectJumpResolutionConfiguration,
                     VariableRecoveryConfiguration,
                 ]
             ]
@@ -101,6 +105,13 @@ class AnalysisManager(QObject):
         if conf["rust_typedb_loader"].enabled:
             self._schedule_job(RustTypeDBLoaderJob(instance))
 
+        if conf["indirect_jumps"].enabled:
+            self._schedule_job(
+                IndirectJumpResolutionJob(
+                    instance, **conf["indirect_jumps"].to_dict(), on_finish=self._on_indirect_jumps_resolved
+                )
+            )
+
         if conf["varec"].enabled:
             job = VariableRecoveryJob(
                 instance, **conf["varec"].to_dict(), on_variable_recovered=self._on_variable_recovered
@@ -133,3 +144,9 @@ class AnalysisManager(QObject):
 
     def _on_functions_tagged(self, _) -> None:
         self.functions_tagged.emit()
+
+    def _on_indirect_jumps_resolved(self, result) -> None:
+        if result is not None:
+            self.workspace.main_instance.indirect_jump_resolution = result
+            self.workspace.main_instance.indirect_jump_resolution.am_event()
+        self.indirect_jumps_resolved.emit()

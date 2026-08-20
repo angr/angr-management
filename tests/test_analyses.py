@@ -14,6 +14,7 @@ from angrmanagement.data.jobs import (
     CFGGenerationJob,
     CodeTaggingJob,
     FlirtSignatureRecognitionJob,
+    IndirectJumpResolutionJob,
     PrototypeFindingJob,
     RustSymbolRecoveryJob,
     RustTypeDBLoaderJob,
@@ -71,6 +72,7 @@ class TestAnalysisManager(AngrManagementTestCase):
             CallingConventionRecoveryJob,
             RustSymbolRecoveryJob,
             RustTypeDBLoaderJob,
+            IndirectJumpResolutionJob,
             VariableRecoveryJob,
         ]
 
