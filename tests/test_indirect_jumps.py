@@ -404,6 +404,16 @@ class TestIndirectJumpsViewProvenance(AngrManagementTestCase):
         for target in site.targets:
             assert site.source_of(target) == "Indirect jump analysis"
 
+    def test_attribution_survives_a_second_run(self):
+        self._run_analysis()
+        self._run_analysis()
+
+        site = self._dispatch_site()
+        # the second run must not hand the first run's findings over to control-flow recovery, which is what reading
+        # back the knowledge base naively would do
+        assert site.analysis_targets
+        assert not site.cfg_targets
+
     def test_provenance_recording_can_be_switched_off(self):
         self.main.workspace.analysis_manager.resolve_indirect_jumps(track_provenance=False)
         self.main.workspace.job_manager.join_all_jobs()

@@ -93,10 +93,7 @@ class IndirectJumpResolutionJob(InstanceJob):
             _l.warning("Cannot resolve indirect jumps before a control-flow graph has been recovered.")
             return None
 
-        # what is already resolved, captured before the analysis publishes its own findings into the same place
-        preexisting = {
-            block_addr: set(targets) for block_addr, targets in self.instance.kb.indirect_jumps.resolved.items()
-        }
+        preexisting = self._preexisting_targets()
 
         analysis = self.instance.project.analyses.FullProgramIndirectJumpResolution(
             functions=self.functions,
@@ -108,6 +105,26 @@ class IndirectJumpResolutionJob(InstanceJob):
             ),
         )
         return IndirectJumpResolutionResult.from_analysis(analysis, cfg_model, preexisting)
+
+    def _preexisting_targets(self) -> dict[int, set[int]]:
+        """
+        What is already resolved, captured before the analysis publishes its own findings into the same place.
+
+        An earlier run of this same analysis published into it too, so its contribution is taken back out; otherwise
+        re-running would hand everything the previous run found over to control-flow recovery.
+        """
+        preexisting = {
+            block_addr: set(targets) for block_addr, targets in self.instance.kb.indirect_jumps.resolved.items()
+        }
+
+        previous = self.instance.indirect_jump_resolution.am_obj
+        if previous is not None:
+            for site, targets in previous.resolutions.items():
+                block_addr = previous.block_addrs.get(site)
+                if block_addr in preexisting:
+                    preexisting[block_addr] -= targets
+
+        return preexisting
 
     @staticmethod
     def _progress_callback(ctx: JobContext, percentage: float, text: str | None, analysis) -> None:
