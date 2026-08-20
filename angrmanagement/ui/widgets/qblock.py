@@ -16,6 +16,7 @@ from angrmanagement.utils.block_objects import FunctionHeader, Label, PhiVariabl
 from .block_code_objects import BlockTreeNodeOptions, QAilObj, QFunctionHeader, QIROpObj
 from .qblock_code import QBlockCode, QBlockCodeSelectionMode
 from .qblock_label import QBlockLabel
+from .qfunction_comment import QFunctionCommentBanner
 from .qgraph import QSaveableGraphicsView
 from .qgraph_object import QCachedGraphicsItem
 from .qinstruction import QInstruction
@@ -324,6 +325,9 @@ class QBlock(QCachedGraphicsItem):
                 scene.removeItem(obj)
 
         self.objects.clear()
+
+        if self.cfg_nodes and self.cfg_nodes[0].addr == self.func_addr:
+            self.objects.append(QFunctionCommentBanner(self.instance, self.func_addr, self._config, parent=self))
 
         if isinstance(self.disasm, Clinic):
             self._init_ail_block_widgets()

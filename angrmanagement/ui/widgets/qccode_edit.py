@@ -31,6 +31,7 @@ from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.documents.qcodedocument import QCodeDocument
 from angrmanagement.ui.menus.menu import Menu
 from angrmanagement.ui.widgets.qccode_highlighter import FORMATS, QCCodeHighlighter
+from angrmanagement.ui.widgets.qinline_comment_editor import QInlineCommentEditor
 from angrmanagement.ui.widgets.qnode_tip import QNodeTip
 
 if TYPE_CHECKING:
@@ -85,6 +86,7 @@ class QCCodeEdit(api.CodeEdit):
         self.action_rename_node = None
         self.action_xref = None
         self._selected_node = None
+        self._inline_comment_editor: QInlineCommentEditor | None = None
 
         self.mouse_moved.connect(self._on_hover_mouse_moved)
 
@@ -279,10 +281,14 @@ class QCCodeEdit(api.CodeEdit):
                 item.activate(QAction.ActionEvent.Trigger)
                 return True
 
-        if key in (Qt.Key_Slash, Qt.Key_Question):
+        if key in (Qt.Key_Slash, Qt.Key_Question, Qt.Key_Semicolon):
             self.comment(
                 expr=event.modifiers() & Qt.KeyboardModifier.ShiftModifier == Qt.KeyboardModifier.ShiftModifier
             )
+            return True
+        if key == Qt.Key_Colon:
+            # Shift+; -- the multi-line-capable dialog
+            self.comment(inline=False)
             return True
         if key == Qt.Key_Minus and QApplication.keyboardModifiers() & Qt.KeyboardModifier.ControlModifier != 0:
             self.zoomOut()
@@ -492,26 +498,59 @@ class QCCodeEdit(api.CodeEdit):
 
                 self._code_view.codegen.am_event(event="retype_variable", node=node, variable=node.variable)
 
-    def comment(self, expr: bool = False, node=None) -> None:
+    def comment(self, expr: bool = False, node=None, inline: bool = True) -> None:
         addr = self.get_closest_insaddr(node, expr=expr)
         if addr is None:
             return
 
+        if expr:
+            self._comment_expr(addr)
+            return
+
+        # statement comments go into kb.comments so they survive re-decompilation and show up in
+        # the disassembly too; the edit layer mirrors them into codegen.stmt_comments
+        kb = self._code_view.instance.kb
+        text = "" if kb is None else kb.comments.get(addr, "")
+        if inline and "\n" not in text:
+            self.begin_inline_comment(addr, text)
+            return
+
+        text, ok = QInputDialog.getText(
+            self._code_view, "Statement Comment", "", QLineEdit.EchoMode.Normal, text.replace("\n", " ")
+        )
+        if ok:
+            self._commit_inline_comment(addr, text)
+
+    def begin_inline_comment(self, addr: int, text: str) -> QInlineCommentEditor:
+        """
+        Edit the comment for ``addr`` in a one-line editor floating at the text cursor.
+        """
+        if self._inline_comment_editor is not None:
+            self._inline_comment_editor.cancel()
+        editor = QInlineCommentEditor(self, addr, text, self._commit_inline_comment)
+        rect = self.cursorRect()
+        editor.show_at(rect.bottomLeft(), self.viewport().width() // 2)
+        self._inline_comment_editor = editor
+        return editor
+
+    def _commit_inline_comment(self, addr: int, text: str) -> None:
+        self._inline_comment_editor = None
+        self.workspace.set_comment(addr, text)
+
+    def _comment_expr(self, addr: int) -> None:
         try:
-            cdict = self._code_view.codegen.expr_comments if expr else self._code_view.codegen.stmt_comments
+            cdict = self._code_view.codegen.expr_comments
         except AttributeError:
             return
         text = cdict.get(addr, "")
 
-        text, ok = QInputDialog.getText(
-            self._code_view, "Expression Comment" if expr else "Statement Comment", "", QLineEdit.EchoMode.Normal, text
-        )
+        text, ok = QInputDialog.getText(self._code_view, "Expression Comment", "", QLineEdit.EchoMode.Normal, text)
 
         if ok:
             exists = addr in cdict
             if text:
                 # callback
-                self.workspace.plugins.handle_comment_changed(addr, "", text, not exists, True)
+                self.workspace.plugins.handle_comment_changed(addr, cdict.get(addr, ""), text, not exists, True)
                 cdict[addr] = text
             else:
                 if exists:
@@ -766,6 +805,9 @@ class QCCodeEdit(api.CodeEdit):
         self.action_to_ite_expr.triggered.connect(self.convert_to_ite_expr)
         self.action_swap_binop_operands = QAction("Swap operands")
         self.action_swap_binop_operands.triggered.connect(self.swap_binop_operands)
+        self.action_comment = QAction("Comment...", self)
+        self.action_comment.triggered.connect(lambda: self.comment())
+        self.action_comment.setShortcut(QKeySequence(";"))
 
         expr_actions = [
             self.action_to_ite_expr,
@@ -797,12 +839,14 @@ class QCCodeEdit(api.CodeEdit):
 
         self.call_actions = [self.action_rename_node, self.action_xref]
 
-        self.constant_actions += base_actions + expr_actions
-        self.operator_actions += base_actions + expr_actions
-        self.variable_actions += base_actions + expr_actions
-        self.function_name_actions += base_actions
-        self.call_actions += base_actions + expr_actions
-        self.default_actions += base_actions
+        comment_actions = [self.action_comment]
+
+        self.constant_actions += comment_actions + base_actions + expr_actions
+        self.operator_actions += comment_actions + base_actions + expr_actions
+        self.variable_actions += comment_actions + base_actions + expr_actions
+        self.function_name_actions += comment_actions + base_actions
+        self.call_actions += comment_actions + base_actions + expr_actions
+        self.default_actions += comment_actions + base_actions
 
         # LLM actions
         self.action_llm_refine_all = QAction("AI: Refine All", self)

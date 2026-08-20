@@ -10,6 +10,7 @@ from common import AngrManagementTestCase, test_location
 
 from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.ui.widgets import DisassemblyLevel
+from angrmanagement.ui.widgets.qfunction_comment import QFunctionCommentBanner
 
 
 class TestQLinearViewer(AngrManagementTestCase):
@@ -89,19 +90,41 @@ class TestQLinearViewer(AngrManagementTestCase):
         func = main.workspace.main_instance.project.kb.functions["main"]
         assert func is not None
 
-        comment_addr = func.addr
-        main.workspace.main_instance.project.kb.comments[comment_addr] = "test comment"
+        disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
+        disasm_view.display_linear_viewer()
+        disasm_view.display_function(func)
+        assert func.addr in disasm_view.linear_viewer.objects
+        block = disasm_view.linear_viewer.objects[func.addr]
+
+        # a comment on a non-entry instruction renders next to that instruction
+        comment_addr = next(a for a in sorted(block.addr_to_insns) if a != func.addr)
+        main.workspace.set_comment(comment_addr, "test comment")
+        disasm_view.linear_viewer.refresh()
+
+        insn = block.addr_to_insns[comment_addr]
+        assert insn._comment_items is not None
+        assert insn._comment_items[0].text() == "; test comment"
+
+    def test_function_comment_renders_as_a_banner(self):
+        main = self.main
+        binpath = os.path.join(test_location, "x86_64", "fauxware")
+        main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
+        main.workspace.main_instance.project.am_event()
+        main.workspace.job_manager.join_all_jobs()
+
+        func = main.workspace.main_instance.project.kb.functions["main"]
+        # a comment on the function entry is the function comment, so it goes into the header block
+        # rather than next to the first instruction
+        main.workspace.set_comment(func.addr, "what main does")
 
         disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
         disasm_view.display_linear_viewer()
         disasm_view.display_function(func)
 
-        assert func.addr in disasm_view.linear_viewer.objects
         block = disasm_view.linear_viewer.objects[func.addr]
-        insn = block.addr_to_insns[comment_addr]
-
-        assert insn._comment_items is not None
-        assert insn._comment_items[0].text() == "; test comment"
+        banner = next(o for o in block.objects if isinstance(o, QFunctionCommentBanner))
+        assert [item.text() for item in banner._text_items] == ["; what main does"]
+        assert block.addr_to_insns[func.addr]._comment_items is None
 
 
 if __name__ == "__main__":

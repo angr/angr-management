@@ -15,7 +15,7 @@ from angr.analyses.decompiler.structured_codegen.rust import RustConstant, RustF
 from angr.knowledge_plugins.functions.function import Function
 from angr.sim_variable import SimMemoryVariable
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QKeySequence, QShortcut, QTextCursor
+from PySide6.QtGui import QKeySequence, QShortcut, QTextCursor, QTextFormat
 from PySide6.QtWidgets import (
     QComboBox,
     QDockWidget,
@@ -49,6 +49,56 @@ if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
 
 log = logging.getLogger(__name__)
+
+
+def _snap_comment_addr(codegen, addr: int) -> int:
+    """
+    Pick the key under which a statement comment for ``addr`` actually renders inline.
+
+    ``stmt_comments`` is consumed when a line ends, keyed by the *last* address-tagged construct on
+    that line, so a key that is merely the nearest rendered address is often not enough: it ends up
+    in the decompiler's "Orphaned comments" block instead. Map ``addr`` onto the line that renders
+    it, then take the last address on that line.
+    """
+    addr_to_pos = getattr(codegen, "map_addr_to_pos", None)
+    pos_to_addr = getattr(codegen, "map_pos_to_addr", None)
+    text = getattr(codegen, "text", None)
+    if addr_to_pos is None or pos_to_addr is None or not text:
+        return addr
+
+    # not codegen.map_addr_to_pos.get_nearest_pos(): it gives up when the address is outside the
+    # rendered range, which is exactly the common case for a prologue instruction
+    entries = [(ins_addr, elem.posmap_pos) for ins_addr, elem in addr_to_pos.items()]
+    if not entries:
+        return addr
+    below = [e for e in entries if e[0] <= addr]
+    pos = below[-1][1] if below else entries[0][1]
+
+    line_start = text.rfind("\n", 0, pos) + 1
+    line_end = text.find("\n", pos)
+    if line_end == -1:
+        line_end = len(text)
+
+    posmap = pos_to_addr._posmap
+    last = None
+    for p in posmap.irange(minimum=line_start, maximum=line_end):
+        tags = getattr(posmap[p].obj, "tags", None) or {}
+        ins_addr = tags.get("ins_addr")
+        if isinstance(ins_addr, int):
+            last = ins_addr
+    return addr if last is None else last
+
+
+def _floor_comment_addr(codegen, addr: int) -> int:
+    """The key angr's own edit layer would have used. Only needed to recognize its writes."""
+    insmap = getattr(codegen, "map_addr_to_pos", None)
+    if insmap is None:
+        return addr
+    rendered = [ins_addr for ins_addr, _ in insmap.items()]
+    if not rendered or addr in set(rendered):
+        return addr
+    below = [a for a in rendered if a < addr]
+    return max(below) if below else addr
 
 
 class CodeView(FunctionView):
@@ -87,6 +137,10 @@ class CodeView(FunctionView):
         self._chunk_selections: list[QTextEdit.ExtraSelection] = []
         self._find_selections: list[QTextEdit.ExtraSelection] = []
 
+        # kb.comments mirrored into the current codegen's stmt_comments: kb address -> stmt key
+        self._mirrored_codegen = None
+        self._mirrored_comments: dict[int, int] = {}
+
         self._init_widgets()
         self._init_shortcuts()
 
@@ -97,6 +151,14 @@ class CodeView(FunctionView):
         self.codegen.am_subscribe(self._on_codegen_changes)
         self.addr.am_subscribe(self._on_new_addr)
         self.current_node.am_subscribe(self._on_new_node)
+        self.instance.annotations.bookmarks.am_subscribe(self._on_bookmarks_changed)
+
+    def closeEvent(self, event) -> None:
+        self.instance.annotations.bookmarks.am_unsubscribe(self._on_bookmarks_changed)
+        super().closeEvent(event)
+
+    def _on_bookmarks_changed(self, **kwargs) -> None:  # pylint:disable=unused-argument
+        self.refresh_bookmarks()
 
     @classmethod
     def register_commands(cls, workspace: Workspace) -> None:
@@ -240,6 +302,77 @@ class CodeView(FunctionView):
         self._chunk_selections = [self._make_selection(start, end, color) for start, end in chunks]
         self._apply_extra_selections()
 
+    def refresh_bookmarks(self) -> None:
+        self._apply_extra_selections()
+
+    def _bookmark_selections(self) -> list[QTextEdit.ExtraSelection]:
+        """
+        A full-width line highlight for every bookmarked address rendered in this function.
+        """
+        if self.codegen.am_none or self._doc is None:
+            return []
+        selections = []
+        for bookmark in self.instance.annotations.bookmarks:
+            pos = self._doc.find_closest_node_pos(bookmark.addr)
+            if pos is None:
+                continue
+            sel = QTextEdit.ExtraSelection()
+            sel.cursor = self._textedit.textCursor()
+            sel.cursor.setPosition(pos)
+            sel.cursor.clearSelection()
+            sel.format.setBackground(Conf.pseudocode_bookmark_color)
+            sel.format.setProperty(QTextFormat.Property.FullWidthSelection, True)
+            selections.append(sel)
+        return selections
+
+    def sync_kb_comments(self) -> bool:
+        """
+        Mirror ``kb.comments`` for this function into the codegen's statement comments so comments
+        made in the disassembly (or before a re-decompilation) show up in the pseudocode. Returns
+        whether anything changed, i.e. whether a re-render is needed.
+
+        The function's entry address is skipped: the decompiler already renders that one as the
+        function header, and mirroring it would render it a second time as an orphaned comment.
+        """
+        if self.codegen.am_none or self._function.am_none:
+            return False
+        kb = self.instance.kb
+        codegen = self.codegen.am_obj
+        stmt_comments = getattr(codegen, "stmt_comments", None)
+        if kb is None or stmt_comments is None:
+            return False
+
+        if self._mirrored_codegen is not codegen:
+            self._mirrored_codegen = codegen
+            self._mirrored_comments = {}
+
+        func = self._function.am_obj
+        low, high = func.addr, func.addr + max(func.size, 1)
+        desired = {
+            addr: text for addr, text in kb.comments.items() if text and addr != func.addr and low <= addr < high
+        }
+
+        changed = False
+        for addr, key in list(self._mirrored_comments.items()):
+            if addr not in desired:
+                if key in stmt_comments:
+                    del stmt_comments[key]
+                    changed = True
+                del self._mirrored_comments[addr]
+
+        for addr, text in desired.items():
+            key = self._mirrored_comments.get(addr)
+            if key is None:
+                # adopt an existing entry written by another path (e.g. the MCP edit tools) rather
+                # than adding a second copy of the same comment
+                floor = _floor_comment_addr(codegen, addr)
+                key = floor if stmt_comments.get(floor) == text else _snap_comment_addr(codegen, addr)
+                self._mirrored_comments[addr] = key
+            if stmt_comments.get(key) != text:
+                stmt_comments[key] = text
+                changed = True
+        return changed
+
     #
     # Find in view
     #
@@ -310,7 +443,7 @@ class CodeView(FunctionView):
         return sel
 
     def _apply_extra_selections(self) -> None:
-        self._textedit.setExtraSelections(self._chunk_selections + self._find_selections)
+        self._textedit.setExtraSelections(self._bookmark_selections() + self._chunk_selections + self._find_selections)
 
     def variable_manager(self, func_addr: int | Literal["global"] | None = None) -> VariableManagerInternal | None:
         if self.codegen is None or self.codegen.am_none:
@@ -383,6 +516,10 @@ class CodeView(FunctionView):
             self._doc = None
             self._textedit.clear()
             return
+
+        if self.sync_kb_comments():
+            # newly mirrored comments are only visible after a re-render
+            already_regenerated = False
 
         old_blockno: int | None = None
         old_node: Any | None = None
@@ -464,6 +601,7 @@ class CodeView(FunctionView):
         else:
             self._options.hide()
 
+        self.refresh_bookmarks()
         self._update_function_summary()
 
     def _on_new_function(self, focus: bool = False, focus_addr=None, flavor=None, **kwargs) -> None:  # pylint: disable=unused-argument

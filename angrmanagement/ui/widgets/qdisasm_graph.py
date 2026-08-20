@@ -357,6 +357,9 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
             else:
                 self.centerOn(x, y)
 
+    def instruction_widget_rect(self, insn_addr: int):
+        return self._instruction_widget_rect(insn_addr, self)
+
     def update_label(self, addr: int, is_renaming: bool = False) -> None:
         block: QGraphBlock = self._insaddr_to_block.get(addr, None)
         if block is not None:
