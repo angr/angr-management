@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import base64
 from enum import IntEnum
 
@@ -146,16 +147,17 @@ class SetEncryptionKeyDialog(QDialog):
             if format == EncKeyFormat.BASE64:
                 return None
 
-        # parse it as a Python byte string
+        # parse it as a Python byte string. accept both a complete literal and the escaped content of one.
         if format is None or format == EncKeyFormat.BYTESTRING:
-            quoted = txt.startswith(('b"', "b'")) and txt.endswith(('"', "'"))
-            trimmed_txt = txt[2:-1] if quoted else txt
-            try:
-                key = eval(f'b"{trimmed_txt}"')
+            candidates = [txt] if txt.startswith(('b"', "b'")) else []
+            candidates.append(f'b"{txt}"')
+            for candidate in candidates:
+                try:
+                    key = ast.literal_eval(candidate)
+                except (SyntaxError, ValueError, MemoryError, RecursionError):
+                    continue
                 if isinstance(key, bytes):
                     return key
-            except Exception:
-                pass
 
             if format == EncKeyFormat.BYTESTRING:
                 return None
