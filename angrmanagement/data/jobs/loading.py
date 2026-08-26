@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import angr
 import archinfo
@@ -10,7 +10,7 @@ from angr.angrdb import AngrDB
 from PySide6.QtWidgets import QMessageBox
 
 from angrmanagement.logic.threads import gui_thread_schedule
-from angrmanagement.ui.dialogs import LoadBinary
+from angrmanagement.ui.dialogs import LoadBinary, SetEncryptionKeyDialog
 
 from .job import InstanceJob
 
@@ -37,44 +37,35 @@ class LoadBinaryJob(InstanceJob):
     def run(self, ctx: JobContext) -> None:
         ctx.set_progress(5)
 
-        load_as_blob = False
-
+        # loading may have to be retried when the user supplies an encryption key for an encrypted file
+        retry = True
         partial_ld = None
-        try:
-            # Try automatic loading
-            partial_ld = cle.Loader(
-                self.fname,
-                perform_relocations=False,
-                load_debug_info=False,
-                auto_load_libs=False,
-                main_opts={"ignore_missing_arch": True},
-            )
-        except archinfo.arch.ArchNotFound:
-            _l.warning("Could not identify binary architecture.")
-            partial_ld = None
-            load_as_blob = True
-        except (cle.CLECompatibilityError, cle.CLEError):
-            # Continue loading as blob
-            _l.debug("Try loading the binary as a blob.")
-            load_as_blob = True
-
-        if partial_ld is None and load_as_blob:
-            try:
-                # Try loading as blob; dummy architecture (x86) required, user will select proper arch
-                partial_ld = cle.Loader(self.fname, main_opts={"backend": "blob", "arch": "x86"})
-            except cle.CLECompatibilityError:
-                # Failed to load executable, even as blob!
-                gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname,))
-                return
+        main_opts: dict[str, Any] = {"ignore_missing_arch": True}
+        while partial_ld is None and retry:
+            retry, partial_ld, main_opts = self._load_binary_as_partial_loader(main_opts)
 
         if partial_ld is None:
             _l.warning("Failed to load binary in Cle; partial_ld is None.")
             gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname,))
             return
 
+        # ignore_missing_arch is only useful during the partial load
+        main_opts.pop("ignore_missing_arch", None)
+
         ctx.set_progress(50)
+        # when an outer backend (e.g., CaRT) is in play, original_main_object is the outer object that wraps the real
+        # main object; otherwise it is the main object itself
+        original_main_object = partial_ld.original_main_object
         new_load_options, simos = gui_thread_schedule(
-            LoadBinary.run, (partial_ld, partial_ld.main_object.__class__, partial_ld.main_object.os)
+            LoadBinary.run,
+            (partial_ld,),
+            kwargs={
+                "suggested_backend": partial_ld.main_object.__class__,
+                "suggested_os_name": partial_ld.main_object.os,
+                "suggested_main_opts": main_opts,
+                "suggested_original_backend": original_main_object.__class__,
+                "suggested_main_filename": original_main_object.unpacked_name,
+            },
         )
         if new_load_options is None:
             return
@@ -90,6 +81,69 @@ class LoadBinaryJob(InstanceJob):
             self.instance.project.am_event()
 
         gui_thread_schedule(callback, ())
+
+    def _load_binary_as_partial_loader(self, main_opts: dict[str, Any]) -> tuple[bool, cle.Loader | None, dict]:
+        """
+        Attempt a partial load of self.fname.
+
+        :return:    A tuple of (should retry, the loader or None, the main options to use next).
+        """
+
+        load_as_blob = False
+        partial_ld = None
+
+        def _load_user_passphrase(backend_cls) -> bytes | None:
+            dialog = SetEncryptionKeyDialog(
+                prompt_msg=f"The encryption key does not work or does not exist for "
+                f"the CLE backend {backend_cls.__name__}."
+            )
+            dialog.exec_()
+            return dialog.result
+
+        try:
+            # Try automatic loading
+            partial_ld = cle.Loader(
+                self.fname,
+                perform_relocations=False,
+                load_debug_info=False,
+                auto_load_libs=False,
+                main_opts=main_opts,
+            )
+        except archinfo.arch.ArchNotFound:
+            _l.warning("Could not identify binary architecture.")
+            partial_ld = None
+            load_as_blob = True
+        except cle.CLEInvalidEncryptionError as ex:
+            # it needs an encryption key, but the one we used (if any) does not work
+            if ex.backend is not None and ex.enckey_argname is not None:
+                # ask the user for a new key
+                enc_key: bytes | None = gui_thread_schedule(_load_user_passphrase, (ex.backend,))
+                if enc_key:
+                    main_opts[ex.enckey_argname] = enc_key
+                    return True, None, main_opts
+
+            _l.warning(
+                "Failed to load binary with user-specified encryption key or the encryption key is missing. "
+                "Attempted to use backend %s (and failed). "
+                "Loading it as a blob instead.",
+                ex.backend,
+            )
+            load_as_blob = True
+        except (cle.CLEInvalidFileFormatError, cle.CLECompatibilityError, cle.CLEError):
+            # Continue loading as blob
+            _l.debug("Try loading the binary as a blob.")
+            load_as_blob = True
+
+        if partial_ld is None and load_as_blob:
+            try:
+                # Try loading as blob; dummy architecture (x86) required, user will select proper arch
+                partial_ld = cle.Loader(self.fname, main_opts={"backend": "blob", "arch": "x86"})
+                main_opts = {}
+            except cle.CLECompatibilityError:
+                # Failed to load executable, even as blob! The caller reports the failure.
+                return False, None, main_opts
+
+        return False, partial_ld, main_opts
 
 
 class LoadAngrDBJob(InstanceJob):

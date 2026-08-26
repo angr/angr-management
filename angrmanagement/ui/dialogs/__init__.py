@@ -7,6 +7,7 @@ from .breakpoint import BreakpointDialog
 from .load_binary import LoadBinary
 from .load_plugins import LoadPlugins
 from .preferences import Preferences
+from .set_encryption_key import SetEncryptionKeyDialog
 
 __all__ = [
     "AnalysisOptionsDialog",
@@ -16,4 +17,5 @@ __all__ = [
     "LoadBinary",
     "LoadPlugins",
     "Preferences",
+    "SetEncryptionKeyDialog",
 ]
