@@ -45,6 +45,7 @@ except ImportError:
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule
+from angrmanagement.ui.dialogs.set_encryption_key import SetEncryptionKeyDialog
 
 
 class LoadBinaryError(Exception):
@@ -66,6 +67,10 @@ class ArchTreeWidgetItem(QTreeWidgetItem):
 
 
 DEPENDENCIES_TAB_INDEX = 1
+
+# cart is the only outer backend that takes an encryption key, and this is the load option it takes it in
+CART_BACKEND_NAME = "cart"
+CART_ENCKEY_ARGNAME = "arc4_key"
 
 
 class LoadBinary(QDialog):
@@ -117,6 +122,9 @@ class LoadBinary(QDialog):
         self._entry_addr_checkbox = None
         self._offset_checkbox = None
         self._symbol_search_tab_index = None
+        # the key the outer backend should use. it may already have been supplied by whoever performed the partial
+        # load, in which case the user is only overriding it.
+        self._enckey: bytes | None = self.suggested_main_opts.get(CART_ENCKEY_ARGNAME)
 
         if pypcode:
             for a in pypcode.Arch.enumerate():
@@ -290,9 +298,22 @@ class LoadBinary(QDialog):
         outer_backend_dropdown.setCurrentText(
             suggested_outer_backend_name if suggested_outer_backend_name is not None else "<None>"
         )
+        outer_backend_dropdown.currentTextChanged.connect(self._on_outer_backend_changed)
         outer_backend_layout.addWidget(outer_backend_dropdown)
 
+        enckey_button = QPushButton("Encryption key...")
+        enckey_button.clicked.connect(self._on_set_enckey_clicked)
+        outer_backend_layout.addWidget(enckey_button)
+
+        enckey_label = QLabel()
+        enckey_layout = QHBoxLayout()
+        enckey_layout.addStretch()
+        enckey_layout.addWidget(enckey_label)
+
         self.option_widgets["outer_backend"] = outer_backend_dropdown
+        self.option_widgets["enckey_button"] = enckey_button
+        self.option_widgets["enckey_label"] = enckey_label
+        self._update_enckey_widgets()
 
         #
         # Backend selection
@@ -444,6 +465,7 @@ class LoadBinary(QDialog):
 
         layout = QVBoxLayout()
         layout.addLayout(outer_backend_layout)
+        layout.addLayout(enckey_layout)
         layout.addLayout(backend_layout)
         layout.addLayout(os_layout)
         layout.addLayout(blob_layout)
@@ -777,6 +799,33 @@ class LoadBinary(QDialog):
 
         return the_arch, recommended_arches, other_arches
 
+    def _update_enckey_widgets(self) -> None:
+        """
+        Only offer the encryption key controls for outer backends that take one.
+        """
+        supported = self.option_widgets["outer_backend"].currentText() == CART_BACKEND_NAME
+
+        self.option_widgets["enckey_button"].setEnabled(supported)
+
+        label: QLabel = self.option_widgets["enckey_label"]
+        label.setVisible(supported)
+        if self._enckey is None:
+            label.setText("Using the default encryption key")
+        else:
+            label.setText("Encryption key: " + " ".join(f"{x:02x}" for x in self._enckey))
+
+    def _prompt_for_enckey(self) -> bytes | None:
+        """
+        Ask the user for an encryption key. Returns None if the user cancelled.
+        """
+        dialog = SetEncryptionKeyDialog(
+            prompt_msg=f"Set the encryption key that the {CART_BACKEND_NAME} backend should use.",
+            initial_text="" if self._enckey is None else repr(self._enckey),
+            parent=self,
+        )
+        dialog.exec_()
+        return dialog.result
+
     def _toggle_base_addr_textbox(self, enabled: bool) -> None:
         self.option_widgets["base_addr"].setEnabled(enabled)
 
@@ -798,6 +847,15 @@ class LoadBinary(QDialog):
 
     def _on_offset_checkbox_clicked(self) -> None:
         self._toggle_offset_textbox(self._offset_checkbox.isChecked())
+
+    def _on_outer_backend_changed(self, text: str) -> None:  # pylint:disable=unused-argument
+        self._update_enckey_widgets()
+
+    def _on_set_enckey_clicked(self) -> None:
+        enckey = self._prompt_for_enckey()
+        if enckey is not None:
+            self._enckey = enckey
+            self._update_enckey_widgets()
 
     def _on_ok_clicked(self) -> None:
         force_load_libs = []
@@ -919,9 +977,13 @@ class LoadBinary(QDialog):
 
         if outer_backend is not None:
             # the outer backend is the real main object; the options above apply to the object it unpacks
-            self.load_options["main_opts"] = {
+            outer_main_opts = {
                 "backend": outer_backend,
             } | self.suggested_main_opts
+            if outer_backend == CART_BACKEND_NAME and self._enckey is not None:
+                # the key the user picked wins over the one the partial load used
+                outer_main_opts[CART_ENCKEY_ARGNAME] = self._enckey
+            self.load_options["main_opts"] = outer_main_opts
             if self.suggested_main_filename is not None:
                 self.load_options["lib_opts"] = {
                     self.suggested_main_filename: main_opts,

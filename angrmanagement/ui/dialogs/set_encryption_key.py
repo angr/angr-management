@@ -95,9 +95,6 @@ class SetEncryptionKeyDialog(QDialog):
         enckey_label = QLabel(self)
         enckey_label.setText("Encryption key")
         key_box = QLineEdit(self)
-        if self._initial_text:
-            key_box.setText(self._initial_text)
-            key_box.selectAll()
         key_box.textChanged.connect(self._on_enckey_changed)
         self._enckey_box = key_box
 
@@ -122,6 +119,11 @@ class SetEncryptionKeyDialog(QDialog):
         self._ok_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
         self._ok_button.setEnabled(False)
         self.main_layout.addWidget(buttons)
+
+        # do this last so that the initial text is validated against the now fully built widgets
+        if self._initial_text:
+            key_box.setText(self._initial_text)
+            key_box.selectAll()
 
     def _get_enckey(self, txt: str) -> bytes | None:
         if not txt:
