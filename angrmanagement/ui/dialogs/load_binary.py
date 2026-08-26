@@ -196,8 +196,8 @@ class LoadBinary(QDialog):
             # don't know what to do with other backends...
 
     def _set_base_addr(self) -> None:
-        # special handling for blobs
-        if isinstance(self.suggested_backend, cle.Blob):
+        # special handling for blobs. note that suggested_backend is a class, not an instance.
+        if self.suggested_backend is not None and issubclass(self.suggested_backend, cle.Blob):
             self._toggle_base_addr_textbox(True)
             self._toggle_entry_addr_textbox(True)
             self._toggle_offset_textbox(True)
