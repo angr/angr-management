@@ -16,6 +16,7 @@ from common import AngrManagementTestCase, create_qapp, test_location  # pylint:
 import angrmanagement.data.jobs.loading as loading
 from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.ui.dialogs.load_binary import LoadBinary
+from angrmanagement.ui.dialogs.set_encryption_key import key_to_hex
 
 ELF_CART_PATH = os.path.join(test_location, "x86_64", "1after909.cart")
 PE_CART_PATH = os.path.join(
@@ -149,6 +150,71 @@ class TestForceSetEncryptionKey(unittest.TestCase):
         assert self.dialog._enckey == CART_KEY
         self.dialog._on_ok_clicked()
         assert self.dialog.load_options["main_opts"]["arc4_key"] == CART_KEY
+
+
+class TestPromptPrefill(unittest.TestCase):
+    """Test what the encryption key prompt is pre-filled with."""
+
+    def setUp(self) -> None:
+        create_qapp()
+        self.partial_ld = partial_load(ELF_CART_PATH, {"arc4_key": CART_KEY})
+
+    @staticmethod
+    def _captured_prompt(dialog: LoadBinary) -> dict:
+        """Open the key prompt with SetEncryptionKeyDialog stubbed out, and return its arguments."""
+        captured = {}
+
+        class FakeDialog:
+            """Stands in for the modal key prompt."""
+
+            def __init__(self, **kwargs) -> None:
+                captured.update(kwargs)
+                self.result = None
+
+            def exec_(self) -> int:
+                return 0
+
+        with patch("angrmanagement.ui.dialogs.load_binary.SetEncryptionKeyDialog", FakeDialog):
+            dialog._prompt_for_enckey()
+        return captured
+
+    def test_key_in_use_wins_over_the_config_file(self) -> None:
+        dialog = make_dialog(self.partial_ld, {"arc4_key": CART_KEY})
+        with patch("angrmanagement.ui.dialogs.load_binary.load_cart_config_key", return_value=OTHER_KEY):
+            captured = self._captured_prompt(dialog)
+
+        assert captured["initial_text"] == key_to_hex(CART_KEY)
+        assert "cart.cfg" not in captured["prompt_msg"]
+        dialog.close()
+
+    def test_config_key_is_used_when_no_key_is_in_use(self) -> None:
+        dialog = make_dialog(self.partial_ld)
+        assert dialog._enckey is None
+        with patch("angrmanagement.ui.dialogs.load_binary.load_cart_config_key", return_value=OTHER_KEY):
+            captured = self._captured_prompt(dialog)
+
+        assert captured["initial_text"] == key_to_hex(OTHER_KEY)
+        assert "cart.cfg" in captured["prompt_msg"]
+        dialog.close()
+
+    def test_no_config_file_leaves_the_prompt_empty(self) -> None:
+        dialog = make_dialog(self.partial_ld)
+        with patch("angrmanagement.ui.dialogs.load_binary.load_cart_config_key", return_value=None):
+            captured = self._captured_prompt(dialog)
+
+        assert captured["initial_text"] == ""
+        assert "cart.cfg" not in captured["prompt_msg"]
+        dialog.close()
+
+    def test_the_config_key_is_only_a_suggestion(self) -> None:
+        # a file that opens with cart's built-in key must keep opening with it. the config key is
+        # never applied unless the user confirms it in the prompt.
+        with patch("angrmanagement.ui.dialogs.load_binary.load_cart_config_key", return_value=OTHER_KEY):
+            dialog = make_dialog(self.partial_ld)
+            dialog._on_ok_clicked()
+
+        assert "arc4_key" not in dialog.load_options["main_opts"]
+        dialog.close()
 
 
 class TestLoadBinaryJobCart(AngrManagementTestCase):

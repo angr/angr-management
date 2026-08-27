@@ -46,6 +46,7 @@ except ImportError:
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.ui.dialogs.set_encryption_key import SetEncryptionKeyDialog, key_to_hex
+from angrmanagement.utils.cart_config import CART_CONFIG_KEY_OPTION, CART_CONFIG_PATH, load_cart_config_key
 
 
 class LoadBinaryError(Exception):
@@ -818,9 +819,17 @@ class LoadBinary(QDialog):
         """
         Ask the user for an encryption key. Returns None if the user cancelled.
         """
+        prompt = f"Set the encryption key that the {CART_BACKEND_NAME} backend should use."
+        # the key already in use wins over the one the cart tool is configured with
+        enckey = self._enckey
+        if enckey is None:
+            enckey = load_cart_config_key()
+            if enckey is not None:
+                prompt += f"\nPre-filled with {CART_CONFIG_KEY_OPTION} from {CART_CONFIG_PATH}."
+
         dialog = SetEncryptionKeyDialog(
-            prompt_msg=f"Set the encryption key that the {CART_BACKEND_NAME} backend should use.",
-            initial_text="" if self._enckey is None else key_to_hex(self._enckey),
+            prompt_msg=prompt,
+            initial_text="" if enckey is None else key_to_hex(enckey),
             parent=self,
         )
         dialog.exec_()

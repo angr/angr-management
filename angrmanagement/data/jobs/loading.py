@@ -11,6 +11,8 @@ from PySide6.QtWidgets import QMessageBox
 
 from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.ui.dialogs import LoadBinary, SetEncryptionKeyDialog
+from angrmanagement.ui.dialogs.set_encryption_key import key_to_hex
+from angrmanagement.utils.cart_config import CART_CONFIG_KEY_OPTION, CART_CONFIG_PATH, load_cart_config_key
 
 from .job import InstanceJob
 
@@ -93,9 +95,15 @@ class LoadBinaryJob(InstanceJob):
         partial_ld = None
 
         def _load_user_passphrase(backend_cls) -> bytes | None:
+            prompt = f"The encryption key does not work or does not exist for the CLE backend {backend_cls.__name__}."
+            # suggest the key the cart tool is configured with, if there is one. cle does not use it by itself.
+            enckey = load_cart_config_key()
+            if enckey is not None:
+                prompt += f"\nPre-filled with {CART_CONFIG_KEY_OPTION} from {CART_CONFIG_PATH}."
+
             dialog = SetEncryptionKeyDialog(
-                prompt_msg=f"The encryption key does not work or does not exist for "
-                f"the CLE backend {backend_cls.__name__}."
+                prompt_msg=prompt,
+                initial_text="" if enckey is None else key_to_hex(enckey),
             )
             dialog.exec_()
             return dialog.result
