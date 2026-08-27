@@ -45,7 +45,7 @@ except ImportError:
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule
-from angrmanagement.ui.dialogs.set_encryption_key import SetEncryptionKeyDialog
+from angrmanagement.ui.dialogs.set_encryption_key import SetEncryptionKeyDialog, key_to_hex
 
 
 class LoadBinaryError(Exception):
@@ -812,7 +812,7 @@ class LoadBinary(QDialog):
         if self._enckey is None:
             label.setText("Using the default encryption key")
         else:
-            label.setText("Encryption key: " + " ".join(f"{x:02x}" for x in self._enckey))
+            label.setText("Encryption key: " + key_to_hex(self._enckey))
 
     def _prompt_for_enckey(self) -> bytes | None:
         """
@@ -820,7 +820,7 @@ class LoadBinary(QDialog):
         """
         dialog = SetEncryptionKeyDialog(
             prompt_msg=f"Set the encryption key that the {CART_BACKEND_NAME} backend should use.",
-            initial_text="" if self._enckey is None else repr(self._enckey),
+            initial_text="" if self._enckey is None else key_to_hex(self._enckey),
             parent=self,
         )
         dialog.exec_()

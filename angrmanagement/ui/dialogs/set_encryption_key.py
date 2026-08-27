@@ -25,6 +25,14 @@ class EncKeyFormat(IntEnum):
     BASE64 = 0
     BYTESTRING = 1
     ASCII = 2
+    HEX = 3
+
+
+def key_to_hex(key: bytes) -> str:
+    """
+    Render a key the way this dialog expects it to be typed back in.
+    """
+    return " ".join(f"{x:02x}" for x in key)
 
 
 class SetEncryptionKeyDialog(QDialog):
@@ -47,6 +55,7 @@ class SetEncryptionKeyDialog(QDialog):
         self._key_preview: QLabel = None
         self._key_preview_bytes: QLabel = None
         self._auto_radio: QRadioButton = None
+        self._hex_radio: QRadioButton = None
         self._base64_radio: QRadioButton = None
         self._bytestring_radio: QRadioButton = None
         self._ascii_radio: QRadioButton = None
@@ -68,8 +77,8 @@ class SetEncryptionKeyDialog(QDialog):
 
         secondary_prompt_label = QLabel(self)
         secondary_prompt_label.setText(
-            "Please provide an encryption key (in the form of a Base64-encoded string, a Python byte string, or an "
-            "ASCII string):"
+            "Please provide an encryption key (in the form of a hexadecimal string, a Base64-encoded string, a Python "
+            "byte string, or an ASCII string):"
         )
         self.main_layout.addWidget(secondary_prompt_label)
 
@@ -77,6 +86,8 @@ class SetEncryptionKeyDialog(QDialog):
         format_groupbox = QGroupBox("Key format")
         self._auto_radio = QRadioButton("Auto-detect")
         self._auto_radio.clicked.connect(self._on_enckey_changed)
+        self._hex_radio = QRadioButton("Hex")
+        self._hex_radio.clicked.connect(self._on_enckey_changed)
         self._base64_radio = QRadioButton("Base64")
         self._base64_radio.clicked.connect(self._on_enckey_changed)
         self._bytestring_radio = QRadioButton("Python byte string")
@@ -86,6 +97,7 @@ class SetEncryptionKeyDialog(QDialog):
         format_layout = QHBoxLayout()
         format_layout.addWidget(self._auto_radio)
         self._auto_radio.setChecked(True)
+        format_layout.addWidget(self._hex_radio)
         format_layout.addWidget(self._base64_radio)
         format_layout.addWidget(self._bytestring_radio)
         format_layout.addWidget(self._ascii_radio)
@@ -125,17 +137,45 @@ class SetEncryptionKeyDialog(QDialog):
             key_box.setText(self._initial_text)
             key_box.selectAll()
 
+    @staticmethod
+    def _parse_hex(txt: str) -> bytes | None:
+        """
+        Parse a hexadecimal key. Accepts an optional 0x prefix and whitespace, ':' or '-' separators.
+        """
+        digits = txt.strip()
+        if digits[:2].lower() == "0x":
+            digits = digits[2:]
+        for separator in " \t:-":
+            digits = digits.replace(separator, "")
+        if not digits or len(digits) % 2 != 0:
+            return None
+        try:
+            return bytes.fromhex(digits)
+        except ValueError:
+            return None
+
     def _get_enckey(self, txt: str) -> bytes | None:
         if not txt:
             return None
 
         format = None
-        if self._base64_radio.isChecked():
+        if self._hex_radio.isChecked():
+            format = EncKeyFormat.HEX
+        elif self._base64_radio.isChecked():
             format = EncKeyFormat.BASE64
         elif self._bytestring_radio.isChecked():
             format = EncKeyFormat.BYTESTRING
         elif self._ascii_radio.isChecked():
             format = EncKeyFormat.ASCII
+
+        # parse it as a hexadecimal string. this is attempted before base64 because hex-shaped text is also valid
+        # base64 more often than not, and it is far likelier to have been meant as hex.
+        if format is None or format == EncKeyFormat.HEX:
+            key = self._parse_hex(txt)
+            if key is not None:
+                return key
+            if format == EncKeyFormat.HEX:
+                return None
 
         # parse it as a base64 string
         if format is None or format == EncKeyFormat.BASE64:
@@ -201,7 +241,7 @@ class SetEncryptionKeyDialog(QDialog):
             self._ok_button.setEnabled(True)
 
             self._key_preview.setText("Key in byte string: " + str(repr(enc_key)))
-            self._key_preview_bytes.setText("Key in bytes: " + " ".join(f"{x:02x}" for x in enc_key))
+            self._key_preview_bytes.setText("Key in hex: " + key_to_hex(enc_key))
 
         self._status_label.style().unpolish(self._status_label)
         self._status_label.style().polish(self._status_label)
