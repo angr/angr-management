@@ -158,27 +158,27 @@ class SetEncryptionKeyDialog(QDialog):
         if not txt:
             return None
 
-        format = None
+        key_format = None
         if self._hex_radio.isChecked():
-            format = EncKeyFormat.HEX
+            key_format = EncKeyFormat.HEX
         elif self._base64_radio.isChecked():
-            format = EncKeyFormat.BASE64
+            key_format = EncKeyFormat.BASE64
         elif self._bytestring_radio.isChecked():
-            format = EncKeyFormat.BYTESTRING
+            key_format = EncKeyFormat.BYTESTRING
         elif self._ascii_radio.isChecked():
-            format = EncKeyFormat.ASCII
+            key_format = EncKeyFormat.ASCII
 
         # parse it as a hexadecimal string. this is attempted before base64 because hex-shaped text is also valid
         # base64 more often than not, and it is far likelier to have been meant as hex.
-        if format is None or format == EncKeyFormat.HEX:
+        if key_format is None or key_format == EncKeyFormat.HEX:
             key = self._parse_hex(txt)
             if key is not None:
                 return key
-            if format == EncKeyFormat.HEX:
+            if key_format == EncKeyFormat.HEX:
                 return None
 
         # parse it as a base64 string
-        if format is None or format == EncKeyFormat.BASE64:
+        if key_format is None or key_format == EncKeyFormat.BASE64:
             try:
                 key = base64.b64decode(txt, validate=True)
                 # it works!
@@ -186,11 +186,11 @@ class SetEncryptionKeyDialog(QDialog):
             except (ValueError, TypeError):
                 # can't be parsed as a base64 string
                 pass
-            if format == EncKeyFormat.BASE64:
+            if key_format == EncKeyFormat.BASE64:
                 return None
 
         # parse it as a Python byte string. accept both a complete literal and the escaped content of one.
-        if format is None or format == EncKeyFormat.BYTESTRING:
+        if key_format is None or key_format == EncKeyFormat.BYTESTRING:
             candidates = [txt] if txt.startswith(('b"', "b'")) else []
             candidates.append(f'b"{txt}"')
             for candidate in candidates:
@@ -201,16 +201,16 @@ class SetEncryptionKeyDialog(QDialog):
                 if isinstance(key, bytes):
                     return key
 
-            if format == EncKeyFormat.BYTESTRING:
+            if key_format == EncKeyFormat.BYTESTRING:
                 return None
 
         # encode it as a normal string
-        if format is None or format == EncKeyFormat.ASCII:
+        if key_format is None or key_format == EncKeyFormat.ASCII:
             try:
                 return txt.encode("ascii")
-            except Exception:
+            except UnicodeEncodeError:
                 pass
-            if format == EncKeyFormat.ASCII:
+            if key_format == EncKeyFormat.ASCII:
                 return None
 
         # everything has failed

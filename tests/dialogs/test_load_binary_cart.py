@@ -13,7 +13,7 @@ from unittest.mock import patch
 import cle
 from common import AngrManagementTestCase, create_qapp, test_location  # pylint: disable=import-error
 
-import angrmanagement.data.jobs.loading as loading
+from angrmanagement.data.jobs import loading
 from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.ui.dialogs.load_binary import LoadBinary
 from angrmanagement.ui.dialogs.set_encryption_key import key_to_hex
@@ -226,14 +226,14 @@ class TestLoadBinaryJobCart(AngrManagementTestCase):
         class FakeEncryptionKeyDialog:
             """Stands in for the modal key prompt."""
 
-            def __init__(self, *args, **kwargs) -> None:
+            def __init__(self, *_args, **_kwargs) -> None:
                 captured["prompted"] = True
                 self.result = CART_KEY
 
             def exec_(self) -> int:
                 return 0
 
-        def fake_load_binary_run(partial_ld, **kwargs):
+        def fake_load_binary_run(_partial_ld, **kwargs):
             captured.update(kwargs)
             return {
                 "auto_load_libs": False,
