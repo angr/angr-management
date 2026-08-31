@@ -104,6 +104,9 @@ claripy = { git = "https://github.com/angr/claripy.git", branch = "master" }
 angr = { git = "https://github.com/angr/angr.git", branch = "master" }
 bintrace = { git = "https://github.com/mborgerson/bintrace", branch = "master" }
 
+[tool.uv.extra-build-dependencies]
+keystone-engine = ["cmake<4"]
+
 [tool.ruff]
 line-length = 120
 exclude = ["angrmanagement/vendor/"]
