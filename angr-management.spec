@@ -54,20 +54,19 @@ included_data = [
     (str(UNICORN_BASE / "lib"), "unicorn/lib")
 ]
 
-
 if sys.platform == "linux":
     import PySide6
 
     PYSIDE6_BASE = pathlib.Path(PySide6.__file__).parent
     included_data.append((str(PYSIDE6_BASE / "Qt" / "lib"), "PySide6/Qt/lib"))
 
-    if platform.machine() != "aarch64":
-        import keystone
-        KEYSTONE_BASE = pathlib.Path(keystone.__file__).parent
-        included_data.append((str(KEYSTONE_BASE), "keystone"))
-
     included_data.append((str(ZMQ_BASE / ".." / "pyzmq.libs"), "pyzmq.libs"))
 
+if sys.platform != "linux" or platform.machine() != "aarch64":
+    import keystone
+
+    KEYSTONE_BASE = pathlib.Path(keystone.__file__).parent
+    included_data.append((str(KEYSTONE_BASE), "keystone"))
 
 a = Analysis(
     [str(AM_BASE / "start.py")],
