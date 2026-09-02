@@ -219,6 +219,7 @@ class LoadBinary(QDialog):
 
     def _init_widgets(self) -> None:
         layout = QGridLayout()
+        layout.setColumnStretch(1, 1)
         self.main_layout.addLayout(layout)
 
         # filename
