@@ -4,12 +4,15 @@ import logging
 from typing import TYPE_CHECKING
 
 import angr
+from angr.analyses.decompiler.edits import NullEditHooks
+from angr.analyses.decompiler.edits import set_comment as core_set_comment
 from angr.analyses.disassembly import Instruction
 from angr.block import Block
 from angr.knowledge_plugins import Function
 from cle import SymbolType
 
 from angrmanagement.config import Conf
+from angrmanagement.data.annotations import AnnotationManager, CommentKind
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, BreakpointType
 from angrmanagement.data.signatures import SignatureManager
 from angrmanagement.data.trace import Trace
@@ -27,6 +30,17 @@ if TYPE_CHECKING:
     from angrmanagement.data.analysis_options import AnalysesConfiguration
 
 _l = logging.getLogger(__name__)
+
+
+class _InstanceEditHooks(NullEditHooks):
+    """Forwards angr's edit notifications to the instance's comment-changed callback."""
+
+    def __init__(self, instance: Instance) -> None:
+        self._instance = instance
+
+    def before_comment_changed(self, addr: int, old: str, new: str, created: bool, decomp: bool) -> None:
+        if self._instance.handle_comment_changed_callback is not None:
+            self._instance.handle_comment_changed_callback(addr, old, new, created, decomp)
 
 
 class Instance:
@@ -63,6 +77,7 @@ class Instance:
         self.register_container("active_view_state", lambda: None, "ViewState", "Currently focused view state")
 
         self.breakpoint_mgr = BreakpointManager()
+        self.annotations = AnnotationManager(self)
         self.signature_mgr = SignatureManager(self)
         self.debugger_list_mgr = DebuggerListManager()
         self.debugger_mgr = DebuggerManager(self.debugger_list_mgr)
@@ -241,19 +256,25 @@ class Instance:
         bp = Breakpoint(bp_type_map[type_], addr, size)
         self.breakpoint_mgr.add_breakpoint(bp)
 
-    def set_comment(self, addr: int, comment_text) -> None:
-        kb = self.project.kb
-        exists = addr in kb.comments
+    def set_comment(self, addr: int, comment_text: str | None, kind: CommentKind | None = None) -> None:
+        """
+        Set (or, with empty text, remove) the comment at ``addr``.
 
-        # callback
-        if comment_text is None and exists:
-            if self.handle_comment_changed_callback is not None:
-                self.handle_comment_changed_callback(addr, "", False, False, False)
-            del kb.comments[addr]
-        else:
-            if self.handle_comment_changed_callback is not None:
-                self.handle_comment_changed_callback(addr, comment_text, not exists, False, False)
-            kb.comments[addr] = comment_text
+        Goes through angr's edit layer for the knowledge-base write and the plugin notification.
+        Mirroring into the pseudocode is left to :meth:`CodeView.sync_kb_comments`, which owns the
+        codegen's statement comments and can place them where they render inline.
+        """
+        core_set_comment(
+            self.project.am_obj,
+            addr,
+            comment_text,
+            kind=kind,
+            kb=self.kb,
+            hooks=_InstanceEditHooks(self),
+            mirror_to_pseudocode=False,
+            rerender=False,
+        )
+        self.annotations.notify_comments_changed(addr)
 
         # TODO: can this be removed?
         if self.set_comment_callback is not None:
@@ -290,3 +311,4 @@ class Instance:
             self.debugger_list_mgr.remove_debugger(dbg)
 
         self.breakpoint_mgr.clear()
+        self.annotations.clear()

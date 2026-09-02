@@ -337,6 +337,9 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         self.navigate_to_addr(insn_addr)
 
+    def instruction_widget_rect(self, insn_addr: int):
+        return self._instruction_widget_rect(insn_addr, self._viewer, mapper=lambda p: self._viewer.mapTo(self, p))
+
     def navigate_to_addr(self, addr: int) -> None:
         if not self._addr_to_region_offset:
             return

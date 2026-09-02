@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 
 NAME_TO_QTAWESOME_NAME = {
     "about": "fa5s.info-circle",
+    "bookmarks-view": "mdi.bookmark-multiple",
     "command-palette": "ph.squares-four-light",
+    "comments-view": "mdi.comment-text-multiple",
     "console-view": "mdi.console-line",
     "disassembly-graph": "fa5s.sitemap",
     "disassembly-linear": "msc.list-selection",

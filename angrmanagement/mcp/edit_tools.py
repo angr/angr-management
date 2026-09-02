@@ -366,6 +366,7 @@ def register_edit_tools(server: FastMCP, workspace: Workspace) -> None:
 
             # the disassembly redraw that Workspace.set_comment used to do; the knowledge-base
             # write and its notification already happened in the edit layer
+            workspace.main_instance.annotations.notify_comments_changed(addr)
             workspace.refresh(["disassembly"])
             return {"in_pseudocode": result.detail["shown_in_pseudocode"]}
 
