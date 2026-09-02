@@ -45,6 +45,8 @@ except ImportError:
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule
+from angrmanagement.ui.dialogs.set_encryption_key import SetEncryptionKeyDialog, key_to_hex
+from angrmanagement.utils.cart_config import CART_CONFIG_KEY_OPTION, CART_CONFIG_PATH, load_cart_config_key
 
 
 class LoadBinaryError(Exception):
@@ -67,6 +69,10 @@ class ArchTreeWidgetItem(QTreeWidgetItem):
 
 DEPENDENCIES_TAB_INDEX = 1
 
+# cart is the only outer backend that takes an encryption key, and this is the load option it takes it in
+CART_BACKEND_NAME = "cart"
+CART_ENCKEY_ARGNAME = "arc4_key"
+
 
 class LoadBinary(QDialog):
     """
@@ -80,20 +86,30 @@ class LoadBinary(QDialog):
     def __init__(
         self,
         partial_ld: cle.Loader,
-        suggested_backend: cle.Backend | None = None,
+        suggested_backend: type[cle.Backend] | None = None,
         suggested_os_name: str | None = None,
+        suggested_main_opts: dict | None = None,
+        suggested_original_backend: type[cle.Backend] | None = None,
+        suggested_main_filename: str | None = None,
         parent=None,
     ) -> None:
         super().__init__(parent)
 
         # initialization
-        self.file_path = partial_ld.main_object.binary
+        # objects unpacked by an outer backend have no path on disk, in which case we fall back to the name the outer
+        # backend gave them
+        self.file_path: str | None = (
+            partial_ld.main_object.binary if suggested_main_filename is None else suggested_main_filename
+        )
         self.partial_ld = partial_ld
         self.md5 = None
         self.sha256 = None
         self.option_widgets = {}
         self.suggested_backend = suggested_backend
         self.suggested_os_name = suggested_os_name
+        self.suggested_main_opts = suggested_main_opts or {}
+        self.suggested_original_backend = suggested_original_backend
+        self.suggested_main_filename = suggested_main_filename
         self.available_backends: dict[str, cle.Backend] = cle.ALL_BACKENDS
         self.available_simos = {}
         self.arch = partial_ld.main_object.arch
@@ -107,6 +123,9 @@ class LoadBinary(QDialog):
         self._entry_addr_checkbox = None
         self._offset_checkbox = None
         self._symbol_search_tab_index = None
+        # the key the outer backend should use. it may already have been supplied by whoever performed the partial
+        # load, in which case the user is only overriding it.
+        self._enckey: bytes | None = self.suggested_main_opts.get(CART_ENCKEY_ARGNAME)
 
         if pypcode:
             for a in pypcode.Arch.enumerate():
@@ -140,7 +159,7 @@ class LoadBinary(QDialog):
 
     @property
     def filename(self):
-        return os.path.basename(self.file_path)
+        return os.path.basename(self.file_path) if self.file_path else ""
 
     #
     # Private methods
@@ -178,8 +197,8 @@ class LoadBinary(QDialog):
             # don't know what to do with other backends...
 
     def _set_base_addr(self) -> None:
-        # special handling for blobs
-        if isinstance(self.suggested_backend, cle.Blob):
+        # special handling for blobs. note that suggested_backend is a class, not an instance.
+        if self.suggested_backend is not None and issubclass(self.suggested_backend, cle.Blob):
             self._toggle_base_addr_textbox(True)
             self._toggle_entry_addr_textbox(True)
             self._toggle_offset_textbox(True)
@@ -208,7 +227,7 @@ class LoadBinary(QDialog):
         filename_caption.setText("File name:")
 
         filename = QLabel(self)
-        filename.setText(self.filename)
+        filename.setText(self.filename if self.filename else "<Unknown>")
 
         layout.addWidget(filename_caption, 0, 0, Qt.AlignmentFlag.AlignRight)
         layout.addWidget(filename, 0, 1)
@@ -260,8 +279,47 @@ class LoadBinary(QDialog):
 
     def _init_load_options_tab(self, tab):
         #
+        # Outer backend selection
+        #
+
+        outer_backend_layout = QHBoxLayout()
+        outer_backend_caption = QLabel()
+        outer_backend_caption.setText("Outer backend:")
+        outer_backend_caption.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        outer_backend_layout.addWidget(outer_backend_caption)
+
+        outer_backend_dropdown = QComboBox()
+        suggested_outer_backend_name = None
+        outer_backend_dropdown.addItem("<None>")
+        for backend_name, backend in self.available_backends.items():
+            if getattr(backend, "is_outer", False) is True:
+                outer_backend_dropdown.addItem(backend_name)
+                if backend is self.suggested_original_backend:
+                    suggested_outer_backend_name = backend_name
+        outer_backend_dropdown.setCurrentText(
+            suggested_outer_backend_name if suggested_outer_backend_name is not None else "<None>"
+        )
+        outer_backend_dropdown.currentTextChanged.connect(self._on_outer_backend_changed)
+        outer_backend_layout.addWidget(outer_backend_dropdown)
+
+        enckey_button = QPushButton("Encryption key...")
+        enckey_button.clicked.connect(self._on_set_enckey_clicked)
+        outer_backend_layout.addWidget(enckey_button)
+
+        enckey_label = QLabel()
+        enckey_layout = QHBoxLayout()
+        enckey_layout.addStretch()
+        enckey_layout.addWidget(enckey_label)
+
+        self.option_widgets["outer_backend"] = outer_backend_dropdown
+        self.option_widgets["enckey_button"] = enckey_button
+        self.option_widgets["enckey_label"] = enckey_label
+        self._update_enckey_widgets()
+
+        #
         # Backend selection
         #
+
         backend_layout = QHBoxLayout()
         backend_caption = QLabel()
         backend_caption.setText("Backend:")
@@ -271,9 +329,10 @@ class LoadBinary(QDialog):
         backend_dropdown = QComboBox()
         suggested_backend_name = None
         for backend_name, backend in self.available_backends.items():
-            backend_dropdown.addItem(backend_name)
-            if backend is self.suggested_backend:
-                suggested_backend_name = backend_name
+            if getattr(backend, "is_outer", False) is False:
+                backend_dropdown.addItem(backend_name)
+                if backend is self.suggested_backend:
+                    suggested_backend_name = backend_name
         if suggested_backend_name is not None:
             backend_dropdown.setCurrentText(suggested_backend_name)
         backend_layout.addWidget(backend_dropdown)
@@ -406,6 +465,8 @@ class LoadBinary(QDialog):
         self.option_widgets["load_debug_info"] = load_debug_info
 
         layout = QVBoxLayout()
+        layout.addLayout(outer_backend_layout)
+        layout.addLayout(enckey_layout)
         layout.addLayout(backend_layout)
         layout.addLayout(os_layout)
         layout.addLayout(blob_layout)
@@ -739,6 +800,41 @@ class LoadBinary(QDialog):
 
         return the_arch, recommended_arches, other_arches
 
+    def _update_enckey_widgets(self) -> None:
+        """
+        Only offer the encryption key controls for outer backends that take one.
+        """
+        supported = self.option_widgets["outer_backend"].currentText() == CART_BACKEND_NAME
+
+        self.option_widgets["enckey_button"].setEnabled(supported)
+
+        label: QLabel = self.option_widgets["enckey_label"]
+        label.setVisible(supported)
+        if self._enckey is None:
+            label.setText("Using the default encryption key")
+        else:
+            label.setText("Encryption key: " + key_to_hex(self._enckey))
+
+    def _prompt_for_enckey(self) -> bytes | None:
+        """
+        Ask the user for an encryption key. Returns None if the user cancelled.
+        """
+        prompt = f"Set the encryption key that the {CART_BACKEND_NAME} backend should use."
+        # the key already in use wins over the one the cart tool is configured with
+        enckey = self._enckey
+        if enckey is None:
+            enckey = load_cart_config_key()
+            if enckey is not None:
+                prompt += f"\nPre-filled with {CART_CONFIG_KEY_OPTION} from {CART_CONFIG_PATH}."
+
+        dialog = SetEncryptionKeyDialog(
+            prompt_msg=prompt,
+            initial_text="" if enckey is None else key_to_hex(enckey),
+            parent=self,
+        )
+        dialog.exec_()
+        return dialog.result
+
     def _toggle_base_addr_textbox(self, enabled: bool) -> None:
         self.option_widgets["base_addr"].setEnabled(enabled)
 
@@ -761,6 +857,15 @@ class LoadBinary(QDialog):
     def _on_offset_checkbox_clicked(self) -> None:
         self._toggle_offset_textbox(self._offset_checkbox.isChecked())
 
+    def _on_outer_backend_changed(self, text: str) -> None:  # pylint:disable=unused-argument
+        self._update_enckey_widgets()
+
+    def _on_set_enckey_clicked(self) -> None:
+        enckey = self._prompt_for_enckey()
+        if enckey is not None:
+            self._enckey = enckey
+            self._update_enckey_widgets()
+
     def _on_ok_clicked(self) -> None:
         force_load_libs = []
         skip_libs = set()
@@ -776,6 +881,14 @@ class LoadBinary(QDialog):
         self.load_options = {}
         self.load_options["auto_load_libs"] = self.option_widgets["auto_load_libs"].isChecked()
         self.load_options["load_debug_info"] = self.option_widgets["load_debug_info"].isChecked()
+
+        outer_backend_dropdown: QComboBox = self.option_widgets["outer_backend"]
+        outer_backend: str | None = outer_backend_dropdown.currentText()
+        if outer_backend == "<None>":
+            outer_backend = None
+        elif not outer_backend or outer_backend not in self.available_backends:
+            QMessageBox.critical(None, "Incorrect backend selection", "Please select a backend before continue.")
+            return
 
         backend_dropdown: QComboBox = self.option_widgets["backend"]
         backend: str = backend_dropdown.currentText()
@@ -802,7 +915,9 @@ class LoadBinary(QDialog):
             arch = archinfo.ArchPcode(arch.id)
         self.load_options["arch"] = arch
 
-        self.load_options["main_opts"] = {
+        # options for the object the user picked a backend for. it ends up in either main_opts or, when an outer
+        # backend unpacks it, lib_opts.
+        main_opts = {
             "backend": backend,
         }
 
@@ -814,7 +929,7 @@ class LoadBinary(QDialog):
             except ValueError:
                 QMessageBox.critical(None, "Incorrect base address", "Please input a valid base address.")
                 return
-            self.load_options["main_opts"]["base_addr"] = base_addr
+            main_opts["base_addr"] = base_addr
 
         if self._entry_addr_checkbox is not None and self._entry_addr_checkbox.isChecked():
             try:
@@ -822,7 +937,7 @@ class LoadBinary(QDialog):
             except ValueError:
                 QMessageBox.critical(None, "Incorrect entry point address", "Please input a valid entry point address.")
                 return
-            self.load_options["main_opts"]["entry_point"] = entry_addr
+            main_opts["entry_point"] = entry_addr
 
         if self._offset_checkbox is not None and self._offset_checkbox.isChecked():
             try:
@@ -830,7 +945,7 @@ class LoadBinary(QDialog):
             except ValueError:
                 QMessageBox.critical(None, "Incorrect offset", "Please input a valid offset.")
                 return
-            self.load_options["main_opts"]["offset"] = offset_addr
+            main_opts["offset"] = offset_addr
 
         if force_load_libs:
             self.load_options["force_load_libs"] = force_load_libs
@@ -840,9 +955,7 @@ class LoadBinary(QDialog):
         # Collect symbol search options for PE files
         if isinstance(self.partial_ld.main_object, cle.PE):
             if "allow_symbol_download" in self.option_widgets:
-                self.load_options["main_opts"]["download_debug_symbols"] = self.option_widgets[
-                    "allow_symbol_download"
-                ].isChecked()
+                main_opts["download_debug_symbols"] = self.option_widgets["allow_symbol_download"].isChecked()
 
             if "symbol_paths_table" in self.option_widgets:
                 symbol_paths_table: QTableWidget = self.option_widgets["symbol_paths_table"]
@@ -865,11 +978,27 @@ class LoadBinary(QDialog):
                             if cache_item.text():
                                 symbol_paths.append(f"cache*{cache_item.text()}")
                 if symbol_paths:
-                    self.load_options["main_opts"]["symbol_paths"] = ";".join(symbol_paths)
+                    main_opts["symbol_paths"] = ";".join(symbol_paths)
 
             # Add confirmation and progress callbacks
-            self.load_options["main_opts"]["download_debug_symbol_confirm"] = LoadBinary._allow_symbol_download
-            self.load_options["main_opts"]["download_debug_symbol_progress"] = LoadBinary._symbol_download_progress
+            main_opts["download_debug_symbol_confirm"] = LoadBinary._allow_symbol_download
+            main_opts["download_debug_symbol_progress"] = LoadBinary._symbol_download_progress
+
+        if outer_backend is not None:
+            # the outer backend is the real main object; the options above apply to the object it unpacks
+            outer_main_opts = {
+                "backend": outer_backend,
+            } | self.suggested_main_opts
+            if outer_backend == CART_BACKEND_NAME and self._enckey is not None:
+                # the key the user picked wins over the one the partial load used
+                outer_main_opts[CART_ENCKEY_ARGNAME] = self._enckey
+            self.load_options["main_opts"] = outer_main_opts
+            if self.suggested_main_filename is not None:
+                self.load_options["lib_opts"] = {
+                    self.suggested_main_filename: main_opts,
+                }
+        else:
+            self.load_options["main_opts"] = main_opts | self.suggested_main_opts
 
         self.close()
 
@@ -941,14 +1070,20 @@ class LoadBinary(QDialog):
 
     @staticmethod
     def run(
-        partial_ld: cle.Loader, suggested_backend=None, suggested_os_name: str | None = None
+        partial_ld: cle.Loader,
+        suggested_backend=None,
+        suggested_os_name: str | None = None,
+        suggested_main_opts: dict | None = None,
+        **kwargs,
     ) -> tuple[dict | None, dict | None]:
         try:
             dialog = LoadBinary(
                 partial_ld,
                 suggested_backend=suggested_backend,
                 suggested_os_name=suggested_os_name,
+                suggested_main_opts=suggested_main_opts,
                 parent=GlobalInfo.main_window,
+                **kwargs,
             )
             dialog.setModal(True)
             dialog.exec_()

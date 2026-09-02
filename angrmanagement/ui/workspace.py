@@ -13,6 +13,7 @@ from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
 from angr.knowledge_plugins.functions.function import Function
 from angr.knowledge_plugins.patches import Patch
 from cle import SymbolType
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox
 from PySide6QtAds import SideBarBottom
 
@@ -33,7 +34,7 @@ from angrmanagement.logic.commands import CommandManager
 from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.logic.debugger.bintrace import BintraceDebugger
 from angrmanagement.logic.debugger.simgr import SimulationDebugger
-from angrmanagement.logic.jobmanager import JobManager
+from angrmanagement.logic.jobmanager import JobCancelled, JobManager
 from angrmanagement.logic.threads import gui_thread_schedule_async, needs_gui_thread
 from angrmanagement.plugins import PluginManager
 from angrmanagement.ui.dialogs import AnalysisOptionsDialog
@@ -92,6 +93,7 @@ class Workspace:
         self.main_window: MainWindow = main_window
         self.job_manager = JobManager(self)
         self.job_manager.job_starting.connect(self.on_job_started)
+        self.job_manager.job_exception.connect(self._handle_job_exception)
 
         self.command_manager: CommandManager = CommandManager()
         self.view_manager: ViewManager = ViewManager(self)
@@ -113,7 +115,6 @@ class Workspace:
         self.main_instance.project.am_subscribe(self._instance_project_initalization)
         self.main_instance.simgrs.am_subscribe(self._update_simgr_debuggers)
         self.main_instance.handle_comment_changed_callback = self.plugins.handle_comment_changed
-        self.main_instance.job_worker_exception_callback = self._handle_job_exception
 
         self.current_screen = ObjectContainer(None, name="current_screen")
 
@@ -1013,10 +1014,27 @@ class Workspace:
 
         self.plugins.handle_project_initialization()
 
-    def _handle_job_exception(self, job: Job, e: Exception) -> None:
+    def _handle_job_exception(self, job: Job, ex: BaseException) -> None:
         self.log(f'Exception while running job "{job.name}":')
-        self.log(e)
+        self.log(ex)
         self.log("Type %debug to debug it")
+
+        if isinstance(ex, JobCancelled):
+            # the user asked for it; no need to report it
+            return
+
+        def _display_messagebox() -> None:
+            msg = "".join(traceback.format_exception(ex))
+            msgbox = QMessageBox(self.main_window)
+            msgbox.setIcon(QMessageBox.Icon.Critical)
+            msgbox.setWindowTitle(f"Error during job {job.name}")
+            msgbox.setText(f"An exception occurred when running {job.name}:\n\n{msg}")
+            msgbox.setStandardButtons(QMessageBox.StandardButton.Ok)
+            msgbox.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+            # shown without blocking: a failing job must not stall whoever is waiting on the job queue
+            msgbox.show()
+
+        gui_thread_schedule_async(_display_messagebox)
 
     def _update_simgr_debuggers(self, **kwargs) -> None:  # pylint:disable=unused-argument
         sim_dbg = None
