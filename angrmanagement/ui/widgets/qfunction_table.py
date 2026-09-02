@@ -535,7 +535,7 @@ class QFunctionTableView(QFastTableView):
     def jump_to_result(self, index: int = 0) -> None:
         if self._model.func_list is not None and len(self._model.func_list) > index:
             func_entry = self._model.func_list[index]
-            self._selected_func.am_obj = self._functions.get_by_addr(func_entry.addr, meta_only=True)
+            self._selected_func.am_obj = self._functions.get_by_addr(func_entry.addr)
             self._selected_func.am_event(func=self._selected_func.am_obj)
 
     def load_functions(self) -> None:
@@ -555,7 +555,7 @@ class QFunctionTableView(QFastTableView):
         if not 0 <= row < len(self._model.func_list):
             return
         func_entry = self._model.func_list[row]
-        self._selected_func.am_obj = self._functions.get_by_addr(func_entry.addr, meta_only=True)
+        self._selected_func.am_obj = self._functions.get_by_addr(func_entry.addr)
         self._selected_func.am_event(func=self._selected_func.am_obj)
 
     def _on_key_pressed(self, text: str) -> None:
