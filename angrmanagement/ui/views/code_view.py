@@ -220,7 +220,13 @@ class CodeView(FunctionView):
 
     @property
     def best_flavor(self) -> str:
-        return "rust" if not self.instance.project.am_none and self.instance.project.is_rust_binary else "pseudocode"
+        if self.instance.project.am_none:
+            return "pseudocode"
+        if self.instance.project.is_rust_binary:
+            return "rust"
+        if self.instance.project.is_go_binary:
+            return "go"
+        return "pseudocode"
 
     #
     # Public methods
@@ -790,7 +796,7 @@ class CodeView(FunctionView):
             # restore the scroll position
             self._textedit.verticalScrollBar().setValue(scroll_pos)
 
-        if self.codegen.flavor in {"pseudocode", "rust"}:
+        if self.codegen.flavor in {"pseudocode", "rust", "go"}:
             self._options.show()
         else:
             self._options.hide()
