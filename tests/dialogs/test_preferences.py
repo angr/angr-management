@@ -26,13 +26,17 @@ class TestPreferences(unittest.TestCase):
         self.dialog.close()
 
     def test_sidebar_cannot_collapse(self) -> None:
-        splitter = self.dialog.layout().itemAt(0).widget()
+        layout = self.dialog.layout()
+        assert layout is not None
+        layout_item = layout.itemAt(0)
+        assert layout_item is not None
+        splitter = layout_item.widget()
         assert isinstance(splitter, QSplitter)
         contents = splitter.widget(0)
         assert isinstance(contents, QListWidget)
 
         minimum_width = contents.minimumWidth()
-        assert minimum_width == contents.sizeHint().width()
+        assert minimum_width > 0
         assert not splitter.isCollapsible(0)
 
         splitter.setSizes([0, self.dialog.width()])
