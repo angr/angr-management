@@ -571,6 +571,8 @@ class Preferences(QDialog):
             list_item.setData(1, idx)
             contents.addItem(list_item)
 
+        contents.setMinimumWidth(contents.sizeHint().width())
+
         # buttons
         buttons = QDialogButtonBox(parent=self)
         buttons.setStandardButtons(QDialogButtonBox.StandardButton.Close | QDialogButtonBox.StandardButton.Ok)
@@ -582,6 +584,7 @@ class Preferences(QDialog):
         splitter = QSplitter()
         splitter.addWidget(contents)
         splitter.addWidget(pages)
+        splitter.setCollapsible(0, False)
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
 
