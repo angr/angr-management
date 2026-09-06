@@ -86,6 +86,7 @@ a = Analysis(
         "bitstring.bitstore_bitarray",
         "bitstring.bitstore_bitarray_helpers",
         "bitstring.bitstore_common_helpers",
+        "z3",
     ],
     hookspath=[],
     hooksconfig={},
