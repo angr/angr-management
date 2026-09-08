@@ -6,8 +6,11 @@ import sys
 import unittest
 
 import angr
+from angr.analyses.cfg.cfb import CFBlanket
+from angr.knowledge_base import KnowledgeBase
 from common import AngrManagementTestCase, test_location
 
+from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.ui.widgets import DisassemblyLevel
 from angrmanagement.ui.widgets.qfunction_comment import QFunctionCommentBanner
@@ -79,6 +82,68 @@ class TestQLinearViewer(AngrManagementTestCase):
         assert func.addr in disasm_view.linear_viewer.objects
         assert disasm_view.linear_viewer.objects[func.addr] is not None
         assert len(disasm_view.linear_viewer.objects[func.addr].addr_to_insns) == 2
+
+    def test_no_overlapping_objects_during_recovery(self):
+        """
+        Simulate CFG recovery: stream overlapping blocks into a temporary CFB built over an empty knowledge base and
+        verify that the linear viewer renders a non-overlapping, vertically contiguous sequence of objects.
+        """
+        main = self.main
+        main.workspace.run_analysis = lambda *args, **kwargs: None  # suppress the automatic analysis
+        binpath = os.path.join(test_location, "x86_64", "fauxware")
+        proj = angr.Project(binpath, auto_load_libs=False)
+        main.workspace.main_instance.project.am_obj = proj
+        main.workspace.main_instance.project.am_event()
+        main.workspace.job_manager.join_all_jobs()
+
+        # a temporary CFB over an empty kb, like the one a CFG generation job creates
+        temp_cfb = proj.analyses[CFBlanket].prep(kb=KnowledgeBase(proj))(exclude_region_types={"kernel", "tls"})
+        cfb_container = main.workspace.main_instance.cfb
+        assert isinstance(cfb_container, ObjectContainer)
+        cfb_container.am_obj = temp_cfb
+        cfb_container.am_event()
+
+        disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
+        disasm_view.display_linear_viewer()
+        viewer = disasm_view.linear_viewer
+        # the window is never shown; give the viewer a real height so that multiple objects are rendered
+        viewer.resize(800, 600)
+        entry = proj.entry
+        viewer.navigate_to_addr(entry)
+
+        def assert_blanket_nonoverlapping():
+            prev_end = None
+            for addr, obj in temp_cfb._blanket.items():
+                size = obj.size if isinstance(getattr(obj, "size", None), int) else None
+                if prev_end is not None:
+                    assert addr >= prev_end, f"blanket overlap at {addr:#x}"
+                prev_end = addr + max(size or 1, 1)
+
+        def assert_contiguous_rendering(min_visible):
+            # the rendered objects are vertically contiguous (no stacked duplicates, no offset desync)
+            visible = sorted((qobj for qobj in viewer.objects.values() if qobj.isVisible()), key=lambda o: o.y())
+            assert len(visible) >= min_visible
+            for prev, curr in zip(visible, visible[1:], strict=False):
+                assert abs(curr.y() - (prev.y() + prev.height)) < 1e-3, (
+                    f"vertical gap/overlap between objects at y={prev.y()} (height {prev.height}) and y={curr.y()}"
+                )
+
+        # stream overlapping blocks: one at the entry, then one starting midway through it (jump-into-middle): the
+        # first block gets trimmed, leaving trimmed-block + block + unknown-remainder in the viewport
+        block = proj.factory.block(entry)
+        temp_cfb.add_obj(entry, block)
+        temp_cfb.add_obj(entry + 8, proj.factory.block(entry + 8))
+        viewer.refresh_objects()
+        assert_blanket_nonoverlapping()
+        assert_contiguous_rendering(3)
+
+        # a block covering the previous two entirely (the stale-size overwrite case) drops them
+        temp_cfb.add_obj(entry, proj.factory.block(entry, size=block.size))
+        viewer.refresh_objects()
+        assert_blanket_nonoverlapping()
+        assert temp_cfb._blanket[entry].size == block.size
+        assert entry + 8 not in temp_cfb._blanket
+        assert_contiguous_rendering(2)
 
     def test_disassembly_comment_prefix(self):
         main = self.main

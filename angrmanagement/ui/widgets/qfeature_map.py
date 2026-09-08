@@ -231,14 +231,19 @@ class FeatureMapItem(QGraphicsItem):
 
         num_items = 0
         time_start = time.time()
-        for addr, item in self.instance.cfb._blanket.items():  # FIXME: Don't access protected member of CFB
-            if not item.size:
-                continue
-            tags = _get_tags_for_item(item)
-            if tags is None:
-                continue
-            self._cfb_feature_maps[-1].add(addr, item.size, tags)
-            num_items += 1
+        try:
+            for addr, item in self.instance.cfb._blanket.items():  # FIXME: Don't access protected member of CFB
+                if not getattr(item, "size", None):
+                    continue
+                tags = _get_tags_for_item(item)
+                if tags is None:
+                    continue
+                self._cfb_feature_maps[-1].add(addr, item.size, tags)
+                num_items += 1
+        except (RuntimeError, KeyError, IndexError):
+            # the CFB may be mutated by the CFG recovery job thread while we iterate over it; keep what we have
+            # collected so far - a following objects_added event will repaint
+            pass
         time_end = time.time()
         log.debug(
             "Reduced %d items in CFB to %d in %.4f s",
