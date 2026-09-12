@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from angr.ailment.expression import BinaryOp, Load, Op, UnaryOp
 from angr.ailment.statement import Assignment, Store
+from angr.analyses.decompiler.edits import set_function_prototype as core_set_function_prototype
 from angr.analyses.decompiler.optimization_passes.expr_op_swapper import OpDescriptor
 from angr.analyses.decompiler.structured_codegen.c import (
     CBinaryOp,
@@ -25,6 +26,7 @@ from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QApplication, QInputDialog, QLineEdit, QMenu
 
+from angrmanagement.mcp.edit_hooks import WorkspaceEditHooks
 from angrmanagement.ui.dialogs.rename_node import RenameNode
 from angrmanagement.ui.dialogs.retype_node import RetypeNode
 from angrmanagement.ui.dialogs.xref import XRefDialog
@@ -35,6 +37,7 @@ from angrmanagement.ui.widgets.qinline_comment_editor import QInlineCommentEdito
 from angrmanagement.ui.widgets.qnode_tip import QNodeTip
 
 if TYPE_CHECKING:
+    from angr.sim_type import SimTypeFunction
     from PySide6.QtGui import QTextDocument
 
     from angrmanagement.ui.views.code_view import CodeView
@@ -433,6 +436,19 @@ class QCCodeEdit(api.CodeEdit):
             )
         dialog.exec_()
 
+    def _set_user_prototype(self, proto: SimTypeFunction) -> dict:
+        # mark the prototype as user-provided. the decompiler will re-derive any prototype that it inferred itself.
+        # returns the renames and manual types that the re-decompilation will drop
+        result = core_set_function_prototype(
+            self.instance.project.am_obj,
+            self._code_view.function.am_obj,
+            proto,
+            kb=self.instance.kb,
+            hooks=WorkspaceEditHooks(self._code_view.workspace),
+            invalidate_cache=False,  # CodeView.decompile(reset_cache=True) drops the cache itself
+        )
+        return result.detail.get("user_edits") or {}
+
     def retype_node(self, *args, node=None, node_type=None) -> None:  # pylint: disable=unused-argument
         if node is None:
             node = self._selected_node
@@ -450,8 +466,8 @@ class QCCodeEdit(api.CodeEdit):
         if new_node_type is not None and self._code_view is not None and node is not None:
             new_node_type = new_node_type.with_arch(self.instance.project.arch)
             if isinstance(node, CFunction):
-                self._code_view.function.prototype = new_node_type
-                self._code_view.codegen.am_event(event="retype_function", node=node)
+                user_edits = self._set_user_prototype(new_node_type)
+                self._code_view.codegen.am_event(event="retype_function", node=node, user_edits=user_edits)
                 return
 
             if isinstance(node, CStructField):
@@ -469,8 +485,8 @@ class QCCodeEdit(api.CodeEdit):
                             new_args = list(new_proto.args)
                             new_args[idx] = new_node_type
                             new_proto.args = tuple(new_args)
-                            self._code_view.function.prototype = new_proto.with_arch(self.instance.project.arch)
-                            self._code_view.codegen.am_event(event="retype_function", node=cfunc)
+                            user_edits = self._set_user_prototype(new_proto)
+                            self._code_view.codegen.am_event(event="retype_function", node=cfunc, user_edits=user_edits)
                             return
 
                 # need workspace for altering callbacks of changes

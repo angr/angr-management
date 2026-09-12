@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, Literal
 
+from angr.analyses.decompiler.edits import restore_user_edits
 from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
 from angr.analyses.decompiler.structured_codegen.c import (
     CConstant,
@@ -43,6 +44,8 @@ from angrmanagement.ui.widgets.qfind_bar import QFindBar
 from .view import FunctionView
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from angr.knowledge_plugins.variables.variable_manager import VariableManagerInternal
 
     from angrmanagement.data.instance import Instance
@@ -228,6 +231,7 @@ class CodeView(FunctionView):
         flavor: str | None = None,
         reset_cache: bool = False,
         regen_clinic: bool = True,
+        on_finish: Callable[[], None] | None = None,
     ) -> None:
         if self._function.am_none:
             return
@@ -265,6 +269,8 @@ class CodeView(FunctionView):
                     self._last_function = self._function.am_obj
             self._maybe_preload_callees()
             self._maybe_auto_llm_refine()
+            if on_finish is not None:
+                on_finish()
 
         def decomp(*_) -> None:
             job = DecompileFunctionJob(
@@ -562,7 +568,15 @@ class CodeView(FunctionView):
                 self.codegen.am_obj = new_codegen
                 update_var_types = True
             elif event == "retype_function":
-                self.decompile(reset_cache=True)
+                # dropping the variable manager is what makes the new prototype take effect; it also drops every
+                # rename and manual type, so put the snapshot back once the new variables exist
+                user_edits = kwargs.get("user_edits") or {}
+
+                def restore_edits() -> None:
+                    if restore_user_edits(self.instance.kb, self._function.addr, user_edits)[0]:
+                        self.codegen.am_event()
+
+                self.decompile(reset_cache=True, on_finish=restore_edits if user_edits else None)
                 update_var_types = True
 
             if not update_var_types:
