@@ -436,17 +436,18 @@ class QCCodeEdit(api.CodeEdit):
             )
         dialog.exec_()
 
-    def _set_user_prototype(self, proto: SimTypeFunction) -> None:
-        # mark the prototype as user-provided. the decompiler will re-derive any prototype that it inferred itself
-        core_set_function_prototype(
+    def _set_user_prototype(self, proto: SimTypeFunction) -> dict:
+        # mark the prototype as user-provided. the decompiler will re-derive any prototype that it inferred itself.
+        # returns the renames and manual types that the re-decompilation will drop
+        result = core_set_function_prototype(
             self.instance.project.am_obj,
             self._code_view.function.am_obj,
             proto,
             kb=self.instance.kb,
             hooks=WorkspaceEditHooks(self._code_view.workspace),
             invalidate_cache=False,  # CodeView.decompile(reset_cache=True) drops the cache itself
-            preserve_user_edits=False,
         )
+        return result.detail.get("user_edits") or {}
 
     def retype_node(self, *args, node=None, node_type=None) -> None:  # pylint: disable=unused-argument
         if node is None:
@@ -465,8 +466,8 @@ class QCCodeEdit(api.CodeEdit):
         if new_node_type is not None and self._code_view is not None and node is not None:
             new_node_type = new_node_type.with_arch(self.instance.project.arch)
             if isinstance(node, CFunction):
-                self._set_user_prototype(new_node_type)
-                self._code_view.codegen.am_event(event="retype_function", node=node)
+                user_edits = self._set_user_prototype(new_node_type)
+                self._code_view.codegen.am_event(event="retype_function", node=node, user_edits=user_edits)
                 return
 
             if isinstance(node, CStructField):
@@ -484,8 +485,8 @@ class QCCodeEdit(api.CodeEdit):
                             new_args = list(new_proto.args)
                             new_args[idx] = new_node_type
                             new_proto.args = tuple(new_args)
-                            self._set_user_prototype(new_proto)
-                            self._code_view.codegen.am_event(event="retype_function", node=cfunc)
+                            user_edits = self._set_user_prototype(new_proto)
+                            self._code_view.codegen.am_event(event="retype_function", node=cfunc, user_edits=user_edits)
                             return
 
                 # need workspace for altering callbacks of changes
