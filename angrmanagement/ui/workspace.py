@@ -1039,7 +1039,6 @@ class Workspace:
         console.set_input_buffer(hook_code_string)
 
     def patch(self, addr: int, asm: str, pad: bool = True) -> None:
-        ks = self.main_instance.project.arch.keystone
         block = self.main_instance.project.factory.block(addr)
         insn = block.disassembly.insns[0]
         original_bytes: bytes = self.main_instance.project.loader.memory.load(insn.address, insn.size)
