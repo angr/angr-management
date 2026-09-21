@@ -326,6 +326,7 @@ ENTRIES = [
     CE("enabled_tabs", str, ""),
     # Recent
     CE("recent_files", list, []),
+    CE("last_used_directory", str, ""),
     CE("prompted_for_url_scheme_registration", bool, False),
     # LLM settings
     CE("llm_model", str, ""),
