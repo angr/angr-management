@@ -82,6 +82,8 @@ class FuzzyPatternView(InstanceView):
         self.origin_func: int | None = None
         self.enabled: bool = True
         self.min_similarity: float = 0.8
+        self.require_verified: bool = True
+        self.failed_leaves: set[int] = set()
         self.selected_path: NodePath | None = None
         self.expanded: set[NodePath] = set()
         self.hovered_block: QFuzzyPatternNode | None = None
@@ -117,12 +119,20 @@ class FuzzyPatternView(InstanceView):
     #
 
     def load_pattern(
-        self, pattern: KnownPattern, origin_func: int | None = None, min_similarity: float = 0.8, enabled: bool = True
+        self,
+        pattern: KnownPattern,
+        origin_func: int | None = None,
+        min_similarity: float = 0.8,
+        enabled: bool = True,
+        require_verified: bool = True,
     ) -> None:
         self.editor = PatternEditor(pattern)
         self.origin_func = origin_func
         self.min_similarity = min_similarity
         self.enabled = enabled
+        self.require_verified = require_verified
+        self.failed_leaves = set()
+        self.matches = []
         self.selected_path = None
         self.expanded.clear()
         self._rebuild()
@@ -130,7 +140,11 @@ class FuzzyPatternView(InstanceView):
 
     def load_stored(self, stored: StoredPattern) -> None:
         self.load_pattern(
-            stored.pattern, origin_func=stored.origin_func, min_similarity=stored.min_similarity, enabled=stored.enabled
+            stored.pattern,
+            origin_func=stored.origin_func,
+            min_similarity=stored.min_similarity,
+            enabled=stored.enabled,
+            require_verified=stored.require_verified,
         )
 
     #
@@ -179,6 +193,24 @@ class FuzzyPatternView(InstanceView):
         self._set_status(f"loosened {n} constant(s)")
         return n
 
+    def cut_depth(self) -> int:
+        """Wildcard everything below the depth shape search can see."""
+        if self.editor is None:
+            return 0
+        n = self.editor.cut_depth()
+        self._rebuild()
+        self._set_status(f"cut {n} deep subexpression(s)")
+        return n
+
+    def loosen_interior_captures(self) -> int:
+        """Stop requiring interior values to flow through one variable."""
+        if self.editor is None:
+            return 0
+        n = self.editor.loosen_interior_captures()
+        self._rebuild()
+        self._set_status(f"loosened {n} interior capture(s)")
+        return n
+
     def undo(self) -> None:
         if self.editor is not None and self.editor.undo():
             self.expanded = {p for p in self.expanded if self._path_exists(p)}
@@ -195,6 +227,7 @@ class FuzzyPatternView(InstanceView):
             enabled=self.enabled,
             min_similarity=self.min_similarity,
             origin_func=self.origin_func,
+            require_verified=self.require_verified,
             replace=True,
         )
         self._set_status(f"saved {stored.name} to the project ({'enabled' if stored.enabled else 'disabled'})")
@@ -221,6 +254,15 @@ class FuzzyPatternView(InstanceView):
         code_view.decompile(reset_cache=True)
         self._set_status(f"applied {stored.name}: {func.name} is being decompiled again")
         return stored
+
+    def leaf_index(self, path: NodePath) -> int:
+        """The template's index of the leaf at ``path``, or -1."""
+        if self.editor is None:
+            return -1
+        for i, (leaf_path, _) in enumerate(self.editor.leaves()):
+            if leaf_path == path:
+                return i
+        return -1
 
     def redraw_graph(self) -> None:
         self._graph_widget.refresh()
@@ -330,6 +372,11 @@ class FuzzyPatternView(InstanceView):
         funcs = [f for f in self.instance.kb.functions.values() if not (f.is_simprocedure or f.is_plt or f.alignment)]
         self.search(funcs)
 
+    def show_match(self, row: int) -> None:
+        """Mark the leaves that failed verification in the selected occurrence."""
+        self.failed_leaves = set(self.matches[row].failed_leaves) if 0 <= row < len(self.matches) else set()
+        self.redraw_graph()
+
     def jump_to_match(self, row: int) -> None:
         if 0 <= row < len(self.matches) and self.matches[row].start_addr is not None:
             self.workspace.jump_to(self.matches[row].start_addr)
@@ -347,12 +394,13 @@ class FuzzyPatternView(InstanceView):
             where = f"{r.start_addr:#x}" if r.start_addr is not None else "?"
             if r.end_addr is not None and r.end_addr != r.start_addr:
                 where += f"..{r.end_addr:#x}"
+            failed = "" if r.verified else " (" + ", ".join(str(i) for i in r.failed_leaves[:6]) + ")"
             cells = [
                 r.func_name,
                 where,
                 f"{r.similarity:.0%}",
                 f"{r.identity:.0%}",
-                "yes" if r.verified else "no",
+                "yes" if r.verified else "no" + failed,
                 "yes" if r.outlinable else r.reason,
             ]
             for j, text in enumerate(cells):
@@ -375,6 +423,12 @@ class FuzzyPatternView(InstanceView):
         self._loosen_btn = QPushButton("Loosen constants")
         self._loosen_btn.setToolTip("Let every constant match any value")
         self._loosen_btn.clicked.connect(self.loosen_constants)
+        self._cut_btn = QPushButton("Cut deep expressions")
+        self._cut_btn.setToolTip("Wildcard subexpressions below the depth shape search can see")
+        self._cut_btn.clicked.connect(self.cut_depth)
+        self._captures_btn = QPushButton("Loosen interior captures")
+        self._captures_btn.setToolTip("Stop requiring interior values to flow through one variable")
+        self._captures_btn.clicked.connect(self.loosen_interior_captures)
         self._save_btn = QPushButton("Save to project")
         self._save_btn.clicked.connect(self.save)
         self._apply_btn = QPushButton("Apply")
@@ -383,6 +437,8 @@ class FuzzyPatternView(InstanceView):
         buttons = QHBoxLayout()
         buttons.addWidget(self._undo_btn)
         buttons.addWidget(self._loosen_btn)
+        buttons.addWidget(self._cut_btn)
+        buttons.addWidget(self._captures_btn)
         buttons.addWidget(self._save_btn)
         buttons.addWidget(self._apply_btn)
         buttons.addStretch()
@@ -426,6 +482,7 @@ class FuzzyPatternView(InstanceView):
         self._matches_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._matches_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._matches_table.cellDoubleClicked.connect(lambda row, _col: self.jump_to_match(row))
+        self._matches_table.cellClicked.connect(lambda row, _col: self.show_match(row))
 
         side = QWidget()
         side_layout = QVBoxLayout()
@@ -539,6 +596,9 @@ class FuzzyPatternView(InstanceView):
             group.addChild(self._item(TextPropertyItem(f"Type of {param.capture}", ty), ("param_type", param.capture)))
         group.addChild(self._item(FloatPropertyItem("Min similarity", self.min_similarity), ("min_similarity", None)))
         group.addChild(self._item(BoolPropertyItem("Enabled", self.enabled), ("enabled", None)))
+        group.addChild(
+            self._item(BoolPropertyItem("Require structural match", self.require_verified), ("require_verified", None))
+        )
         return group
 
     def _node_group(self, path: NodePath) -> GroupPropertyItem | None:
@@ -598,6 +658,8 @@ class FuzzyPatternView(InstanceView):
             self.min_similarity = max(0.0, min(1.0, float(value)))
         elif what == "enabled":
             self.enabled = bool(value)
+        elif what == "require_verified":
+            self.require_verified = bool(value)
         elif what == "leaf_mode":
             self.set_leaf_mode(path, str(value))
         elif what == "weight":

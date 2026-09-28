@@ -209,6 +209,29 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         view.undo()
         assert all(view.editor.node_at(p).value is not None for p in pinned)
 
+    def test_more_loosening_actions_and_the_strictness_setting(self):
+        func, code_view = self._decompile_main()
+        self._select_two_statements(func, code_view)
+        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        assert view is not None and view.editor is not None
+        view.cut_depth()
+        view.loosen_interior_captures()
+
+        view.require_verified = False
+        stored = view.save()
+        assert stored is not None and stored.require_verified is False
+        view.load_stored(stored)
+        assert view.require_verified is False
+
+        # a failed leaf from a selected match row is marked on the canvas
+        view.search_current_function()
+        self.main.workspace.job_manager.join_all_jobs()
+        assert view.matches
+        view.matches[0].failed_leaves = [0]
+        view.show_match(0)
+        node = view._nodes_by_path[view.editor.leaves()[0][0]]
+        assert node.failed
+
     def test_no_selection_makes_no_pattern(self):
         _func, code_view = self._decompile_main()
         cursor = code_view.textedit.textCursor()

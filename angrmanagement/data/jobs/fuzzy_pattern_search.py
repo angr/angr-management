@@ -34,6 +34,8 @@ class FuzzyMatchRow:
     verified: bool
     outlinable: bool
     reason: str
+    #: indices of the template leaves that failed the structural match
+    failed_leaves: list[int]
 
 
 class FuzzyPatternSearchJob(InstanceJob):
@@ -88,6 +90,7 @@ class FuzzyPatternSearchJob(InstanceJob):
                         verified=bool(match.verified),
                         outlinable=region.outlinable,
                         reason=region.reason,
+                        failed_leaves=[c.leaf for c in match.columns if c.verified is False],
                     )
                 )
         ctx.set_progress(100.0, "done")

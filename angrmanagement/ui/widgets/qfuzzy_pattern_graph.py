@@ -115,11 +115,20 @@ class QFuzzyPatternNode(QCachedGraphicsItem):
     # painting
     #
 
+    @property
+    def failed(self) -> bool:
+        """The leaf failed verification in the occurrence selected in the match table."""
+        is_leaf = self.kind in ("required", "optional", "wildcard")
+        return is_leaf and self._view.leaf_index(self.path) in self._view.failed_leaves
+
     def paint(self, painter, option, widget) -> None:  # pylint:disable=unused-argument
         painter.setBrush(_FILL[self.kind])
-        pen = QPen(
-            QColor(0x30, 0x60, 0xC0) if self.selected else QColor(0x80, 0x80, 0x80), 2.0 if self.selected else 1.0
-        )
+        if self.failed:
+            pen = QPen(QColor(0xC0, 0x30, 0x30), 2.5 if self.selected else 2.0)
+        elif self.selected:
+            pen = QPen(QColor(0x30, 0x60, 0xC0), 2.0)
+        else:
+            pen = QPen(QColor(0x80, 0x80, 0x80), 1.0)
         painter.setPen(pen)
         painter.drawRoundedRect(QRectF(0, 0, self.width, self.height), 4, 4)
 
