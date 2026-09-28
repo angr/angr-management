@@ -686,6 +686,9 @@ class FuzzyPatternView(InstanceView):
         if isinstance(node, PConst):
             value = "" if node.value is None else hex(node.value)
             group.addChild(self._item(TextPropertyItem("Value (blank = any)", value), ("const_value", path)))
+            group.addChild(
+                self._item(TextPropertyItem("Symbol (blank = none)", node.symbol or ""), ("const_symbol", path))
+            )
             group.addChild(self._item(IntPropertyItem("Bits (0 = any)", node.bits or 0), ("const_bits", path)))
         elif isinstance(node, PVVar):
             group.addChild(self._item(IntPropertyItem("Bits (0 = any)", node.bits or 0), ("vvar_bits", path)))
@@ -738,14 +741,20 @@ class FuzzyPatternView(InstanceView):
             if value:
                 ed.set_expr_wildcard(path)
         elif what == "const_value":
+            # a value replaces a symbol: the two are alternative ways to pin the constant
             text = str(value).strip()
             node = ed.node_at(path)
             assert isinstance(node, PConst)
-            ed.set_const(path, int(text, 0) if text else None, node.bits)
+            ed.set_const(path, int(text, 0) if text else None, node.bits, symbol=None if text else node.symbol)
+        elif what == "const_symbol":
+            text = str(value).strip()
+            node = ed.node_at(path)
+            assert isinstance(node, PConst)
+            ed.set_const(path, None if text else node.value, node.bits, symbol=text or None)
         elif what == "const_bits":
             node = ed.node_at(path)
             assert isinstance(node, PConst)
-            ed.set_const(path, node.value, int(value) or None)
+            ed.set_const(path, node.value, int(value) or None, symbol=node.symbol)
         elif what == "vvar_bits":
             node = ed.node_at(path)
             assert isinstance(node, PVVar)

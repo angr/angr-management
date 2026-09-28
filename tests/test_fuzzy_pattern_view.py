@@ -218,10 +218,29 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         assert len(puts.call.args) == 1 and isinstance(puts.call.args[0], PAny)
         assert isinstance(fflush, PCallStmt) and fflush.call.names == {"fflush"}
         assert len(fflush.call.args) == 1 and isinstance(fflush.call.args[0], PLoad)
-        assert isinstance(fflush.call.args[0].addr, PConst) and fflush.call.args[0].addr.value is not None
+        # the global is named, not pinned to this build's address, so the pattern travels
+        assert fflush.call.args[0].addr == PConst(symbol="stdout")
         assert isinstance(ret, PReturn) and ret.values == (PConst(value=0xFFFFFFFF),)
         assert pattern.params == ()
         assert len(view.editor.leaves()) == 3
+
+        # the symbol is editable from the property panel and survives export and import
+        stdout_path = ("stmts", 1, "call", "args", 0, "addr")
+        view.select_node(stdout_path)
+        view._apply_property("const_symbol", stdout_path, "stderr")
+        assert view.editor.node_at(stdout_path) == PConst(symbol="stderr")
+        view._apply_property("const_symbol", stdout_path, "stdout")
+        assert view.editor.node_at(stdout_path) == PConst(symbol="stdout")
+        stored = view.save()
+        with tempfile.TemporaryDirectory() as td:
+            path = os.path.join(td, "p.json")
+            view.export_stored(stored, path)
+            with open(path, encoding="utf-8") as f:
+                assert '"symbol": "stdout"' in f.read()
+            view.delete_stored(stored)
+            back = view.import_stored(path)
+            assert back.pattern.pattern.stmts[1].call.args[0].addr == PConst(symbol="stdout")
+        view.edit_stored(back)
 
         view.apply()
         self.main.workspace.job_manager.join_all_jobs()
