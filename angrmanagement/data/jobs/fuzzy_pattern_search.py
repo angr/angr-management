@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.optimization_passes import FuzzyPatternOutliner
 from angr.analyses.decompiler.presets import DECOMPILATION_PRESETS
-from angr.analyses.fuzzy_patterns.region import snap
+from angr.analyses.fuzzy_patterns.region import largest_single_entry_subrun, snap
 from angr.analyses.fuzzy_patterns.search import find_template_occurrences
 
 from .job import InstanceJob
@@ -38,6 +38,11 @@ class FuzzyMatchRow:
     reason: str
     #: indices of the template leaves that failed the structural match
     failed_leaves: list[int]
+    #: when the occurrence cannot be outlined as it is: the address range of its largest
+    #: single-entry sub-run, and the share of the occurrence it covers
+    suggested_start: int | None = None
+    suggested_end: int | None = None
+    suggested_coverage: float = 0.0
 
 
 class FuzzyPatternSearchJob(InstanceJob):
@@ -100,6 +105,12 @@ class FuzzyPatternSearchJob(InstanceJob):
             for match in matches:
                 region = snap(stream, graph, match.interval, entry_loc=(func.addr, None))
                 start, end = stream.addr_range(match.interval.start, match.interval.end)
+                suggested = (None, None, 0.0)
+                if not region.outlinable and "entered from outside" in region.reason:
+                    subrun = largest_single_entry_subrun(stream, graph, match.interval, entry_loc=(func.addr, None))
+                    if subrun is not None:
+                        sub_start, sub_end = stream.addr_range(subrun.interval.start, subrun.interval.end)
+                        suggested = (sub_start, sub_end, len(subrun.interval) / max(1, len(match.interval)))
                 rows.append(
                     FuzzyMatchRow(
                         func_addr=func.addr,
@@ -112,6 +123,9 @@ class FuzzyPatternSearchJob(InstanceJob):
                         outlinable=region.outlinable,
                         reason=region.reason,
                         failed_leaves=[c.leaf for c in match.columns if c.verified is False],
+                        suggested_start=suggested[0],
+                        suggested_end=suggested[1],
+                        suggested_coverage=suggested[2],
                     )
                 )
         ctx.set_progress(100.0, "done")

@@ -102,6 +102,7 @@ class FuzzyPatternView(InstanceView):
         self._matches_table: QTableWidget
         self._search_here_btn: QPushButton
         self._search_all_btn: QPushButton
+        self._suggest_btn: QPushButton
         self._item_keys: dict[int, tuple[str, Any]] = {}
         self._model: PropertyModel | None = None
 
@@ -379,6 +380,63 @@ class FuzzyPatternView(InstanceView):
         self.failed_leaves = set(self.matches[row].failed_leaves) if 0 <= row < len(self.matches) else set()
         self.redraw_graph()
 
+    def use_suggestion(self, row: int) -> bool:
+        """Re-lift the pattern from the suggested sub-run of the selected occurrence, keeping
+        the call name and settings. Returns whether a pattern was loaded."""
+        if self.editor is None or not (0 <= row < len(self.matches)):
+            return False
+        r = self.matches[row]
+        if r.suggested_start is None or r.suggested_end is None:
+            self._set_status("this occurrence has no suggested sub-run")
+            return False
+        pattern = self.lift_from_range(r.func_addr, r.suggested_start, r.suggested_end, self.editor.pattern.call_name)
+        if pattern is None:
+            return False
+        self.load_pattern(
+            pattern,
+            origin_func=r.func_addr,
+            min_similarity=self.min_similarity,
+            enabled=self.enabled,
+            require_verified=self.require_verified,
+        )
+        self._set_status(f"pattern re-lifted from {r.suggested_start:#x}..{r.suggested_end:#x} in {r.func_name}")
+        return True
+
+    def lift_from_range(self, func_addr: int, start_addr: int, end_addr: int, call_name: str):
+        """A fuzzy pattern from the statements of ``func_addr`` between two instruction
+        addresses, or None when the function cannot be decompiled."""
+        from angr.analyses.decompiler.known_patterns.generator import (  # pylint:disable=import-outside-toplevel
+            PatternGenerationError,
+            PatternGenerator,
+        )
+        from angr.analyses.fuzzy_patterns.search import tokenize_for_templates  # pylint:disable=import-outside-toplevel
+
+        func = self.instance.kb.functions.get(func_addr)
+        if func is None:
+            return None
+        try:
+            dec = self.instance.project.analyses.Decompiler(func, cfg=self.instance.cfg, use_cache=True)
+        except Exception:  # pylint:disable=broad-except
+            _l.warning("Decompiling %s to re-lift the pattern failed", func.name, exc_info=True)
+            return None
+        if dec.ail_graph is None or dec.codegen is None:
+            return None
+        entry = next((b for b in dec.ail_graph if b.addr == func.addr and b.idx is None), None)
+        if entry is None:
+            return None
+        stream = tokenize_for_templates(dec.ail_graph, entry, kb=self.instance.kb)
+        blocks = {(b.addr, b.idx): b for b in stream.blocks}
+        stmts = [
+            blocks[loc.block_loc].statements[loc.stmt_idx]
+            for loc in stream.locs
+            if loc.ins_addr is not None and start_addr <= loc.ins_addr <= end_addr
+        ]
+        try:
+            return PatternGenerator(dec.codegen, dec.ail_graph).generate_fuzzy_from_statements(stmts, call_name)
+        except PatternGenerationError as ex:
+            self._set_status(f"cannot lift a pattern from that range: {ex}")
+            return None
+
     def jump_to_match(self, row: int) -> None:
         if 0 <= row < len(self.matches) and self.matches[row].start_addr is not None:
             self.workspace.jump_to(self.matches[row].start_addr)
@@ -397,13 +455,16 @@ class FuzzyPatternView(InstanceView):
             if r.end_addr is not None and r.end_addr != r.start_addr:
                 where += f"..{r.end_addr:#x}"
             failed = "" if r.verified else " (" + ", ".join(str(i) for i in r.failed_leaves[:6]) + ")"
+            outlinable = "yes" if r.outlinable else r.reason
+            if r.suggested_start is not None and r.suggested_end is not None:
+                outlinable += f"; try {r.suggested_start:#x}..{r.suggested_end:#x} ({r.suggested_coverage:.0%})"
             cells = [
                 r.func_name,
                 where,
                 f"{r.similarity:.0%}",
                 f"{r.identity:.0%}",
                 "yes" if r.verified else "no" + failed,
-                "yes" if r.outlinable else r.reason,
+                outlinable,
             ]
             for j, text in enumerate(cells):
                 item = QTableWidgetItem(text)
@@ -485,6 +546,10 @@ class FuzzyPatternView(InstanceView):
         self._matches_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._matches_table.cellDoubleClicked.connect(lambda row, _col: self.jump_to_match(row))
         self._matches_table.cellClicked.connect(lambda row, _col: self.show_match(row))
+        self._suggest_btn = QPushButton("Use suggested sub-run")
+        self._suggest_btn.setToolTip("Re-lift the pattern from the single-entry part of the selected occurrence")
+        self._suggest_btn.clicked.connect(lambda: self.use_suggestion(self._matches_table.currentRow()))
+        search_buttons.addWidget(self._suggest_btn)
 
         side = QWidget()
         side_layout = QVBoxLayout()

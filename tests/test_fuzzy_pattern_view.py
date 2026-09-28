@@ -243,6 +243,28 @@ class TestFuzzyPatternView(AngrManagementTestCase):
 
         assert any(r.func_addr == func.addr and r.similarity == 1.0 for r in view.matches)
 
+    def test_a_suggested_subrun_relifts_the_pattern(self):
+        func, code_view = self._decompile_main()
+        self._select_two_statements(func, code_view)
+        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        assert view is not None and view.editor is not None
+        view.search_current_function()
+        self.main.workspace.job_manager.join_all_jobs()
+        origin = next(r for r in view.matches if r.similarity == 1.0)
+
+        # pretend the occurrence had to be cut down to its own first half
+        origin.suggested_start = origin.start_addr
+        origin.suggested_end = origin.end_addr
+        origin.suggested_coverage = 0.5
+        view.matches = [origin]
+        view._show_matches(view.matches)
+        assert "try" in view._matches_table.item(0, 5).text()
+
+        assert view.use_suggestion(0)
+        assert view.editor.pattern.call_name == "my_idiom"
+        assert view.editor.leaves()
+        assert view.origin_func == func.addr
+
     def test_no_selection_makes_no_pattern(self):
         _func, code_view = self._decompile_main()
         cursor = code_view.textedit.textCursor()
