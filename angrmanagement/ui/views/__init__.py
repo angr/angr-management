@@ -10,6 +10,7 @@ from .data_dep_view import DataDepView
 from .dep_view import DependencyView
 from .disassembly_view import DisassemblyView
 from .functions_view import FunctionsView
+from .fuzzy_pattern_view import FuzzyPatternView
 from .hex_view import HexView
 from .jobs_view import JobsView
 from .log_view import LogView
@@ -30,6 +31,7 @@ from .view import BaseView, InstanceView
 
 __all__ = [
     "BookmarksView",
+    "FuzzyPatternView",
     "BreakpointsView",
     "CallExplorerView",
     "CodeView",
