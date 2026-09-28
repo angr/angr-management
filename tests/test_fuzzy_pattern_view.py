@@ -232,6 +232,17 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         node = view._nodes_by_path[view.editor.leaves()[0][0]]
         assert node.failed
 
+    def test_search_all_functions_runs(self):
+        func, code_view = self._decompile_main()
+        self._select_two_statements(func, code_view)
+        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        assert view is not None
+
+        view.search_all_functions()
+        self.main.workspace.job_manager.join_all_jobs()
+
+        assert any(r.func_addr == func.addr and r.similarity == 1.0 for r in view.matches)
+
     def test_no_selection_makes_no_pattern(self):
         _func, code_view = self._decompile_main()
         cursor = code_view.textedit.textCursor()

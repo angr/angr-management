@@ -369,7 +369,9 @@ class FuzzyPatternView(InstanceView):
             self.search([func])
 
     def search_all_functions(self) -> None:
-        funcs = [f for f in self.instance.kb.functions.values() if not (f.is_simprocedure or f.is_plt or f.alignment)]
+        funcs = [
+            f for f in self.instance.kb.functions.values() if not (f.is_simprocedure or f.is_plt or f.is_alignment)
+        ]
         self.search(funcs)
 
     def show_match(self, row: int) -> None:
