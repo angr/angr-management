@@ -36,5 +36,10 @@ class AnalyzeMenu(Menu):
                     main_window.view_proximity_for_current_function,
                     shortcut=QKeySequence("Ctrl+B"),
                 ),
+                MenuEntry(
+                    "Discover &Fuzzy Patterns...",
+                    main_window.discover_fuzzy_patterns,
+                    icon=icon("fuzzy_pattern-view"),
+                ),
             ],
         )

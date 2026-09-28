@@ -12,6 +12,7 @@ from angr.ailment.statement import Assignment, Store
 from angr.analyses.decompiler.known_patterns import PAny, PAnyStmt, PCallStmt, PConst, PLoad, PReturn, PStmtSeq
 from common import AngrManagementTestCase, test_location
 from PySide6.QtGui import QTextCursor
+from PySide6.QtWidgets import QMessageBox
 
 from angrmanagement.ui.views import CodeView, DisassemblyView
 from angrmanagement.ui.views.fuzzy_pattern_view import FuzzyPatternView
@@ -249,6 +250,73 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         calls = re.findall(r'PatternErrorsOut\("([^"]*)"\)', text)
         assert "Empty title" in calls and "Cannot open document." in calls, calls
         assert len(calls) == 8, calls
+
+    def _discover_entry(self):
+        """The Analyze menu's discovery item, triggered the way a click would."""
+        entries = [
+            e for e in self.main._analyze_menu.entries if getattr(e, "caption", None) == "Discover &Fuzzy Patterns..."
+        ]
+        assert len(entries) == 1, "the Analyze menu offers fuzzy pattern discovery"
+        return entries[0]._qaction
+
+    def test_discovery_without_a_decompiled_function_warns_and_bails(self):
+        main = self.main
+        binpath = os.path.join(test_location, "x86_64", "1after909")
+        main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
+        main.workspace.main_instance.project.am_event()
+        main.workspace.job_manager.join_all_jobs()
+
+        warnings = []
+        orig = QMessageBox.warning
+        QMessageBox.warning = lambda *args, **kwargs: warnings.append(args) or QMessageBox.StandardButton.Ok
+        try:
+            self._discover_entry().trigger()
+        finally:
+            QMessageBox.warning = orig
+        main.workspace.job_manager.join_all_jobs()
+
+        assert len(warnings) == 1 and "No function is currently decompiled" in warnings[0][2]
+        assert main.workspace.view_manager.first_view_in_category("fuzzy_pattern") is None, "nothing else happens"
+
+    def test_discovery_from_the_menu_finds_the_error_exit_idiom(self):
+        """Analyze > Discover Fuzzy Patterns on doit: the error-exit family's lifted pattern finds
+        every error exit, and applying it outlines them."""
+        func, code_view = self._decompile("1after909", "doit")
+        self._discover_entry().trigger()
+        self.main.workspace.job_manager.join_all_jobs()
+
+        view = self.main.workspace.view_manager.first_view_in_category("fuzzy_pattern")
+        assert isinstance(view, FuzzyPatternView)
+        assert view.discovered_func == func.addr and view.families
+        assert view._families_table.rowCount() == len(view.families)
+
+        def is_error_exit(family) -> bool:
+            if family.pattern is None or not isinstance(family.pattern.pattern, PStmtSeq):
+                return False
+            stmts = family.pattern.pattern.stmts
+            return (
+                len(stmts) == 3
+                and isinstance(stmts[0], PCallStmt)
+                and stmts[0].call.names == {"puts"}
+                and isinstance(stmts[1], PCallStmt)
+                and stmts[1].call.names == {"fflush"}
+                and isinstance(stmts[2], PReturn)
+            )
+
+        row = next(i for i, f in enumerate(view.families) if is_error_exit(f))
+        family = view.families[row]
+        # discovery drops copies that sit close together; the lifted pattern does not
+        assert family.found >= 8 and family.covered == family.copies
+
+        assert view.load_family(row)
+        assert view.editor is not None and view.origin_func == func.addr
+        assert view._tabs.currentWidget() is view._pattern_tab
+        view.apply()
+        self.main.workspace.job_manager.join_all_jobs()
+
+        call = view.editor.pattern.call_name
+        calls = re.findall(rf'{call}\("([^"]*)"', code_view.codegen.am_obj.text)
+        assert "Empty title" in calls and "Cannot open document." in calls, calls
 
     def test_library_lists_toggles_exports_and_imports(self):
         func, code_view = self._decompile_main()

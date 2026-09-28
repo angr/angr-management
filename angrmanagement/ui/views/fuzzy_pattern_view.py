@@ -25,18 +25,26 @@ from angr.knowledge_plugins.fuzzy_patterns import StoredPattern
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QDoubleSpinBox,
     QFileDialog,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QPushButton,
+    QSpinBox,
     QSplitter,
     QTableWidget,
     QTableWidgetItem,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
+from angrmanagement.data.jobs.fuzzy_pattern_discovery import (
+    DiscoveredFamily,
+    DiscoveryResult,
+    FuzzyPatternDiscoveryJob,
+)
 from angrmanagement.data.jobs.fuzzy_pattern_search import FuzzyMatchRow, FuzzyPatternSearchJob
 from angrmanagement.ui.views.view import InstanceView
 from angrmanagement.ui.widgets.qfuzzy_pattern_graph import QFuzzyPatternGraph, QFuzzyPatternNode
@@ -106,6 +114,15 @@ class FuzzyPatternView(InstanceView):
         self._suggest_btn: QPushButton
         self._item_keys: dict[int, tuple[str, Any]] = {}
         self._model: PropertyModel | None = None
+        #: families found by the last discovery run, and the function they were found in
+        self.families: list[DiscoveredFamily] = []
+        self.discovered_func: int | None = None
+        self._tabs: QTabWidget
+        self._min_size: QSpinBox
+        self._min_identity: QDoubleSpinBox
+        self._discover_btn: QPushButton
+        self._families_table: QTableWidget
+        self._discover_status: QLabel
 
         self._init_widgets()
         self.width_hint = 900
@@ -438,6 +455,64 @@ class FuzzyPatternView(InstanceView):
             self._set_status(f"cannot lift a pattern from that range: {ex}")
             return None
 
+    #
+    # discovery
+    #
+
+    def discover(self, func, blocking: bool = False) -> None:
+        """Look for families of similar code in ``func``; the results land in the Discover tab."""
+        self._tabs.setCurrentWidget(self._discover_tab)
+        job = FuzzyPatternDiscoveryJob(
+            self.instance,
+            func,
+            min_size=self._min_size.value(),
+            min_identity=self._min_identity.value(),
+            on_finish=self._show_families,
+            blocking=blocking,
+        )
+        self._discover_status.setText(f"discovering in {func.name}...")
+        self.workspace.job_manager.add_job(job)
+
+    def load_family(self, row: int) -> bool:
+        """Edit the pattern lifted from a discovered family. Returns whether one was loaded."""
+        if not (0 <= row < len(self.families)):
+            return False
+        family = self.families[row]
+        if family.pattern is None:
+            self._discover_status.setText("nothing in this family's first copy can be lifted into a pattern")
+            return False
+        self.load_pattern(family.pattern, origin_func=self.discovered_func)
+        self._tabs.setCurrentWidget(self._pattern_tab)
+        return True
+
+    def jump_to_family(self, row: int) -> None:
+        if 0 <= row < len(self.families) and self.families[row].start_addr is not None:
+            self.workspace.jump_to(self.families[row].start_addr)
+
+    def _show_families(self, result: DiscoveryResult) -> None:
+        self.families = result.families
+        self.discovered_func = result.func_addr
+        table = self._families_table
+        table.setRowCount(len(result.families))
+        for i, f in enumerate(result.families):
+            where = f"{f.start_addr:#x}" if f.start_addr is not None else "?"
+            cells = [
+                str(f.copies),
+                str(f.size),
+                f"{f.identity:.0%}",
+                f"{f.outlinable}/{f.copies}",
+                "-" if f.pattern is None else f"{f.found} ({f.covered}/{f.copies} copies)",
+                where,
+            ]
+            for j, text in enumerate(cells):
+                item = QTableWidgetItem(text)
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                table.setItem(i, j, item)
+        self._discover_status.setText(
+            f"{len(result.families)} famil{'y' if len(result.families) == 1 else 'ies'} in {result.func_name} "
+            f"({result.tokens} statements, {result.seconds:.1f}s)"
+        )
+
     def jump_to_match(self, row: int) -> None:
         if 0 <= row < len(self.matches) and self.matches[row].start_addr is not None:
             self.workspace.jump_to(self.matches[row].start_addr)
@@ -565,10 +640,16 @@ class FuzzyPatternView(InstanceView):
         side_layout.addWidget(self._status)
         side.setLayout(side_layout)
         self.reload_library()
+        self._pattern_tab = side
+
+        self._tabs = QTabWidget()
+        self._tabs.addTab(side, "Pattern")
+        self._discover_tab = self._init_discover_tab()
+        self._tabs.addTab(self._discover_tab, "Discover")
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(self._graph_widget)
-        splitter.addWidget(side)
+        splitter.addWidget(self._tabs)
         splitter.setStretchFactor(0, 3)
         splitter.setStretchFactor(1, 2)
 
@@ -576,6 +657,58 @@ class FuzzyPatternView(InstanceView):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(splitter)
         self.setLayout(layout)
+
+    def _init_discover_tab(self) -> QWidget:
+        self._min_size = QSpinBox()
+        self._min_size.setRange(2, 256)
+        self._min_size.setValue(4)
+        self._min_size.setToolTip("Shortest family worth reporting, in statements")
+        self._min_identity = QDoubleSpinBox()
+        self._min_identity.setRange(0.3, 1.0)
+        self._min_identity.setSingleStep(0.05)
+        self._min_identity.setValue(0.6)
+        self._min_identity.setToolTip("How alike the copies of a family must be")
+        self._discover_btn = QPushButton("Discover in current function")
+        self._discover_btn.setToolTip("Find families of similar code in the function shown in the pseudocode view")
+        self._discover_btn.clicked.connect(self.workspace.discover_fuzzy_patterns)
+        knobs = QHBoxLayout()
+        knobs.addWidget(QLabel("Min size"))
+        knobs.addWidget(self._min_size)
+        knobs.addWidget(QLabel("Min identity"))
+        knobs.addWidget(self._min_identity)
+        knobs.addWidget(self._discover_btn)
+        knobs.addStretch()
+
+        self._families_table = QTableWidget(0, 6)
+        self._families_table.setHorizontalHeaderLabels(["Copies", "Size", "Identity", "Outlinable", "Found", "Where"])
+        self._families_table.horizontalHeaderItem(4).setToolTip(
+            "Verified occurrences of the family's lifted pattern in the function, and how many of the "
+            "family's own copies are among them"
+        )
+        self._families_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self._families_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self._families_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._families_table.cellClicked.connect(lambda row, _col: self.jump_to_family(row))
+        self._families_table.cellDoubleClicked.connect(lambda row, _col: self.load_family(row))
+        edit_btn = QPushButton("Edit pattern")
+        edit_btn.setToolTip("Load the pattern lifted from the selected family into the editor")
+        edit_btn.clicked.connect(lambda: self.load_family(self._families_table.currentRow()))
+        family_buttons = QHBoxLayout()
+        family_buttons.addWidget(edit_btn)
+        family_buttons.addStretch()
+
+        self._discover_status = QLabel("no discovery run yet")
+        self._discover_status.setWordWrap(True)
+
+        tab = QWidget()
+        layout = QVBoxLayout()
+        layout.setContentsMargins(3, 3, 3, 3)
+        layout.addLayout(knobs)
+        layout.addWidget(self._families_table, 1)
+        layout.addLayout(family_buttons)
+        layout.addWidget(self._discover_status)
+        tab.setLayout(layout)
+        return tab
 
     def _set_status(self, text: str) -> None:
         self._status.setText(text)

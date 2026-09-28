@@ -57,6 +57,7 @@ from .views import (
     DependencyView,
     DisassemblyView,
     FunctionsView,
+    FuzzyPatternView,
     HexView,
     JobsView,
     LogView,
@@ -677,6 +678,28 @@ class Workspace:
         else:
             view = self._get_or_create_view("disassembly", DisassemblyView)
             view.decompile_current_function()
+
+    def discover_fuzzy_patterns(self) -> FuzzyPatternView | None:
+        """Look for families of similar code in the function shown in the pseudocode view.
+
+        Shows a message box and does nothing else if no function is decompiled there.
+        """
+        title = "Discover Fuzzy Patterns"
+        if self.main_instance.project.am_none:
+            QMessageBox.warning(self._main_window, title, "No project is loaded.")
+            return None
+        code_view: CodeView | None = self.view_manager.first_view_in_category("pseudocode")
+        if code_view is None or code_view._function.am_none or code_view.codegen.am_none:
+            QMessageBox.warning(
+                self._main_window,
+                title,
+                "No function is currently decompiled in the pseudocode view.\n\nDecompile a function (F5) first.",
+            )
+            return None
+        view = self._get_or_create_view("fuzzy_pattern", FuzzyPatternView)
+        self.raise_view(view)
+        view.discover(code_view._function.am_obj)
+        return view
 
     def _llm_refine_current_function(self, mode: str) -> None:
         """Run LLM refinement on the currently decompiled function.
