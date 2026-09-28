@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -19,9 +20,11 @@ from angr.analyses.decompiler.known_patterns import (
 )
 from angr.analyses.decompiler.known_patterns.dsl import PatternExpr
 from angr.analyses.decompiler.known_patterns.edit import LEAF_MODES, PatternEditor
+from angr.knowledge_plugins.fuzzy_patterns import StoredPattern
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QFileDialog,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -50,7 +53,6 @@ from angrmanagement.ui.widgets.qproperty_editor import (
 if TYPE_CHECKING:
     from angr.analyses.decompiler.known_patterns import KnownPattern, PatternNode
     from angr.analyses.decompiler.known_patterns.edit import NodePath
-    from angr.knowledge_plugins.fuzzy_patterns import StoredPattern
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
@@ -91,6 +93,9 @@ class FuzzyPatternView(InstanceView):
         self._save_btn: QPushButton
         self._nodes_by_path: dict[NodePath, QFuzzyPatternNode] = {}
         self.matches: list[FuzzyMatchRow] = []
+        self._library_table: QTableWidget
+        self._apply_btn: QPushButton
+        self._library_rows: list[StoredPattern] = []
         self._matches_table: QTableWidget
         self._search_here_btn: QPushButton
         self._search_all_btn: QPushButton
@@ -183,10 +188,114 @@ class FuzzyPatternView(InstanceView):
             replace=True,
         )
         self._set_status(f"saved {stored.name} to the project ({'enabled' if stored.enabled else 'disabled'})")
+        self.reload_library()
+        return stored
+
+    def apply(self) -> StoredPattern | None:
+        """Save, then decompile the pattern's function afresh so the outliner pass runs on it.
+
+        Other functions pick the pattern up the next time they are decompiled without a
+        cached result; their caches are left alone.
+        """
+        stored = self.save()
+        if stored is None:
+            return None
+        func = self._origin_function()
+        if func is None:
+            return stored
+        # imported here: the code view's widget imports this view, so a top-level import is a cycle
+        from angrmanagement.ui.views.code_view import CodeView  # pylint:disable=import-outside-toplevel
+
+        code_view = self.workspace._get_or_create_view("pseudocode", CodeView, position="center")
+        code_view.function = func
+        code_view.decompile(reset_cache=True)
+        self._set_status(f"applied {stored.name}: {func.name} is being decompiled again")
         return stored
 
     def redraw_graph(self) -> None:
         self._graph_widget.refresh()
+
+    #
+    # the project's patterns
+    #
+
+    def reload_library(self) -> None:
+        self._library_rows = sorted(self.instance.kb.fuzzy_patterns, key=lambda p: p.name)
+        table = self._library_table
+        table.setRowCount(len(self._library_rows))
+        for i, stored in enumerate(self._library_rows):
+            origin = f"{stored.origin_func:#x}" if stored.origin_func is not None else ""
+            cells = [
+                stored.name,
+                stored.pattern.call_name,
+                "on" if stored.enabled else "off",
+                f"{stored.min_similarity:.0%}",
+                origin,
+            ]
+            for j, text in enumerate(cells):
+                item = QTableWidgetItem(text)
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                table.setItem(i, j, item)
+
+    def library_selection(self) -> StoredPattern | None:
+        rows = {index.row() for index in self._library_table.selectedIndexes()}
+        if len(rows) != 1:
+            return None
+        row = next(iter(rows))
+        return self._library_rows[row] if 0 <= row < len(self._library_rows) else None
+
+    def edit_stored(self, stored: StoredPattern) -> None:
+        self.load_stored(stored)
+
+    def toggle_stored(self, stored: StoredPattern) -> None:
+        self.instance.kb.fuzzy_patterns.set_enabled(stored.name, not stored.enabled)
+        self.reload_library()
+
+    def delete_stored(self, stored: StoredPattern) -> None:
+        self.instance.kb.fuzzy_patterns.remove(stored.name)
+        self.reload_library()
+        self._set_status(f"deleted {stored.name}")
+
+    def export_stored(self, stored: StoredPattern, path: str) -> None:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(stored.to_dict(), f, indent=1)
+        self._set_status(f"exported {stored.name} to {path}")
+
+    def import_stored(self, path: str) -> StoredPattern:
+        with open(path, encoding="utf-8") as f:
+            stored = StoredPattern.from_dict(json.load(f))
+        self.instance.kb.fuzzy_patterns.store(stored)
+        self.reload_library()
+        self._set_status(f"imported {stored.name} from {path}")
+        return stored
+
+    def _on_library_edit(self) -> None:
+        stored = self.library_selection()
+        if stored is not None:
+            self.edit_stored(stored)
+
+    def _on_library_toggle(self) -> None:
+        stored = self.library_selection()
+        if stored is not None:
+            self.toggle_stored(stored)
+
+    def _on_library_delete(self) -> None:
+        stored = self.library_selection()
+        if stored is not None:
+            self.delete_stored(stored)
+
+    def _on_library_export(self) -> None:
+        stored = self.library_selection()
+        if stored is None:
+            return
+        path, _ = QFileDialog.getSaveFileName(self, "Export fuzzy pattern", f"{stored.name}.json", "JSON (*.json)")
+        if path:
+            self.export_stored(stored, path)
+
+    def _on_library_import(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(self, "Import fuzzy pattern", "", "JSON (*.json)")
+        if path:
+            self.import_stored(path)
 
     #
     # searching
@@ -255,10 +364,33 @@ class FuzzyPatternView(InstanceView):
         self._undo_btn.clicked.connect(self.undo)
         self._save_btn = QPushButton("Save to project")
         self._save_btn.clicked.connect(self.save)
+        self._apply_btn = QPushButton("Apply")
+        self._apply_btn.setToolTip("Save, then decompile the pattern's function again with the pattern applied")
+        self._apply_btn.clicked.connect(self.apply)
         buttons = QHBoxLayout()
         buttons.addWidget(self._undo_btn)
         buttons.addWidget(self._save_btn)
+        buttons.addWidget(self._apply_btn)
         buttons.addStretch()
+
+        self._library_table = QTableWidget(0, 5)
+        self._library_table.setHorizontalHeaderLabels(["Pattern", "Call", "Enabled", "Min similarity", "From"])
+        self._library_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self._library_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self._library_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._library_table.cellDoubleClicked.connect(lambda _row, _col: self._on_library_edit())
+        library_buttons = QHBoxLayout()
+        for label, handler in (
+            ("Edit", self._on_library_edit),
+            ("On/off", self._on_library_toggle),
+            ("Delete", self._on_library_delete),
+            ("Export...", self._on_library_export),
+            ("Import...", self._on_library_import),
+        ):
+            btn = QPushButton(label)
+            btn.clicked.connect(handler)
+            library_buttons.addWidget(btn)
+        library_buttons.addStretch()
 
         self._status = QLabel("no pattern loaded")
         self._status.setWordWrap(True)
@@ -284,12 +416,16 @@ class FuzzyPatternView(InstanceView):
         side = QWidget()
         side_layout = QVBoxLayout()
         side_layout.setContentsMargins(3, 3, 3, 3)
+        side_layout.addWidget(QLabel("Project patterns"))
+        side_layout.addWidget(self._library_table, 1)
+        side_layout.addLayout(library_buttons)
         side_layout.addWidget(self._properties, 2)
         side_layout.addLayout(buttons)
         side_layout.addLayout(search_buttons)
         side_layout.addWidget(self._matches_table, 1)
         side_layout.addWidget(self._status)
         side.setLayout(side_layout)
+        self.reload_library()
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(self._graph_widget)

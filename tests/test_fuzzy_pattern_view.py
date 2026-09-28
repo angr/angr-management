@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 import unittest
 
 import angr
@@ -145,6 +146,49 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         disasm_view = self.main.workspace._get_or_create_view("disassembly", DisassemblyView)
         assert disasm_view.function.am_obj is not None
         assert disasm_view.function.am_obj.addr == func.addr
+
+    def test_apply_outlines_the_selection_in_the_pseudocode(self):
+        func, code_view = self._decompile_main()
+        self._select_two_statements(func, code_view)
+        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        assert view is not None
+        assert "my_idiom(" not in code_view.codegen.am_obj.text
+
+        view.apply()
+        self.main.workspace.job_manager.join_all_jobs()
+
+        assert "my_idiom(" in code_view.codegen.am_obj.text, "the pattern's own statements must decompile as its call"
+
+    def test_library_lists_toggles_exports_and_imports(self):
+        func, code_view = self._decompile_main()
+        self._select_two_statements(func, code_view)
+        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        assert view is not None
+        kb = self.main.workspace.main_instance.kb
+
+        stored = view.save()
+        assert [view._library_table.item(0, j).text() for j in range(3)] == ["my_idiom", "my_idiom", "on"]
+
+        view.toggle_stored(stored)
+        assert kb.fuzzy_patterns.get("my_idiom").enabled is False
+        assert view._library_table.item(0, 2).text() == "off"
+
+        with tempfile.TemporaryDirectory() as td:
+            path = os.path.join(td, "p.json")
+            view.export_stored(stored, path)
+            view.delete_stored(stored)
+            assert len(kb.fuzzy_patterns) == 0
+            assert view._library_table.rowCount() == 0
+
+            back = view.import_stored(path)
+            assert back.pattern == stored.pattern
+            assert back.enabled is False
+            assert kb.fuzzy_patterns.get("my_idiom") is back
+            assert view._library_table.rowCount() == 1
+
+        view.edit_stored(back)
+        assert view.editor is not None and view.editor.pattern == back.pattern
+        assert view.enabled is False
 
     def test_no_selection_makes_no_pattern(self):
         _func, code_view = self._decompile_main()
