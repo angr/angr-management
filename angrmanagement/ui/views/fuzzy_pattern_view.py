@@ -14,6 +14,7 @@ from angr.analyses.decompiler.known_patterns import (
     PCondJump,
     PConst,
     PLoad,
+    PReturn,
     PStore,
     PUnaryOp,
     PVVar,
@@ -59,7 +60,7 @@ if TYPE_CHECKING:
 
 _l = logging.getLogger(__name__)
 
-LEAF_TYPES = (PAssign, PStore, PCallStmt, PCondJump, PAnyStmt)
+LEAF_TYPES = (PAssign, PStore, PCallStmt, PCondJump, PReturn, PAnyStmt)
 
 
 class FuzzyPatternView(InstanceView):

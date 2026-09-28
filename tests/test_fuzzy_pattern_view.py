@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 import tempfile
 import unittest
 
 import angr
 from angr.ailment.statement import Assignment, Store
-from angr.analyses.decompiler.known_patterns import PAny, PAnyStmt, PConst
+from angr.analyses.decompiler.known_patterns import PAny, PAnyStmt, PCallStmt, PConst, PLoad, PReturn, PStmtSeq
 from common import AngrManagementTestCase, test_location
 from PySide6.QtGui import QTextCursor
 
@@ -42,6 +43,36 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         code_view = main.workspace._get_or_create_view("pseudocode", CodeView)
         assert code_view.codegen.am_obj is not None
         return func, code_view
+
+    def _decompile(self, binary: str, func_name: str):
+        main = self.main
+        binpath = os.path.join(test_location, "x86_64", binary)
+        main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
+        main.workspace.main_instance.project.am_event()
+        main.workspace.job_manager.join_all_jobs()
+        func = main.workspace.main_instance.project.kb.functions[func_name]
+
+        disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
+        disasm_view.display_disasm_graph()
+        disasm_view.display_function(func)
+        disasm_view.decompile_current_function()
+        main.workspace.job_manager.join_all_jobs()
+        code_view = main.workspace._get_or_create_view("pseudocode", CodeView)
+        assert code_view.codegen.am_obj is not None
+        return func, code_view
+
+    @staticmethod
+    def _select_text(code_view, regex: str) -> str:
+        """Select the first span of the pseudocode that ``regex`` matches, as a user dragging
+        over those lines would."""
+        text = code_view.codegen.am_obj.text
+        m = re.search(regex, text)
+        assert m is not None, f"{regex!r} is not in the pseudocode"
+        cursor = code_view.textedit.textCursor()
+        cursor.setPosition(m.start())
+        cursor.setPosition(m.end(), QTextCursor.MoveMode.KeepAnchor)
+        code_view.textedit.setTextCursor(cursor)
+        return m.group(0)
 
     def _select_two_statements(self, func, code_view) -> tuple[int, int]:
         """Select the text of two assignment/store statements of one block, by the instruction
@@ -166,6 +197,39 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         self.main.workspace.job_manager.join_all_jobs()
 
         assert "my_idiom(" in code_view.codegen.am_obj.text, "the pattern's own statements must decompile as its call"
+
+    def test_error_exit_story_on_doit(self):
+        """The user story: select `puts("String is empty."); fflush(stdout); return 0xffffffff;`
+        in doit, make it the pattern PatternErrorsOut, apply it, and every error exit of doit
+        decompiles as a call carrying its own message."""
+        func, code_view = self._decompile("1after909", "doit")
+        self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
+
+        view = code_view.textedit.create_fuzzy_pattern(call_name="PatternErrorsOut")
+        assert view is not None and view.editor is not None
+        pattern = view.editor.pattern
+        assert pattern.call_name == "PatternErrorsOut"
+
+        # two calls and a return: puts loses its string argument, fflush keeps the global
+        # stream pointer, the return keeps its constant, and nothing becomes a parameter
+        assert isinstance(pattern.pattern, PStmtSeq)
+        puts, fflush, ret = pattern.pattern.stmts
+        assert isinstance(puts, PCallStmt) and puts.call.names == {"puts"}
+        assert len(puts.call.args) == 1 and isinstance(puts.call.args[0], PAny)
+        assert isinstance(fflush, PCallStmt) and fflush.call.names == {"fflush"}
+        assert len(fflush.call.args) == 1 and isinstance(fflush.call.args[0], PLoad)
+        assert isinstance(fflush.call.args[0].addr, PConst) and fflush.call.args[0].addr.value is not None
+        assert isinstance(ret, PReturn) and ret.values == (PConst(value=0xFFFFFFFF),)
+        assert pattern.params == ()
+        assert len(view.editor.leaves()) == 3
+
+        view.apply()
+        self.main.workspace.job_manager.join_all_jobs()
+
+        text = code_view.codegen.am_obj.text
+        calls = re.findall(r'PatternErrorsOut\("([^"]*)"\)', text)
+        assert "Empty title" in calls and "Cannot open document." in calls, calls
+        assert len(calls) == 8, calls
 
     def test_library_lists_toggles_exports_and_imports(self):
         func, code_view = self._decompile_main()
