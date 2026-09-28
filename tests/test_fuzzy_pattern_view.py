@@ -124,6 +124,28 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         assert again is not None and again.pattern.display_name == "renamed"
         assert len(kb.fuzzy_patterns) == 1
 
+    def test_search_finds_the_selection_in_its_own_function(self):
+        func, code_view = self._decompile_main()
+        self._select_two_statements(func, code_view)
+        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        assert view is not None
+
+        view.search_current_function()
+        self.main.workspace.job_manager.join_all_jobs()
+
+        assert view.matches, "the statements the pattern came from must be found"
+        best = view.matches[0]
+        assert best.func_addr == func.addr
+        assert best.similarity == 1.0
+        assert best.verified
+        assert view._matches_table.rowCount() == len(view.matches)
+        assert view._matches_table.item(0, 0).text() == func.name
+
+        view.jump_to_match(0)  # must not raise; the disassembly view lands on the function
+        disasm_view = self.main.workspace._get_or_create_view("disassembly", DisassemblyView)
+        assert disasm_view.function.am_obj is not None
+        assert disasm_view.function.am_obj.addr == func.addr
+
     def test_no_selection_makes_no_pattern(self):
         _func, code_view = self._decompile_main()
         cursor = code_view.textedit.textCursor()

@@ -13,6 +13,7 @@ from .deobfuscation import (
 )
 from .dependency_analysis import DependencyAnalysisJob
 from .flirt_signature_recognition import FlirtAnalysisConfiguration, FlirtSignatureRecognitionJob
+from .fuzzy_pattern_search import FuzzyMatchRow, FuzzyPatternSearchJob
 from .job import Job
 from .llm_preload import LLMPreloadCalleesJob
 from .llm_refine import LLMRefineJob
@@ -40,6 +41,8 @@ __all__ = [
     "CodeTaggingJob",
     "DDGGenerationJob",
     "DecompileFunctionJob",
+    "FuzzyMatchRow",
+    "FuzzyPatternSearchJob",
     "DependencyAnalysisJob",
     "FlirtAnalysisConfiguration",
     "FlirtSignatureRecognitionJob",

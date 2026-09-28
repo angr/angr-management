@@ -20,8 +20,20 @@ from angr.analyses.decompiler.known_patterns import (
 from angr.analyses.decompiler.known_patterns.dsl import PatternExpr
 from angr.analyses.decompiler.known_patterns.edit import LEAF_MODES, PatternEditor
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QSplitter, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QPushButton,
+    QSplitter,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
 
+from angrmanagement.data.jobs.fuzzy_pattern_search import FuzzyMatchRow, FuzzyPatternSearchJob
 from angrmanagement.ui.views.view import InstanceView
 from angrmanagement.ui.widgets.qfuzzy_pattern_graph import QFuzzyPatternGraph, QFuzzyPatternNode
 from angrmanagement.ui.widgets.qproperty_editor import (
@@ -78,6 +90,10 @@ class FuzzyPatternView(InstanceView):
         self._undo_btn: QPushButton
         self._save_btn: QPushButton
         self._nodes_by_path: dict[NodePath, QFuzzyPatternNode] = {}
+        self.matches: list[FuzzyMatchRow] = []
+        self._matches_table: QTableWidget
+        self._search_here_btn: QPushButton
+        self._search_all_btn: QPushButton
         self._item_keys: dict[int, tuple[str, Any]] = {}
         self._model: PropertyModel | None = None
 
@@ -173,6 +189,61 @@ class FuzzyPatternView(InstanceView):
         self._graph_widget.refresh()
 
     #
+    # searching
+    #
+
+    def search(self, functions, blocking: bool = False) -> None:
+        """Look for the pattern as it stands in ``functions``; results land in the table."""
+        if self.editor is None:
+            return
+        job = FuzzyPatternSearchJob(
+            self.instance, self.editor.pattern, list(functions), on_finish=self._show_matches, blocking=blocking
+        )
+        self._set_status(f"searching {len(job.functions)} function(s)...")
+        self.workspace.job_manager.add_job(job)
+
+    def search_current_function(self) -> None:
+        func = self._origin_function()
+        if func is not None:
+            self.search([func])
+
+    def search_all_functions(self) -> None:
+        funcs = [f for f in self.instance.kb.functions.values() if not (f.is_simprocedure or f.is_plt or f.alignment)]
+        self.search(funcs)
+
+    def jump_to_match(self, row: int) -> None:
+        if 0 <= row < len(self.matches) and self.matches[row].start_addr is not None:
+            self.workspace.jump_to(self.matches[row].start_addr)
+
+    def _origin_function(self):
+        if self.origin_func is None:
+            return None
+        return self.instance.kb.functions.get(self.origin_func)
+
+    def _show_matches(self, rows: list[FuzzyMatchRow]) -> None:
+        self.matches = rows
+        table = self._matches_table
+        table.setRowCount(len(rows))
+        for i, r in enumerate(rows):
+            where = f"{r.start_addr:#x}" if r.start_addr is not None else "?"
+            if r.end_addr is not None and r.end_addr != r.start_addr:
+                where += f"..{r.end_addr:#x}"
+            cells = [
+                r.func_name,
+                where,
+                f"{r.similarity:.0%}",
+                f"{r.identity:.0%}",
+                "yes" if r.verified else "no",
+                "yes" if r.outlinable else r.reason,
+            ]
+            for j, text in enumerate(cells):
+                item = QTableWidgetItem(text)
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                table.setItem(i, j, item)
+        verified = sum(1 for r in rows if r.verified)
+        self._set_status(f"{len(rows)} occurrence(s), {verified} verified")
+
+    #
     # widgets
     #
 
@@ -192,11 +263,31 @@ class FuzzyPatternView(InstanceView):
         self._status = QLabel("no pattern loaded")
         self._status.setWordWrap(True)
 
+        self._search_here_btn = QPushButton("Search this function")
+        self._search_here_btn.clicked.connect(self.search_current_function)
+        self._search_all_btn = QPushButton("Search all functions")
+        self._search_all_btn.clicked.connect(self.search_all_functions)
+        search_buttons = QHBoxLayout()
+        search_buttons.addWidget(self._search_here_btn)
+        search_buttons.addWidget(self._search_all_btn)
+        search_buttons.addStretch()
+
+        self._matches_table = QTableWidget(0, 6)
+        self._matches_table.setHorizontalHeaderLabels(
+            ["Function", "Where", "Similarity", "Identity", "Verified", "Outlinable"]
+        )
+        self._matches_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self._matches_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self._matches_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._matches_table.cellDoubleClicked.connect(lambda row, _col: self.jump_to_match(row))
+
         side = QWidget()
         side_layout = QVBoxLayout()
         side_layout.setContentsMargins(3, 3, 3, 3)
-        side_layout.addWidget(self._properties, 1)
+        side_layout.addWidget(self._properties, 2)
         side_layout.addLayout(buttons)
+        side_layout.addLayout(search_buttons)
+        side_layout.addWidget(self._matches_table, 1)
         side_layout.addWidget(self._status)
         side.setLayout(side_layout)
 
