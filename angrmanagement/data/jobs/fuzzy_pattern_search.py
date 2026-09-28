@@ -4,6 +4,8 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from angr.analyses.decompiler.optimization_passes import FuzzyPatternOutliner
+from angr.analyses.decompiler.presets import DECOMPILATION_PRESETS
 from angr.analyses.fuzzy_patterns.region import snap
 from angr.analyses.fuzzy_patterns.search import find_template_occurrences
 
@@ -59,13 +61,32 @@ class FuzzyPatternSearchJob(InstanceJob):
         self.pattern = pattern
         self.functions = list(functions)
 
+    def _decompile(self, func: Function):
+        """The function's AIL graph as the pattern would see it: before the outliner pass.
+
+        Once a pattern is enabled in the project, a decompilation may already carry its
+        occurrences as calls, and a search of that graph would find nothing. So with any
+        enabled pattern the search decompiles afresh with the pass left out and keeps the
+        result out of the cache; with none, the cached decompilation is as good.
+        """
+        project = self.instance.project
+        if not self.instance.kb.fuzzy_patterns.enabled_patterns():
+            return project.analyses.Decompiler(func, cfg=self.instance.cfg, use_cache=True)
+        platform = project.simos.name if project.simos is not None else None
+        passes = DECOMPILATION_PRESETS["default"].get_optimization_passes(
+            project.arch, platform, disable_opts=[FuzzyPatternOutliner]
+        )
+        return project.analyses.Decompiler(
+            func, cfg=self.instance.cfg, optimization_passes=passes, use_cache=False, update_cache=False
+        )
+
     def run(self, ctx: JobContext) -> list[FuzzyMatchRow]:
         rows: list[FuzzyMatchRow] = []
         total = max(1, len(self.functions))
         for i, func in enumerate(self.functions):
             ctx.set_progress(100.0 * i / total, f"searching {func.name}")
             try:
-                dec = self.instance.project.analyses.Decompiler(func, cfg=self.instance.cfg, use_cache=True)
+                dec = self._decompile(func)
             except Exception:  # pylint:disable=broad-except
                 _l.debug("decompiling %s for the pattern search failed", func.name, exc_info=True)
                 continue
