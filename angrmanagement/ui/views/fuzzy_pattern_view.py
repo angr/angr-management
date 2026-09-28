@@ -90,6 +90,7 @@ class FuzzyPatternView(InstanceView):
         self._properties: QPropertyEditor
         self._status: QLabel
         self._undo_btn: QPushButton
+        self._loosen_btn: QPushButton
         self._save_btn: QPushButton
         self._nodes_by_path: dict[NodePath, QFuzzyPatternNode] = {}
         self.matches: list[FuzzyMatchRow] = []
@@ -168,6 +169,15 @@ class FuzzyPatternView(InstanceView):
         if mode == "wildcard":
             self.expanded.discard(path)
         self._rebuild()
+
+    def loosen_constants(self) -> int:
+        """Drop every pinned constant value, the usual first edit on a lifted pattern."""
+        if self.editor is None:
+            return 0
+        n = self.editor.loosen_constants()
+        self._rebuild()
+        self._set_status(f"loosened {n} constant(s)")
+        return n
 
     def undo(self) -> None:
         if self.editor is not None and self.editor.undo():
@@ -362,6 +372,9 @@ class FuzzyPatternView(InstanceView):
 
         self._undo_btn = QPushButton("Undo")
         self._undo_btn.clicked.connect(self.undo)
+        self._loosen_btn = QPushButton("Loosen constants")
+        self._loosen_btn.setToolTip("Let every constant match any value")
+        self._loosen_btn.clicked.connect(self.loosen_constants)
         self._save_btn = QPushButton("Save to project")
         self._save_btn.clicked.connect(self.save)
         self._apply_btn = QPushButton("Apply")
@@ -369,6 +382,7 @@ class FuzzyPatternView(InstanceView):
         self._apply_btn.clicked.connect(self.apply)
         buttons = QHBoxLayout()
         buttons.addWidget(self._undo_btn)
+        buttons.addWidget(self._loosen_btn)
         buttons.addWidget(self._save_btn)
         buttons.addWidget(self._apply_btn)
         buttons.addStretch()

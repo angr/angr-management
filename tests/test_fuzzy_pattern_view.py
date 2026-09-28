@@ -8,13 +8,21 @@ import unittest
 
 import angr
 from angr.ailment.statement import Assignment, Store
-from angr.analyses.decompiler.known_patterns import PAny, PAnyStmt
+from angr.analyses.decompiler.known_patterns import PAny, PAnyStmt, PConst
 from common import AngrManagementTestCase, test_location
 from PySide6.QtGui import QTextCursor
 
 from angrmanagement.ui.views import CodeView, DisassemblyView
 from angrmanagement.ui.views.fuzzy_pattern_view import FuzzyPatternView
 from angrmanagement.ui.widgets.qfuzzy_pattern_graph import QFuzzyPatternNode
+
+
+def _all_nodes(editor, path=()):
+    out = []
+    for child_path, child in editor.children(path):
+        out.append((child_path, child))
+        out.extend(_all_nodes(editor, child_path))
+    return out
 
 
 class TestFuzzyPatternView(AngrManagementTestCase):
@@ -189,6 +197,17 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         view.edit_stored(back)
         assert view.editor is not None and view.editor.pattern == back.pattern
         assert view.enabled is False
+
+    def test_loosen_constants_from_the_view(self):
+        func, code_view = self._decompile_main()
+        self._select_two_statements(func, code_view)
+        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        assert view is not None and view.editor is not None
+        pinned = [p for p, n in _all_nodes(view.editor) if isinstance(n, PConst) and n.value is not None]
+        assert view.loosen_constants() == len(pinned)
+        assert all(view.editor.node_at(p).value is None for p in pinned)
+        view.undo()
+        assert all(view.editor.node_at(p).value is not None for p in pinned)
 
     def test_no_selection_makes_no_pattern(self):
         _func, code_view = self._decompile_main()
