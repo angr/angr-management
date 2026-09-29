@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from angr.analyses.decompiler.optimization_passes import PatternOutliner
 from angr.analyses.decompiler.presets import DECOMPILATION_PRESETS
 from angr.analyses.patterns.region import largest_single_entry_subrun, snap
-from angr.analyses.patterns.search import find_template_occurrences
+from angr.analyses.patterns.search import find_template_occurrences, search, tokenize_for_templates, verify
 
 from .job import InstanceJob
 
@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
     from angr.analyses.decompiler.known_patterns import KnownPattern
     from angr.knowledge_plugins.functions import Function
+    from angr.knowledge_plugins.patterns import StoredPattern
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.logic.jobmanager import JobContext
@@ -45,6 +46,26 @@ class PatternMatchRow:
     suggested_coverage: float = 0.0
 
 
+def decompile_without_patterns(instance: Instance, func: Function):
+    """The function's decompilation as a pattern would see it: before the outliner pass.
+
+    Once a pattern is enabled in the project, a decompilation may already carry its
+    occurrences as calls, and a search of that graph would find nothing. So with any
+    enabled pattern this decompiles afresh with the pass left out and keeps the result
+    out of the cache; with none, the cached decompilation is as good.
+    """
+    project = instance.project
+    if not instance.kb.patterns.enabled_patterns():
+        return project.analyses.Decompiler(func, cfg=instance.cfg, use_cache=True)
+    platform = project.simos.name if project.simos is not None else None
+    passes = DECOMPILATION_PRESETS["default"].get_optimization_passes(
+        project.arch, platform, disable_opts=[PatternOutliner]
+    )
+    return project.analyses.Decompiler(
+        func, cfg=instance.cfg, optimization_passes=passes, use_cache=False, update_cache=False
+    )
+
+
 class PatternSearchJob(InstanceJob):
     """
     Searches functions for occurrences of one pattern.
@@ -67,23 +88,7 @@ class PatternSearchJob(InstanceJob):
         self.functions = list(functions)
 
     def _decompile(self, func: Function):
-        """The function's AIL graph as the pattern would see it: before the outliner pass.
-
-        Once a pattern is enabled in the project, a decompilation may already carry its
-        occurrences as calls, and a search of that graph would find nothing. So with any
-        enabled pattern the search decompiles afresh with the pass left out and keeps the
-        result out of the cache; with none, the cached decompilation is as good.
-        """
-        project = self.instance.project
-        if not self.instance.kb.patterns.enabled_patterns():
-            return project.analyses.Decompiler(func, cfg=self.instance.cfg, use_cache=True)
-        platform = project.simos.name if project.simos is not None else None
-        passes = DECOMPILATION_PRESETS["default"].get_optimization_passes(
-            project.arch, platform, disable_opts=[PatternOutliner]
-        )
-        return project.analyses.Decompiler(
-            func, cfg=self.instance.cfg, optimization_passes=passes, use_cache=False, update_cache=False
-        )
+        return decompile_without_patterns(self.instance, func)
 
     def run(self, ctx: JobContext) -> list[PatternMatchRow]:
         rows: list[PatternMatchRow] = []
@@ -131,3 +136,48 @@ class PatternSearchJob(InstanceJob):
         ctx.set_progress(100.0, "done")
         rows.sort(key=lambda r: (-r.similarity, r.func_addr, r.start_addr or 0))
         return rows
+
+
+class PatternCountJob(InstanceJob):
+    """
+    Counts, in one function, the occurrences of patterns the outliner pass did not search for.
+
+    An occurrence counts under the rules the pass applies before outlining: at least the
+    pattern's minimum similarity, and verified when the pattern requires it. So a count
+    here and a pass's count for an enabled pattern mean the same thing.
+    """
+
+    def __init__(
+        self,
+        instance: Instance,
+        func: Function,
+        patterns: Sequence[StoredPattern],
+        on_finish: Callable[[dict[str, int]], None] | None = None,
+        blocking: bool = False,
+    ) -> None:
+        super().__init__(f"Counting pattern matches in {func.name}", instance, on_finish=on_finish, blocking=blocking)
+        self.func = func
+        self.patterns = list(patterns)
+
+    def run(self, ctx: JobContext) -> dict[str, int]:
+        ctx.set_progress(0.0, f"decompiling {self.func.name}")
+        dec = decompile_without_patterns(self.instance, self.func)
+        graph = dec.ail_graph
+        entry = None if graph is None else next((b for b in graph if b.addr == self.func.addr and b.idx is None), None)
+        if entry is None:
+            return {}
+        stream = tokenize_for_templates(graph, entry, kb=self.instance.kb)
+        counts: dict[str, int] = {}
+        for i, stored in enumerate(self.patterns):
+            ctx.set_progress(100.0 * i / max(1, len(self.patterns)), f"counting {stored.name}")
+            n = 0
+            for match in search(stored.pattern, stream):
+                if match.similarity < stored.min_similarity:
+                    continue
+                verify(match, stored.pattern, stream)
+                if stored.require_verified and not match.verified:
+                    continue
+                n += 1
+            counts[stored.name] = n
+        ctx.set_progress(100.0, "done")
+        return counts

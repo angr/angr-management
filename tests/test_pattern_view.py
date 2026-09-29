@@ -542,6 +542,30 @@ class TestPatternView(AngrManagementTestCase):
         assert code_view.pattern_highlighted_lines == []
         assert table.item(0, 2).checkState() == Qt.CheckState.Unchecked
 
+    def test_dock_counts_matches_of_a_pattern_the_pass_did_not_search(self):
+        func, code_view, _ = self._apply_error_exit_pattern()
+        self.main.show()  # the harness never shows the window, and a count waits until one can see it
+        self.main.workspace.raise_view(code_view)
+        code_view.patterns_dock.setVisible(True)
+        assert code_view._pattern_library.isVisible()
+        table = code_view.patterns_table
+        by_pass = int(table.item(0, 3).text())
+
+        table.item(0, 1).setCheckState(Qt.CheckState.Unchecked)
+        self.main.workspace.job_manager.join_all_jobs()
+        kb = self.main.workspace.main_instance.kb
+        assert kb.patterns.stats(func.addr, "patternerrorsout") is None, "the pass did not search for it"
+        # counted in the background, by the pass's own rules, so the numbers agree
+        assert table.item(0, 3).text() == str(by_pass)
+        assert table.item(0, 4).text() == "0"
+
+        # a hidden dock starts nothing
+        code_view.patterns_dock.setVisible(False)
+        code_view._pattern_library._counts.clear()
+        code_view.reload_patterns()
+        assert code_view._pattern_library._counting is None
+        assert table.item(0, 3).text() == "-"
+
     def test_library_lists_toggles_exports_and_imports(self):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)

@@ -938,6 +938,8 @@ class CodeView(FunctionView):
         )
         self._patterns_dock = QDockWidget("Patterns", window)
         self._patterns_dock.setWidget(self._pattern_library)
+        # counting what the pass did not search for waits until someone looks
+        self._patterns_dock.visibilityChanged.connect(lambda visible: visible and self.reload_patterns())
         window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self._patterns_dock)
         self._patterns_dock.setVisible(False)
 
