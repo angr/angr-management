@@ -679,6 +679,21 @@ class Workspace:
             view = self._get_or_create_view("disassembly", DisassemblyView)
             view.decompile_current_function()
 
+    def on_fuzzy_patterns_changed(self) -> None:
+        """The project's fuzzy patterns changed: refresh every view that lists them."""
+        for view in self.view_manager.views:
+            if isinstance(view, FuzzyPatternView):
+                view.reload_library()
+            elif isinstance(view, CodeView):
+                view.reload_fuzzy_patterns()
+
+    def edit_fuzzy_pattern(self, stored) -> FuzzyPatternView:
+        """Open a stored fuzzy pattern in the fuzzy pattern view."""
+        view = self._get_or_create_view("fuzzy_pattern", FuzzyPatternView)
+        view.load_stored(stored)
+        self.raise_view(view)
+        return view
+
     def discover_fuzzy_patterns(self) -> FuzzyPatternView | None:
         """Look for families of similar code in the function shown in the pseudocode view.
 

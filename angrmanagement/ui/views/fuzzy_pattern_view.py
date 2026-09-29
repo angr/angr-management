@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -21,12 +20,10 @@ from angr.analyses.decompiler.known_patterns import (
 )
 from angr.analyses.decompiler.known_patterns.dsl import PatternExpr
 from angr.analyses.decompiler.known_patterns.edit import LEAF_MODES, PatternEditor
-from angr.knowledge_plugins.fuzzy_patterns import StoredPattern
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QDoubleSpinBox,
-    QFileDialog,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -48,6 +45,7 @@ from angrmanagement.data.jobs.fuzzy_pattern_discovery import (
 from angrmanagement.data.jobs.fuzzy_pattern_search import FuzzyMatchRow, FuzzyPatternSearchJob
 from angrmanagement.ui.views.view import InstanceView
 from angrmanagement.ui.widgets.qfuzzy_pattern_graph import QFuzzyPatternGraph, QFuzzyPatternNode
+from angrmanagement.ui.widgets.qfuzzy_pattern_library import QFuzzyPatternLibrary
 from angrmanagement.ui.widgets.qproperty_editor import (
     BoolPropertyItem,
     ComboPropertyItem,
@@ -62,6 +60,7 @@ from angrmanagement.ui.widgets.qproperty_editor import (
 if TYPE_CHECKING:
     from angr.analyses.decompiler.known_patterns import KnownPattern, PatternNode
     from angr.analyses.decompiler.known_patterns.edit import NodePath
+    from angr.knowledge_plugins.fuzzy_patterns import StoredPattern
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
@@ -119,9 +118,8 @@ class FuzzyPatternView(InstanceView):
         self._save_btn: QPushButton
         self._nodes_by_path: dict[NodePath, QFuzzyPatternNode] = {}
         self.matches: list[FuzzyMatchRow] = []
-        self._library_table: QTableWidget
+        self._library: QFuzzyPatternLibrary
         self._apply_btn: QPushButton
-        self._library_rows: list[StoredPattern] = []
         self._matches_table: QTableWidget
         self._search_here_btn: QPushButton
         self._search_all_btn: QPushButton
@@ -272,7 +270,7 @@ class FuzzyPatternView(InstanceView):
             replace=True,
         )
         self._set_status(f"saved {stored.name} to the project ({'enabled' if stored.enabled else 'disabled'})")
-        self.reload_library()
+        self.workspace.on_fuzzy_patterns_changed()
         return stored
 
     def apply(self) -> StoredPattern | None:
@@ -313,82 +311,29 @@ class FuzzyPatternView(InstanceView):
     #
 
     def reload_library(self) -> None:
-        self._library_rows = sorted(self.instance.kb.fuzzy_patterns, key=lambda p: p.name)
-        table = self._library_table
-        table.setRowCount(len(self._library_rows))
-        for i, stored in enumerate(self._library_rows):
-            origin = f"{stored.origin_func:#x}" if stored.origin_func is not None else ""
-            cells = [
-                stored.name,
-                stored.pattern.call_name,
-                "on" if stored.enabled else "off",
-                f"{stored.min_similarity:.0%}",
-                origin,
-            ]
-            for j, text in enumerate(cells):
-                item = QTableWidgetItem(text)
-                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                table.setItem(i, j, item)
+        self._library.reload()
+
+    @property
+    def _library_table(self) -> QTableWidget:
+        return self._library.table
 
     def library_selection(self) -> StoredPattern | None:
-        rows = {index.row() for index in self._library_table.selectedIndexes()}
-        if len(rows) != 1:
-            return None
-        row = next(iter(rows))
-        return self._library_rows[row] if 0 <= row < len(self._library_rows) else None
+        return self._library.selection()
 
     def edit_stored(self, stored: StoredPattern) -> None:
         self.load_stored(stored)
 
     def toggle_stored(self, stored: StoredPattern) -> None:
-        self.instance.kb.fuzzy_patterns.set_enabled(stored.name, not stored.enabled)
-        self.reload_library()
+        self._library.toggle(stored)
 
     def delete_stored(self, stored: StoredPattern) -> None:
-        self.instance.kb.fuzzy_patterns.remove(stored.name)
-        self.reload_library()
-        self._set_status(f"deleted {stored.name}")
+        self._library.delete(stored)
 
     def export_stored(self, stored: StoredPattern, path: str) -> None:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(stored.to_dict(), f, indent=1)
-        self._set_status(f"exported {stored.name} to {path}")
+        self._library.export(stored, path)
 
     def import_stored(self, path: str) -> StoredPattern:
-        with open(path, encoding="utf-8") as f:
-            stored = StoredPattern.from_dict(json.load(f))
-        self.instance.kb.fuzzy_patterns.store(stored)
-        self.reload_library()
-        self._set_status(f"imported {stored.name} from {path}")
-        return stored
-
-    def _on_library_edit(self) -> None:
-        stored = self.library_selection()
-        if stored is not None:
-            self.edit_stored(stored)
-
-    def _on_library_toggle(self) -> None:
-        stored = self.library_selection()
-        if stored is not None:
-            self.toggle_stored(stored)
-
-    def _on_library_delete(self) -> None:
-        stored = self.library_selection()
-        if stored is not None:
-            self.delete_stored(stored)
-
-    def _on_library_export(self) -> None:
-        stored = self.library_selection()
-        if stored is None:
-            return
-        path, _ = QFileDialog.getSaveFileName(self, "Export fuzzy pattern", f"{stored.name}.json", "JSON (*.json)")
-        if path:
-            self.export_stored(stored, path)
-
-    def _on_library_import(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Import fuzzy pattern", "", "JSON (*.json)")
-        if path:
-            self.import_stored(path)
+        return self._library.import_(path)
 
     #
     # searching
@@ -618,24 +563,9 @@ class FuzzyPatternView(InstanceView):
         buttons.addWidget(self._apply_btn)
         buttons.addStretch()
 
-        self._library_table = QTableWidget(0, 5)
-        self._library_table.setHorizontalHeaderLabels(["Pattern", "Call", "Enabled", "Min similarity", "From"])
-        self._library_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        self._library_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self._library_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self._library_table.cellDoubleClicked.connect(lambda _row, _col: self._on_library_edit())
-        library_buttons = QHBoxLayout()
-        for label, handler in (
-            ("Edit", self._on_library_edit),
-            ("On/off", self._on_library_toggle),
-            ("Delete", self._on_library_delete),
-            ("Export...", self._on_library_export),
-            ("Import...", self._on_library_import),
-        ):
-            btn = QPushButton(label)
-            btn.clicked.connect(handler)
-            library_buttons.addWidget(btn)
-        library_buttons.addStretch()
+        self._library = QFuzzyPatternLibrary(
+            self.workspace, self.instance, on_edit=self.edit_stored, on_status=self._set_status
+        )
 
         self._status = QLabel("no pattern loaded")
         self._status.setWordWrap(True)
@@ -667,15 +597,13 @@ class FuzzyPatternView(InstanceView):
         side_layout = QVBoxLayout()
         side_layout.setContentsMargins(3, 3, 3, 3)
         side_layout.addWidget(QLabel("Project patterns"))
-        side_layout.addWidget(self._library_table, 1)
-        side_layout.addLayout(library_buttons)
+        side_layout.addWidget(self._library, 1)
         side_layout.addWidget(self._properties, 2)
         side_layout.addLayout(buttons)
         side_layout.addLayout(search_buttons)
         side_layout.addWidget(self._matches_table, 1)
         side_layout.addWidget(self._status)
         side.setLayout(side_layout)
-        self.reload_library()
         self._pattern_tab = side
 
         self._tabs = QTabWidget()

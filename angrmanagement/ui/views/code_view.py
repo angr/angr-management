@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QMainWindow,
+    QTableWidget,
     QTextEdit,
     QToolButton,
     QVBoxLayout,
@@ -40,6 +41,7 @@ from angrmanagement.ui.toolbars import NavToolbar
 from angrmanagement.ui.widgets.qccode_edit import QCCodeEdit
 from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
 from angrmanagement.ui.widgets.qfind_bar import QFindBar
+from angrmanagement.ui.widgets.qfuzzy_pattern_library import QFuzzyPatternLibrary
 
 from .view import FunctionView
 
@@ -130,6 +132,8 @@ class CodeView(FunctionView):
         self._nav_toolbar: NavToolbar | None = None
         self._view_selector: QComboBox | None = None
         self._summary_textedit: QTextEdit | None = None
+        self._fuzzy_library: QFuzzyPatternLibrary | None = None
+        self._fuzzy_dock: QDockWidget | None = None
         self._summary_dock: QDockWidget | None = None
 
         self.vars_must_struct: set[str] = set()
@@ -152,6 +156,8 @@ class CodeView(FunctionView):
         self._textedit.mouse_double_clicked.connect(self._on_mouse_doubleclicked)
         self._function.am_subscribe(self._on_new_function)
         self.codegen.am_subscribe(self._on_codegen_changes)
+        # the outliner pass's numbers change with every decompilation
+        self.codegen.am_subscribe(lambda **_: self.reload_fuzzy_patterns())
         self.addr.am_subscribe(self._on_new_addr)
         self.current_node.am_subscribe(self._on_new_node)
         self.instance.annotations.bookmarks.am_subscribe(self._on_bookmarks_changed)
@@ -508,6 +514,18 @@ class CodeView(FunctionView):
         self.addr.am_event(already_moved=True)
 
     # pylint: disable=unused-argument
+    def reload_fuzzy_patterns(self) -> None:
+        if self._fuzzy_library is not None:
+            self._fuzzy_library.reload()
+
+    @property
+    def fuzzy_patterns_dock(self) -> QDockWidget | None:
+        return self._fuzzy_dock
+
+    @property
+    def fuzzy_patterns_table(self) -> QTableWidget | None:
+        return None if self._fuzzy_library is None else self._fuzzy_library.table
+
     def _on_codegen_changes(self, already_regenerated: bool = False, event: str | None = None, **kwargs) -> None:
         """
         The callback function that triggers an update of the codegen.
@@ -807,6 +825,18 @@ class CodeView(FunctionView):
         options_dock.setWidget(self._options)
         options_dock.setVisible(False)
 
+        # the project's fuzzy patterns, with what the outliner pass did with each here
+        self._fuzzy_library = QFuzzyPatternLibrary(
+            self.workspace,
+            self.instance,
+            on_edit=self.workspace.edit_fuzzy_pattern,
+            current_func=lambda: None if self._function.am_none else self._function.am_obj.addr,
+        )
+        self._fuzzy_dock = QDockWidget("Fuzzy Patterns", window)
+        self._fuzzy_dock.setWidget(self._fuzzy_library)
+        window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self._fuzzy_dock)
+        self._fuzzy_dock.setVisible(False)
+
         # function summary dock
         self._summary_textedit = QTextEdit()
         self._summary_textedit.setReadOnly(True)
@@ -833,6 +863,9 @@ class CodeView(FunctionView):
         options_toggle_btn = QToolButton()
         options_toggle_btn.setDefaultAction(options_dock.toggleViewAction())
         status_layout.addWidget(options_toggle_btn)
+        fuzzy_toggle_btn = QToolButton()
+        fuzzy_toggle_btn.setDefaultAction(self._fuzzy_dock.toggleViewAction())
+        status_layout.addWidget(fuzzy_toggle_btn)
         status_layout.addWidget(self._view_selector)
         status_layout.setContentsMargins(3, 3, 3, 3)
         status_layout.setSpacing(3)

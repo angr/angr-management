@@ -371,6 +371,39 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         calls = re.findall(rf'{call}\("([^"]*)"', code_view.codegen.am_obj.text)
         assert "Empty title" in calls and "Cannot open document." in calls, calls
 
+    def test_pseudocode_dock_lists_patterns_with_their_matches(self):
+        """The pseudocode view's Fuzzy Patterns dock shares the Pattern tab's library, and adds what
+        the outliner pass did with each pattern in the function on screen."""
+        func, code_view = self._decompile("1after909", "doit")
+        table = code_view.fuzzy_patterns_table
+        assert table is not None and table.rowCount() == 0
+        headers = [table.horizontalHeaderItem(j).text() for j in range(table.columnCount())]
+        # the numbers come right after the name, so a narrow dock shows them without scrolling
+        assert headers[:4] == ["Pattern", "Enabled", "Matches", "Outlined"]
+
+        self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
+        view = code_view.textedit.create_fuzzy_pattern(call_name="PatternErrorsOut")
+        assert view is not None
+        view.save()
+        # saved but not yet applied here: listed, with no numbers for this function
+        assert table.rowCount() == 1
+        assert [table.item(0, j).text() for j in range(4)] == ["patternerrorsout", "on", "-", "-"]
+
+        view.apply()
+        self.main.workspace.job_manager.join_all_jobs()
+        matches, outlined = int(table.item(0, 2).text()), int(table.item(0, 3).text())
+        assert outlined == 8 and matches >= outlined
+
+        # a change in either place shows in both
+        code_view._fuzzy_library.toggle(self.main.workspace.main_instance.kb.fuzzy_patterns.get("patternerrorsout"))
+        assert table.item(0, 1).text() == "off" and view._library_table.item(0, 2).text() == "off"
+
+        # Edit opens the pattern in the fuzzy pattern view
+        table.selectRow(0)
+        code_view._fuzzy_library._on_edit_clicked()
+        assert view.editor is not None and view.editor.pattern.name == "patternerrorsout"
+        assert self.main.workspace.view_manager.current_tab is view
+
     def test_library_lists_toggles_exports_and_imports(self):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
