@@ -97,7 +97,7 @@ class FuzzyPatternView(InstanceView):
 
     def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         super().__init__("fuzzy_pattern", workspace, default_docking_position, instance)
-        self.base_caption = "Fuzzy Pattern"
+        self.base_caption = "Pattern"
 
         self.editor: PatternEditor | None = None
         self.origin_func: int | None = None

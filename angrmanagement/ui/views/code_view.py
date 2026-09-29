@@ -832,7 +832,7 @@ class CodeView(FunctionView):
             on_edit=self.workspace.edit_fuzzy_pattern,
             current_func=lambda: None if self._function.am_none else self._function.am_obj.addr,
         )
-        self._fuzzy_dock = QDockWidget("Fuzzy Patterns", window)
+        self._fuzzy_dock = QDockWidget("Patterns", window)
         self._fuzzy_dock.setWidget(self._fuzzy_library)
         window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self._fuzzy_dock)
         self._fuzzy_dock.setVisible(False)

@@ -288,9 +288,7 @@ class TestFuzzyPatternView(AngrManagementTestCase):
 
     def _discover_entry(self):
         """The Analyze menu's discovery item, triggered the way a click would."""
-        entries = [
-            e for e in self.main._analyze_menu.entries if getattr(e, "caption", None) == "Discover &Fuzzy Patterns..."
-        ]
+        entries = [e for e in self.main._analyze_menu.entries if getattr(e, "caption", None) == "Discover &Patterns..."]
         assert len(entries) == 1, "the Analyze menu offers fuzzy pattern discovery"
         return entries[0]._qaction
 

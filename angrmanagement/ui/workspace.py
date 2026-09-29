@@ -699,7 +699,7 @@ class Workspace:
 
         Shows a message box and does nothing else if no function is decompiled there.
         """
-        title = "Discover Fuzzy Patterns"
+        title = "Discover Patterns"
         if self.main_instance.project.am_none:
             QMessageBox.warning(self._main_window, title, "No project is loaded.")
             return None

@@ -171,11 +171,11 @@ class QFuzzyPatternLibrary(QWidget):
         stored = self.selection()
         if stored is None:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Export fuzzy pattern", f"{stored.name}.json", "JSON (*.json)")
+        path, _ = QFileDialog.getSaveFileName(self, "Export pattern", f"{stored.name}.json", "JSON (*.json)")
         if path:
             self.export(stored, path)
 
     def _on_import_clicked(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Import fuzzy pattern", "", "JSON (*.json)")
+        path, _ = QFileDialog.getOpenFileName(self, "Import pattern", "", "JSON (*.json)")
         if path:
             self.import_(path)

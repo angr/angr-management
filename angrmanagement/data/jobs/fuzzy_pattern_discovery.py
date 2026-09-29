@@ -86,7 +86,7 @@ class FuzzyPatternDiscoveryJob(InstanceJob):
         on_finish: Callable[[DiscoveryResult], None] | None = None,
         blocking: bool = False,
     ) -> None:
-        super().__init__(f"Discovering fuzzy patterns in {func.name}", instance, on_finish=on_finish, blocking=blocking)
+        super().__init__(f"Discovering patterns in {func.name}", instance, on_finish=on_finish, blocking=blocking)
         self.func = func
         self.min_size = min_size
         self.min_identity = min_identity

@@ -651,7 +651,7 @@ class QCCodeEdit(api.CodeEdit):
             _l.warning("No AIL graph is cached for this function; decompile it first.")
             return None
         if call_name is None:
-            call_name, ok = QInputDialog.getText(self, "Fuzzy pattern", "Name of the call the pattern becomes:")
+            call_name, ok = QInputDialog.getText(self, "Pattern", "Name of the call the pattern becomes:")
             if not ok or not call_name.strip():
                 return None
         try:
@@ -864,7 +864,7 @@ class QCCodeEdit(api.CodeEdit):
         self.action_comment = QAction("Comment...", self)
         self.action_comment.triggered.connect(lambda: self.comment())
         self.action_comment.setShortcut(QKeySequence(";"))
-        self.action_fuzzy_pattern = QAction("Create fuzzy pattern from selection...", self)
+        self.action_fuzzy_pattern = QAction("Create pattern from selection...", self)
         self.action_fuzzy_pattern.triggered.connect(lambda: self.create_fuzzy_pattern())
 
         expr_actions = [
