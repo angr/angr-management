@@ -38,8 +38,7 @@ _FILL = {
 
 class QFuzzyPatternNode(QCachedGraphicsItem):
     """One pattern node on the canvas: a leaf statement, or an expression node under
-    an expanded leaf. Click selects it; double-click expands a leaf or toggles an
-    expression's wildcard."""
+    one. Click selects it; double-click expands or collapses its subtree."""
 
     HORIZONTAL_PADDING = 6
     VERTICAL_PADDING = 4
@@ -80,14 +79,23 @@ class QFuzzyPatternNode(QCachedGraphicsItem):
                 parts.append(f"weight {weight:g}")
             if isinstance(node, PAnyStmt):
                 return ", ".join(parts)
-            if self.path in self._view.expanded:
-                parts.append("expanded")
+            if self.path in self._view.collapsed:
+                parts.append("collapsed")
             return ", ".join(parts)
+        if self.path in self._view.collapsed:
+            return "collapsed"
         return ""
 
     #
     # events
     #
+
+    def mousePressEvent(self, event) -> None:
+        # a release only reaches the item that accepted the press
+        if event.button() == Qt.MouseButton.LeftButton:
+            event.accept()
+            return
+        super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:

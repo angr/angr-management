@@ -94,7 +94,8 @@ class FuzzyPatternView(InstanceView):
         self.require_verified: bool = True
         self.failed_leaves: set[int] = set()
         self.selected_path: NodePath | None = None
-        self.expanded: set[NodePath] = set()
+        #: nodes whose subtree is hidden; everything else is shown
+        self.collapsed: set[NodePath] = set()
         self.hovered_block: QFuzzyPatternNode | None = None
 
         self._graph_widget: QFuzzyPatternGraph
@@ -153,9 +154,10 @@ class FuzzyPatternView(InstanceView):
         self.failed_leaves = set()
         self.matches = []
         self.selected_path = None
-        self.expanded.clear()
+        self.collapsed = self._default_collapsed()
         self._rebuild()
-        self._set_status(f"editing {pattern.name}: {len(self.editor.leaves())} statements")
+        note = "; too large to show expanded, double-click a statement to expand it" if self.collapsed else ""
+        self._set_status(f"editing {pattern.name}: {len(self.editor.leaves())} statements{note}")
 
     def load_stored(self, stored: StoredPattern) -> None:
         self.load_pattern(
@@ -176,31 +178,38 @@ class FuzzyPatternView(InstanceView):
         self.redraw_graph()
 
     def activate_node(self, path: NodePath) -> None:
-        """Double-click: a leaf expands or collapses; an expression becomes a wildcard."""
+        """Double-click: a node with children, statement or expression, expands or collapses.
+        It never edits the pattern; wildcarding is the property panel's job."""
+        if self.editor is None or not self.editor.children(path):
+            return
+        if path in self.collapsed:
+            self.collapsed.discard(path)
+        else:
+            self.collapsed.add(path)
+        self.selected_path = path
+        self._rebuild()
+
+    #: past this many nodes a fully expanded tree is unreadable and slow to lay out
+    MAX_EXPANDED_NODES = 400
+
+    def _default_collapsed(self) -> set[NodePath]:
+        """Nothing collapsed, unless the full tree is too big; then only statements show."""
         if self.editor is None:
-            return
-        node = self.editor.node_at(path)
-        if isinstance(node, LEAF_TYPES):
-            if isinstance(node, PAnyStmt):
-                return
-            if path in self.expanded:
-                self.expanded.discard(path)
-            else:
-                self.expanded.add(path)
-            self.selected_path = path
-            self._rebuild()
-            return
-        if isinstance(node, PatternExpr) and not isinstance(node, PAny):
-            self.editor.set_expr_wildcard(path)
-            self.selected_path = path
-            self._rebuild()
+            return set()
+        count = 0
+        stack = [path for path, _ in self.editor.leaves()]
+        while stack and count <= self.MAX_EXPANDED_NODES:
+            path = stack.pop()
+            count += 1
+            stack.extend(child for child, _ in self.editor.children(path))
+        if count <= self.MAX_EXPANDED_NODES:
+            return set()
+        return {path for path, _ in self.editor.leaves()}
 
     def set_leaf_mode(self, path: NodePath, mode: str) -> None:
         if self.editor is None:
             return
         self.editor.set_leaf_mode(path, mode)
-        if mode == "wildcard":
-            self.expanded.discard(path)
         self._rebuild()
 
     def loosen_constants(self) -> int:
@@ -232,7 +241,7 @@ class FuzzyPatternView(InstanceView):
 
     def undo(self) -> None:
         if self.editor is not None and self.editor.undo():
-            self.expanded = {p for p in self.expanded if self._path_exists(p)}
+            self.collapsed = {p for p in self.collapsed if self._path_exists(p)}
             if self.selected_path is not None and not self._path_exists(self.selected_path):
                 self.selected_path = None
             self._rebuild()
@@ -744,7 +753,7 @@ class FuzzyPatternView(InstanceView):
             if previous is not None:
                 graph.add_edge(previous, item)
             previous = item
-            if path in self.expanded:
+            if path not in self.collapsed:
                 self._add_expression_nodes(graph, item, path)
         self._graph_widget.graph = graph
 
@@ -754,7 +763,8 @@ class FuzzyPatternView(InstanceView):
             item = self._make_node(child_path, child, "wildcard-expr" if isinstance(child, PAny) else "expr")
             graph.add_node(item)
             graph.add_edge(parent, item)
-            self._add_expression_nodes(graph, item, child_path)
+            if child_path not in self.collapsed:
+                self._add_expression_nodes(graph, item, child_path)
 
     def _make_node(self, path: NodePath, node: PatternNode, kind: str) -> QFuzzyPatternNode:
         item = QFuzzyPatternNode(self, path, node, kind)

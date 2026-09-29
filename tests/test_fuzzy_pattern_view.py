@@ -10,8 +10,11 @@ import unittest
 import angr
 from angr.ailment.statement import Assignment, Store
 from angr.analyses.decompiler.known_patterns import PAny, PAnyStmt, PCallStmt, PConst, PLoad, PReturn, PStmtSeq
+from angr.analyses.decompiler.known_patterns.dsl import PatternExpr
 from common import AngrManagementTestCase, test_location
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QTextCursor
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QMessageBox
 
 from angrmanagement.ui.views import CodeView, DisassemblyView
@@ -115,35 +118,67 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         assert len(leaves) >= 2
         graph = view._graph_widget.graph
         assert graph is not None
-        assert graph.number_of_nodes() == len(leaves), "one node per statement until something is expanded"
+        assert graph.number_of_nodes() > len(leaves), "a fresh pattern shows its expressions too"
+        assert view.collapsed == set()
         assert all(isinstance(n, QFuzzyPatternNode) for n in graph.nodes())
 
-    def test_nodes_can_be_toggled_expanded_and_wildcarded(self):
+    def test_double_click_expands_and_collapses_without_editing(self):
+        _, code_view = self._decompile("1after909", "doit")
+        self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
+        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        assert view is not None and view.editor is not None
+        path, _ = next((p, node) for p, node in view.editor.leaves() if not isinstance(node, PAnyStmt))
+        full = view._graph_widget.graph.number_of_nodes()
+
+        view.activate_node(path)  # collapse the statement
+        assert path in view.collapsed
+        assert view._graph_widget.graph.number_of_nodes() < full
+        view.activate_node(path)
+        assert view._graph_widget.graph.number_of_nodes() == full
+
+        # an expression with children collapses too, and nothing about the pattern changes
+        before = view.editor.pattern
+        child_path = next(
+            c for c, n in _all_nodes(view.editor) if isinstance(n, PatternExpr) and view.editor.children(c)
+        )
+        view.activate_node(child_path)
+        assert child_path in view.collapsed and view.editor.pattern == before
+        assert not isinstance(view.editor.node_at(child_path), PAny)
+        view.activate_node(child_path)
+        assert view._graph_widget.graph.number_of_nodes() == full
+
+        # wildcarding is the property panel's job
+        view._apply_property("wildcard", child_path, True)
+        assert isinstance(view.editor.node_at(child_path), PAny)
+        view.undo()
+        assert not isinstance(view.editor.node_at(child_path), PAny)
+
+        view.set_leaf_mode(path, "optional")
+        assert view.editor.node_at(path).optional is True
+        view.set_leaf_mode(path, "wildcard")
+        assert isinstance(view.editor.node_at(path), PAnyStmt)
+
+    def test_clicks_on_the_canvas_select_and_toggle(self):
+        """Through Qt's own event delivery: a release only reaches an item that took the press."""
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
         view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
         assert view is not None and view.editor is not None
-        path, leaf = next((p, node) for p, node in view.editor.leaves() if not isinstance(node, PAnyStmt))
-        n_leaves = len(view.editor.leaves())
+        self.main.workspace.raise_view(view)
+        path, _ = next((p, node) for p, node in view.editor.leaves() if not isinstance(node, PAnyStmt))
+        canvas = view._graph_widget
 
-        view.set_leaf_mode(path, "optional")
-        assert view.editor.node_at(path).optional is True
+        def point_of(node_path):
+            item = view._nodes_by_path[node_path]
+            canvas.centerOn(item)
+            return canvas.mapFromScene(item.sceneBoundingRect().center())
 
-        view.activate_node(path)  # expand the statement into its expression tree
-        assert path in view.expanded
-        assert view._graph_widget.graph.number_of_nodes() > n_leaves
+        QTest.mouseClick(canvas.viewport(), Qt.MouseButton.LeftButton, pos=point_of(path))
+        assert view.selected_path == path, "a single click selects"
+        assert path not in view.collapsed, "and does not toggle"
 
-        child_path, _ = view.editor.children(path)[0]
-        view.activate_node(child_path)  # an expression double-clicked becomes a wildcard
-        assert isinstance(view.editor.node_at(child_path), PAny)
-
-        view.undo()
-        assert not isinstance(view.editor.node_at(child_path), PAny)
-
-        view.set_leaf_mode(path, "wildcard")
-        assert isinstance(view.editor.node_at(path), PAnyStmt)
-        assert path not in view.expanded
-        assert view._graph_widget.graph.number_of_nodes() == n_leaves
+        QTest.mouseDClick(canvas.viewport(), Qt.MouseButton.LeftButton, pos=point_of(path))
+        assert path in view.collapsed, "a double click toggles"
 
     def test_save_puts_the_pattern_in_the_knowledge_base(self):
         func, code_view = self._decompile_main()
