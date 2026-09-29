@@ -617,6 +617,42 @@ class TestPatternView(AngrManagementTestCase):
         view = self.main.workspace.view_manager.first_view_in_category("pattern")
         assert view.discovered_func == func.addr and view.families
 
+    def test_found_is_filled_in_the_background_after_the_table(self):
+        from angrmanagement.data.jobs import (  # pylint:disable=import-outside-toplevel
+            PatternDiscoveryJob,
+            PatternFoundJob,
+        )
+
+        self._decompile("1after909", "doit")
+        started, shown = [], []
+        self.main.workspace.job_manager.job_starting.connect(started.append)
+        orig = PatternView._show_families
+
+        def spy(view, result):
+            # what the table shows the moment discovery ends
+            shown.append([f.found for f in result.families if f.pattern is not None])
+            orig(view, result)
+            shown.append([view._families_table.item(r, 4).text() for r in range(view._families_table.rowCount())])
+
+        PatternView._show_families = spy
+        try:
+            self._discover_entry().trigger()
+            self.main.workspace.job_manager.join_all_jobs()
+        finally:
+            PatternView._show_families = orig
+        view = self.main.workspace.view_manager.first_view_in_category("pattern")
+
+        # this run's discovery ended before its counts existed
+        kinds = [type(j) for j in started]
+        assert PatternDiscoveryJob in kinds and PatternFoundJob in kinds
+        assert kinds.index(PatternFoundJob) > kinds.index(PatternDiscoveryJob)
+        assert shown and all(n is None for n in shown[0]), "no search inside the blocking job"
+        assert "…" in shown[1]
+        # and every count arrived afterwards
+        texts = [view._families_table.item(r, 4).text() for r in range(view._families_table.rowCount())]
+        assert "…" not in texts
+        assert all(f.found is not None for f in view.families if f.pattern is not None)
+
     def test_cancel_stops_discovery_inside_the_alignment(self):
         from angr.analyses.patterns import Checkpoint  # pylint:disable=import-outside-toplevel
 

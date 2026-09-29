@@ -18,7 +18,7 @@ from .llm_preload import LLMPreloadCalleesJob
 from .llm_refine import LLMRefineJob
 from .loading import LoadBinaryJob
 from .overview import OverviewConfiguration
-from .pattern_discovery import DiscoveredFamily, DiscoveryResult, PatternDiscoveryJob
+from .pattern_discovery import DiscoveredFamily, DiscoveryResult, PatternDiscoveryJob, PatternFoundJob
 from .pattern_search import PatternCountJob, PatternMatchRow, PatternSearchJob
 from .prototype_finding import PrototypeFindingJob
 from .rust_symbol_recovery import RustSymbolRecoveryConfiguration, RustSymbolRecoveryJob
@@ -47,6 +47,7 @@ __all__ = [
     "PatternCountJob",
     "PatternMatchRow",
     "PatternDiscoveryJob",
+    "PatternFoundJob",
     "PatternSearchJob",
     "DependencyAnalysisJob",
     "FlirtAnalysisConfiguration",

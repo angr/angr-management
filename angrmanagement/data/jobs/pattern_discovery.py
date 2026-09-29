@@ -3,15 +3,16 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from angr.analyses.decompiler.known_patterns.edit import PatternEditor
 from angr.analyses.decompiler.known_patterns.generator import PatternGenerationError, PatternGenerator, stmt_ins_addrs
 from angr.analyses.patterns import AlignParams, Checkpoint, FuzzyPatternFinder
-from angr.analyses.patterns.search import find_template_occurrences
+from angr.analyses.patterns.search import search, template_leaves, tokenize_for_templates, verify
 
 from angrmanagement.data.jobs.job import JobState
 from angrmanagement.logic.jobmanager import JobCancelled
+from angrmanagement.logic.threads import gui_thread_schedule_async
 
 from .job import InstanceJob
 
@@ -40,10 +41,14 @@ class DiscoveredFamily:
     #: None when the first copy has nothing the pattern generator can lift
     pattern: KnownPattern | None
     #: verified occurrences of ``pattern`` in the function; can exceed ``copies``, since
-    #: discovery drops copies that sit close together and search does not
-    found: int = 0
-    #: how many of the family's own copies ``pattern`` finds verified
-    covered: int = 0
+    #: discovery drops copies that sit close together and search does not. None until
+    #: PatternFoundJob has searched for it.
+    found: int | None = None
+    #: how many of the family's own copies ``pattern`` finds verified; None until searched
+    covered: int | None = None
+    #: for each copy, the (block, statement index) of every statement in it, which is how
+    #: the search's hits are matched back to the copies
+    copy_stmts: list[frozenset[tuple]] = field(default_factory=list)
     #: for each copy, the instruction addresses its statements and their subexpressions
     #: carry: what the pseudocode view needs to find the lines the copy renders at
     copy_addrs: list[frozenset[int]] = field(default_factory=list)
@@ -56,6 +61,9 @@ class DiscoveryResult:
     tokens: int
     seconds: float
     families: list[DiscoveredFamily] = field(default_factory=list)
+    #: the AIL graph discovery ran on, and its entry block, for PatternFoundJob to search
+    graph: Any = None
+    entry: Any = None
 
 
 def _stmt_key(stream, token: int) -> tuple:
@@ -127,7 +135,7 @@ class PatternDiscoveryJob(InstanceJob):
         entry = finder.entry
         blocks = {(b.addr, b.idx): b for b in stream.blocks}
         generator = PatternGenerator(dec.codegen, graph)
-        result = DiscoveryResult(func.addr, func.name, len(stream), 0.0)
+        result = DiscoveryResult(func.addr, func.name, len(stream), 0.0, graph=graph, entry=entry)
 
         patterns = sorted(finder.all_patterns, key=lambda p: -len(p.occurrences) * p.size * p.identity)
         for k, family in enumerate(patterns):
@@ -152,6 +160,10 @@ class PatternDiscoveryJob(InstanceJob):
                     for occ in sorted(family.occurrences, key=lambda o: o.interval.start)
                 ],
             )
+            row.copy_stmts = [
+                frozenset(_stmt_key(stream, t) for t in range(occ.interval.start, occ.interval.end))
+                for occ in family.occurrences
+            ]
             result.families.append(row)
             stmts = [blocks[loc.block_loc].statements[loc.stmt_idx] for loc in stream.locs[first.start : first.end]]
             try:
@@ -164,24 +176,63 @@ class PatternDiscoveryJob(InstanceJob):
             editor.loosen_constants()
             editor.cut_depth()
             row.pattern = editor.pattern
-            try:
-                search_stream, matches = find_template_occurrences(
-                    row.pattern, graph, entry, kb=self.instance.kb, checkpoint=checkpoint
-                )
-            except Exception:  # pylint:disable=broad-except
-                _l.debug("searching for family %d failed", k, exc_info=True)
-                continue
-            verified = [m for m in matches if m.verified]
-            row.found = len(verified)
-            # by statement, not by address range: reverse post-order interleaves blocks, so
-            # the address ranges of unrelated spans overlap
-            hit = {_stmt_key(search_stream, t) for m in verified for t in range(m.interval.start, m.interval.end)}
-            row.covered = sum(
-                1
-                for occ in family.occurrences
-                if any(_stmt_key(stream, t) in hit for t in range(occ.interval.start, occ.interval.end))
-            )
+        # searching each pattern is what takes the time, so it is left to PatternFoundJob,
+        # which fills the Found column once the table is up
 
         result.seconds = time.monotonic() - t0
         ctx.set_progress(100.0, "done")
         return result
+
+
+class PatternFoundJob(InstanceJob):
+    """
+    Searches the function for each discovered family's pattern, to fill the Found column.
+
+    Runs in the background at low priority after the families are on screen. The
+    cheapest patterns go first, so most rows fill in quickly; ``on_family`` gets
+    (family index, verified occurrences, copies covered) on the GUI thread as each
+    one finishes. Cancelled by setting its state, as a newer discovery run does.
+    """
+
+    def __init__(
+        self,
+        instance: Instance,
+        result: DiscoveryResult,
+        on_family: Callable[[int, int, int], None],
+    ) -> None:
+        super().__init__(f"Counting pattern occurrences in {result.func_name}", instance, blocking=False)
+        self.result = result
+        self.on_family = on_family
+
+    def _check_cancelled(self) -> None:
+        if self.state == JobState.CANCELLED:
+            raise JobCancelled
+
+    def run(self, ctx: JobContext) -> None:
+        result = self.result
+        if result.graph is None or result.entry is None:
+            return
+        checkpoint = Checkpoint(low_priority=True, callback=self._check_cancelled)
+        # one stream for every pattern: tokenizing is per function, not per pattern
+        stream = tokenize_for_templates(result.graph, result.entry, kb=self.instance.kb)
+        order = sorted(
+            (i for i, f in enumerate(result.families) if f.pattern is not None),
+            key=lambda i: len(template_leaves(result.families[i].pattern)),
+        )
+        for n, index in enumerate(order):
+            ctx.set_progress(100.0 * n / max(1, len(order)), f"family {n + 1} of {len(order)}")
+            family = result.families[index]
+            try:
+                matches = search(family.pattern, stream, checkpoint=checkpoint)
+                for match in matches:
+                    verify(match, family.pattern, stream, checkpoint=checkpoint)
+            except Exception:  # pylint:disable=broad-except
+                _l.debug("searching for family %d failed", index, exc_info=True)
+                continue
+            verified = [m for m in matches if m.verified]
+            # by statement, not by address range: reverse post-order interleaves blocks, so
+            # the address ranges of unrelated spans overlap
+            hit = {_stmt_key(stream, t) for m in verified for t in range(m.interval.start, m.interval.end)}
+            covered = sum(1 for stmts in family.copy_stmts if stmts & hit)
+            gui_thread_schedule_async(self.on_family, args=(index, len(verified), covered))
+        ctx.set_progress(100.0, "done")

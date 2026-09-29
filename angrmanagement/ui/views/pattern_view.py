@@ -37,10 +37,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from angrmanagement.data.jobs.job import JobState
 from angrmanagement.data.jobs.pattern_discovery import (
     DiscoveredFamily,
     DiscoveryResult,
     PatternDiscoveryJob,
+    PatternFoundJob,
 )
 from angrmanagement.data.jobs.pattern_search import PatternMatchRow, PatternSearchJob
 from angrmanagement.ui.views.view import InstanceView
@@ -140,6 +142,8 @@ class PatternView(InstanceView):
         self._discover_btn: QPushButton
         self._families_table: QTableWidget
         self._discover_status: QLabel
+        #: the background job filling the Found column, cancelled when a newer discovery replaces it
+        self._found_job: PatternFoundJob | None = None
 
         self._init_widgets()
         self.width_hint = 900
@@ -433,6 +437,9 @@ class PatternView(InstanceView):
 
     def discover(self, func, blocking: bool = True) -> None:
         """Look for families of similar code in ``func``; the results land in the Discover tab."""
+        if self._found_job is not None:
+            self._found_job.state = JobState.CANCELLED
+            self._found_job = None
         self._tabs.setCurrentWidget(self._discover_tab)
         job = PatternDiscoveryJob(
             self.instance,
@@ -476,6 +483,32 @@ class PatternView(InstanceView):
             code_view.highlight_pattern(func.addr, family.copy_addrs)
             self.workspace.raise_view(code_view)
 
+    @staticmethod
+    def _found_cell(f: DiscoveredFamily) -> tuple[str, int]:
+        if f.pattern is None:
+            return "-", -2
+        if f.found is None:
+            return "…", -1
+        return f"{f.found} ({f.covered}/{f.copies} copies)", f.found
+
+    def _on_family_found(self, result: DiscoveryResult, index: int, found: int, covered: int) -> None:
+        """A background count for one family arrived; ignored if the table has moved on."""
+        if not (0 <= index < len(result.families)):
+            return
+        family = result.families[index]
+        family.found, family.covered = found, covered
+        if self.families is not result.families:
+            return
+        column = 4
+        for row in range(self._families_table.rowCount()):
+            if self.family_at(row) == index:
+                text, key = self._found_cell(family)
+                item = self._families_table.item(row, column)
+                # the key first: with sorting on, setText moves the row right away
+                item.key = key
+                item.setText(text)
+                break
+
     def _show_families(self, result: DiscoveryResult) -> None:
         self.families = result.families
         self.discovered_func = result.func_addr
@@ -490,7 +523,7 @@ class PatternView(InstanceView):
                 (str(f.size), f.size),
                 (f"{f.identity:.0%}", f.identity),
                 (f"{f.outlinable}/{f.copies}", f.outlinable),
-                ("-", -1) if f.pattern is None else (f"{f.found} ({f.covered}/{f.copies} copies)", f.found),
+                self._found_cell(f),
                 (where, f.start_addr if f.start_addr is not None else -1),
             ]
             for j, (text, key) in enumerate(cells):
@@ -500,6 +533,11 @@ class PatternView(InstanceView):
                     item.setData(Qt.ItemDataRole.UserRole, i)
                 table.setItem(i, j, item)
         table.setSortingEnabled(True)
+        # the Found column is filled in the background, cheapest patterns first
+        if self._found_job is not None:
+            self._found_job.state = JobState.CANCELLED
+        self._found_job = PatternFoundJob(self.instance, result, lambda i, n, c: self._on_family_found(result, i, n, c))
+        self.workspace.job_manager.add_job(self._found_job)
         self._discover_status.setText(
             f"{len(result.families)} famil{'y' if len(result.families) == 1 else 'ies'} in {result.func_name} "
             f"({result.tokens} statements, {result.seconds:.1f}s)"
