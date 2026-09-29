@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from angr.analyses.decompiler.known_patterns.edit import PatternEditor
 from angr.analyses.decompiler.known_patterns.generator import PatternGenerationError, PatternGenerator, stmt_ins_addrs
-from angr.analyses.patterns import AlignParams, Checkpoint, FuzzyPatternFinder
+from angr.analyses.patterns import STATEMENTS_ANY, AlignParams, Checkpoint, FuzzyPatternFinder
 from angr.analyses.patterns.search import search, template_leaves, tokenize_for_templates, verify
 
 from angrmanagement.data.jobs.job import JobState
@@ -95,16 +95,19 @@ class PatternDiscoveryJob(InstanceJob):
         self,
         instance: Instance,
         func: Function,
-        min_size: int = 4,
+        min_size: int = 3,
         min_identity: float = 0.6,
         on_finish: Callable[[DiscoveryResult], None] | None = None,
         blocking: bool = True,
+        statements: str = STATEMENTS_ANY,
     ) -> None:
         # blocking by default: the main window shows a modal progress dialog with Cancel
         super().__init__(f"Discovering patterns in {func.name}", instance, on_finish=on_finish, blocking=blocking)
         self.func = func
         self.min_size = min_size
         self.min_identity = min_identity
+        #: how an occurrence's statements may follow each other; see FuzzyPatternFinder
+        self.statements = statements
 
     def _check_cancelled(self) -> None:
         if self.state == JobState.CANCELLED:
@@ -130,6 +133,7 @@ class PatternDiscoveryJob(InstanceJob):
             disjoint=False,
             low_priority=True,
             checkpoint=checkpoint,
+            statements=self.statements,
         )
         stream = finder.stream
         entry = finder.entry

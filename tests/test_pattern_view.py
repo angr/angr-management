@@ -653,6 +653,48 @@ class TestPatternView(AngrManagementTestCase):
         assert "…" not in texts
         assert all(f.found is not None for f in view.families if f.pattern is not None)
 
+    def test_consecutive_only_keeps_every_copy_one_straight_run(self):
+        from angrmanagement.data.jobs import PatternDiscoveryJob  # pylint:disable=import-outside-toplevel
+
+        self._decompile("1after909", "doit")
+        started, results = [], []
+        self.main.workspace.job_manager.job_starting.connect(started.append)
+        self.main.workspace.discover_patterns()  # opens the view; its first run uses the default mode
+        self.main.workspace.job_manager.join_all_jobs()
+        view = self.main.workspace.view_manager.first_view_in_category("pattern")
+        combo = view._statements
+        assert [combo.itemText(i) for i in range(combo.count())] == [
+            "Any order",
+            "Follow control flow",
+            "Consecutive only",
+        ]
+        combo.setCurrentIndex(2)
+        view._min_size.setValue(3)
+        orig = PatternView._show_families
+        PatternView._show_families = lambda v, result: results.append(result) or orig(v, result)
+        try:
+            self._discover_entry().trigger()
+            self.main.workspace.job_manager.join_all_jobs()
+        finally:
+            PatternView._show_families = orig
+
+        job = [j for j in started if isinstance(j, PatternDiscoveryJob)][-1]
+        assert job.statements == "consecutive"
+        (result,) = results
+        assert result.families
+        graph = result.graph
+        nodes = {(b.addr, b.idx): b for b in graph}
+        for family in result.families:
+            for stmts in family.copy_stmts:
+                blocks = {nodes[loc] for loc, _ in stmts}
+                # one straight run: every block but the first has one predecessor, inside the copy,
+                # and that predecessor has it as its only successor
+                heads = [b for b in blocks if not any(p in blocks for p in graph.predecessors(b))]
+                assert len(heads) == 1, family
+                for b in blocks - set(heads):
+                    (pred,) = graph.predecessors(b)
+                    assert pred in blocks and graph.out_degree[pred] == 1
+
     def test_cancel_stops_discovery_inside_the_alignment(self):
         from angr.analyses.patterns import Checkpoint  # pylint:disable=import-outside-toplevel
 

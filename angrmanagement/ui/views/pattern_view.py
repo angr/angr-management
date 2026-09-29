@@ -20,9 +20,11 @@ from angr.analyses.decompiler.known_patterns import (
 )
 from angr.analyses.decompiler.known_patterns.dsl import PatternExpr
 from angr.analyses.decompiler.known_patterns.edit import LEAF_MODES, PatternEditor
+from angr.analyses.patterns import STATEMENTS_ANY, STATEMENTS_CONSECUTIVE, STATEMENTS_FOLLOW
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QComboBox,
     QDoubleSpinBox,
     QHBoxLayout,
     QHeaderView,
@@ -139,6 +141,7 @@ class PatternView(InstanceView):
         self._tabs: QTabWidget
         self._min_size: QSpinBox
         self._min_identity: QDoubleSpinBox
+        self._statements: QComboBox
         self._discover_btn: QPushButton
         self._families_table: QTableWidget
         self._discover_status: QLabel
@@ -448,6 +451,7 @@ class PatternView(InstanceView):
             min_identity=self._min_identity.value(),
             on_finish=self._show_families,
             blocking=blocking,
+            statements=self._statements.currentData(),
         )
         self._discover_status.setText(f"discovering in {func.name}...")
         self.workspace.job_manager.add_job(job)
@@ -684,13 +688,30 @@ class PatternView(InstanceView):
     def _init_discover_tab(self) -> QWidget:
         self._min_size = QSpinBox()
         self._min_size.setRange(2, 256)
-        self._min_size.setValue(4)
-        self._min_size.setToolTip("Shortest family worth reporting, in statements")
+        self._min_size.setValue(3)
+        self._min_size.setToolTip("Shortest family worth reporting, in statements; gotos do not count")
         self._min_identity = QDoubleSpinBox()
         self._min_identity.setRange(0.3, 1.0)
         self._min_identity.setSingleStep(0.05)
         self._min_identity.setValue(0.6)
         self._min_identity.setToolTip("How alike the copies of a family must be")
+        self._statements = QComboBox()
+        for label, mode, tip in (
+            ("Any order", STATEMENTS_ANY, "A copy may take statements from anywhere in the function's block order"),
+            (
+                "Follow control flow",
+                STATEMENTS_FOLLOW,
+                "A copy continues only into a block that follows in the control flow",
+            ),
+            (
+                "Consecutive only",
+                STATEMENTS_CONSECUTIVE,
+                "A copy is one straight run of code: consecutive pseudocode lines",
+            ),
+        ):
+            self._statements.addItem(label, mode)
+            self._statements.setItemData(self._statements.count() - 1, tip, Qt.ItemDataRole.ToolTipRole)
+        self._statements.setToolTip("How the statements of one copy may follow each other")
         self._discover_btn = QPushButton("Discover in current function")
         self._discover_btn.setToolTip("Find families of similar code in the function shown in the pseudocode view")
         self._discover_btn.clicked.connect(self.workspace.discover_patterns)
@@ -699,6 +720,8 @@ class PatternView(InstanceView):
         knobs.addWidget(self._min_size)
         knobs.addWidget(QLabel("Min identity"))
         knobs.addWidget(self._min_identity)
+        knobs.addWidget(QLabel("Statements"))
+        knobs.addWidget(self._statements)
         knobs.addWidget(self._discover_btn)
         knobs.addStretch()
 
