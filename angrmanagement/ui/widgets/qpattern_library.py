@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 class QPatternLibrary(QWidget):
-    """The project's patterns: a table with edit, on/off, delete, export and import.
+    """The project's patterns: a table with an Enabled checkbox per row, and edit, delete, export and import.
 
     With ``current_func``, two more columns say what the outliner pass saw of each
     pattern the last time that function was decompiled: verified matches, and how
@@ -81,7 +81,6 @@ class QPatternLibrary(QWidget):
         buttons = QHBoxLayout()
         for label, handler in (
             ("Edit", self._on_edit_clicked),
-            ("On/off", self._on_toggle_clicked),
             ("Delete", self._on_delete_clicked),
             ("Export...", self._on_export_clicked),
             ("Import...", self._on_import_clicked),
@@ -260,11 +259,6 @@ class QPatternLibrary(QWidget):
         stored = self.selection()
         if stored is not None:
             self._on_edit(stored)
-
-    def _on_toggle_clicked(self) -> None:
-        stored = self.selection()
-        if stored is not None:
-            self.toggle(stored)
 
     def _on_delete_clicked(self) -> None:
         stored = self.selection()
