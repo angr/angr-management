@@ -190,7 +190,7 @@ class TestPatternView(AngrManagementTestCase):
         stored = view.save()
         kb = self.main.workspace.main_instance.kb
         assert stored is not None
-        assert kb.fuzzy_patterns.get("my_idiom") is stored
+        assert kb.patterns.get("my_idiom") is stored
         assert stored.min_similarity == 0.7
         assert stored.origin_func == func.addr
 
@@ -198,7 +198,7 @@ class TestPatternView(AngrManagementTestCase):
         view.editor.set_display_name("renamed")
         again = view.save()
         assert again is not None and again.pattern.display_name == "renamed"
-        assert len(kb.fuzzy_patterns) == 1
+        assert len(kb.patterns) == 1
 
     def test_search_finds_the_selection_in_its_own_function(self):
         func, code_view = self._decompile_main()
@@ -393,7 +393,7 @@ class TestPatternView(AngrManagementTestCase):
         assert outlined == 8 and matches >= outlined
 
         # a change in either place shows in both
-        code_view._pattern_library.toggle(self.main.workspace.main_instance.kb.fuzzy_patterns.get("patternerrorsout"))
+        code_view._pattern_library.toggle(self.main.workspace.main_instance.kb.patterns.get("patternerrorsout"))
         assert table.item(0, 1).text() == "off" and view._library_table.item(0, 2).text() == "off"
 
         # Edit opens the pattern in the pattern view
@@ -413,20 +413,20 @@ class TestPatternView(AngrManagementTestCase):
         assert [view._library_table.item(0, j).text() for j in range(3)] == ["my_idiom", "my_idiom", "on"]
 
         view.toggle_stored(stored)
-        assert kb.fuzzy_patterns.get("my_idiom").enabled is False
+        assert kb.patterns.get("my_idiom").enabled is False
         assert view._library_table.item(0, 2).text() == "off"
 
         with tempfile.TemporaryDirectory() as td:
             path = os.path.join(td, "p.json")
             view.export_stored(stored, path)
             view.delete_stored(stored)
-            assert len(kb.fuzzy_patterns) == 0
+            assert len(kb.patterns) == 0
             assert view._library_table.rowCount() == 0
 
             back = view.import_stored(path)
             assert back.pattern == stored.pattern
             assert back.enabled is False
-            assert kb.fuzzy_patterns.get("my_idiom") is back
+            assert kb.patterns.get("my_idiom") is back
             assert view._library_table.rowCount() == 1
 
         view.edit_stored(back)

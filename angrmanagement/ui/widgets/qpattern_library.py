@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
-from angr.knowledge_plugins.fuzzy_patterns import StoredPattern
+from angr.knowledge_plugins.patterns import StoredPattern
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -86,7 +86,7 @@ class QPatternLibrary(QWidget):
     def reload(self) -> None:
         # a view can exist before any project is loaded
         kb = self.instance.kb
-        self.rows = [] if kb is None else sorted(kb.fuzzy_patterns, key=lambda p: p.name)
+        self.rows = [] if kb is None else sorted(kb.patterns, key=lambda p: p.name)
         func_addr = self._current_func() if self._current_func is not None else None
         self.table.setRowCount(len(self.rows))
         for i, stored in enumerate(self.rows):
@@ -98,7 +98,7 @@ class QPatternLibrary(QWidget):
                 "From": f"{stored.origin_func:#x}" if stored.origin_func is not None else "",
             }
             if self._current_func is not None:
-                stats = self.instance.kb.fuzzy_patterns.stats(func_addr, stored.name) if func_addr is not None else None
+                stats = self.instance.kb.patterns.stats(func_addr, stored.name) if func_addr is not None else None
                 values["Matches"] = "-" if stats is None else str(stats.matches)
                 values["Outlined"] = "-" if stats is None else str(stats.outlined)
             cells = [values[c] for c in self.columns]
@@ -119,13 +119,13 @@ class QPatternLibrary(QWidget):
     #
 
     def toggle(self, stored: StoredPattern) -> None:
-        self.instance.kb.fuzzy_patterns.set_enabled(stored.name, not stored.enabled)
+        self.instance.kb.patterns.set_enabled(stored.name, not stored.enabled)
         self._changed(
             f"{stored.name} is {'on' if stored.enabled else 'off'}; it applies the next time a function is decompiled"
         )
 
     def delete(self, stored: StoredPattern) -> None:
-        self.instance.kb.fuzzy_patterns.remove(stored.name)
+        self.instance.kb.patterns.remove(stored.name)
         self._changed(f"deleted {stored.name}")
 
     def export(self, stored: StoredPattern, path: str) -> None:
@@ -136,7 +136,7 @@ class QPatternLibrary(QWidget):
     def import_(self, path: str) -> StoredPattern:
         with open(path, encoding="utf-8") as f:
             stored = StoredPattern.from_dict(json.load(f))
-        self.instance.kb.fuzzy_patterns.store(stored)
+        self.instance.kb.patterns.store(stored)
         self._changed(f"imported {stored.name} from {path}")
         return stored
 

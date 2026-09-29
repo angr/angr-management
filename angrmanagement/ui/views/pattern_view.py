@@ -60,7 +60,7 @@ from angrmanagement.ui.widgets.qproperty_editor import (
 if TYPE_CHECKING:
     from angr.analyses.decompiler.known_patterns import KnownPattern, PatternNode
     from angr.analyses.decompiler.known_patterns.edit import NodePath
-    from angr.knowledge_plugins.fuzzy_patterns import StoredPattern
+    from angr.knowledge_plugins.patterns import StoredPattern
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
@@ -91,7 +91,7 @@ class PatternView(InstanceView):
     its expression tree. Selecting a node shows its constraints in the property panel,
     where a statement can be made optional or a wildcard and weighted, a constant
     loosened or pinned, a load resized, an operator widened to a set. Saving writes the
-    pattern into ``kb.fuzzy_patterns``, where the FuzzyPatternOutliner pass picks it up
+    pattern into ``kb.patterns``, where the PatternOutliner pass picks it up
     on the next decompilation.
     """
 
@@ -261,7 +261,7 @@ class PatternView(InstanceView):
         """Write the pattern into the knowledge base, replacing one of the same name."""
         if self.editor is None:
             return None
-        stored = self.instance.kb.fuzzy_patterns.add(
+        stored = self.instance.kb.patterns.add(
             self.editor.pattern,
             enabled=self.enabled,
             min_similarity=self.min_similarity,
@@ -394,7 +394,7 @@ class PatternView(InstanceView):
             PatternGenerationError,
             PatternGenerator,
         )
-        from angr.analyses.fuzzy_patterns.search import tokenize_for_templates  # pylint:disable=import-outside-toplevel
+        from angr.analyses.patterns.search import tokenize_for_templates  # pylint:disable=import-outside-toplevel
 
         func = self.instance.kb.functions.get(func_addr)
         if func is None:
@@ -417,7 +417,7 @@ class PatternView(InstanceView):
             if loc.ins_addr is not None and start_addr <= loc.ins_addr <= end_addr
         ]
         try:
-            return PatternGenerator(dec.codegen, dec.ail_graph).generate_fuzzy_from_statements(stmts, call_name)
+            return PatternGenerator(dec.codegen, dec.ail_graph).generate_pattern_from_statements(stmts, call_name)
         except PatternGenerationError as ex:
             self._set_status(f"cannot lift a pattern from that range: {ex}")
             return None

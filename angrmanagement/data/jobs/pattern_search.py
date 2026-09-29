@@ -4,10 +4,10 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from angr.analyses.decompiler.optimization_passes import FuzzyPatternOutliner
+from angr.analyses.decompiler.optimization_passes import PatternOutliner
 from angr.analyses.decompiler.presets import DECOMPILATION_PRESETS
-from angr.analyses.fuzzy_patterns.region import largest_single_entry_subrun, snap
-from angr.analyses.fuzzy_patterns.search import find_template_occurrences
+from angr.analyses.patterns.region import largest_single_entry_subrun, snap
+from angr.analyses.patterns.search import find_template_occurrences
 
 from .job import InstanceJob
 
@@ -75,11 +75,11 @@ class PatternSearchJob(InstanceJob):
         result out of the cache; with none, the cached decompilation is as good.
         """
         project = self.instance.project
-        if not self.instance.kb.fuzzy_patterns.enabled_patterns():
+        if not self.instance.kb.patterns.enabled_patterns():
             return project.analyses.Decompiler(func, cfg=self.instance.cfg, use_cache=True)
         platform = project.simos.name if project.simos is not None else None
         passes = DECOMPILATION_PRESETS["default"].get_optimization_passes(
-            project.arch, platform, disable_opts=[FuzzyPatternOutliner]
+            project.arch, platform, disable_opts=[PatternOutliner]
         )
         return project.analyses.Decompiler(
             func, cfg=self.instance.cfg, optimization_passes=passes, use_cache=False, update_cache=False

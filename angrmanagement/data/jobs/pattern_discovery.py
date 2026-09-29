@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.known_patterns.edit import PatternEditor
 from angr.analyses.decompiler.known_patterns.generator import PatternGenerationError, PatternGenerator
-from angr.analyses.fuzzy_patterns import AlignParams, FuzzyPatternFinder
-from angr.analyses.fuzzy_patterns.search import find_template_occurrences
+from angr.analyses.patterns import AlignParams, FuzzyPatternFinder
+from angr.analyses.patterns.search import find_template_occurrences
 
 from .job import InstanceJob
 
@@ -127,7 +127,7 @@ class PatternDiscoveryJob(InstanceJob):
             result.families.append(row)
             stmts = [blocks[loc.block_loc].statements[loc.stmt_idx] for loc in stream.locs[first.start : first.end]]
             try:
-                pattern = generator.generate_fuzzy_from_statements(stmts, f"idiom_{k + 1}")
+                pattern = generator.generate_pattern_from_statements(stmts, f"idiom_{k + 1}")
             except PatternGenerationError:
                 continue
             # the copies of a family differ in their constants and deep subexpressions by

@@ -655,7 +655,7 @@ class QCCodeEdit(api.CodeEdit):
             if not ok or not call_name.strip():
                 return None
         try:
-            pattern = PatternGenerator(codegen, graph).generate_fuzzy(start, end, call_name.strip())
+            pattern = PatternGenerator(codegen, graph).generate_pattern(start, end, call_name.strip())
         except PatternGenerationError as ex:
             _l.warning("Cannot make a pattern out of this selection: %s", ex)
             return None
