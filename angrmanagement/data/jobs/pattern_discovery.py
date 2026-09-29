@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.known_patterns.edit import PatternEditor
-from angr.analyses.decompiler.known_patterns.generator import PatternGenerationError, PatternGenerator
+from angr.analyses.decompiler.known_patterns.generator import PatternGenerationError, PatternGenerator, stmt_ins_addrs
 from angr.analyses.patterns import AlignParams, FuzzyPatternFinder
 from angr.analyses.patterns.search import find_template_occurrences
 
@@ -41,6 +41,9 @@ class DiscoveredFamily:
     found: int = 0
     #: how many of the family's own copies ``pattern`` finds verified
     covered: int = 0
+    #: for each copy, the instruction addresses its statements and their subexpressions
+    #: carry: what the pseudocode view needs to find the lines the copy renders at
+    copy_addrs: list[frozenset[int]] = field(default_factory=list)
 
 
 @dataclass
@@ -123,6 +126,15 @@ class PatternDiscoveryJob(InstanceJob):
                 start_addr=start,
                 end_addr=end,
                 pattern=None,
+                copy_addrs=[
+                    frozenset().union(
+                        *(
+                            stmt_ins_addrs(blocks[loc.block_loc].statements[loc.stmt_idx])
+                            for loc in stream.locs[occ.interval.start : occ.interval.end]
+                        )
+                    )
+                    for occ in sorted(family.occurrences, key=lambda o: o.interval.start)
+                ],
             )
             result.families.append(row)
             stmts = [blocks[loc.block_loc].statements[loc.stmt_idx] for loc in stream.locs[first.start : first.end]]
