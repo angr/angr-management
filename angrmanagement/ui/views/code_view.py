@@ -143,6 +143,10 @@ class CodeView(FunctionView):
         self._find_index: int = -1
         self._chunk_selections: list[QTextEdit.ExtraSelection] = []
         self._find_selections: list[QTextEdit.ExtraSelection] = []
+        #: (function address, instruction addresses of each highlighted copy) of the pattern
+        #: highlight; kept as addresses so it survives the pseudocode being regenerated
+        self._pattern_highlight: tuple[int, list[frozenset[int]]] | None = None
+        self._pattern_selections: list[QTextEdit.ExtraSelection] = []
 
         # kb.comments mirrored into the current codegen's stmt_comments: kb address -> stmt key
         self._mirrored_codegen = None
@@ -156,8 +160,7 @@ class CodeView(FunctionView):
         self._textedit.mouse_double_clicked.connect(self._on_mouse_doubleclicked)
         self._function.am_subscribe(self._on_new_function)
         self.codegen.am_subscribe(self._on_codegen_changes)
-        # the outliner pass's numbers change with every decompilation
-        self.codegen.am_subscribe(lambda **_: self.reload_patterns())
+        self.codegen.am_subscribe(self._on_codegen_for_patterns)
         self.addr.am_subscribe(self._on_new_addr)
         self.current_node.am_subscribe(self._on_new_node)
         self.instance.annotations.bookmarks.am_subscribe(self._on_bookmarks_changed)
@@ -314,6 +317,53 @@ class CodeView(FunctionView):
         self._chunk_selections = [self._make_selection(start, end, color) for start, end in chunks]
         self._apply_extra_selections()
 
+    def highlight_pattern(self, func_addr: int, copies: list[frozenset[int]]) -> None:
+        """Band every line of ``func_addr``'s pseudocode that renders one of the copies' instructions.
+
+        The highlight waits for the function if it is still being decompiled, follows the
+        pseudocode when it is regenerated, and goes away when another function is shown.
+        """
+        self._pattern_highlight = (func_addr, copies) if copies else None
+        self._rebuild_pattern_selections()
+
+    def clear_pattern_highlight(self) -> bool:
+        """Drop the pattern highlight; returns whether there was one."""
+        had = self._pattern_highlight is not None
+        self._pattern_highlight = None
+        self._pattern_selections = []
+        self._apply_extra_selections()
+        return had
+
+    @property
+    def pattern_highlighted_lines(self) -> list[int]:
+        """Block numbers of the lines the pattern highlight covers."""
+        return [sel.cursor.blockNumber() for sel in self._pattern_selections]
+
+    def _rebuild_pattern_selections(self) -> None:
+        self._pattern_selections = []
+        if self._pattern_highlight is not None and not self._function.am_none:
+            func_addr, copies = self._pattern_highlight
+            if self._function.am_obj.addr != func_addr:
+                # another function is on screen
+                self._pattern_highlight = None
+            elif not self.codegen.am_none and self._doc is not None:
+                addrs = frozenset().union(*copies)
+                lines: dict[int, int] = {}
+                for pos, elem in self.codegen.am_obj.map_pos_to_node.items():
+                    ins = (getattr(elem.obj, "tags", None) or {}).get("ins_addr")
+                    if ins in addrs:
+                        block = self._doc.findBlock(pos)
+                        lines.setdefault(block.blockNumber(), block.position())
+                for pos in sorted(lines.values()):
+                    sel = QTextEdit.ExtraSelection()
+                    sel.cursor = self._textedit.textCursor()
+                    sel.cursor.setPosition(pos)
+                    sel.cursor.clearSelection()
+                    sel.format.setBackground(Conf.pseudocode_pattern_highlight_color)
+                    sel.format.setProperty(QTextFormat.Property.FullWidthSelection, True)
+                    self._pattern_selections.append(sel)
+        self._apply_extra_selections()
+
     def refresh_bookmarks(self) -> None:
         self._apply_extra_selections()
 
@@ -455,7 +505,9 @@ class CodeView(FunctionView):
         return sel
 
     def _apply_extra_selections(self) -> None:
-        self._textedit.setExtraSelections(self._bookmark_selections() + self._chunk_selections + self._find_selections)
+        self._textedit.setExtraSelections(
+            self._pattern_selections + self._bookmark_selections() + self._chunk_selections + self._find_selections
+        )
 
     def variable_manager(self, func_addr: int | Literal["global"] | None = None) -> VariableManagerInternal | None:
         if self.codegen is None or self.codegen.am_none:
@@ -517,6 +569,12 @@ class CodeView(FunctionView):
     def reload_patterns(self) -> None:
         if self._pattern_library is not None:
             self._pattern_library.reload()
+
+    def _on_codegen_for_patterns(self, **_) -> None:
+        # the outliner pass's numbers change with every decompilation, and the text the
+        # pattern highlight points into has been regenerated
+        self.reload_patterns()
+        self._rebuild_pattern_selections()
 
     @property
     def patterns_dock(self) -> QDockWidget | None:
@@ -772,7 +830,9 @@ class CodeView(FunctionView):
             self.popup_jumpto_dialog()
             return True
         elif key == Qt.Key_Escape:
-            self.jump_back()
+            # the first Escape dismisses a pattern highlight; with none shown it navigates back
+            if not self.clear_pattern_highlight():
+                self.jump_back()
             return True
         elif key == Qt.Key_Space and not self.codegen.am_none:
             flavor = self.codegen.flavor
