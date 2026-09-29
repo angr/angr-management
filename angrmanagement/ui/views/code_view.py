@@ -143,9 +143,11 @@ class CodeView(FunctionView):
         self._find_index: int = -1
         self._chunk_selections: list[QTextEdit.ExtraSelection] = []
         self._find_selections: list[QTextEdit.ExtraSelection] = []
-        #: (function address, instruction addresses of each highlighted copy) of the pattern
-        #: highlight; kept as addresses so it survives the pseudocode being regenerated
-        self._pattern_highlight: tuple[int, list[frozenset[int]]] | None = None
+        #: layer name -> (function address, instruction addresses of each highlighted copy);
+        #: kept as addresses so a highlight survives the pseudocode being regenerated
+        self._highlight_layers: dict[str, tuple[int, list[frozenset[int]]]] = {}
+        #: patterns whose outlined calls are highlighted in whatever function is shown
+        self._highlighted_patterns: set[str] = set()
         self._pattern_selections: list[QTextEdit.ExtraSelection] = []
 
         # kb.comments mirrored into the current codegen's stmt_comments: kb address -> stmt key
@@ -317,21 +319,39 @@ class CodeView(FunctionView):
         self._chunk_selections = [self._make_selection(start, end, color) for start, end in chunks]
         self._apply_extra_selections()
 
-    def highlight_pattern(self, func_addr: int, copies: list[frozenset[int]]) -> None:
+    def highlight_pattern(self, func_addr: int, copies: list[frozenset[int]], layer: str = "discover") -> None:
         """Band every line of ``func_addr``'s pseudocode that renders one of the copies' instructions.
 
-        The highlight waits for the function if it is still being decompiled, follows the
-        pseudocode when it is regenerated, and goes away when another function is shown.
+        Each ``layer`` is independent. The highlight waits for the function if it is still
+        being decompiled, follows the pseudocode when it is regenerated, and goes away when
+        another function is shown.
         """
-        self._pattern_highlight = (func_addr, copies) if copies else None
+        if copies:
+            self._highlight_layers[layer] = (func_addr, copies)
+        else:
+            self._highlight_layers.pop(layer, None)
         self._rebuild_pattern_selections()
 
+    def set_pattern_highlight(self, name: str, on: bool) -> None:
+        """Band the calls the named pattern was outlined into, in whatever function is shown."""
+        if on:
+            self._highlighted_patterns.add(name)
+        else:
+            self._highlighted_patterns.discard(name)
+        self._rebuild_pattern_selections()
+
+    def is_pattern_highlighted(self, name: str) -> bool:
+        return name in self._highlighted_patterns
+
     def clear_pattern_highlight(self) -> bool:
-        """Drop the pattern highlight; returns whether there was one."""
-        had = self._pattern_highlight is not None
-        self._pattern_highlight = None
+        """Drop every pattern highlight; returns whether there was any."""
+        had = bool(self._highlight_layers or self._highlighted_patterns)
+        self._highlight_layers.clear()
+        self._highlighted_patterns.clear()
         self._pattern_selections = []
         self._apply_extra_selections()
+        if had:
+            self.reload_patterns()
         return had
 
     @property
@@ -339,29 +359,46 @@ class CodeView(FunctionView):
         """Block numbers of the lines the pattern highlight covers."""
         return [sel.cursor.blockNumber() for sel in self._pattern_selections]
 
+    def _highlight_addrs(self) -> set[int]:
+        """Every instruction address a highlight layer or a highlighted pattern asks for here."""
+        if self._function.am_none:
+            return set()
+        func_addr = self._function.am_obj.addr
+        addrs: set[int] = set()
+        for layer, (layer_func, copies) in list(self._highlight_layers.items()):
+            if layer_func != func_addr:
+                # another function is on screen
+                del self._highlight_layers[layer]
+                continue
+            addrs.update(*copies)
+        kb = self.instance.kb
+        for name in list(self._highlighted_patterns):
+            if kb is None or name not in kb.patterns:
+                self._highlighted_patterns.discard(name)
+                continue
+            stats = kb.patterns.stats(func_addr, name)
+            if stats is not None:
+                addrs.update(stats.call_addrs)
+        return addrs
+
     def _rebuild_pattern_selections(self) -> None:
         self._pattern_selections = []
-        if self._pattern_highlight is not None and not self._function.am_none:
-            func_addr, copies = self._pattern_highlight
-            if self._function.am_obj.addr != func_addr:
-                # another function is on screen
-                self._pattern_highlight = None
-            elif not self.codegen.am_none and self._doc is not None:
-                addrs = frozenset().union(*copies)
-                lines: dict[int, int] = {}
-                for pos, elem in self.codegen.am_obj.map_pos_to_node.items():
-                    ins = (getattr(elem.obj, "tags", None) or {}).get("ins_addr")
-                    if ins in addrs:
-                        block = self._doc.findBlock(pos)
-                        lines.setdefault(block.blockNumber(), block.position())
-                for pos in sorted(lines.values()):
-                    sel = QTextEdit.ExtraSelection()
-                    sel.cursor = self._textedit.textCursor()
-                    sel.cursor.setPosition(pos)
-                    sel.cursor.clearSelection()
-                    sel.format.setBackground(Conf.pseudocode_pattern_highlight_color)
-                    sel.format.setProperty(QTextFormat.Property.FullWidthSelection, True)
-                    self._pattern_selections.append(sel)
+        addrs = self._highlight_addrs()
+        if addrs and not self.codegen.am_none and self._doc is not None:
+            lines: dict[int, int] = {}
+            for pos, elem in self.codegen.am_obj.map_pos_to_node.items():
+                ins = (getattr(elem.obj, "tags", None) or {}).get("ins_addr")
+                if ins in addrs:
+                    block = self._doc.findBlock(pos)
+                    lines.setdefault(block.blockNumber(), block.position())
+            for pos in sorted(lines.values()):
+                sel = QTextEdit.ExtraSelection()
+                sel.cursor = self._textedit.textCursor()
+                sel.cursor.setPosition(pos)
+                sel.cursor.clearSelection()
+                sel.format.setBackground(Conf.pseudocode_pattern_highlight_color)
+                sel.format.setProperty(QTextFormat.Property.FullWidthSelection, True)
+                self._pattern_selections.append(sel)
         self._apply_extra_selections()
 
     def refresh_bookmarks(self) -> None:
@@ -897,6 +934,7 @@ class CodeView(FunctionView):
             on_edit=self.workspace.edit_pattern,
             current_func=lambda: None if self._function.am_none else self._function.am_obj.addr,
             on_toggled=self._on_pattern_toggled,
+            highlight=(self.is_pattern_highlighted, self.set_pattern_highlight),
         )
         self._patterns_dock = QDockWidget("Patterns", window)
         self._patterns_dock.setWidget(self._pattern_library)

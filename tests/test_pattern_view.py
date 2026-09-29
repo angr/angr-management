@@ -464,7 +464,7 @@ class TestPatternView(AngrManagementTestCase):
         assert table is not None and table.rowCount() == 0
         headers = [table.horizontalHeaderItem(j).text() for j in range(table.columnCount())]
         # the numbers come right after the name, so a narrow dock shows them without scrolling
-        assert headers[:4] == ["Pattern", "Enabled", "Matches", "Outlined"]
+        assert headers[:5] == ["Pattern", "Enabled", "Highlight", "Matches", "Outlined"]
 
         self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
         view = code_view.textedit.create_pattern(call_name="PatternErrorsOut")
@@ -472,11 +472,11 @@ class TestPatternView(AngrManagementTestCase):
         view.save()
         # saved but not yet applied here: listed, with no numbers for this function
         assert table.rowCount() == 1
-        assert [table.item(0, j).text() for j in range(4)] == ["patternerrorsout", "on", "-", "-"]
+        assert [table.item(0, j).text() for j in (0, 1, 3, 4)] == ["patternerrorsout", "on", "-", "-"]
 
         view.apply()
         self.main.workspace.job_manager.join_all_jobs()
-        matches, outlined = int(table.item(0, 2).text()), int(table.item(0, 3).text())
+        matches, outlined = int(table.item(0, 3).text()), int(table.item(0, 4).text())
         assert outlined == 8 and matches >= outlined
 
         # a change in either place shows in both
@@ -515,6 +515,32 @@ class TestPatternView(AngrManagementTestCase):
         table.item(0, 1).setCheckState(Qt.CheckState.Checked)
         self.main.workspace.job_manager.join_all_jobs()
         assert code_view.codegen.am_obj.text.count("PatternErrorsOut(") == 8
+
+    def test_dock_highlights_the_calls_a_pattern_became(self):
+        _, code_view, _ = self._apply_error_exit_pattern()
+        table = code_view.patterns_table
+        assert code_view.pattern_highlighted_lines == []
+
+        table.item(0, 2).setCheckState(Qt.CheckState.Checked)
+        lines = code_view.pattern_highlighted_lines
+        texts = [code_view._doc.findBlockByNumber(n).text().strip() for n in lines]
+        assert len(lines) == 8 and all("PatternErrorsOut(" in t for t in texts), texts
+        assert "8 call(s)" in table.item(0, 2).toolTip()
+
+        # it follows the pseudocode through a fresh decompilation
+        code_view.decompile(reset_cache=True)
+        self.main.workspace.job_manager.join_all_jobs()
+        assert len(code_view.pattern_highlighted_lines) == 8
+        assert table.item(0, 2).checkState() == Qt.CheckState.Checked
+
+        table.item(0, 2).setCheckState(Qt.CheckState.Unchecked)
+        assert code_view.pattern_highlighted_lines == []
+
+        # Escape clears it, box included
+        table.item(0, 2).setCheckState(Qt.CheckState.Checked)
+        QTest.keyClick(code_view.textedit, Qt.Key.Key_Escape)
+        assert code_view.pattern_highlighted_lines == []
+        assert table.item(0, 2).checkState() == Qt.CheckState.Unchecked
 
     def test_library_lists_toggles_exports_and_imports(self):
         func, code_view = self._decompile_main()
