@@ -102,6 +102,7 @@ COLOR_SCHEMES = {
         "pseudocode_variable_color": QColor(0x00, 0x00, 0x00, 0xFF),
         "pseudocode_label_color": QColor(0x00, 0x40, 0x80),
         "pseudocode_highlight_color": QColor(0xFF, 0xFF, 0x00, 0xFF),
+        "pseudocode_pattern_highlight_color": QColor(0x64, 0xB5, 0xF6, 0x50),
         "proximity_node_background_color": QColor(0xFA, 0xFA, 0xFA),
         "proximity_node_selected_background_color": QColor(0xCC, 0xCC, 0xCC),
         "proximity_node_border_color": QColor(0xF0, 0xF0, 0xF0),
@@ -211,6 +212,7 @@ COLOR_SCHEMES = {
         "pseudocode_variable_color": QColor(0xE0, 0xE0, 0xE0),
         "pseudocode_label_color": QColor(0x8A, 0xA6, 0xF9),
         "pseudocode_highlight_color": QColor(0x59, 0x44, 0x05, 0xFF),
+        "pseudocode_pattern_highlight_color": QColor(0x1E, 0x5A, 0x8C, 0x90),
         "proximity_node_background_color": QColor(0x3C, 0x3C, 0x3C),
         "proximity_node_selected_background_color": QColor(0x4C, 0x50, 0x58),
         "proximity_node_border_color": QColor(0x50, 0x50, 0x50),
@@ -315,6 +317,7 @@ COLOR_SCHEMES = {
         "pseudocode_variable_color": QColor(0xF8, 0xF8, 0xF2),
         "pseudocode_label_color": QColor(0x00, 0xAA, 0xFF),
         "pseudocode_highlight_color": QColor(0x44, 0x47, 0x5A),
+        "pseudocode_pattern_highlight_color": QColor(0x62, 0x72, 0xA4, 0x90),
         "proximity_node_background_color": QColor(0x28, 0x2A, 0x36),
         "proximity_node_selected_background_color": QColor(0x4C, 0x50, 0x58),
         "proximity_node_border_color": QColor(0x50, 0x50, 0x50),
@@ -422,6 +425,7 @@ COLOR_SCHEMES = {
         "pseudocode_variable_color": QColor(205, 214, 244),  # text
         "pseudocode_label_color": QColor(137, 220, 235),  # sky
         "pseudocode_highlight_color": QColor(105, 110, 150),  # Custom highlight
+        "pseudocode_pattern_highlight_color": QColor(0x89, 0xB4, 0xFA, 0x40),
         # Proximity View Colors
         "proximity_node_background_color": QColor(30, 30, 46),  # base
         "proximity_node_selected_background_color": QColor(49, 50, 68),  # surface0
