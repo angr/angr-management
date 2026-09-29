@@ -71,6 +71,19 @@ _l = logging.getLogger(__name__)
 LEAF_TYPES = (PAssign, PStore, PCallStmt, PCondJump, PReturn, PAnyStmt)
 
 
+class _SortableItem(QTableWidgetItem):
+    """A cell that sorts by a key of its own, so "100%" comes after "83%"."""
+
+    def __init__(self, text: str, key) -> None:
+        super().__init__(text)
+        self.key = key
+
+    def __lt__(self, other) -> bool:
+        if isinstance(other, _SortableItem):
+            return self.key < other.key
+        return super().__lt__(other)
+
+
 class FuzzyPatternView(InstanceView):
     """
     Edits one fuzzy pattern as a graph of nodes.
@@ -482,11 +495,16 @@ class FuzzyPatternView(InstanceView):
         self._discover_status.setText(f"discovering in {func.name}...")
         self.workspace.job_manager.add_job(job)
 
-    def load_family(self, row: int) -> bool:
+    def family_at(self, row: int) -> int | None:
+        """The index into ``families`` of a table row, which sorting moves around."""
+        item = self._families_table.item(row, 0) if row >= 0 else None
+        return None if item is None else item.data(Qt.ItemDataRole.UserRole)
+
+    def load_family(self, index: int) -> bool:
         """Edit the pattern lifted from a discovered family. Returns whether one was loaded."""
-        if not (0 <= row < len(self.families)):
+        if not (0 <= index < len(self.families)):
             return False
-        family = self.families[row]
+        family = self.families[index]
         if family.pattern is None:
             self._discover_status.setText("nothing in this family's first copy can be lifted into a pattern")
             return False
@@ -494,29 +512,38 @@ class FuzzyPatternView(InstanceView):
         self._tabs.setCurrentWidget(self._pattern_tab)
         return True
 
-    def jump_to_family(self, row: int) -> None:
-        if 0 <= row < len(self.families) and self.families[row].start_addr is not None:
-            self.workspace.jump_to(self.families[row].start_addr)
+    def open_family(self, index: int) -> None:
+        """Show a family's first copy in the pseudocode view."""
+        if not (0 <= index < len(self.families)) or self.discovered_func is None:
+            return
+        func = self.instance.kb.functions.get(self.discovered_func)
+        if func is not None:
+            self.workspace.decompile_function(func, curr_ins=self.families[index].start_addr)
 
     def _show_families(self, result: DiscoveryResult) -> None:
         self.families = result.families
         self.discovered_func = result.func_addr
         table = self._families_table
+        # rows move while sorting is on; fill with it off, then sort once
+        table.setSortingEnabled(False)
         table.setRowCount(len(result.families))
         for i, f in enumerate(result.families):
             where = f"{f.start_addr:#x}" if f.start_addr is not None else "?"
             cells = [
-                str(f.copies),
-                str(f.size),
-                f"{f.identity:.0%}",
-                f"{f.outlinable}/{f.copies}",
-                "-" if f.pattern is None else f"{f.found} ({f.covered}/{f.copies} copies)",
-                where,
+                (str(f.copies), f.copies),
+                (str(f.size), f.size),
+                (f"{f.identity:.0%}", f.identity),
+                (f"{f.outlinable}/{f.copies}", f.outlinable),
+                ("-", -1) if f.pattern is None else (f"{f.found} ({f.covered}/{f.copies} copies)", f.found),
+                (where, f.start_addr if f.start_addr is not None else -1),
             ]
-            for j, text in enumerate(cells):
-                item = QTableWidgetItem(text)
+            for j, (text, key) in enumerate(cells):
+                item = _SortableItem(text, key)
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                if j == 0:
+                    item.setData(Qt.ItemDataRole.UserRole, i)
                 table.setItem(i, j, item)
+        table.setSortingEnabled(True)
         self._discover_status.setText(
             f"{len(result.families)} famil{'y' if len(result.families) == 1 else 'ies'} in {result.func_name} "
             f"({result.tokens} statements, {result.seconds:.1f}s)"
@@ -667,6 +694,16 @@ class FuzzyPatternView(InstanceView):
         layout.addWidget(splitter)
         self.setLayout(layout)
 
+    def _on_family_open(self, row: int) -> None:
+        index = self.family_at(row)
+        if index is not None:
+            self.open_family(index)
+
+    def _on_family_edit(self, row: int) -> None:
+        index = self.family_at(row)
+        if index is not None:
+            self.load_family(index)
+
     def _init_discover_tab(self) -> QWidget:
         self._min_size = QSpinBox()
         self._min_size.setRange(2, 256)
@@ -697,11 +734,11 @@ class FuzzyPatternView(InstanceView):
         self._families_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self._families_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._families_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self._families_table.cellClicked.connect(lambda row, _col: self.jump_to_family(row))
-        self._families_table.cellDoubleClicked.connect(lambda row, _col: self.load_family(row))
+        self._families_table.setSortingEnabled(True)
+        self._families_table.cellDoubleClicked.connect(lambda row, _col: self._on_family_open(row))
         edit_btn = QPushButton("Edit pattern")
         edit_btn.setToolTip("Load the pattern lifted from the selected family into the editor")
-        edit_btn.clicked.connect(lambda: self.load_family(self._families_table.currentRow()))
+        edit_btn.clicked.connect(lambda: self._on_family_edit(self._families_table.currentRow()))
         family_buttons = QHBoxLayout()
         family_buttons.addWidget(edit_btn)
         family_buttons.addStretch()

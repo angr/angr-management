@@ -338,12 +338,30 @@ class TestFuzzyPatternView(AngrManagementTestCase):
                 and isinstance(stmts[2], PReturn)
             )
 
-        row = next(i for i, f in enumerate(view.families) if is_error_exit(f))
-        family = view.families[row]
+        index = next(i for i, f in enumerate(view.families) if is_error_exit(f))
+        family = view.families[index]
         # discovery drops copies that sit close together; the lifted pattern does not
         assert family.found >= 8 and family.covered == family.copies
 
-        assert view.load_family(row)
+        # sorting moves rows; each still knows its family, and numbers sort as numbers
+        table = view._families_table
+        table.sortItems(4, Qt.SortOrder.DescendingOrder)
+        found_order = [view.families[view.family_at(r)].found for r in range(table.rowCount())]
+        assert found_order == sorted(found_order, reverse=True)
+        row = next(r for r in range(table.rowCount()) if view.family_at(r) == index)
+        assert table.item(row, 0).text() == str(family.copies)
+
+        # a double click opens the family's first copy in the pseudocode view, not the disassembly
+        other = next(f for f in self.main.workspace.main_instance.kb.functions.values() if f.name == "main")
+        self.main.workspace.decompile_function(other)
+        self.main.workspace.job_manager.join_all_jobs()
+        assert code_view.function.am_obj is other
+        table.cellDoubleClicked.emit(row, 1)
+        self.main.workspace.job_manager.join_all_jobs()
+        assert code_view.function.am_obj is func
+        assert self.main.workspace.view_manager.current_tab is code_view
+
+        assert view.load_family(index)
         assert view.editor is not None and view.origin_func == func.addr
         assert view._tabs.currentWidget() is view._pattern_tab
         view.apply()
