@@ -159,6 +159,57 @@ class TestPatternView(AngrManagementTestCase):
         view.set_leaf_mode(path, "wildcard")
         assert isinstance(view.editor.node_at(path), PAnyStmt)
 
+    @staticmethod
+    def _property_index(view, key):
+        """The value cell of the property panel item ``key`` names, as the panel's model has it."""
+        model = view._model
+        for gi, group in enumerate(model.rootItem.children):
+            for ci, child in enumerate(group.children):
+                if view._item_keys.get(id(child)) == key:
+                    return model.index(ci, 1, model.index(gi, 0)), child
+        raise AssertionError(f"no property {key}")
+
+    def test_wildcards_can_be_turned_back_from_the_property_panel(self):
+        _, code_view = self._decompile("1after909", "doit")
+        self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
+        view = code_view.textedit.create_pattern(call_name="p")
+        assert view is not None and view.editor is not None
+
+        # an expression: check, then uncheck, through the panel's model
+        path = ("stmts", 1, "call", "args", 0)
+        before = view.editor.node_at(path)
+        view.select_node(path)
+        index, _ = self._property_index(view, ("wildcard", path))
+        view._model.setData(index, Qt.CheckState.Checked, Qt.ItemDataRole.CheckStateRole)
+        assert isinstance(view.editor.node_at(path), PAny)
+        index, item = self._property_index(view, ("wildcard", path))
+        assert item.value is True
+        view._model.setData(index, Qt.CheckState.Unchecked, Qt.ItemDataRole.CheckStateRole)
+        assert view.editor.node_at(path) == before, "unchecking puts the expression back"
+        _, item = self._property_index(view, ("wildcard", path))
+        assert item.value is False
+
+        # a statement: wildcard mode and back
+        stmt = ("stmts", 1)
+        shape = view.editor.node_at(stmt)
+        view.select_node(stmt)
+        index, _ = self._property_index(view, ("leaf_mode", stmt))
+        view._model.setData(index, "wildcard", Qt.ItemDataRole.EditRole)
+        assert isinstance(view.editor.node_at(stmt), PAnyStmt)
+        index, _ = self._property_index(view, ("leaf_mode", stmt))
+        view._model.setData(index, "required", Qt.ItemDataRole.EditRole)
+        assert view.editor.node_at(stmt) == shape
+
+        # the string the generator left open was never anything else: the box is locked
+        string_arg = ("stmts", 0, "call", "args", 0)
+        assert isinstance(view.editor.node_at(string_arg), PAny)
+        view.select_node(string_arg)
+        index, item = self._property_index(view, ("wildcard", string_arg))
+        assert item.readonly and "Lift the pattern again" in item.description
+        assert not view._model.flags(index) & Qt.ItemFlag.ItemIsUserCheckable
+        assert view._model.setData(index, Qt.CheckState.Unchecked, Qt.ItemDataRole.CheckStateRole) is False
+        assert isinstance(view.editor.node_at(string_arg), PAny)
+
     def test_clicks_on_the_canvas_select_and_toggle(self):
         """Through Qt's own event delivery: a release only reaches an item that took the press."""
         func, code_view = self._decompile_main()

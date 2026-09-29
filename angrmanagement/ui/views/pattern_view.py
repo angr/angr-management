@@ -67,6 +67,11 @@ if TYPE_CHECKING:
 
 _l = logging.getLogger(__name__)
 
+_NO_EARLIER_FORM = (
+    "This wildcard has been one since the pattern was lifted, so there is nothing to put back. "
+    "Lift the pattern again from the pseudocode to pin it."
+)
+
 LEAF_TYPES = (PAssign, PStore, PCallStmt, PCondJump, PReturn, PAnyStmt)
 
 
@@ -789,14 +794,38 @@ class PatternView(InstanceView):
         group = GroupPropertyItem("Selected node", description="Constraints of the selected node.")
         if isinstance(node, LEAF_TYPES):
             mode = PatternEditor.leaf_mode(node)
-            group.addChild(self._item(ComboPropertyItem("Mode", mode, list(LEAF_MODES)), ("leaf_mode", path)))
+            # a statement that has always been a wildcard has no shape to go back to
+            stuck = isinstance(node, PAnyStmt) and self.editor.restorable(path) is None
+            group.addChild(
+                self._item(
+                    ComboPropertyItem(
+                        "Mode",
+                        mode,
+                        list(LEAF_MODES),
+                        description=_NO_EARLIER_FORM if stuck else "Whether an occurrence must contain this statement.",
+                        readonly=stuck,
+                    ),
+                    ("leaf_mode", path),
+                )
+            )
             group.addChild(self._item(FloatPropertyItem("Weight", node.weight), ("weight", path)))
             if isinstance(node, PStore):
                 group.addChild(self._item(IntPropertyItem("Size (0 = any)", node.size or 0), ("size", path)))
             return group
         if not isinstance(node, PatternExpr):
             return None
-        group.addChild(self._item(BoolPropertyItem("Wildcard", isinstance(node, PAny)), ("wildcard", path)))
+        stuck = isinstance(node, PAny) and self.editor.restorable(path) is None
+        group.addChild(
+            self._item(
+                BoolPropertyItem(
+                    "Wildcard",
+                    isinstance(node, PAny),
+                    description=_NO_EARLIER_FORM if stuck else "Match any expression here.",
+                    readonly=stuck,
+                ),
+                ("wildcard", path),
+            )
+        )
         if isinstance(node, PConst):
             value = "" if node.value is None else hex(node.value)
             group.addChild(self._item(TextPropertyItem("Value (blank = any)", value), ("const_value", path)))
@@ -823,7 +852,7 @@ class PatternView(InstanceView):
             self._apply_property(what, path, value)
         except (TypeError, ValueError, KeyError) as ex:
             self._set_status(f"not applied: {ex}")
-            return
+        # either way, show the pattern as it is, not the value that was typed
         self._rebuild()
 
     def _apply_property(self, what: str, path: Any, value: Any) -> None:
@@ -854,6 +883,8 @@ class PatternView(InstanceView):
         elif what == "wildcard":
             if value:
                 ed.set_expr_wildcard(path)
+            elif not ed.restore_node(path):
+                raise ValueError(_NO_EARLIER_FORM)
         elif what == "const_value":
             # a value replaces a symbol: the two are alternative ways to pin the constant
             text = str(value).strip()
