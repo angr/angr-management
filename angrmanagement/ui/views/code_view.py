@@ -570,6 +570,11 @@ class CodeView(FunctionView):
         if self._pattern_library is not None:
             self._pattern_library.reload()
 
+    def _on_pattern_toggled(self, _stored) -> None:
+        """A pattern turned on or off from this view: show its effect on this function now."""
+        if not self._function.am_none:
+            self.decompile(reset_cache=True)
+
     def _on_codegen_for_patterns(self, **_) -> None:
         # the outliner pass's numbers change with every decompilation, and the text the
         # pattern highlight points into has been regenerated
@@ -891,6 +896,7 @@ class CodeView(FunctionView):
             self.instance,
             on_edit=self.workspace.edit_pattern,
             current_func=lambda: None if self._function.am_none else self._function.am_obj.addr,
+            on_toggled=self._on_pattern_toggled,
         )
         self._patterns_dock = QDockWidget("Patterns", window)
         self._patterns_dock.setWidget(self._pattern_library)

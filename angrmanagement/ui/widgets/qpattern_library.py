@@ -44,6 +44,7 @@ class QPatternLibrary(QWidget):
         on_edit: Callable[[StoredPattern], None],
         current_func: Callable[[], int | None] | None = None,
         on_status: Callable[[str], None] | None = None,
+        on_toggled: Callable[[StoredPattern], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -52,7 +53,10 @@ class QPatternLibrary(QWidget):
         self._on_edit = on_edit
         self._current_func = current_func
         self._on_status = on_status
+        self._on_toggled = on_toggled
         self.rows: list[StoredPattern] = []
+        # set while the table is being filled, so its own writes are not taken for clicks
+        self._filling = False
 
         self.columns = self.STATS_COLUMNS if current_func is not None else self.COLUMNS
         columns = self.columns
@@ -62,6 +66,7 @@ class QPatternLibrary(QWidget):
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.cellDoubleClicked.connect(lambda _row, _col: self._on_edit_clicked())
+        self.table.itemChanged.connect(self._on_item_changed)
 
         buttons = QHBoxLayout()
         for label, handler in (
@@ -88,6 +93,7 @@ class QPatternLibrary(QWidget):
         kb = self.instance.kb
         self.rows = [] if kb is None else sorted(kb.patterns, key=lambda p: p.name)
         func_addr = self._current_func() if self._current_func is not None else None
+        self._filling = True
         self.table.setRowCount(len(self.rows))
         for i, stored in enumerate(self.rows):
             values = {
@@ -101,11 +107,22 @@ class QPatternLibrary(QWidget):
                 stats = self.instance.kb.patterns.stats(func_addr, stored.name) if func_addr is not None else None
                 values["Matches"] = "-" if stats is None else str(stats.matches)
                 values["Outlined"] = "-" if stats is None else str(stats.outlined)
-            cells = [values[c] for c in self.columns]
-            for j, text in enumerate(cells):
-                item = QTableWidgetItem(text)
+            for j, column in enumerate(self.columns):
+                item = QTableWidgetItem(values[column])
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                if column == "Enabled":
+                    item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                    item.setCheckState(Qt.CheckState.Checked if stored.enabled else Qt.CheckState.Unchecked)
                 self.table.setItem(i, j, item)
+        self._filling = False
+
+    def _on_item_changed(self, item: QTableWidgetItem) -> None:
+        if self._filling or not (0 <= item.row() < len(self.rows)):
+            return
+        if self.columns[item.column()] == "Enabled":
+            stored = self.rows[item.row()]
+            if (item.checkState() == Qt.CheckState.Checked) != stored.enabled:
+                self.toggle(stored)
 
     def selection(self) -> StoredPattern | None:
         rows = {index.row() for index in self.table.selectedIndexes()}
@@ -120,9 +137,12 @@ class QPatternLibrary(QWidget):
 
     def toggle(self, stored: StoredPattern) -> None:
         self.instance.kb.patterns.set_enabled(stored.name, not stored.enabled)
-        self._changed(
-            f"{stored.name} is {'on' if stored.enabled else 'off'}; it applies the next time a function is decompiled"
-        )
+        state = "on" if stored.enabled else "off"
+        if self._on_toggled is None:
+            self._changed(f"{stored.name} is {state}; it applies the next time a function is decompiled")
+            return
+        self._changed(f"{stored.name} is {state}")
+        self._on_toggled(stored)
 
     def delete(self, stored: StoredPattern) -> None:
         self.instance.kb.patterns.remove(stored.name)

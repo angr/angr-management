@@ -489,6 +489,33 @@ class TestPatternView(AngrManagementTestCase):
         assert view.editor is not None and view.editor.pattern.name == "patternerrorsout"
         assert self.main.workspace.view_manager.current_tab is view
 
+    def _apply_error_exit_pattern(self):
+        """doit decompiled with the error-exit pattern applied; returns (func, code view, pattern view)."""
+        func, code_view = self._decompile("1after909", "doit")
+        self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
+        view = code_view.textedit.create_pattern(call_name="PatternErrorsOut")
+        assert view is not None
+        view.apply()
+        self.main.workspace.job_manager.join_all_jobs()
+        assert code_view.codegen.am_obj.text.count("PatternErrorsOut(") == 8
+        return func, code_view, view
+
+    def test_dock_checkbox_turns_a_pattern_off_and_on_in_place(self):
+        _, code_view, _ = self._apply_error_exit_pattern()
+        table = code_view.patterns_table
+        enabled = table.item(0, 1)
+        assert enabled.checkState() == Qt.CheckState.Checked
+
+        enabled.setCheckState(Qt.CheckState.Unchecked)  # a click on the box
+        self.main.workspace.job_manager.join_all_jobs()
+        assert self.main.workspace.main_instance.kb.patterns.get("patternerrorsout").enabled is False
+        assert "PatternErrorsOut(" not in code_view.codegen.am_obj.text, "decompiled again without it"
+        assert table.item(0, 1).checkState() == Qt.CheckState.Unchecked
+
+        table.item(0, 1).setCheckState(Qt.CheckState.Checked)
+        self.main.workspace.job_manager.join_all_jobs()
+        assert code_view.codegen.am_obj.text.count("PatternErrorsOut(") == 8
+
     def test_library_lists_toggles_exports_and_imports(self):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
