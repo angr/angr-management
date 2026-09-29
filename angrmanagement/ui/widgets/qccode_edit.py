@@ -191,6 +191,10 @@ class QCCodeEdit(api.CodeEdit):
         for action in self.llm_actions:
             mnu.addAction(action)
 
+        if self._code_view is not None and self._code_view.has_pattern_highlight:
+            mnu.addSeparator()
+            mnu.addAction(self.action_clear_pattern_highlights)
+
         return mnu
 
     @property
@@ -866,6 +870,8 @@ class QCCodeEdit(api.CodeEdit):
         self.action_comment.setShortcut(QKeySequence(";"))
         self.action_pattern = QAction("Create pattern from selection...", self)
         self.action_pattern.triggered.connect(lambda: self.create_pattern())
+        self.action_clear_pattern_highlights = QAction("Clear pattern highlights", self)
+        self.action_clear_pattern_highlights.triggered.connect(lambda: self._code_view.clear_pattern_highlight())
 
         expr_actions = [
             self.action_to_ite_expr,

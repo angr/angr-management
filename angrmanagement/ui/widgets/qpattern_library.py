@@ -89,6 +89,7 @@ class QPatternLibrary(QWidget):
             btn.clicked.connect(handler)
             buttons.addWidget(btn)
         buttons.addStretch()
+        self._buttons = buttons
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -96,6 +97,16 @@ class QPatternLibrary(QWidget):
         layout.addLayout(buttons)
         self.setLayout(layout)
         self.reload()
+
+    def add_button(self, label: str, handler: Callable[[], object], tooltip: str = "") -> QPushButton:
+        """A button of the owner's in the row, after the library's own."""
+        btn = QPushButton(label)
+        btn.clicked.connect(handler)
+        if tooltip:
+            btn.setToolTip(tooltip)
+        # before the stretch, so it sits with the others
+        self._buttons.insertWidget(self._buttons.count() - 1, btn)
+        return btn
 
     def reload(self) -> None:
         # a view can exist before any project is loaded

@@ -49,6 +49,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from angr.knowledge_plugins.variables.variable_manager import VariableManagerInternal
+    from PySide6.QtWidgets import QPushButton
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
@@ -133,6 +134,7 @@ class CodeView(FunctionView):
         self._view_selector: QComboBox | None = None
         self._summary_textedit: QTextEdit | None = None
         self._pattern_library: QPatternLibrary | None = None
+        self._clear_highlights_btn: QPushButton | None = None
         self._patterns_dock: QDockWidget | None = None
         self._summary_dock: QDockWidget | None = None
 
@@ -343,6 +345,11 @@ class CodeView(FunctionView):
     def is_pattern_highlighted(self, name: str) -> bool:
         return name in self._highlighted_patterns
 
+    @property
+    def has_pattern_highlight(self) -> bool:
+        """Whether anything is highlighted: a Discover family or a pattern's calls."""
+        return bool(self._highlight_layers or self._highlighted_patterns)
+
     def clear_pattern_highlight(self) -> bool:
         """Drop every pattern highlight; returns whether there was any."""
         had = bool(self._highlight_layers or self._highlighted_patterns)
@@ -350,9 +357,14 @@ class CodeView(FunctionView):
         self._highlighted_patterns.clear()
         self._pattern_selections = []
         self._apply_extra_selections()
+        self._update_clear_highlights()
         if had:
             self.reload_patterns()
         return had
+
+    def _update_clear_highlights(self) -> None:
+        if self._clear_highlights_btn is not None:
+            self._clear_highlights_btn.setEnabled(self.has_pattern_highlight)
 
     @property
     def pattern_highlighted_lines(self) -> list[int]:
@@ -400,6 +412,7 @@ class CodeView(FunctionView):
                 sel.format.setProperty(QTextFormat.Property.FullWidthSelection, True)
                 self._pattern_selections.append(sel)
         self._apply_extra_selections()
+        self._update_clear_highlights()
 
     def refresh_bookmarks(self) -> None:
         self._apply_extra_selections()
@@ -938,6 +951,10 @@ class CodeView(FunctionView):
         )
         self._patterns_dock = QDockWidget("Patterns", window)
         self._patterns_dock.setWidget(self._pattern_library)
+        self._clear_highlights_btn = self._pattern_library.add_button(
+            "Clear highlights", self.clear_pattern_highlight, "Remove every pattern highlight from the pseudocode (Esc)"
+        )
+        self._clear_highlights_btn.setEnabled(False)
         # counting what the pass did not search for waits until someone looks
         self._patterns_dock.visibilityChanged.connect(lambda visible: visible and self.reload_patterns())
         window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self._patterns_dock)

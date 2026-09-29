@@ -566,6 +566,36 @@ class TestPatternView(AngrManagementTestCase):
         assert code_view._pattern_library._counting is None
         assert table.item(0, 3).text() == "-"
 
+    def test_pattern_highlights_can_be_cleared_from_the_menu_or_the_dock(self):
+        func, code_view, _ = self._apply_error_exit_pattern()
+        table = code_view.patterns_table
+        button = code_view._clear_highlights_btn
+        edit = code_view.textedit
+
+        def menu_texts():
+            menu = edit.get_context_menu()  # kept alive: its actions die with it
+            return [a.text() for a in menu.actions()]
+
+        assert not button.isEnabled() and "Clear pattern highlights" not in menu_texts()
+
+        # the right-click menu clears a pattern's highlight, box included
+        table.item(0, 2).setCheckState(Qt.CheckState.Checked)
+        assert code_view.pattern_highlighted_lines and button.isEnabled()
+        assert "Clear pattern highlights" in menu_texts()
+        edit.action_clear_pattern_highlights.trigger()
+        assert code_view.pattern_highlighted_lines == []
+        assert table.item(0, 2).checkState() == Qt.CheckState.Unchecked
+        assert not button.isEnabled() and "Clear pattern highlights" not in menu_texts()
+
+        # the dock's button clears a Discover family's highlight and a pattern's together
+        stats = code_view.instance.kb.patterns.stats(func.addr, "patternerrorsout")
+        code_view.highlight_pattern(func.addr, [frozenset(stats.call_addrs[:1])])
+        table.item(0, 2).setCheckState(Qt.CheckState.Checked)
+        assert button.isEnabled()
+        button.click()
+        assert code_view.pattern_highlighted_lines == [] and not code_view.has_pattern_highlight
+        assert not button.isEnabled()
+
     def test_library_lists_toggles_exports_and_imports(self):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
