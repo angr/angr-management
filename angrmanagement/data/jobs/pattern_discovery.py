@@ -7,8 +7,11 @@ from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.known_patterns.edit import PatternEditor
 from angr.analyses.decompiler.known_patterns.generator import PatternGenerationError, PatternGenerator, stmt_ins_addrs
-from angr.analyses.patterns import AlignParams, FuzzyPatternFinder
+from angr.analyses.patterns import AlignParams, Checkpoint, FuzzyPatternFinder
 from angr.analyses.patterns.search import find_template_occurrences
+
+from angrmanagement.data.jobs.job import JobState
+from angrmanagement.logic.jobmanager import JobCancelled
 
 from .job import InstanceJob
 
@@ -87,12 +90,17 @@ class PatternDiscoveryJob(InstanceJob):
         min_size: int = 4,
         min_identity: float = 0.6,
         on_finish: Callable[[DiscoveryResult], None] | None = None,
-        blocking: bool = False,
+        blocking: bool = True,
     ) -> None:
+        # blocking by default: the main window shows a modal progress dialog with Cancel
         super().__init__(f"Discovering patterns in {func.name}", instance, on_finish=on_finish, blocking=blocking)
         self.func = func
         self.min_size = min_size
         self.min_identity = min_identity
+
+    def _check_cancelled(self) -> None:
+        if self.state == JobState.CANCELLED:
+            raise JobCancelled
 
     def run(self, ctx: JobContext) -> DiscoveryResult:
         func = self.func
@@ -103,9 +111,17 @@ class PatternDiscoveryJob(InstanceJob):
         if graph is None or dec.codegen is None:
             return DiscoveryResult(func.addr, func.name, 0, time.monotonic() - t0)
 
-        ctx.set_progress(20.0, "aligning")
+        # the alignment and every search yield to the GUI now and then, as the CFG does, and
+        # notice a Cancel from inside their loops rather than between families only
+        checkpoint = Checkpoint(low_priority=True, callback=self._check_cancelled)
+        ctx.set_progress(20.0, f"aligning {sum(len(b.statements) for b in graph)} statements")
         finder = self.instance.project.analyses[FuzzyPatternFinder].prep()(
-            func, graph, params=discovery_params(self.min_size, self.min_identity), disjoint=False
+            func,
+            graph,
+            params=discovery_params(self.min_size, self.min_identity),
+            disjoint=False,
+            low_priority=True,
+            checkpoint=checkpoint,
         )
         stream = finder.stream
         entry = finder.entry
@@ -115,7 +131,7 @@ class PatternDiscoveryJob(InstanceJob):
 
         patterns = sorted(finder.all_patterns, key=lambda p: -len(p.occurrences) * p.size * p.identity)
         for k, family in enumerate(patterns):
-            ctx.set_progress(20.0 + 80.0 * k / max(1, len(patterns)), f"lifting family {k + 1}")
+            ctx.set_progress(20.0 + 80.0 * k / max(1, len(patterns)), f"family {k + 1} of {len(patterns)}")
             first = min(family.occurrences, key=lambda o: o.interval.start).interval
             start, end = stream.addr_range(first.start, first.end)
             row = DiscoveredFamily(
@@ -149,7 +165,9 @@ class PatternDiscoveryJob(InstanceJob):
             editor.cut_depth()
             row.pattern = editor.pattern
             try:
-                search_stream, matches = find_template_occurrences(row.pattern, graph, entry, kb=self.instance.kb)
+                search_stream, matches = find_template_occurrences(
+                    row.pattern, graph, entry, kb=self.instance.kb, checkpoint=checkpoint
+                )
             except Exception:  # pylint:disable=broad-except
                 _l.debug("searching for family %d failed", k, exc_info=True)
                 continue

@@ -596,6 +596,57 @@ class TestPatternView(AngrManagementTestCase):
         assert code_view.pattern_highlighted_lines == [] and not code_view.has_pattern_highlight
         assert not button.isEnabled()
 
+    def test_discovery_runs_blocking_with_the_progress_dialog(self):
+        from angrmanagement.data.jobs import PatternDiscoveryJob  # pylint:disable=import-outside-toplevel
+
+        func, _ = self._decompile("1after909", "doit")
+        started, labels = [], []
+        self.main.workspace.job_manager.job_starting.connect(started.append)
+        dialog = self.main._progress_dialog
+        orig = dialog.setLabelText
+        dialog.setLabelText = lambda text: labels.append(text) or orig(text)
+        try:
+            self._discover_entry().trigger()
+            self.main.workspace.job_manager.join_all_jobs()
+        finally:
+            dialog.setLabelText = orig
+
+        jobs = [j for j in started if isinstance(j, PatternDiscoveryJob)]
+        assert len(jobs) == 1 and jobs[0].blocking, "a modal progress dialog shows the discovery"
+        assert any(t.startswith("Discovering patterns in doit") for t in labels), labels
+        view = self.main.workspace.view_manager.first_view_in_category("pattern")
+        assert view.discovered_func == func.addr and view.families
+
+    def test_cancel_stops_discovery_inside_the_alignment(self):
+        from angr.analyses.patterns import Checkpoint  # pylint:disable=import-outside-toplevel
+
+        from angrmanagement.data.jobs import pattern_discovery  # pylint:disable=import-outside-toplevel
+
+        _, _ = self._decompile("1after909", "doit")
+        manager = self.main.workspace.job_manager
+        fired = []
+
+        def eager_checkpoint(low_priority=True, callback=None, **_):
+            def cancel_then_check():
+                # what the dialog's Cancel does, pressed while the alignment runs
+                fired.append(1)
+                manager.interrupt_current_job()
+                callback()
+
+            return Checkpoint(low_priority, cancel_then_check, freq=1, interval=0.0)
+
+        orig = pattern_discovery.Checkpoint
+        pattern_discovery.Checkpoint = eager_checkpoint
+        try:
+            self._discover_entry().trigger()
+            manager.join_all_jobs()
+        finally:
+            pattern_discovery.Checkpoint = orig
+
+        view = self.main.workspace.view_manager.first_view_in_category("pattern")
+        assert len(fired) == 1, "stopped at the first checkpoint, inside the alignment"
+        assert view.discovered_func is None and view._families_table.rowCount() == 0
+
     def test_library_lists_toggles_exports_and_imports(self):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
