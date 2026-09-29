@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 NAME_TO_QTAWESOME_NAME = {
     "about": "fa5s.info-circle",
     "bookmarks-view": "mdi.bookmark-multiple",
-    "fuzzy_pattern-view": "mdi.puzzle-edit",
+    "pattern-view": "mdi.puzzle-edit",
     "command-palette": "ph.squares-four-light",
     "comments-view": "mdi.comment-text-multiple",
     "console-view": "mdi.console-line",

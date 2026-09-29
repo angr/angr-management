@@ -24,8 +24,8 @@ if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
 
 
-class QFuzzyPatternLibrary(QWidget):
-    """The project's fuzzy patterns: a table with edit, on/off, delete, export and import.
+class QPatternLibrary(QWidget):
+    """The project's patterns: a table with edit, on/off, delete, export and import.
 
     With ``current_func``, two more columns say what the outliner pass saw of each
     pattern the last time that function was decompiled: verified matches, and how
@@ -141,7 +141,7 @@ class QFuzzyPatternLibrary(QWidget):
         return stored
 
     def _changed(self, message: str) -> None:
-        self.workspace.on_fuzzy_patterns_changed()
+        self.workspace.on_patterns_changed()
         self._status(message)
 
     def _status(self, message: str) -> None:

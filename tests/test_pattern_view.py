@@ -18,8 +18,8 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QMessageBox
 
 from angrmanagement.ui.views import CodeView, DisassemblyView
-from angrmanagement.ui.views.fuzzy_pattern_view import FuzzyPatternView
-from angrmanagement.ui.widgets.qfuzzy_pattern_graph import QFuzzyPatternNode
+from angrmanagement.ui.views.pattern_view import PatternView
+from angrmanagement.ui.widgets.qpattern_graph import QPatternNode
 
 
 def _all_nodes(editor, path=()):
@@ -30,7 +30,7 @@ def _all_nodes(editor, path=()):
     return out
 
 
-class TestFuzzyPatternView(AngrManagementTestCase):
+class TestPatternView(AngrManagementTestCase):
     def _decompile_main(self):
         main = self.main
         binpath = os.path.join(test_location, "x86_64", "fauxware")
@@ -108,8 +108,8 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
 
-        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
-        assert isinstance(view, FuzzyPatternView)
+        view = code_view.textedit.create_pattern(call_name="my_idiom")
+        assert isinstance(view, PatternView)
         assert view.editor is not None
         assert view.editor.pattern.call_name == "my_idiom"
         assert view.origin_func == func.addr
@@ -120,12 +120,12 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         assert graph is not None
         assert graph.number_of_nodes() > len(leaves), "a fresh pattern shows its expressions too"
         assert view.collapsed == set()
-        assert all(isinstance(n, QFuzzyPatternNode) for n in graph.nodes())
+        assert all(isinstance(n, QPatternNode) for n in graph.nodes())
 
     def test_double_click_expands_and_collapses_without_editing(self):
         _, code_view = self._decompile("1after909", "doit")
         self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
-        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        view = code_view.textedit.create_pattern(call_name="my_idiom")
         assert view is not None and view.editor is not None
         path, _ = next((p, node) for p, node in view.editor.leaves() if not isinstance(node, PAnyStmt))
         full = view._graph_widget.graph.number_of_nodes()
@@ -162,7 +162,7 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         """Through Qt's own event delivery: a release only reaches an item that took the press."""
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
-        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        view = code_view.textedit.create_pattern(call_name="my_idiom")
         assert view is not None and view.editor is not None
         self.main.workspace.raise_view(view)
         path, _ = next((p, node) for p, node in view.editor.leaves() if not isinstance(node, PAnyStmt))
@@ -183,7 +183,7 @@ class TestFuzzyPatternView(AngrManagementTestCase):
     def test_save_puts_the_pattern_in_the_knowledge_base(self):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
-        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        view = code_view.textedit.create_pattern(call_name="my_idiom")
         assert view is not None
         view.min_similarity = 0.7
 
@@ -203,7 +203,7 @@ class TestFuzzyPatternView(AngrManagementTestCase):
     def test_search_finds_the_selection_in_its_own_function(self):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
-        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        view = code_view.textedit.create_pattern(call_name="my_idiom")
         assert view is not None
 
         view.search_current_function()
@@ -225,7 +225,7 @@ class TestFuzzyPatternView(AngrManagementTestCase):
     def test_apply_outlines_the_selection_in_the_pseudocode(self):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
-        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        view = code_view.textedit.create_pattern(call_name="my_idiom")
         assert view is not None
         assert "my_idiom(" not in code_view.codegen.am_obj.text
 
@@ -241,7 +241,7 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         func, code_view = self._decompile("1after909", "doit")
         self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
 
-        view = code_view.textedit.create_fuzzy_pattern(call_name="PatternErrorsOut")
+        view = code_view.textedit.create_pattern(call_name="PatternErrorsOut")
         assert view is not None and view.editor is not None
         pattern = view.editor.pattern
         assert pattern.call_name == "PatternErrorsOut"
@@ -289,7 +289,7 @@ class TestFuzzyPatternView(AngrManagementTestCase):
     def _discover_entry(self):
         """The Analyze menu's discovery item, triggered the way a click would."""
         entries = [e for e in self.main._analyze_menu.entries if getattr(e, "caption", None) == "Discover &Patterns..."]
-        assert len(entries) == 1, "the Analyze menu offers fuzzy pattern discovery"
+        assert len(entries) == 1, "the Analyze menu offers pattern discovery"
         return entries[0]._qaction
 
     def test_discovery_without_a_decompiled_function_warns_and_bails(self):
@@ -309,17 +309,17 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         main.workspace.job_manager.join_all_jobs()
 
         assert len(warnings) == 1 and "No function is currently decompiled" in warnings[0][2]
-        assert main.workspace.view_manager.first_view_in_category("fuzzy_pattern") is None, "nothing else happens"
+        assert main.workspace.view_manager.first_view_in_category("pattern") is None, "nothing else happens"
 
     def test_discovery_from_the_menu_finds_the_error_exit_idiom(self):
-        """Analyze > Discover Fuzzy Patterns on doit: the error-exit family's lifted pattern finds
+        """Analyze > Discover Patterns on doit: the error-exit family's lifted pattern finds
         every error exit, and applying it outlines them."""
         func, code_view = self._decompile("1after909", "doit")
         self._discover_entry().trigger()
         self.main.workspace.job_manager.join_all_jobs()
 
-        view = self.main.workspace.view_manager.first_view_in_category("fuzzy_pattern")
-        assert isinstance(view, FuzzyPatternView)
+        view = self.main.workspace.view_manager.first_view_in_category("pattern")
+        assert isinstance(view, PatternView)
         assert view.discovered_func == func.addr and view.families
         assert view._families_table.rowCount() == len(view.families)
 
@@ -370,17 +370,17 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         assert "Empty title" in calls and "Cannot open document." in calls, calls
 
     def test_pseudocode_dock_lists_patterns_with_their_matches(self):
-        """The pseudocode view's Fuzzy Patterns dock shares the Pattern tab's library, and adds what
+        """The pseudocode view's Patterns dock shares the Pattern tab's library, and adds what
         the outliner pass did with each pattern in the function on screen."""
         func, code_view = self._decompile("1after909", "doit")
-        table = code_view.fuzzy_patterns_table
+        table = code_view.patterns_table
         assert table is not None and table.rowCount() == 0
         headers = [table.horizontalHeaderItem(j).text() for j in range(table.columnCount())]
         # the numbers come right after the name, so a narrow dock shows them without scrolling
         assert headers[:4] == ["Pattern", "Enabled", "Matches", "Outlined"]
 
         self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
-        view = code_view.textedit.create_fuzzy_pattern(call_name="PatternErrorsOut")
+        view = code_view.textedit.create_pattern(call_name="PatternErrorsOut")
         assert view is not None
         view.save()
         # saved but not yet applied here: listed, with no numbers for this function
@@ -393,19 +393,19 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         assert outlined == 8 and matches >= outlined
 
         # a change in either place shows in both
-        code_view._fuzzy_library.toggle(self.main.workspace.main_instance.kb.fuzzy_patterns.get("patternerrorsout"))
+        code_view._pattern_library.toggle(self.main.workspace.main_instance.kb.fuzzy_patterns.get("patternerrorsout"))
         assert table.item(0, 1).text() == "off" and view._library_table.item(0, 2).text() == "off"
 
-        # Edit opens the pattern in the fuzzy pattern view
+        # Edit opens the pattern in the pattern view
         table.selectRow(0)
-        code_view._fuzzy_library._on_edit_clicked()
+        code_view._pattern_library._on_edit_clicked()
         assert view.editor is not None and view.editor.pattern.name == "patternerrorsout"
         assert self.main.workspace.view_manager.current_tab is view
 
     def test_library_lists_toggles_exports_and_imports(self):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
-        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        view = code_view.textedit.create_pattern(call_name="my_idiom")
         assert view is not None
         kb = self.main.workspace.main_instance.kb
 
@@ -436,7 +436,7 @@ class TestFuzzyPatternView(AngrManagementTestCase):
     def test_loosen_constants_from_the_view(self):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
-        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        view = code_view.textedit.create_pattern(call_name="my_idiom")
         assert view is not None and view.editor is not None
         pinned = [p for p, n in _all_nodes(view.editor) if isinstance(n, PConst) and n.value is not None]
         assert view.loosen_constants() == len(pinned)
@@ -447,7 +447,7 @@ class TestFuzzyPatternView(AngrManagementTestCase):
     def test_more_loosening_actions_and_the_strictness_setting(self):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
-        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        view = code_view.textedit.create_pattern(call_name="my_idiom")
         assert view is not None and view.editor is not None
         view.cut_depth()
         view.loosen_interior_captures()
@@ -470,7 +470,7 @@ class TestFuzzyPatternView(AngrManagementTestCase):
     def test_search_all_functions_runs(self):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
-        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        view = code_view.textedit.create_pattern(call_name="my_idiom")
         assert view is not None
 
         view.search_all_functions()
@@ -481,7 +481,7 @@ class TestFuzzyPatternView(AngrManagementTestCase):
     def test_a_suggested_subrun_relifts_the_pattern(self):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
-        view = code_view.textedit.create_fuzzy_pattern(call_name="my_idiom")
+        view = code_view.textedit.create_pattern(call_name="my_idiom")
         assert view is not None and view.editor is not None
         view.search_current_function()
         self.main.workspace.job_manager.join_all_jobs()
@@ -505,7 +505,7 @@ class TestFuzzyPatternView(AngrManagementTestCase):
         cursor = code_view.textedit.textCursor()
         cursor.clearSelection()
         code_view.textedit.setTextCursor(cursor)
-        assert code_view.textedit.create_fuzzy_pattern(call_name="x") is None
+        assert code_view.textedit.create_pattern(call_name="x") is None
 
 
 if __name__ == "__main__":

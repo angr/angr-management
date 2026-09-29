@@ -10,12 +10,12 @@ from .data_dep_view import DataDepView
 from .dep_view import DependencyView
 from .disassembly_view import DisassemblyView
 from .functions_view import FunctionsView
-from .fuzzy_pattern_view import FuzzyPatternView
 from .hex_view import HexView
 from .jobs_view import JobsView
 from .log_view import LogView
 from .mcp_history_view import MCPHistoryView
 from .patches_view import PatchesView
+from .pattern_view import PatternView
 from .proximity_view import ProximityView
 from .registers_view import RegistersView
 from .search_view import SearchView
@@ -31,7 +31,7 @@ from .view import BaseView, InstanceView
 
 __all__ = [
     "BookmarksView",
-    "FuzzyPatternView",
+    "PatternView",
     "BreakpointsView",
     "CallExplorerView",
     "CodeView",

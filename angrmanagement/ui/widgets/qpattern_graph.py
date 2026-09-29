@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from angr.analyses.decompiler.known_patterns import PatternNode
     from angr.analyses.decompiler.known_patterns.edit import NodePath
 
-    from angrmanagement.ui.views.fuzzy_pattern_view import FuzzyPatternView
+    from angrmanagement.ui.views.pattern_view import PatternView
     from angrmanagement.utils.edge import Edge
 
 _l = logging.getLogger(__name__)
@@ -36,14 +36,14 @@ _FILL = {
 }
 
 
-class QFuzzyPatternNode(QCachedGraphicsItem):
+class QPatternNode(QCachedGraphicsItem):
     """One pattern node on the canvas: a leaf statement, or an expression node under
     one. Click selects it; double-click expands or collapses its subtree."""
 
     HORIZONTAL_PADDING = 6
     VERTICAL_PADDING = 4
 
-    def __init__(self, view: FuzzyPatternView, path: NodePath, node: PatternNode, kind: str) -> None:
+    def __init__(self, view: PatternView, path: NodePath, node: PatternNode, kind: str) -> None:
         super().__init__()
         self._view = view
         self.path = path
@@ -154,10 +154,10 @@ class QFuzzyPatternNode(QCachedGraphicsItem):
         self.recalculate_size()
 
 
-class QFuzzyPatternArrow(QGraphArrow):
+class QPatternArrow(QGraphArrow):
     """An edge between pattern nodes; highlighted when either end is hovered."""
 
-    def __init__(self, view: FuzzyPatternView, *args, **kwargs) -> None:
+    def __init__(self, view: PatternView, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._view = view
 
@@ -166,19 +166,19 @@ class QFuzzyPatternArrow(QGraphArrow):
         return hovered is not None and (hovered is self.edge.src or hovered is self.edge.dst)
 
 
-class QFuzzyPatternGraph(QZoomableDraggableGraphicsView):
+class QPatternGraph(QZoomableDraggableGraphicsView):
     """The pattern as a graph of nodes, laid out top-down."""
 
     LEFT_PADDING = 1000
     TOP_PADDING = 1000
 
-    def __init__(self, view: FuzzyPatternView, parent=None) -> None:
+    def __init__(self, view: PatternView, parent=None) -> None:
         super().__init__(parent=parent)
         self._view = view
         self._graph: networkx.DiGraph | None = None
-        self.blocks: set[QFuzzyPatternNode] = set()
+        self.blocks: set[QPatternNode] = set()
         self._edges: list[Edge] = []
-        self._arrows: list[QFuzzyPatternArrow] = []
+        self._arrows: list[QPatternArrow] = []
 
     @property
     def graph(self) -> networkx.DiGraph | None:
@@ -219,7 +219,7 @@ class QFuzzyPatternGraph(QZoomableDraggableGraphicsView):
             scene.addItem(node)
             node.setPos(x, y)
         for edge in self._edges:
-            arrow = QFuzzyPatternArrow(self._view, edge, arrow_location="end", arrow_direction="down")
+            arrow = QPatternArrow(self._view, edge, arrow_location="end", arrow_direction="down")
             self._arrows.append(arrow)
             scene.addItem(arrow)
             arrow.setPos(QPointF(*edge.coordinates[0]))

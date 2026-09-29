@@ -24,7 +24,7 @@ _l = logging.getLogger(__name__)
 
 
 @dataclass
-class FuzzyMatchRow:
+class PatternMatchRow:
     """One occurrence of a pattern, as the match table shows it."""
 
     func_addr: int
@@ -45,9 +45,9 @@ class FuzzyMatchRow:
     suggested_coverage: float = 0.0
 
 
-class FuzzyPatternSearchJob(InstanceJob):
+class PatternSearchJob(InstanceJob):
     """
-    Searches functions for occurrences of one fuzzy pattern.
+    Searches functions for occurrences of one pattern.
 
     Each function is decompiled (from the cache when it is there) and its AIL graph
     aligned against the pattern; every hit is reported with its similarity, whether
@@ -59,7 +59,7 @@ class FuzzyPatternSearchJob(InstanceJob):
         instance: Instance,
         pattern: KnownPattern,
         functions: Sequence[Function],
-        on_finish: Callable[[list[FuzzyMatchRow]], None] | None = None,
+        on_finish: Callable[[list[PatternMatchRow]], None] | None = None,
         blocking: bool = False,
     ) -> None:
         super().__init__(f"Searching for {pattern.display_name}", instance, on_finish=on_finish, blocking=blocking)
@@ -85,8 +85,8 @@ class FuzzyPatternSearchJob(InstanceJob):
             func, cfg=self.instance.cfg, optimization_passes=passes, use_cache=False, update_cache=False
         )
 
-    def run(self, ctx: JobContext) -> list[FuzzyMatchRow]:
-        rows: list[FuzzyMatchRow] = []
+    def run(self, ctx: JobContext) -> list[PatternMatchRow]:
+        rows: list[PatternMatchRow] = []
         total = max(1, len(self.functions))
         for i, func in enumerate(self.functions):
             ctx.set_progress(100.0 * i / total, f"searching {func.name}")
@@ -112,7 +112,7 @@ class FuzzyPatternSearchJob(InstanceJob):
                         sub_start, sub_end = stream.addr_range(subrun.interval.start, subrun.interval.end)
                         suggested = (sub_start, sub_end, len(subrun.interval) / max(1, len(match.interval)))
                 rows.append(
-                    FuzzyMatchRow(
+                    PatternMatchRow(
                         func_addr=func.addr,
                         func_name=func.name,
                         start_addr=start,

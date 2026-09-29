@@ -69,7 +69,7 @@ def discovery_params(min_size: int, min_identity: float) -> AlignParams:
     )
 
 
-class FuzzyPatternDiscoveryJob(InstanceJob):
+class PatternDiscoveryJob(InstanceJob):
     """
     Finds families of similar code in one function and lifts a pattern from each.
 

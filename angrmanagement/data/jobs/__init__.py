@@ -13,13 +13,13 @@ from .deobfuscation import (
 )
 from .dependency_analysis import DependencyAnalysisJob
 from .flirt_signature_recognition import FlirtAnalysisConfiguration, FlirtSignatureRecognitionJob
-from .fuzzy_pattern_discovery import DiscoveredFamily, DiscoveryResult, FuzzyPatternDiscoveryJob
-from .fuzzy_pattern_search import FuzzyMatchRow, FuzzyPatternSearchJob
 from .job import Job
 from .llm_preload import LLMPreloadCalleesJob
 from .llm_refine import LLMRefineJob
 from .loading import LoadBinaryJob
 from .overview import OverviewConfiguration
+from .pattern_discovery import DiscoveredFamily, DiscoveryResult, PatternDiscoveryJob
+from .pattern_search import PatternMatchRow, PatternSearchJob
 from .prototype_finding import PrototypeFindingJob
 from .rust_symbol_recovery import RustSymbolRecoveryConfiguration, RustSymbolRecoveryJob
 from .rust_typedb_loader import RustTypeDBLoaderConfiguration, RustTypeDBLoaderJob
@@ -44,9 +44,9 @@ __all__ = [
     "DecompileFunctionJob",
     "DiscoveredFamily",
     "DiscoveryResult",
-    "FuzzyMatchRow",
-    "FuzzyPatternDiscoveryJob",
-    "FuzzyPatternSearchJob",
+    "PatternMatchRow",
+    "PatternDiscoveryJob",
+    "PatternSearchJob",
     "DependencyAnalysisJob",
     "FlirtAnalysisConfiguration",
     "FlirtSignatureRecognitionJob",

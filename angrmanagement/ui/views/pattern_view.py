@@ -37,15 +37,15 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from angrmanagement.data.jobs.fuzzy_pattern_discovery import (
+from angrmanagement.data.jobs.pattern_discovery import (
     DiscoveredFamily,
     DiscoveryResult,
-    FuzzyPatternDiscoveryJob,
+    PatternDiscoveryJob,
 )
-from angrmanagement.data.jobs.fuzzy_pattern_search import FuzzyMatchRow, FuzzyPatternSearchJob
+from angrmanagement.data.jobs.pattern_search import PatternMatchRow, PatternSearchJob
 from angrmanagement.ui.views.view import InstanceView
-from angrmanagement.ui.widgets.qfuzzy_pattern_graph import QFuzzyPatternGraph, QFuzzyPatternNode
-from angrmanagement.ui.widgets.qfuzzy_pattern_library import QFuzzyPatternLibrary
+from angrmanagement.ui.widgets.qpattern_graph import QPatternGraph, QPatternNode
+from angrmanagement.ui.widgets.qpattern_library import QPatternLibrary
 from angrmanagement.ui.widgets.qproperty_editor import (
     BoolPropertyItem,
     ComboPropertyItem,
@@ -83,9 +83,9 @@ class _SortableItem(QTableWidgetItem):
         return super().__lt__(other)
 
 
-class FuzzyPatternView(InstanceView):
+class PatternView(InstanceView):
     """
-    Edits one fuzzy pattern as a graph of nodes.
+    Edits one pattern as a graph of nodes.
 
     Each leaf statement of the pattern is a node; double-clicking one expands it into
     its expression tree. Selecting a node shows its constraints in the property panel,
@@ -96,7 +96,7 @@ class FuzzyPatternView(InstanceView):
     """
 
     def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        super().__init__("fuzzy_pattern", workspace, default_docking_position, instance)
+        super().__init__("pattern", workspace, default_docking_position, instance)
         self.base_caption = "Pattern"
 
         self.editor: PatternEditor | None = None
@@ -108,17 +108,17 @@ class FuzzyPatternView(InstanceView):
         self.selected_path: NodePath | None = None
         #: nodes whose subtree is hidden; everything else is shown
         self.collapsed: set[NodePath] = set()
-        self.hovered_block: QFuzzyPatternNode | None = None
+        self.hovered_block: QPatternNode | None = None
 
-        self._graph_widget: QFuzzyPatternGraph
+        self._graph_widget: QPatternGraph
         self._properties: QPropertyEditor
         self._status: QLabel
         self._undo_btn: QPushButton
         self._loosen_btn: QPushButton
         self._save_btn: QPushButton
-        self._nodes_by_path: dict[NodePath, QFuzzyPatternNode] = {}
-        self.matches: list[FuzzyMatchRow] = []
-        self._library: QFuzzyPatternLibrary
+        self._nodes_by_path: dict[NodePath, QPatternNode] = {}
+        self.matches: list[PatternMatchRow] = []
+        self._library: QPatternLibrary
         self._apply_btn: QPushButton
         self._matches_table: QTableWidget
         self._search_here_btn: QPushButton
@@ -270,7 +270,7 @@ class FuzzyPatternView(InstanceView):
             replace=True,
         )
         self._set_status(f"saved {stored.name} to the project ({'enabled' if stored.enabled else 'disabled'})")
-        self.workspace.on_fuzzy_patterns_changed()
+        self.workspace.on_patterns_changed()
         return stored
 
     def apply(self) -> StoredPattern | None:
@@ -343,7 +343,7 @@ class FuzzyPatternView(InstanceView):
         """Look for the pattern as it stands in ``functions``; results land in the table."""
         if self.editor is None:
             return
-        job = FuzzyPatternSearchJob(
+        job = PatternSearchJob(
             self.instance, self.editor.pattern, list(functions), on_finish=self._show_matches, blocking=blocking
         )
         self._set_status(f"searching {len(job.functions)} function(s)...")
@@ -388,7 +388,7 @@ class FuzzyPatternView(InstanceView):
         return True
 
     def lift_from_range(self, func_addr: int, start_addr: int, end_addr: int, call_name: str):
-        """A fuzzy pattern from the statements of ``func_addr`` between two instruction
+        """A pattern from the statements of ``func_addr`` between two instruction
         addresses, or None when the function cannot be decompiled."""
         from angr.analyses.decompiler.known_patterns.generator import (  # pylint:disable=import-outside-toplevel
             PatternGenerationError,
@@ -429,7 +429,7 @@ class FuzzyPatternView(InstanceView):
     def discover(self, func, blocking: bool = False) -> None:
         """Look for families of similar code in ``func``; the results land in the Discover tab."""
         self._tabs.setCurrentWidget(self._discover_tab)
-        job = FuzzyPatternDiscoveryJob(
+        job = PatternDiscoveryJob(
             self.instance,
             func,
             min_size=self._min_size.value(),
@@ -503,7 +503,7 @@ class FuzzyPatternView(InstanceView):
             return None
         return self.instance.kb.functions.get(self.origin_func)
 
-    def _show_matches(self, rows: list[FuzzyMatchRow]) -> None:
+    def _show_matches(self, rows: list[PatternMatchRow]) -> None:
         self.matches = rows
         table = self._matches_table
         table.setRowCount(len(rows))
@@ -535,7 +535,7 @@ class FuzzyPatternView(InstanceView):
     #
 
     def _init_widgets(self) -> None:
-        self._graph_widget = QFuzzyPatternGraph(self)
+        self._graph_widget = QPatternGraph(self)
         self._properties = QPropertyEditor()
 
         self._undo_btn = QPushButton("Undo")
@@ -563,7 +563,7 @@ class FuzzyPatternView(InstanceView):
         buttons.addWidget(self._apply_btn)
         buttons.addStretch()
 
-        self._library = QFuzzyPatternLibrary(
+        self._library = QPatternLibrary(
             self.workspace, self.instance, on_edit=self.edit_stored, on_status=self._set_status
         )
 
@@ -644,7 +644,7 @@ class FuzzyPatternView(InstanceView):
         self._min_identity.setToolTip("How alike the copies of a family must be")
         self._discover_btn = QPushButton("Discover in current function")
         self._discover_btn.setToolTip("Find families of similar code in the function shown in the pseudocode view")
-        self._discover_btn.clicked.connect(self.workspace.discover_fuzzy_patterns)
+        self._discover_btn.clicked.connect(self.workspace.discover_patterns)
         knobs = QHBoxLayout()
         knobs.addWidget(QLabel("Min size"))
         knobs.addWidget(self._min_size)
@@ -711,7 +711,7 @@ class FuzzyPatternView(InstanceView):
             self._graph_widget.graph = None
             return
         graph: networkx.DiGraph = networkx.DiGraph()
-        previous: QFuzzyPatternNode | None = None
+        previous: QPatternNode | None = None
         for path, leaf in self.editor.leaves():
             item = self._make_node(path, leaf, PatternEditor.leaf_mode(leaf))
             graph.add_node(item)
@@ -722,7 +722,7 @@ class FuzzyPatternView(InstanceView):
                 self._add_expression_nodes(graph, item, path)
         self._graph_widget.graph = graph
 
-    def _add_expression_nodes(self, graph: networkx.DiGraph, parent: QFuzzyPatternNode, path: NodePath) -> None:
+    def _add_expression_nodes(self, graph: networkx.DiGraph, parent: QPatternNode, path: NodePath) -> None:
         assert self.editor is not None
         for child_path, child in self.editor.children(path):
             item = self._make_node(child_path, child, "wildcard-expr" if isinstance(child, PAny) else "expr")
@@ -731,8 +731,8 @@ class FuzzyPatternView(InstanceView):
             if child_path not in self.collapsed:
                 self._add_expression_nodes(graph, item, child_path)
 
-    def _make_node(self, path: NodePath, node: PatternNode, kind: str) -> QFuzzyPatternNode:
-        item = QFuzzyPatternNode(self, path, node, kind)
+    def _make_node(self, path: NodePath, node: PatternNode, kind: str) -> QPatternNode:
+        item = QPatternNode(self, path, node, kind)
         self._nodes_by_path[path] = item
         return item
 

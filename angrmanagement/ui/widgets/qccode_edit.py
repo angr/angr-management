@@ -34,7 +34,7 @@ from angrmanagement.ui.dialogs.retype_node import RetypeNode
 from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.documents.qcodedocument import QCodeDocument
 from angrmanagement.ui.menus.menu import Menu
-from angrmanagement.ui.views.fuzzy_pattern_view import FuzzyPatternView
+from angrmanagement.ui.views.pattern_view import PatternView
 from angrmanagement.ui.widgets.qccode_highlighter import FORMATS, QCCodeHighlighter
 from angrmanagement.ui.widgets.qinline_comment_editor import QInlineCommentEditor
 from angrmanagement.ui.widgets.qnode_tip import QNodeTip
@@ -630,8 +630,8 @@ class QCCodeEdit(api.CodeEdit):
             self._selected_node.fmt_double ^= True
             self._code_view.codegen.am_event()
 
-    def create_fuzzy_pattern(self, call_name: str | None = None) -> FuzzyPatternView | None:
-        """Turn the selected text into a fuzzy pattern and open it in the editor view.
+    def create_pattern(self, call_name: str | None = None) -> PatternView | None:
+        """Turn the selected text into a pattern and open it in the editor view.
 
         ``call_name`` is asked for when not given. Returns the view, or None when there
         is no selection, no decompilation, or nothing whole inside the selection.
@@ -659,7 +659,7 @@ class QCCodeEdit(api.CodeEdit):
         except PatternGenerationError as ex:
             _l.warning("Cannot make a pattern out of this selection: %s", ex)
             return None
-        view = self.workspace._get_or_create_view("fuzzy_pattern", FuzzyPatternView, position="center")
+        view = self.workspace._get_or_create_view("pattern", PatternView, position="center")
         view.load_pattern(pattern, origin_func=function.addr)
         self.workspace.raise_view(view)
         return view
@@ -864,8 +864,8 @@ class QCCodeEdit(api.CodeEdit):
         self.action_comment = QAction("Comment...", self)
         self.action_comment.triggered.connect(lambda: self.comment())
         self.action_comment.setShortcut(QKeySequence(";"))
-        self.action_fuzzy_pattern = QAction("Create pattern from selection...", self)
-        self.action_fuzzy_pattern.triggered.connect(lambda: self.create_fuzzy_pattern())
+        self.action_pattern = QAction("Create pattern from selection...", self)
+        self.action_pattern.triggered.connect(lambda: self.create_pattern())
 
         expr_actions = [
             self.action_to_ite_expr,
@@ -897,7 +897,7 @@ class QCCodeEdit(api.CodeEdit):
 
         self.call_actions = [self.action_rename_node, self.action_xref]
 
-        comment_actions = [self.action_comment, self.action_fuzzy_pattern]
+        comment_actions = [self.action_comment, self.action_pattern]
 
         self.constant_actions += comment_actions + base_actions + expr_actions
         self.operator_actions += comment_actions + base_actions + expr_actions

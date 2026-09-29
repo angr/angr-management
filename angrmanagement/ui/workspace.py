@@ -57,12 +57,12 @@ from .views import (
     DependencyView,
     DisassemblyView,
     FunctionsView,
-    FuzzyPatternView,
     HexView,
     JobsView,
     LogView,
     MCPHistoryView,
     PatchesView,
+    PatternView,
     ProximityView,
     RegistersView,
     SearchView,
@@ -679,22 +679,22 @@ class Workspace:
             view = self._get_or_create_view("disassembly", DisassemblyView)
             view.decompile_current_function()
 
-    def on_fuzzy_patterns_changed(self) -> None:
-        """The project's fuzzy patterns changed: refresh every view that lists them."""
+    def on_patterns_changed(self) -> None:
+        """The project's patterns changed: refresh every view that lists them."""
         for view in self.view_manager.views:
-            if isinstance(view, FuzzyPatternView):
+            if isinstance(view, PatternView):
                 view.reload_library()
             elif isinstance(view, CodeView):
-                view.reload_fuzzy_patterns()
+                view.reload_patterns()
 
-    def edit_fuzzy_pattern(self, stored) -> FuzzyPatternView:
-        """Open a stored fuzzy pattern in the fuzzy pattern view."""
-        view = self._get_or_create_view("fuzzy_pattern", FuzzyPatternView)
+    def edit_pattern(self, stored) -> PatternView:
+        """Open a stored pattern in the pattern view."""
+        view = self._get_or_create_view("pattern", PatternView)
         view.load_stored(stored)
         self.raise_view(view)
         return view
 
-    def discover_fuzzy_patterns(self) -> FuzzyPatternView | None:
+    def discover_patterns(self) -> PatternView | None:
         """Look for families of similar code in the function shown in the pseudocode view.
 
         Shows a message box and does nothing else if no function is decompiled there.
@@ -711,7 +711,7 @@ class Workspace:
                 "No function is currently decompiled in the pseudocode view.\n\nDecompile a function (F5) first.",
             )
             return None
-        view = self._get_or_create_view("fuzzy_pattern", FuzzyPatternView)
+        view = self._get_or_create_view("pattern", PatternView)
         self.raise_view(view)
         view.discover(code_view._function.am_obj)
         return view

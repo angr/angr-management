@@ -38,8 +38,8 @@ class AnalyzeMenu(Menu):
                 ),
                 MenuEntry(
                     "Discover &Patterns...",
-                    main_window.discover_fuzzy_patterns,
-                    icon=icon("fuzzy_pattern-view"),
+                    main_window.discover_patterns,
+                    icon=icon("pattern-view"),
                 ),
             ],
         )
