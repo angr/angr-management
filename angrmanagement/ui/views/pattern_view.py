@@ -458,12 +458,18 @@ class PatternView(InstanceView):
         return True
 
     def open_family(self, index: int) -> None:
-        """Show a family's first copy in the pseudocode view."""
+        """Show the family in the pseudocode view: every copy's lines highlighted, the cursor on the first."""
         if not (0 <= index < len(self.families)) or self.discovered_func is None:
             return
         func = self.instance.kb.functions.get(self.discovered_func)
-        if func is not None:
-            self.workspace.decompile_function(func, curr_ins=self.families[index].start_addr)
+        if func is None:
+            return
+        family = self.families[index]
+        self.workspace.decompile_function(func, curr_ins=family.start_addr)
+        code_view = self.workspace.view_manager.first_view_in_category("pseudocode")
+        if code_view is not None:
+            code_view.highlight_pattern(func.addr, family.copy_addrs)
+            self.workspace.raise_view(code_view)
 
     def _show_families(self, result: DiscoveryResult) -> None:
         self.families = result.families

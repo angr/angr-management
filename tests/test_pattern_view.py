@@ -13,10 +13,11 @@ from angr.analyses.decompiler.known_patterns import PAny, PAnyStmt, PCallStmt, P
 from angr.analyses.decompiler.known_patterns.dsl import PatternExpr
 from common import AngrManagementTestCase, test_location
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QTextCursor
+from PySide6.QtGui import QTextCursor, QTextFormat
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QMessageBox
 
+from angrmanagement.config import Conf
 from angrmanagement.ui.views import CodeView, DisassemblyView
 from angrmanagement.ui.views.pattern_view import PatternView
 from angrmanagement.ui.widgets.qpattern_graph import QPatternNode
@@ -358,6 +359,41 @@ class TestPatternView(AngrManagementTestCase):
         self.main.workspace.job_manager.join_all_jobs()
         assert code_view.function.am_obj is func
         assert self.main.workspace.view_manager.current_tab is code_view
+
+        # ...with every line of every copy of the family highlighted, and nothing else
+        lines = code_view.pattern_highlighted_lines
+        assert lines, "the family's lines are highlighted"
+        doc = code_view._doc
+        texts = [doc.findBlockByNumber(n).text().strip() for n in lines]
+        # a copy may return another value: the family is alike, not identical
+        assert all(t.startswith(("puts(", "fflush(stdout)", "return ")) for t in texts), texts
+        assert sum(1 for t in texts if t.startswith("puts(")) == family.copies
+        assert sum(1 for t in texts if t.startswith("return ")) == family.copies
+        sel = code_view._pattern_selections[0]
+        assert sel.format.background().color() == Conf.pseudocode_pattern_highlight_color
+        assert sel.format.property(QTextFormat.Property.FullWidthSelection) is True
+        cursor_line = code_view.textedit.textCursor().blockNumber()
+        assert doc.findBlockByNumber(cursor_line).text().strip().startswith(("puts(", "fflush(")), "on the first copy"
+
+        # it follows the text when the pseudocode is regenerated
+        code_view.codegen.am_event()
+        assert len(code_view.pattern_highlighted_lines) == len(lines)
+
+        # the first Escape dismisses the highlight and stays; the pseudocode is still doit's
+        QTest.keyClick(code_view.textedit, Qt.Key.Key_Escape)
+        assert code_view.pattern_highlighted_lines == []
+        assert code_view.function.am_obj is func
+
+        # showing another function drops it
+        table.cellDoubleClicked.emit(row, 1)
+        self.main.workspace.job_manager.join_all_jobs()
+        assert code_view.pattern_highlighted_lines
+        self.main.workspace.decompile_function(other)
+        self.main.workspace.job_manager.join_all_jobs()
+        assert code_view.pattern_highlighted_lines == []
+        self.main.workspace.decompile_function(func)
+        self.main.workspace.job_manager.join_all_jobs()
+        assert code_view.pattern_highlighted_lines == [], "and it does not come back with the function"
 
         assert view.load_family(index)
         assert view.editor is not None and view.origin_func == func.addr
