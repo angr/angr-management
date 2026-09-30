@@ -696,7 +696,7 @@ class TestPatternView(AngrManagementTestCase):
                     assert pred in blocks and graph.out_degree[pred] == 1
 
     def test_cancel_stops_discovery_inside_the_alignment(self):
-        from angr.analyses.patterns import Checkpoint  # pylint:disable=import-outside-toplevel
+        from angr.analyses.decompiler.pattern_match import Checkpoint  # pylint:disable=import-outside-toplevel
 
         from angrmanagement.data.jobs import pattern_discovery  # pylint:disable=import-outside-toplevel
 

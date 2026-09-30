@@ -5,9 +5,14 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.optimization_passes import PatternOutliner
+from angr.analyses.decompiler.pattern_match.region import largest_single_entry_subrun, snap
+from angr.analyses.decompiler.pattern_match.search import (
+    find_template_occurrences,
+    search,
+    tokenize_for_templates,
+    verify,
+)
 from angr.analyses.decompiler.presets import DECOMPILATION_PRESETS
-from angr.analyses.patterns.region import largest_single_entry_subrun, snap
-from angr.analyses.patterns.search import find_template_occurrences, search, tokenize_for_templates, verify
 
 from .job import InstanceJob
 

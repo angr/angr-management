@@ -20,7 +20,7 @@ from angr.analyses.decompiler.known_patterns import (
 )
 from angr.analyses.decompiler.known_patterns.dsl import PatternExpr
 from angr.analyses.decompiler.known_patterns.edit import LEAF_MODES, PatternEditor
-from angr.analyses.patterns import STATEMENTS_ANY, STATEMENTS_CONSECUTIVE, STATEMENTS_FOLLOW
+from angr.analyses.decompiler.pattern_match import STATEMENTS_ANY, STATEMENTS_CONSECUTIVE, STATEMENTS_FOLLOW
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -406,7 +406,9 @@ class PatternView(InstanceView):
             PatternGenerationError,
             PatternGenerator,
         )
-        from angr.analyses.patterns.search import tokenize_for_templates  # pylint:disable=import-outside-toplevel
+        from angr.analyses.decompiler.pattern_match.search import (  # pylint:disable=import-outside-toplevel
+            tokenize_for_templates,
+        )
 
         func = self.instance.kb.functions.get(func_addr)
         if func is None:

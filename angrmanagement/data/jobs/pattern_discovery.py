@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any
 
 from angr.analyses.decompiler.known_patterns.edit import PatternEditor
 from angr.analyses.decompiler.known_patterns.generator import PatternGenerationError, PatternGenerator, stmt_ins_addrs
-from angr.analyses.patterns import STATEMENTS_ANY, AlignParams, Checkpoint, FuzzyPatternFinder
-from angr.analyses.patterns.search import search, template_leaves, tokenize_for_templates, verify
+from angr.analyses.decompiler.pattern_match import STATEMENTS_ANY, AlignParams, Checkpoint, FuzzyPatternFinder
+from angr.analyses.decompiler.pattern_match.search import search, template_leaves, tokenize_for_templates, verify
 
 from angrmanagement.data.jobs.job import JobState
 from angrmanagement.logic.jobmanager import JobCancelled
