@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from angr.knowledge_plugins.patterns import StoredPattern
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QFileDialog,
@@ -31,6 +32,10 @@ class QPatternLibrary(QWidget):
     pattern the last time that function was decompiled: verified matches, and how
     many were outlined. Both are 0 for a pattern that was not enabled then.
     Every change goes through the workspace, which refreshes every library widget.
+
+    With ``on_apply``, a click on Enabled only marks the pattern: its row turns bold and
+    reads "(unapplied)" until "Apply Patterns & Redecompile" writes every marked change
+    and calls ``on_apply``.
     """
 
     COLUMNS = ["Pattern", "Call", "Enabled", "Min similarity", "From"]
@@ -44,7 +49,7 @@ class QPatternLibrary(QWidget):
         on_edit: Callable[[StoredPattern], None],
         current_func: Callable[[], int | None] | None = None,
         on_status: Callable[[str], None] | None = None,
-        on_toggled: Callable[[StoredPattern], None] | None = None,
+        on_apply: Callable[[], None] | None = None,
         highlight: tuple[Callable[[str], bool], Callable[[str, bool], None]] | None = None,
         parent: QWidget | None = None,
     ) -> None:
@@ -54,7 +59,9 @@ class QPatternLibrary(QWidget):
         self._on_edit = on_edit
         self._current_func = current_func
         self._on_status = on_status
-        self._on_toggled = on_toggled
+        self._on_apply = on_apply
+        #: pattern name -> the enabled state a click asked for, where it differs from the project's
+        self._pending: dict[str, bool] = {}
         #: (is it highlighted, set it) for a pattern name, when the owner can highlight
         self._highlight = highlight
         self.rows: list[StoredPattern] = []
@@ -84,6 +91,15 @@ class QPatternLibrary(QWidget):
         buttons.addStretch()
         self._buttons = buttons
 
+        self._apply_btn: QPushButton | None = None
+        if on_apply is not None:
+            # "&&" is a literal ampersand in a button label
+            self._apply_btn = self.add_button(
+                "Apply Patterns && Redecompile",
+                self.apply_pending,
+                "Turn the patterns marked (unapplied) on or off, then decompile the function again",
+            )
+
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.table, 1)
@@ -105,14 +121,21 @@ class QPatternLibrary(QWidget):
         # a view can exist before any project is loaded
         kb = self.instance.kb
         self.rows = [] if kb is None else sorted(kb.patterns, key=lambda p: p.name)
+        # a mark goes away once the project agrees with it, or its pattern is gone
+        by_name = {stored.name: stored for stored in self.rows}
+        self._pending = {
+            name: on for name, on in self._pending.items() if name in by_name and by_name[name].enabled != on
+        }
         func_addr = self._current_func() if self._current_func is not None else None
         self._filling = True
         self.table.setRowCount(len(self.rows))
         for i, stored in enumerate(self.rows):
+            pending = stored.name in self._pending
+            enabled = self._pending.get(stored.name, stored.enabled)
             values = {
                 "Pattern": stored.name,
                 "Call": stored.pattern.call_name,
-                "Enabled": "on" if stored.enabled else "off",
+                "Enabled": ("on" if enabled else "off") + (" (unapplied)" if pending else ""),
                 "Min similarity": f"{stored.min_similarity:.0%}",
                 "From": f"{stored.origin_func:#x}" if stored.origin_func is not None else "",
             }
@@ -127,9 +150,13 @@ class QPatternLibrary(QWidget):
             for j, column in enumerate(self.columns):
                 item = QTableWidgetItem(values[column])
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                if pending:
+                    font = QFont(item.font())
+                    font.setBold(True)
+                    item.setFont(font)
                 if column == "Enabled":
                     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-                    item.setCheckState(Qt.CheckState.Checked if stored.enabled else Qt.CheckState.Unchecked)
+                    item.setCheckState(Qt.CheckState.Checked if enabled else Qt.CheckState.Unchecked)
                 elif column == "Highlight" and self._highlight is not None:
                     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                     on = self._highlight[0](stored.name)
@@ -140,6 +167,8 @@ class QPatternLibrary(QWidget):
                         item.setToolTip(f"Highlight the {len(stats.call_addrs)} call(s) to {stored.pattern.call_name}")
                 self.table.setItem(i, j, item)
         self._filling = False
+        if self._apply_btn is not None:
+            self._apply_btn.setEnabled(bool(self._pending))
 
     def _on_item_changed(self, item: QTableWidgetItem) -> None:
         if self._filling or not (0 <= item.row() < len(self.rows)):
@@ -147,7 +176,9 @@ class QPatternLibrary(QWidget):
         stored = self.rows[item.row()]
         checked = item.checkState() == Qt.CheckState.Checked
         column = self.columns[item.column()]
-        if column == "Enabled" and checked != stored.enabled:
+        if column == "Enabled" and self._on_apply is not None:
+            self.mark(stored, checked)
+        elif column == "Enabled" and checked != stored.enabled:
             self.toggle(stored)
         elif column == "Highlight" and self._highlight is not None and checked != self._highlight[0](stored.name):
             self._highlight[1](stored.name, checked)
@@ -166,11 +197,39 @@ class QPatternLibrary(QWidget):
     def toggle(self, stored: StoredPattern) -> None:
         self.instance.kb.patterns.set_enabled(stored.name, not stored.enabled)
         state = "on" if stored.enabled else "off"
-        if self._on_toggled is None:
-            self._changed(f"{stored.name} is {state}; it applies the next time a function is decompiled")
-            return
-        self._changed(f"{stored.name} is {state}")
-        self._on_toggled(stored)
+        self._changed(f"{stored.name} is {state}; it applies the next time a function is decompiled")
+
+    @property
+    def pending(self) -> dict[str, bool]:
+        """Pattern name -> the enabled state marked for it but not applied yet."""
+        return dict(self._pending)
+
+    def mark(self, stored: StoredPattern, enabled: bool) -> None:
+        """Mark ``stored`` to be turned on or off by the next apply; marking it back clears the mark."""
+        if enabled == stored.enabled:
+            self._pending.pop(stored.name, None)
+        else:
+            self._pending[stored.name] = enabled
+        self.reload()
+        if self._pending:
+            self._status(f"{len(self._pending)} pattern change(s) not applied yet")
+
+    def apply_pending(self) -> bool:
+        """Write the marked changes and call ``on_apply``. Returns False, and does not call it,
+        when the marks leave the set of enabled patterns as it was."""
+        patterns = self.instance.kb.patterns
+        changes = {name: on for name, on in self._pending.items() if (s := patterns.get(name)) and s.enabled != on}
+        self._pending.clear()
+        if not changes:
+            self.reload()
+            self._status("the enabled patterns did not change; nothing to apply")
+            return False
+        for name, on in changes.items():
+            patterns.set_enabled(name, on)
+        self._changed(", ".join(f"{name} is {'on' if on else 'off'}" for name, on in sorted(changes.items())))
+        if self._on_apply is not None:
+            self._on_apply()
+        return True
 
     def delete(self, stored: StoredPattern) -> None:
         self.instance.kb.patterns.remove(stored.name)

@@ -521,19 +521,45 @@ class TestPatternView(AngrManagementTestCase):
         assert code_view.codegen.am_obj.text.count("PatternErrorsOut(") == 8
         return func, code_view, view
 
-    def test_dock_checkbox_turns_a_pattern_off_and_on_in_place(self):
+    def test_dock_checkbox_marks_and_the_button_applies(self):
+        """A click on Enabled only marks the pattern; the dock's button applies every mark and
+        decompiles again, and does nothing when the marks change nothing."""
         _, code_view, _ = self._apply_error_exit_pattern()
+        library = code_view._pattern_library
         table = code_view.patterns_table
-        enabled = table.item(0, 1)
-        assert enabled.checkState() == Qt.CheckState.Checked
+        button = library._apply_btn
+        kb = self.main.workspace.main_instance.kb
+        codegen = code_view.codegen.am_obj
+        assert button.text() == "Apply Patterns && Redecompile" and not button.isEnabled()
+        assert table.item(0, 1).checkState() == Qt.CheckState.Checked and not table.item(0, 0).font().bold()
 
-        enabled.setCheckState(Qt.CheckState.Unchecked)  # a click on the box
+        table.item(0, 1).setCheckState(Qt.CheckState.Unchecked)  # a click on the box
         self.main.workspace.job_manager.join_all_jobs()
-        assert self.main.workspace.main_instance.kb.patterns.get("patternerrorsout").enabled is False
+        assert kb.patterns.get("patternerrorsout").enabled, "only marked"
+        assert code_view.codegen.am_obj is codegen, "and not decompiled"
+        assert table.item(0, 1).text() == "off (unapplied)"
+        assert all(table.item(0, j).font().bold() for j in range(table.columnCount()))
+        assert button.isEnabled()
+
+        # clicking it back clears the mark: nothing to apply
+        table.item(0, 1).setCheckState(Qt.CheckState.Checked)
+        assert table.item(0, 1).text() == "on" and not table.item(0, 0).font().bold()
+        assert not button.isEnabled() and not library.pending
+        assert library.apply_pending() is False
+        self.main.workspace.job_manager.join_all_jobs()
+        assert code_view.codegen.am_obj is codegen, "an unchanged set is not decompiled again"
+
+        table.item(0, 1).setCheckState(Qt.CheckState.Unchecked)
+        button.click()
+        self.main.workspace.job_manager.join_all_jobs()
+        assert kb.patterns.get("patternerrorsout").enabled is False
         assert "PatternErrorsOut(" not in code_view.codegen.am_obj.text, "decompiled again without it"
-        assert table.item(0, 1).checkState() == Qt.CheckState.Unchecked
+        assert table.item(0, 1).text() == "off" and not table.item(0, 0).font().bold()
+        assert not button.isEnabled()
 
         table.item(0, 1).setCheckState(Qt.CheckState.Checked)
+        assert table.item(0, 1).text() == "on (unapplied)"
+        button.click()
         self.main.workspace.job_manager.join_all_jobs()
         assert code_view.codegen.am_obj.text.count("PatternErrorsOut(") == 8
 
