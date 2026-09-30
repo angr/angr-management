@@ -124,8 +124,8 @@ class TestPatternView(AngrManagementTestCase):
         assert all(isinstance(n, QPatternNode) for n in graph.nodes())
 
     def test_double_click_expands_and_collapses_without_editing(self):
-        _, code_view = self._decompile("1after909", "doit")
-        self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
+        _, code_view = self._decompile("1after909", "read_bin")
+        self._select_text(code_view, r'puts\("Failed to read length."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
         view = code_view.textedit.create_pattern(call_name="my_idiom")
         assert view is not None and view.editor is not None
         path, _ = next((p, node) for p, node in view.editor.leaves() if not isinstance(node, PAnyStmt))
@@ -170,8 +170,8 @@ class TestPatternView(AngrManagementTestCase):
         raise AssertionError(f"no property {key}")
 
     def test_wildcards_can_be_turned_back_from_the_property_panel(self):
-        _, code_view = self._decompile("1after909", "doit")
-        self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
+        _, code_view = self._decompile("1after909", "read_bin")
+        self._select_text(code_view, r'puts\("Failed to read length."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
         view = code_view.textedit.create_pattern(call_name="p")
         assert view is not None and view.editor is not None
 
@@ -343,7 +343,7 @@ class TestPatternView(AngrManagementTestCase):
         with the defaults, nor replace the view's cache."""
         from angr.analyses.decompiler.decompiler import Decompiler  # pylint:disable=import-outside-toplevel
 
-        func, _ = self._decompile("1after909", "doit")
+        func, _ = self._decompile("1after909", "read_bin")
         kb = self.main.workspace.main_instance.kb
         cache = kb.decompilations[(func.addr, "pseudocode")]
         runs = []
@@ -366,13 +366,13 @@ class TestPatternView(AngrManagementTestCase):
         assert len(entries) == 1, "the Analyze menu offers pattern discovery"
         return entries[0]._qaction
 
-    def _run_discovery(self):
+    def _run_discovery(self, min_statements: int = 3):
         """Analyze > Discover Patterns opens the Discover tab; its button starts the run."""
         self._discover_entry().trigger()
         view = self.main.workspace.view_manager.first_view_in_category("pattern")
         assert isinstance(view, PatternView) and view._tabs.currentWidget() is view._discover_tab
-        # doit's error exit is three statements, below the default minimum
-        view._min_size.setValue(3)
+        # the error exit is three statements, below the default minimum
+        view._min_size.setValue(min_statements)
         view._discover_btn.click()
         return view
 
@@ -410,9 +410,9 @@ class TestPatternView(AngrManagementTestCase):
         assert not any(isinstance(j, PatternDiscoveryJob) for j in started)
 
     def test_discovery_from_the_menu_finds_the_error_exit_idiom(self):
-        """Analyze > Discover Patterns on doit: the error-exit family's lifted pattern finds
+        """Analyze > Discover Patterns on read_bin: the error-exit family's lifted pattern finds
         every error exit, and applying it outlines them."""
-        func, code_view = self._decompile("1after909", "doit")
+        func, code_view = self._decompile("1after909", "read_bin")
         view = self._run_discovery()
         self.main.workspace.job_manager.join_all_jobs()
         assert view.discovered_func == func.addr and view.families
@@ -434,7 +434,7 @@ class TestPatternView(AngrManagementTestCase):
         index = next(i for i, f in enumerate(view.families) if is_error_exit(f))
         family = view.families[index]
         # discovery drops copies that sit close together; the lifted pattern does not
-        assert family.found >= 8 and family.covered == family.copies
+        assert family.found >= 3 and family.covered == family.copies
 
         # sorting moves rows; each still knows its family, and numbers sort as numbers
         table = view._families_table
@@ -497,19 +497,19 @@ class TestPatternView(AngrManagementTestCase):
 
         call = view.editor.pattern.call_name
         calls = re.findall(rf'{call}\("([^"]*)"', code_view.codegen.am_obj.text)
-        assert "Empty title" in calls and "Cannot open document." in calls, calls
+        assert "Length exceeds capacity." in calls and "Error while reading." in calls, calls
 
     def test_pseudocode_dock_lists_patterns_with_their_matches(self):
         """The pseudocode view's Patterns dock shares the Pattern tab's library, and adds what
         the outliner pass did with each pattern in the function on screen."""
-        func, code_view = self._decompile("1after909", "doit")
+        func, code_view = self._decompile("1after909", "read_bin")
         table = code_view.patterns_table
         assert table is not None and table.rowCount() == 0
         headers = [table.horizontalHeaderItem(j).text() for j in range(table.columnCount())]
         # the numbers come right after the name, so a narrow dock shows them without scrolling
         assert headers[:5] == ["Pattern", "Enabled", "Highlight", "Matches", "Outlined"]
 
-        self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
+        self._select_text(code_view, r'puts\("Failed to read length."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
         view = code_view.textedit.create_pattern(call_name="PatternErrorsOut")
         assert view is not None
         view.save()
@@ -522,7 +522,7 @@ class TestPatternView(AngrManagementTestCase):
         # Save & Redecompile turns it on: redecompiling with it off would change nothing
         assert view.enabled and table.item(0, 1).text() == "on"
         matches, outlined = int(table.item(0, 3).text()), int(table.item(0, 4).text())
-        assert outlined == 8 and matches >= outlined
+        assert outlined == 3 and matches >= outlined
 
         # a change in either place shows in both
         code_view._pattern_library.toggle(self.main.workspace.main_instance.kb.patterns.get("patternerrorsout"))
@@ -536,14 +536,14 @@ class TestPatternView(AngrManagementTestCase):
 
     def _apply_error_exit_pattern(self):
         """doit decompiled with the error-exit pattern applied; returns (func, code view, pattern view)."""
-        func, code_view = self._decompile("1after909", "doit")
-        self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
+        func, code_view = self._decompile("1after909", "read_bin")
+        self._select_text(code_view, r'puts\("Failed to read length."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
         view = code_view.textedit.create_pattern(call_name="PatternErrorsOut")
         assert view is not None
         assert view._apply_btn.text() == "Save && Redecompile"
         view._apply_btn.click()
         self.main.workspace.job_manager.join_all_jobs()
-        assert code_view.codegen.am_obj.text.count("PatternErrorsOut(") == 8
+        assert code_view.codegen.am_obj.text.count("PatternErrorsOut(") == 3
         return func, code_view, view
 
     def test_dock_checkbox_marks_and_the_button_applies(self):
@@ -586,7 +586,7 @@ class TestPatternView(AngrManagementTestCase):
         assert table.item(0, 1).text() == "on (unapplied)"
         button.click()
         self.main.workspace.job_manager.join_all_jobs()
-        assert code_view.codegen.am_obj.text.count("PatternErrorsOut(") == 8
+        assert code_view.codegen.am_obj.text.count("PatternErrorsOut(") == 3
 
     def test_dock_table_sorts_and_rows_keep_their_patterns(self):
         from angr.knowledge_plugins.patterns import StoredPattern  # pylint:disable=import-outside-toplevel
@@ -609,7 +609,7 @@ class TestPatternView(AngrManagementTestCase):
         # by the Matches column, as numbers, and the rows follow their patterns
         table.sortItems(3, Qt.SortOrder.DescendingOrder)
         assert names() == ["patternerrorsout", "aaa_unused"]
-        assert int(table.item(0, 3).text()) >= 8 and table.item(1, 3).text() == "0"
+        assert int(table.item(0, 3).text()) >= 3 and table.item(1, 3).text() == "0"
 
         # a click on a moved row acts on its own pattern, and a reload keeps the order
         table.item(1, 1).setCheckState(Qt.CheckState.Checked)
@@ -704,8 +704,9 @@ class TestPatternView(AngrManagementTestCase):
     def test_discover_table_context_menu(self):
         from PySide6.QtWidgets import QPushButton  # pylint:disable=import-outside-toplevel
 
-        func, code_view = self._decompile("1after909", "doit")
-        view = self._run_discovery()
+        func, code_view = self._decompile("1after909", "read_bin")
+        # read_bin's printf/fflush pairs are a second, two-statement family
+        view = self._run_discovery(min_statements=2)
         self.main.workspace.job_manager.join_all_jobs()
         table = view._families_table
         buttons = [b.text() for b in view._discover_tab.findChildren(QPushButton)]
@@ -773,7 +774,7 @@ class TestPatternView(AngrManagementTestCase):
 
         actions["Highlight patterns in pseudocode"].trigger()
         texts = [code_view._doc.findBlockByNumber(n).text().strip() for n in code_view.pattern_highlighted_lines]
-        assert len(texts) == 8 and all("PatternErrorsOut(" in t for t in texts), texts
+        assert len(texts) == 3 and all("PatternErrorsOut(" in t for t in texts), texts
         assert table.item(0, 2).checkState() == Qt.CheckState.Checked, "the Highlight box follows"
 
         actions["Highlight patterns in disassembly"].trigger()
@@ -810,13 +811,13 @@ class TestPatternView(AngrManagementTestCase):
         table.item(0, 2).setCheckState(Qt.CheckState.Checked)
         lines = code_view.pattern_highlighted_lines
         texts = [code_view._doc.findBlockByNumber(n).text().strip() for n in lines]
-        assert len(lines) == 8 and all("PatternErrorsOut(" in t for t in texts), texts
-        assert "8 call(s)" in table.item(0, 2).toolTip()
+        assert len(lines) == 3 and all("PatternErrorsOut(" in t for t in texts), texts
+        assert "3 call(s)" in table.item(0, 2).toolTip()
 
         # it follows the pseudocode through a fresh decompilation
         code_view.decompile(reset_cache=True)
         self.main.workspace.job_manager.join_all_jobs()
-        assert len(code_view.pattern_highlighted_lines) == 8
+        assert len(code_view.pattern_highlighted_lines) == 3
         assert table.item(0, 2).checkState() == Qt.CheckState.Checked
 
         table.item(0, 2).setCheckState(Qt.CheckState.Unchecked)
@@ -834,7 +835,7 @@ class TestPatternView(AngrManagementTestCase):
         func, code_view, _ = self._apply_error_exit_pattern()
         table = code_view.patterns_table
         kb = self.main.workspace.main_instance.kb
-        assert int(table.item(0, 3).text()) >= 8
+        assert int(table.item(0, 3).text()) >= 3
 
         kb.patterns.set_enabled("patternerrorsout", False)
         code_view.decompile(reset_cache=True)
@@ -852,18 +853,18 @@ class TestPatternView(AngrManagementTestCase):
         code_view.reload_patterns()
         table = code_view.patterns_table
         codegen = code_view.codegen.am_obj
-        assert "8 call(s)" in table.item(0, 2).toolTip()
+        assert "3 call(s)" in table.item(0, 2).toolTip()
 
         table.item(0, 2).setCheckState(Qt.CheckState.Checked)
         texts = [code_view._doc.findBlockByNumber(n).text().strip() for n in code_view.pattern_highlighted_lines]
-        assert len(texts) == 8 and all("PatternErrorsOut(" in t for t in texts), texts
+        assert len(texts) == 3 and all("PatternErrorsOut(" in t for t in texts), texts
         table.item(0, 2).setCheckState(Qt.CheckState.Unchecked)
         assert code_view.pattern_highlighted_lines == []
 
         table.selectRow(0)
         menu = code_view._pattern_library.context_menu()
         {a.text(): a for a in menu.actions()}["Highlight patterns in pseudocode"].trigger()
-        assert len(code_view.pattern_highlighted_lines) == 8
+        assert len(code_view.pattern_highlighted_lines) == 3
         self.main.workspace.job_manager.join_all_jobs()
         assert code_view.codegen.am_obj is codegen, "never decompiled again"
 
@@ -900,7 +901,7 @@ class TestPatternView(AngrManagementTestCase):
     def test_discovery_runs_blocking_with_the_progress_dialog(self):
         from angrmanagement.data.jobs import PatternDiscoveryJob  # pylint:disable=import-outside-toplevel
 
-        func, _ = self._decompile("1after909", "doit")
+        func, _ = self._decompile("1after909", "read_bin")
         started, labels = [], []
         self.main.workspace.job_manager.job_starting.connect(started.append)
         dialog = self.main._progress_dialog
@@ -914,7 +915,7 @@ class TestPatternView(AngrManagementTestCase):
 
         jobs = [j for j in started if isinstance(j, PatternDiscoveryJob)]
         assert len(jobs) == 1 and jobs[0].blocking, "a modal progress dialog shows the discovery"
-        assert any(t.startswith("Discovering patterns in doit") for t in labels), labels
+        assert any(t.startswith("Discovering patterns in read_bin") for t in labels), labels
         view = self.main.workspace.view_manager.first_view_in_category("pattern")
         assert view.discovered_func == func.addr and view.families
 
@@ -924,7 +925,7 @@ class TestPatternView(AngrManagementTestCase):
             PatternFoundJob,
         )
 
-        self._decompile("1after909", "doit")
+        self._decompile("1after909", "read_bin")
         started, shown = [], []
         self.main.workspace.job_manager.job_starting.connect(started.append)
         orig = PatternView._show_families
@@ -957,7 +958,7 @@ class TestPatternView(AngrManagementTestCase):
     def test_consecutive_only_keeps_every_copy_one_straight_run(self):
         from angrmanagement.data.jobs import PatternDiscoveryJob  # pylint:disable=import-outside-toplevel
 
-        self._decompile("1after909", "doit")
+        self._decompile("1after909", "read_bin")
         started, results = [], []
         self.main.workspace.job_manager.job_starting.connect(started.append)
         self.main.workspace.show_pattern_discovery()
@@ -1003,7 +1004,7 @@ class TestPatternView(AngrManagementTestCase):
 
         from angrmanagement.data.jobs import pattern_discovery  # pylint:disable=import-outside-toplevel
 
-        _, _ = self._decompile("1after909", "doit")
+        _, _ = self._decompile("1after909", "read_bin")
         manager = self.main.workspace.job_manager
         fired = []
 
