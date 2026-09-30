@@ -25,6 +25,19 @@ if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
 
 
+class _KeyItem(QTableWidgetItem):
+    """A cell that sorts by a key of its own, so "100%" comes after "83%"."""
+
+    def __init__(self, text: str, key) -> None:
+        super().__init__(text)
+        self.key = key
+
+    def __lt__(self, other) -> bool:
+        if isinstance(other, _KeyItem) and type(self.key) is type(other.key):
+            return self.key < other.key
+        return super().__lt__(other)
+
+
 class QPatternLibrary(QWidget):
     """The project's patterns: a table with an Enabled checkbox per row, and edit, delete, export and import.
 
@@ -77,6 +90,8 @@ class QPatternLibrary(QWidget):
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.cellDoubleClicked.connect(lambda _row, _col: self._on_edit_clicked())
         self.table.itemChanged.connect(self._on_item_changed)
+        self.table.setSortingEnabled(True)
+        self.table.sortItems(0, Qt.SortOrder.AscendingOrder)
 
         buttons = QHBoxLayout()
         for label, handler in (
@@ -128,6 +143,8 @@ class QPatternLibrary(QWidget):
         }
         func_addr = self._current_func() if self._current_func is not None else None
         self._filling = True
+        # rows move while sorting is on; fill with it off, then sort once
+        self.table.setSortingEnabled(False)
         self.table.setRowCount(len(self.rows))
         for i, stored in enumerate(self.rows):
             pending = stored.name in self._pending
@@ -139,16 +156,25 @@ class QPatternLibrary(QWidget):
                 "Min similarity": f"{stored.min_similarity:.0%}",
                 "From": f"{stored.origin_func:#x}" if stored.origin_func is not None else "",
             }
+            keys = {
+                "Min similarity": stored.min_similarity,
+                "From": stored.origin_func if stored.origin_func is not None else -1,
+            }
             stats = None
             if self._current_func is not None:
                 stats = self.instance.kb.patterns.stats(func_addr, stored.name) if func_addr is not None else None
                 values["Highlight"] = ""
                 # the pass records every pattern it searched and drops the rest, so no numbers
                 # means the pattern was not enabled when this function was last decompiled
-                values["Matches"] = str(stats.matches) if stats is not None else "0"
-                values["Outlined"] = str(stats.outlined) if stats is not None else "0"
+                keys["Matches"] = stats.matches if stats is not None else 0
+                keys["Outlined"] = stats.outlined if stats is not None else 0
+                values["Matches"] = str(keys["Matches"])
+                values["Outlined"] = str(keys["Outlined"])
             for j, column in enumerate(self.columns):
-                item = QTableWidgetItem(values[column])
+                item = _KeyItem(values[column], keys.get(column, values[column]))
+                if j == 0:
+                    # rows move when sorted; each knows its pattern
+                    item.setData(Qt.ItemDataRole.UserRole, stored.name)
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 if pending:
                     font = QFont(item.font())
@@ -166,14 +192,23 @@ class QPatternLibrary(QWidget):
                     else:
                         item.setToolTip(f"Highlight the {len(stats.call_addrs)} call(s) to {stored.pattern.call_name}")
                 self.table.setItem(i, j, item)
+        self.table.setSortingEnabled(True)
         self._filling = False
         if self._apply_btn is not None:
             self._apply_btn.setEnabled(bool(self._pending))
 
+    def stored_at(self, row: int) -> StoredPattern | None:
+        """The pattern shown in ``row``, which sorting moves around."""
+        item = self.table.item(row, 0) if row >= 0 else None
+        name = None if item is None else item.data(Qt.ItemDataRole.UserRole)
+        return None if name is None else self.instance.kb.patterns.get(name)
+
     def _on_item_changed(self, item: QTableWidgetItem) -> None:
-        if self._filling or not (0 <= item.row() < len(self.rows)):
+        if self._filling:
             return
-        stored = self.rows[item.row()]
+        stored = self.stored_at(item.row())
+        if stored is None:
+            return
         checked = item.checkState() == Qt.CheckState.Checked
         column = self.columns[item.column()]
         if column == "Enabled" and self._on_apply is not None:
@@ -187,8 +222,7 @@ class QPatternLibrary(QWidget):
         rows = {index.row() for index in self.table.selectedIndexes()}
         if len(rows) != 1:
             return None
-        row = next(iter(rows))
-        return self.rows[row] if 0 <= row < len(self.rows) else None
+        return self.stored_at(next(iter(rows)))
 
     #
     # operations

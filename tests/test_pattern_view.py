@@ -563,6 +563,36 @@ class TestPatternView(AngrManagementTestCase):
         self.main.workspace.job_manager.join_all_jobs()
         assert code_view.codegen.am_obj.text.count("PatternErrorsOut(") == 8
 
+    def test_dock_table_sorts_and_rows_keep_their_patterns(self):
+        from angr.knowledge_plugins.patterns import StoredPattern  # pylint:disable=import-outside-toplevel
+
+        _, code_view, _ = self._apply_error_exit_pattern()
+        kb = self.main.workspace.main_instance.kb
+        data = kb.patterns.get("patternerrorsout").to_dict()
+        data["pattern"]["name"] = "aaa_unused"
+        data["enabled"] = False
+        kb.patterns.store(StoredPattern.from_dict(data))
+        self.main.workspace.on_patterns_changed()
+        library = code_view._pattern_library
+        table = code_view.patterns_table
+
+        def names() -> list[str]:
+            return [library.stored_at(r).name for r in range(table.rowCount())]
+
+        assert names() == ["aaa_unused", "patternerrorsout"], "by name at first"
+
+        # by the Matches column, as numbers, and the rows follow their patterns
+        table.sortItems(3, Qt.SortOrder.DescendingOrder)
+        assert names() == ["patternerrorsout", "aaa_unused"]
+        assert int(table.item(0, 3).text()) >= 8 and table.item(1, 3).text() == "0"
+
+        # a click on a moved row acts on its own pattern, and a reload keeps the order
+        table.item(1, 1).setCheckState(Qt.CheckState.Checked)
+        assert library.pending == {"aaa_unused": True}
+        assert names() == ["patternerrorsout", "aaa_unused"]
+        table.selectRow(1)
+        assert library.selection().name == "aaa_unused"
+
     def test_dock_highlights_the_calls_a_pattern_became(self):
         _, code_view, _ = self._apply_error_exit_pattern()
         table = code_view.patterns_table
