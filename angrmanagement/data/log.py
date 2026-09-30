@@ -33,6 +33,7 @@ class LogTimeStamp:
         Return the timestamp as a formatted string
         """
         if Conf.log_timestamp_format != self._cache_key:
+            self._cache_key = Conf.log_timestamp_format
             self._cache_str = self._ts.strftime(Conf.log_timestamp_format)
         return self._cache_str
 
