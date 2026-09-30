@@ -80,6 +80,7 @@ class FeatureMapPalette:
         brush = self._brush_cache.get(tags, None)
         if brush is None:
             brush = self._get_brush_for_tags(tags)
+            self._brush_cache[tags] = brush
         return brush
 
     def _get_brush_for_tags(self, tags: int) -> QBrush:
