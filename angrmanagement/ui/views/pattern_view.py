@@ -46,7 +46,7 @@ from angrmanagement.data.jobs.pattern_discovery import (
     PatternDiscoveryJob,
     PatternFoundJob,
 )
-from angrmanagement.data.jobs.pattern_search import PatternMatchRow, PatternSearchJob
+from angrmanagement.data.jobs.pattern_search import PatternMatchRow, PatternSearchJob, current_decompilation
 from angrmanagement.ui.views.view import InstanceView
 from angrmanagement.ui.widgets.qpattern_graph import QPatternGraph, QPatternNode
 from angrmanagement.ui.widgets.qpattern_library import QPatternLibrary
@@ -414,7 +414,7 @@ class PatternView(InstanceView):
         if func is None:
             return None
         try:
-            dec = self.instance.project.analyses.Decompiler(func, cfg=self.instance.cfg, use_cache=True)
+            dec = current_decompilation(self.instance, func)
         except Exception:  # pylint:disable=broad-except
             _l.warning("Decompiling %s to re-lift the pattern failed", func.name, exc_info=True)
             return None

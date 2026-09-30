@@ -15,6 +15,7 @@ from angrmanagement.logic.jobmanager import JobCancelled
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
 from .job import InstanceJob
+from .pattern_search import current_decompilation
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -117,7 +118,7 @@ class PatternDiscoveryJob(InstanceJob):
         func = self.func
         t0 = time.monotonic()
         ctx.set_progress(0.0, f"decompiling {func.name}")
-        dec = self.instance.project.analyses.Decompiler(func, cfg=self.instance.cfg, use_cache=True)
+        dec = current_decompilation(self.instance, func)
         graph = dec.ail_graph
         if graph is None or dec.codegen is None:
             return DiscoveryResult(func.addr, func.name, 0, time.monotonic() - t0)

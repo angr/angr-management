@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from angr.analyses.decompiler.optimization_passes import PatternOutliner
 from angr.analyses.decompiler.pattern_match.region import largest_single_entry_subrun, snap
@@ -51,6 +51,31 @@ class PatternMatchRow:
     suggested_coverage: float = 0.0
 
 
+@dataclass
+class CurrentDecompilation:
+    """The parts of a cached decompilation the pattern tools read."""
+
+    ail_graph: Any
+    codegen: Any
+
+
+def current_decompilation(instance: Instance, func: Function):
+    """The function's decompilation as the pseudocode view shows it.
+
+    The view decompiles with its own options, passes and peephole settings; a Decompiler
+    call without them misses the cache, decompiles again, and overwrites the view's cache.
+    So a cached decompilation that still carries its AIL graph is used as it is. Only
+    without one is the function decompiled, and the result kept out of the cache.
+    """
+    cache = instance.kb.decompilations.get((func.addr, "pseudocode"))
+    if cache is not None and cache.codegen is not None:
+        # a cache spilled to disk comes back without its AIL graph
+        graph = getattr(cache.clinic, "cc_graph", None)
+        if graph is not None:
+            return CurrentDecompilation(graph, cache.codegen)
+    return instance.project.analyses.Decompiler(func, cfg=instance.cfg, use_cache=True, update_cache=False)
+
+
 def decompile_without_patterns(instance: Instance, func: Function):
     """The function's decompilation as a pattern would see it: before the outliner pass.
 
@@ -61,7 +86,7 @@ def decompile_without_patterns(instance: Instance, func: Function):
     """
     project = instance.project
     if not instance.kb.patterns.enabled_patterns():
-        return project.analyses.Decompiler(func, cfg=instance.cfg, use_cache=True)
+        return current_decompilation(instance, func)
     platform = project.simos.name if project.simos is not None else None
     passes = DECOMPILATION_PRESETS["default"].get_optimization_passes(
         project.arch, platform, disable_opts=[PatternOutliner]

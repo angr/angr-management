@@ -338,6 +338,27 @@ class TestPatternView(AngrManagementTestCase):
         assert "Empty title" in calls and "Cannot open document." in calls, calls
         assert len(calls) == 8, calls
 
+    def test_discovery_reuses_the_pseudocode_views_decompilation(self):
+        """The view decompiles with its own settings; discovery must not decompile again
+        with the defaults, nor replace the view's cache."""
+        from angr.analyses.decompiler.decompiler import Decompiler  # pylint:disable=import-outside-toplevel
+
+        func, _ = self._decompile("1after909", "doit")
+        kb = self.main.workspace.main_instance.kb
+        cache = kb.decompilations[(func.addr, "pseudocode")]
+        runs = []
+        orig = Decompiler._decompile
+        Decompiler._decompile = lambda dec: runs.append(dec.func.addr) or orig(dec)
+        try:
+            view = self.main.workspace._get_or_create_view("pattern", PatternView)
+            view.discover(func)
+            self.main.workspace.job_manager.join_all_jobs()
+        finally:
+            Decompiler._decompile = orig
+        assert view.families, "discovery ran on the cached decompilation"
+        assert not runs, "and never decompiled"
+        assert kb.decompilations[(func.addr, "pseudocode")] is cache
+
     def _discover_entry(self):
         """The Analyze menu's discovery item, triggered the way a click would."""
         entries = [e for e in self.main._analyze_menu.entries if getattr(e, "caption", None) == "Discover &Patterns..."]
