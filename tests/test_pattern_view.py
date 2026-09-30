@@ -507,12 +507,14 @@ class TestPatternView(AngrManagementTestCase):
         view = code_view.textedit.create_pattern(call_name="PatternErrorsOut")
         assert view is not None
         view.save()
-        # saved but not yet applied here: listed, with no matches in the last decompilation
+        # saved, off as every new pattern is, and not applied here yet
         assert table.rowCount() == 1
-        assert [table.item(0, j).text() for j in (0, 1, 3, 4)] == ["patternerrorsout", "on", "0", "0"]
+        assert [table.item(0, j).text() for j in (0, 1, 3, 4)] == ["patternerrorsout", "off", "0", "0"]
 
         view.apply()
         self.main.workspace.job_manager.join_all_jobs()
+        # Save & Redecompile turns it on: redecompiling with it off would change nothing
+        assert view.enabled and table.item(0, 1).text() == "on"
         matches, outlined = int(table.item(0, 3).text()), int(table.item(0, 4).text())
         assert outlined == 8 and matches >= outlined
 
@@ -840,11 +842,14 @@ class TestPatternView(AngrManagementTestCase):
         kb = self.main.workspace.main_instance.kb
 
         stored = view.save()
-        assert [view._library_table.item(0, j).text() for j in range(3)] == ["my_idiom", "my_idiom", "on"]
+        # a new pattern is saved off
+        assert [view._library_table.item(0, j).text() for j in range(3)] == ["my_idiom", "my_idiom", "off"]
 
         view.toggle_stored(stored)
+        assert kb.patterns.get("my_idiom").enabled is True
+        assert view._library_table.item(0, 2).text() == "on"
+        view.toggle_stored(stored)
         assert kb.patterns.get("my_idiom").enabled is False
-        assert view._library_table.item(0, 2).text() == "off"
 
         with tempfile.TemporaryDirectory() as td:
             path = os.path.join(td, "p.json")

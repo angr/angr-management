@@ -166,9 +166,10 @@ class PatternView(InstanceView):
         pattern: KnownPattern,
         origin_func: int | None = None,
         min_similarity: float = 0.8,
-        enabled: bool = True,
+        enabled: bool = False,
         require_verified: bool = True,
     ) -> None:
+        # a new pattern is saved off; it applies once turned on or saved with Save & Redecompile
         self.editor = PatternEditor(pattern)
         self.origin_func = origin_func
         self.min_similarity = min_similarity
@@ -300,11 +301,14 @@ class PatternView(InstanceView):
         return stored
 
     def apply(self) -> StoredPattern | None:
-        """Save, then decompile the pattern's function afresh so the outliner pass runs on it.
+        """Turn the pattern on, save it, then decompile its function afresh so the outliner pass runs on it.
 
         Other functions pick the pattern up the next time they are decompiled without a
         cached result; their caches are left alone.
         """
+        if self.editor is not None and not self.enabled:
+            self.enabled = True
+            self._rebuild_properties()
         stored = self.save()
         if stored is None:
             return None
@@ -317,7 +321,7 @@ class PatternView(InstanceView):
         code_view = self.workspace._get_or_create_view("pseudocode", CodeView, position="center")
         code_view.function = func
         code_view.decompile(reset_cache=True)
-        self._set_status(f"applied {stored.name}: {func.name} is being decompiled again")
+        self._set_status(f"applied {stored.name} (enabled): {func.name} is being decompiled again")
         return stored
 
     def leaf_index(self, path: NodePath) -> int:
@@ -624,7 +628,7 @@ class PatternView(InstanceView):
         self._save_btn = QPushButton("Save to project")
         self._save_btn.clicked.connect(self.save)
         self._apply_btn = QPushButton("Save && Redecompile")
-        self._apply_btn.setToolTip("Save, then decompile the pattern's function again with the pattern applied")
+        self._apply_btn.setToolTip("Turn the pattern on, save it, then decompile its function again with it applied")
         self._apply_btn.clicked.connect(self.apply)
         buttons = QHBoxLayout()
         buttons.addWidget(self._undo_btn)
