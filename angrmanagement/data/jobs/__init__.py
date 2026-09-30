@@ -19,7 +19,7 @@ from .llm_refine import LLMRefineJob
 from .loading import LoadBinaryJob
 from .overview import OverviewConfiguration
 from .pattern_discovery import DiscoveredFamily, DiscoveryResult, PatternDiscoveryJob, PatternFoundJob
-from .pattern_search import PatternCountJob, PatternMatchRow, PatternSearchJob
+from .pattern_search import PatternMatchRow, PatternSearchJob
 from .prototype_finding import PrototypeFindingJob
 from .rust_symbol_recovery import RustSymbolRecoveryConfiguration, RustSymbolRecoveryJob
 from .rust_typedb_loader import RustTypeDBLoaderConfiguration, RustTypeDBLoaderJob
@@ -44,7 +44,6 @@ __all__ = [
     "DecompileFunctionJob",
     "DiscoveredFamily",
     "DiscoveryResult",
-    "PatternCountJob",
     "PatternMatchRow",
     "PatternDiscoveryJob",
     "PatternFoundJob",

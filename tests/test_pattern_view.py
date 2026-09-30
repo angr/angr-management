@@ -491,9 +491,9 @@ class TestPatternView(AngrManagementTestCase):
         view = code_view.textedit.create_pattern(call_name="PatternErrorsOut")
         assert view is not None
         view.save()
-        # saved but not yet applied here: listed, with no numbers for this function
+        # saved but not yet applied here: listed, with no matches in the last decompilation
         assert table.rowCount() == 1
-        assert [table.item(0, j).text() for j in (0, 1, 3, 4)] == ["patternerrorsout", "on", "-", "-"]
+        assert [table.item(0, j).text() for j in (0, 1, 3, 4)] == ["patternerrorsout", "on", "0", "0"]
 
         view.apply()
         self.main.workspace.job_manager.join_all_jobs()
@@ -563,29 +563,20 @@ class TestPatternView(AngrManagementTestCase):
         assert code_view.pattern_highlighted_lines == []
         assert table.item(0, 2).checkState() == Qt.CheckState.Unchecked
 
-    def test_dock_counts_matches_of_a_pattern_the_pass_did_not_search(self):
+    def test_dock_matches_come_from_the_last_decompilation(self):
+        """Matches are what the pass found the last time the function was decompiled, and 0
+        for a pattern that was off then; nothing is counted in the background."""
         func, code_view, _ = self._apply_error_exit_pattern()
-        self.main.show()  # the harness never shows the window, and a count waits until one can see it
-        self.main.workspace.raise_view(code_view)
-        code_view.patterns_dock.setVisible(True)
-        assert code_view._pattern_library.isVisible()
         table = code_view.patterns_table
-        by_pass = int(table.item(0, 3).text())
-
-        table.item(0, 1).setCheckState(Qt.CheckState.Unchecked)
-        self.main.workspace.job_manager.join_all_jobs()
         kb = self.main.workspace.main_instance.kb
-        assert kb.patterns.stats(func.addr, "patternerrorsout") is None, "the pass did not search for it"
-        # counted in the background, by the pass's own rules, so the numbers agree
-        assert table.item(0, 3).text() == str(by_pass)
-        assert table.item(0, 4).text() == "0"
+        assert int(table.item(0, 3).text()) >= 8
 
-        # a hidden dock starts nothing
-        code_view.patterns_dock.setVisible(False)
-        code_view._pattern_library._counts.clear()
-        code_view.reload_patterns()
-        assert code_view._pattern_library._counting is None
-        assert table.item(0, 3).text() == "-"
+        kb.patterns.set_enabled("patternerrorsout", False)
+        code_view.decompile(reset_cache=True)
+        self.main.workspace.job_manager.join_all_jobs()
+        assert kb.patterns.stats(func.addr, "patternerrorsout") is None, "the pass did not search for it"
+        assert [table.item(0, j).text() for j in (3, 4)] == ["0", "0"]
+        assert not self.main.workspace.job_manager.jobs, "and nothing counts it"
 
     def test_pattern_highlights_can_be_cleared_from_the_menu_or_the_dock(self):
         func, code_view, _ = self._apply_error_exit_pattern()

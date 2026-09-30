@@ -955,7 +955,7 @@ class CodeView(FunctionView):
             "Clear highlights", self.clear_pattern_highlight, "Remove every pattern highlight from the pseudocode (Esc)"
         )
         self._clear_highlights_btn.setEnabled(False)
-        # counting what the pass did not search for waits until someone looks
+        # the numbers may have changed while the dock was hidden
         self._patterns_dock.visibilityChanged.connect(lambda visible: visible and self.reload_patterns())
         window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self._patterns_dock)
         self._patterns_dock.setVisible(False)
