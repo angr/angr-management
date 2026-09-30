@@ -332,7 +332,7 @@ class Workspace:
         if current_view is None or not isinstance(current_view, FunctionView):
             # we don't have a current view or the current view does not have function-specific content. create a
             # disassembly view to display the selected function.
-            disasm_view = self._get_or_create_view("dissasembly", DisassemblyView)
+            disasm_view = self._get_or_create_view("disassembly", DisassemblyView)
             disasm_view.display_function(func)
             self.view_manager.raise_view(disasm_view)
         else:
