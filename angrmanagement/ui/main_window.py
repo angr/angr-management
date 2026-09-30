@@ -979,7 +979,7 @@ class MainWindow(QMainWindow):
 
     def discover_patterns(self) -> None:
         if self.workspace is not None:
-            self.workspace.discover_patterns()
+            self.workspace.show_pattern_discovery()
 
     def llm_refine_all(self) -> None:
         if self.workspace is not None:

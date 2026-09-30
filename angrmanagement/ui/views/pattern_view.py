@@ -440,6 +440,9 @@ class PatternView(InstanceView):
     # discovery
     #
 
+    def show_discover_tab(self) -> None:
+        self._tabs.setCurrentWidget(self._discover_tab)
+
     def discover(self, func, blocking: bool = True) -> None:
         """Look for families of similar code in ``func``; the results land in the Discover tab."""
         if self._found_job is not None:

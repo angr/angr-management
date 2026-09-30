@@ -365,34 +365,50 @@ class TestPatternView(AngrManagementTestCase):
         assert len(entries) == 1, "the Analyze menu offers pattern discovery"
         return entries[0]._qaction
 
-    def test_discovery_without_a_decompiled_function_warns_and_bails(self):
+    def _run_discovery(self):
+        """Analyze > Discover Patterns opens the Discover tab; its button starts the run."""
+        self._discover_entry().trigger()
+        view = self.main.workspace.view_manager.first_view_in_category("pattern")
+        assert isinstance(view, PatternView) and view._tabs.currentWidget() is view._discover_tab
+        view._discover_btn.click()
+        return view
+
+    def test_discover_menu_opens_the_discover_tab_without_running(self):
+        from angrmanagement.data.jobs import PatternDiscoveryJob  # pylint:disable=import-outside-toplevel
+
         main = self.main
         binpath = os.path.join(test_location, "x86_64", "1after909")
         main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
         main.workspace.main_instance.project.am_event()
         main.workspace.job_manager.join_all_jobs()
+        started = []
+        main.workspace.job_manager.job_starting.connect(started.append)
 
+        self._discover_entry().trigger()
+        main.workspace.job_manager.join_all_jobs()
+        view = main.workspace.view_manager.first_view_in_category("pattern")
+        assert isinstance(view, PatternView) and view._tabs.currentWidget() is view._discover_tab
+        assert main.workspace.view_manager.current_tab is view
+        assert not any(isinstance(j, PatternDiscoveryJob) for j in started), "nothing runs yet"
+
+        # without a decompiled function, the button warns and bails
         warnings = []
         orig = QMessageBox.warning
         QMessageBox.warning = lambda *args, **kwargs: warnings.append(args) or QMessageBox.StandardButton.Ok
         try:
-            self._discover_entry().trigger()
+            view._discover_btn.click()
         finally:
             QMessageBox.warning = orig
         main.workspace.job_manager.join_all_jobs()
-
         assert len(warnings) == 1 and "No function is currently decompiled" in warnings[0][2]
-        assert main.workspace.view_manager.first_view_in_category("pattern") is None, "nothing else happens"
+        assert not any(isinstance(j, PatternDiscoveryJob) for j in started)
 
     def test_discovery_from_the_menu_finds_the_error_exit_idiom(self):
         """Analyze > Discover Patterns on doit: the error-exit family's lifted pattern finds
         every error exit, and applying it outlines them."""
         func, code_view = self._decompile("1after909", "doit")
-        self._discover_entry().trigger()
+        view = self._run_discovery()
         self.main.workspace.job_manager.join_all_jobs()
-
-        view = self.main.workspace.view_manager.first_view_in_category("pattern")
-        assert isinstance(view, PatternView)
         assert view.discovered_func == func.addr and view.families
         assert view._families_table.rowCount() == len(view.families)
 
@@ -674,7 +690,7 @@ class TestPatternView(AngrManagementTestCase):
         orig = dialog.setLabelText
         dialog.setLabelText = lambda text: labels.append(text) or orig(text)
         try:
-            self._discover_entry().trigger()
+            self._run_discovery()
             self.main.workspace.job_manager.join_all_jobs()
         finally:
             dialog.setLabelText = orig
@@ -704,7 +720,7 @@ class TestPatternView(AngrManagementTestCase):
 
         PatternView._show_families = spy
         try:
-            self._discover_entry().trigger()
+            self._run_discovery()
             self.main.workspace.job_manager.join_all_jobs()
         finally:
             PatternView._show_families = orig
@@ -741,7 +757,7 @@ class TestPatternView(AngrManagementTestCase):
         orig = PatternView._show_families
         PatternView._show_families = lambda v, result: results.append(result) or orig(v, result)
         try:
-            self._discover_entry().trigger()
+            self._run_discovery()
             self.main.workspace.job_manager.join_all_jobs()
         finally:
             PatternView._show_families = orig
@@ -784,7 +800,7 @@ class TestPatternView(AngrManagementTestCase):
         orig = pattern_discovery.Checkpoint
         pattern_discovery.Checkpoint = eager_checkpoint
         try:
-            self._discover_entry().trigger()
+            self._run_discovery()
             manager.join_all_jobs()
         finally:
             pattern_discovery.Checkpoint = orig

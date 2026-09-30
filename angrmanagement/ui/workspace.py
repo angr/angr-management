@@ -694,6 +694,16 @@ class Workspace:
         self.raise_view(view)
         return view
 
+    def show_pattern_discovery(self) -> PatternView | None:
+        """Open the pattern view on its Discover tab, where a discovery run is set up and started."""
+        if self.main_instance.project.am_none:
+            QMessageBox.warning(self._main_window, "Discover Patterns", "No project is loaded.")
+            return None
+        view = self._get_or_create_view("pattern", PatternView)
+        view.show_discover_tab()
+        self.raise_view(view)
+        return view
+
     def discover_patterns(self) -> PatternView | None:
         """Look for families of similar code in the function shown in the pseudocode view.
 
