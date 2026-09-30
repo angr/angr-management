@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from angr.ailment.expression import BinaryOp, Load, Op, UnaryOp
 from angr.ailment.statement import Assignment, Store
 from angr.analyses.decompiler.edits import set_function_prototype as core_set_function_prototype
+from angr.analyses.decompiler.known_patterns.generator import PatternGenerationError, PatternGenerator
 from angr.analyses.decompiler.optimization_passes.expr_op_swapper import OpDescriptor
 from angr.analyses.decompiler.structured_codegen.c import (
     CBinaryOp,
@@ -32,6 +34,7 @@ from angrmanagement.ui.dialogs.retype_node import RetypeNode
 from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.documents.qcodedocument import QCodeDocument
 from angrmanagement.ui.menus.menu import Menu
+from angrmanagement.ui.views.pattern_view import PatternView
 from angrmanagement.ui.widgets.qccode_highlighter import FORMATS, QCCodeHighlighter
 from angrmanagement.ui.widgets.qinline_comment_editor import QInlineCommentEditor
 from angrmanagement.ui.widgets.qnode_tip import QNodeTip
@@ -41,6 +44,9 @@ if TYPE_CHECKING:
     from PySide6.QtGui import QTextDocument
 
     from angrmanagement.ui.views.code_view import CodeView
+
+
+_l = logging.getLogger(__name__)
 
 
 class ColorSchemeIDA(api.ColorScheme):
@@ -184,6 +190,10 @@ class QCCodeEdit(api.CodeEdit):
 
         for action in self.llm_actions:
             mnu.addAction(action)
+
+        if self._code_view is not None and self._code_view.has_pattern_highlight:
+            mnu.addSeparator()
+            mnu.addAction(self.action_clear_pattern_highlights)
 
         return mnu
 
@@ -624,6 +634,40 @@ class QCCodeEdit(api.CodeEdit):
             self._selected_node.fmt_double ^= True
             self._code_view.codegen.am_event()
 
+    def create_pattern(self, call_name: str | None = None) -> PatternView | None:
+        """Turn the selected text into a pattern and open it in the editor view.
+
+        ``call_name`` is asked for when not given. Returns the view, or None when there
+        is no selection, no decompilation, or nothing whole inside the selection.
+        """
+        cursor = self.textCursor()
+        start, end = cursor.selectionStart(), cursor.selectionEnd()
+        if start >= end:
+            _l.warning("Select the statements the pattern should cover first.")
+            return None
+        codegen = self._code_view.codegen.am_obj
+        function = self._code_view.function
+        if codegen is None or function is None:
+            return None
+        cache = self.instance.kb.decompilations.get((function.addr, "pseudocode"))
+        graph = cache.clinic.cc_graph if cache is not None and cache.clinic is not None else None
+        if graph is None:
+            _l.warning("No AIL graph is cached for this function; decompile it first.")
+            return None
+        if call_name is None:
+            call_name, ok = QInputDialog.getText(self, "Pattern", "Name of the call the pattern becomes:")
+            if not ok or not call_name.strip():
+                return None
+        try:
+            pattern = PatternGenerator(codegen, graph).generate_pattern(start, end, call_name.strip())
+        except PatternGenerationError as ex:
+            _l.warning("Cannot make a pattern out of this selection: %s", ex)
+            return None
+        view = self.workspace._get_or_create_view("pattern", PatternView, position="center")
+        view.load_pattern(pattern, origin_func=function.addr)
+        self.workspace.raise_view(view)
+        return view
+
     def convert_to_ite_expr(self) -> None:
         node = self._selected_node
         if not isinstance(node, CExpression):
@@ -824,6 +868,10 @@ class QCCodeEdit(api.CodeEdit):
         self.action_comment = QAction("Comment...", self)
         self.action_comment.triggered.connect(lambda: self.comment())
         self.action_comment.setShortcut(QKeySequence(";"))
+        self.action_pattern = QAction("Create pattern from selection...", self)
+        self.action_pattern.triggered.connect(lambda: self.create_pattern())
+        self.action_clear_pattern_highlights = QAction("Clear pattern highlights", self)
+        self.action_clear_pattern_highlights.triggered.connect(lambda: self._code_view.clear_pattern_highlight())
 
         expr_actions = [
             self.action_to_ite_expr,
@@ -855,7 +903,7 @@ class QCCodeEdit(api.CodeEdit):
 
         self.call_actions = [self.action_rename_node, self.action_xref]
 
-        comment_actions = [self.action_comment]
+        comment_actions = [self.action_comment, self.action_pattern]
 
         self.constant_actions += comment_actions + base_actions + expr_actions
         self.operator_actions += comment_actions + base_actions + expr_actions

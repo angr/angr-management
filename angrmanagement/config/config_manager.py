@@ -194,6 +194,7 @@ ENTRIES = [
     CE("disasm_view_branch_target_text_color", QColor, QColor(0x80, 0x80, 0x00)),
     CE("disasm_view_comment_color", QColor, QColor(0x37, 0x3D, 0x3F, 0xFF)),
     CE("disasm_view_bookmark_color", QColor, QColor(0xFF, 0xD5, 0x4F, 0x60)),
+    CE("disasm_view_pattern_highlight_color", QColor, QColor(0x64, 0xB5, 0xF6, 0x50)),
     CE("disasm_view_ir_default_color", QColor, QColor(0x80, 0x80, 0x80)),
     CE("disasm_view_alignment_color", QColor, QColor(0x00, 0x60, 0x60)),
     CE("disasm_view_label_color", QColor, QColor(0x00, 0x00, 0x80)),
@@ -285,6 +286,8 @@ ENTRIES = [
     CE("pseudocode_label_weight", QFont.Weight, QFont.Weight.Medium),
     CE("pseudocode_label_style", QFont.Style, QFont.Style.StyleNormal),
     CE("pseudocode_highlight_color", QColor, QColor(0xFF, 0xFF, 0x00, 0xFF)),
+    # lines of a discovered pattern family, shown after double-clicking it in the Discover table
+    CE("pseudocode_pattern_highlight_color", QColor, QColor(0x64, 0xB5, 0xF6, 0x50)),
     CE("proximity_node_background_color", QColor, QColor(0xFA, 0xFA, 0xFA)),
     CE("proximity_node_selected_background_color", QColor, QColor(0xCC, 0xCC, 0xCC)),
     CE("proximity_node_border_color", QColor, QColor(0xF0, 0xF0, 0xF0)),

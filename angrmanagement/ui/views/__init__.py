@@ -15,6 +15,7 @@ from .jobs_view import JobsView
 from .log_view import LogView
 from .mcp_history_view import MCPHistoryView
 from .patches_view import PatchesView
+from .pattern_view import PatternView
 from .proximity_view import ProximityView
 from .registers_view import RegistersView
 from .search_view import SearchView
@@ -30,6 +31,7 @@ from .view import BaseView, InstanceView
 
 __all__ = [
     "BookmarksView",
+    "PatternView",
     "BreakpointsView",
     "CallExplorerView",
     "CodeView",

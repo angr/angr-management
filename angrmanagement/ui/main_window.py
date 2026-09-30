@@ -977,6 +977,10 @@ class MainWindow(QMainWindow):
         if self.workspace is not None:
             self.workspace.decompile_current_function()
 
+    def discover_patterns(self) -> None:
+        if self.workspace is not None:
+            self.workspace.show_pattern_discovery()
+
     def llm_refine_all(self) -> None:
         if self.workspace is not None:
             self.workspace.llm_refine_all()
