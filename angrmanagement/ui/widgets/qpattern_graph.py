@@ -7,7 +7,7 @@ from angr.analyses.decompiler.known_patterns import PAnyStmt
 from angr.analyses.decompiler.known_patterns.edit import describe
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QPen
-from PySide6.QtWidgets import QGraphicsSimpleTextItem
+from PySide6.QtWidgets import QGraphicsSimpleTextItem, QMenu
 
 from angrmanagement.config import Conf
 from angrmanagement.utils.graph_layouter import GraphLayouter
@@ -183,6 +183,16 @@ class QPatternGraph(QZoomableDraggableGraphicsView):
     @property
     def graph(self) -> networkx.DiGraph | None:
         return self._graph
+
+    def context_menu(self) -> QMenu:
+        menu = QMenu(self)
+        menu.addAction("Expand all", self._view.expand_all)
+        menu.addAction("Collapse all", self._view.collapse_all)
+        return menu
+
+    def contextMenuEvent(self, event) -> None:
+        self.context_menu().exec(event.globalPos())
+        event.accept()
 
     @graph.setter
     def graph(self, v: networkx.DiGraph | None) -> None:

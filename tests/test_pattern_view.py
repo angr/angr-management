@@ -609,6 +609,21 @@ class TestPatternView(AngrManagementTestCase):
         table.selectRow(1)
         assert library.selection().name == "aaa_unused"
 
+    def test_graph_context_menu_expands_and_collapses_everything(self):
+        _, _, view = self._apply_error_exit_pattern()
+        graph = view._graph_widget
+        statements = len(view.editor.leaves())
+        everything = len({p for p, _ in view.editor.leaves()} | {p for p, _ in _all_nodes(view.editor)})
+        assert statements < everything and len(graph.blocks) == everything, "small patterns start fully expanded"
+
+        menu = graph.context_menu()  # kept alive: its actions die with it
+        actions = {a.text(): a for a in menu.actions()}
+        assert list(actions) == ["Expand all", "Collapse all"]
+        actions["Collapse all"].trigger()
+        assert len(graph.blocks) == statements
+        actions["Expand all"].trigger()
+        assert len(graph.blocks) == everything
+
     def test_dock_highlights_the_calls_a_pattern_became(self):
         _, code_view, _ = self._apply_error_exit_pattern()
         table = code_view.patterns_table

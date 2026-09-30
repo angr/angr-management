@@ -212,6 +212,20 @@ class PatternView(InstanceView):
         self.selected_path = path
         self._rebuild()
 
+    def expand_all(self) -> None:
+        """Show every node, however large the tree."""
+        if self.editor is None:
+            return
+        self.collapsed = set()
+        self._rebuild()
+
+    def collapse_all(self) -> None:
+        """Show the statements only."""
+        if self.editor is None:
+            return
+        self.collapsed = {path for path, _ in self.editor.leaves() if self.editor.children(path)}
+        self._rebuild()
+
     #: past this many nodes a fully expanded tree is unreadable and slow to lay out
     MAX_EXPANDED_NODES = 400
 
