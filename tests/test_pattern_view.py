@@ -15,7 +15,7 @@ from common import AngrManagementTestCase, test_location
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QTextCursor, QTextFormat
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QLabel, QMessageBox
 
 from angrmanagement.config import Conf
 from angrmanagement.ui.views import CodeView, DisassemblyView
@@ -351,6 +351,7 @@ class TestPatternView(AngrManagementTestCase):
         Decompiler._decompile = lambda dec: runs.append(dec.func.addr) or orig(dec)
         try:
             view = self.main.workspace._get_or_create_view("pattern", PatternView)
+            view._min_size.setValue(3)
             view.discover(func)
             self.main.workspace.job_manager.join_all_jobs()
         finally:
@@ -370,6 +371,8 @@ class TestPatternView(AngrManagementTestCase):
         self._discover_entry().trigger()
         view = self.main.workspace.view_manager.first_view_in_category("pattern")
         assert isinstance(view, PatternView) and view._tabs.currentWidget() is view._discover_tab
+        # doit's error exit is three statements, below the default minimum
+        view._min_size.setValue(3)
         view._discover_btn.click()
         return view
 
@@ -389,6 +392,9 @@ class TestPatternView(AngrManagementTestCase):
         view = main.workspace.view_manager.first_view_in_category("pattern")
         assert isinstance(view, PatternView) and view._tabs.currentWidget() is view._discover_tab
         assert main.workspace.view_manager.current_tab is view
+        assert view._min_size.value() == 6
+        labels = [w.text() for w in view._discover_tab.findChildren(QLabel)]
+        assert "Min statements" in labels and "Min size" not in labels
         assert not any(isinstance(j, PatternDiscoveryJob) for j in started), "nothing runs yet"
 
         # without a decompiled function, the button warns and bails
