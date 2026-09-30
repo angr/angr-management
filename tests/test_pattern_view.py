@@ -743,7 +743,7 @@ class TestPatternView(AngrManagementTestCase):
         self._decompile("1after909", "doit")
         started, results = [], []
         self.main.workspace.job_manager.job_starting.connect(started.append)
-        self.main.workspace.discover_patterns()  # opens the view; its first run uses the default mode
+        self.main.workspace.show_pattern_discovery()
         self.main.workspace.job_manager.join_all_jobs()
         view = self.main.workspace.view_manager.first_view_in_category("pattern")
         combo = view._statements
@@ -752,6 +752,8 @@ class TestPatternView(AngrManagementTestCase):
             "Follow control flow",
             "Consecutive only",
         ]
+        assert combo.currentText() == "Consecutive only", "the default"
+        combo.setCurrentIndex(0)
         combo.setCurrentIndex(2)
         view._min_size.setValue(3)
         orig = PatternView._show_families
@@ -790,6 +792,11 @@ class TestPatternView(AngrManagementTestCase):
 
         def eager_checkpoint(low_priority=True, callback=None, **_):
             def cancel_then_check():
+                # the manager learns of a started job through a queued signal; the dialog's
+                # Cancel cannot reach the job before then
+                if not isinstance(manager._current_job, pattern_discovery.PatternDiscoveryJob):
+                    callback()
+                    return
                 # what the dialog's Cancel does, pressed while the alignment runs
                 fired.append(1)
                 manager.interrupt_current_job()

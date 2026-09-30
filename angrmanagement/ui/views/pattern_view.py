@@ -717,6 +717,8 @@ class PatternView(InstanceView):
             self._statements.addItem(label, mode)
             self._statements.setItemData(self._statements.count() - 1, tip, Qt.ItemDataRole.ToolTipRole)
         self._statements.setToolTip("How the statements of one copy may follow each other")
+        # a copy that is one straight run of pseudocode is what a reader recognizes as repeated code
+        self._statements.setCurrentIndex(self._statements.findData(STATEMENTS_CONSECUTIVE))
         self._discover_btn = QPushButton("Discover in current function")
         self._discover_btn.setToolTip("Find families of similar code in the function shown in the pseudocode view")
         self._discover_btn.clicked.connect(self.workspace.discover_patterns)
