@@ -532,7 +532,8 @@ class TestPatternView(AngrManagementTestCase):
         self._select_text(code_view, r'puts\("String is empty."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
         view = code_view.textedit.create_pattern(call_name="PatternErrorsOut")
         assert view is not None
-        view.apply()
+        assert view._apply_btn.text() == "Save && Redecompile"
+        view._apply_btn.click()
         self.main.workspace.job_manager.join_all_jobs()
         assert code_view.codegen.am_obj.text.count("PatternErrorsOut(") == 8
         return func, code_view, view

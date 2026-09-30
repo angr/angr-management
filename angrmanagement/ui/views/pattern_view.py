@@ -623,7 +623,7 @@ class PatternView(InstanceView):
         self._captures_btn.clicked.connect(self.loosen_interior_captures)
         self._save_btn = QPushButton("Save to project")
         self._save_btn.clicked.connect(self.save)
-        self._apply_btn = QPushButton("Apply")
+        self._apply_btn = QPushButton("Save && Redecompile")
         self._apply_btn.setToolTip("Save, then decompile the pattern's function again with the pattern applied")
         self._apply_btn.clicked.connect(self.apply)
         buttons = QHBoxLayout()
