@@ -233,7 +233,20 @@ class QPatternGraph(QZoomableDraggableGraphicsView):
             self._arrows.append(arrow)
             scene.addItem(arrow)
             arrow.setPos(QPointF(*edge.coordinates[0]))
+        # a scene's rect only ever grows on its own; a stale, larger one pulls the view off the tree
+        scene.setSceneRect(
+            scene.itemsBoundingRect().adjusted(
+                -self.LEFT_PADDING, -self.TOP_PADDING, self.LEFT_PADDING, self.TOP_PADDING
+            )
+        )
         self._reset_view()
 
     def _initial_position(self):
         return self.scene().itemsBoundingRect().center()
+
+    def _reset_view(self) -> None:
+        # keep the zoom, then center; the base class's restore zooms about a misplaced anchor
+        self.resetTransform()
+        if self.zoom_factor:
+            self.scale(self.zoom_factor, self.zoom_factor)
+        self.centerOn(self._initial_position())

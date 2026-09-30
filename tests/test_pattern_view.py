@@ -627,6 +627,41 @@ class TestPatternView(AngrManagementTestCase):
         actions["Expand all"].trigger()
         assert len(graph.blocks) == everything
 
+    def _show_graph(self, view):
+        """The harness never shows the window; geometry needs a visible, sized viewport."""
+        from PySide6.QtWidgets import QApplication  # pylint:disable=import-outside-toplevel
+
+        self.main.resize(1400, 900)
+        self.main.show()
+        self.main.workspace.raise_view(view)
+        view._tabs.setCurrentWidget(view._pattern_tab)
+        QApplication.processEvents()
+        return view._graph_widget
+
+    @staticmethod
+    def _tree_offset(graph):
+        """How far the tree's center sits from the viewport's center, in pixels."""
+        center = graph.mapFromScene(graph.scene().itemsBoundingRect().center())
+        diff = center - graph.viewport().rect().center()
+        return abs(diff.x()), abs(diff.y())
+
+    def test_expand_all_then_collapse_all_keeps_the_tree_centered(self):
+        _, _, view = self._apply_error_exit_pattern()
+        graph = self._show_graph(view)
+        view.collapse_all()
+        view.expand_all()
+        view.collapse_all()
+        dx, dy = self._tree_offset(graph)
+        assert dx <= 2 and dy <= 2, (dx, dy)
+        # the scene is only as large as what is on it, with room to drag
+        rect, items = graph.scene().sceneRect(), graph.scene().itemsBoundingRect()
+        assert rect.width() <= items.width() + 2 * graph.LEFT_PADDING + 1
+        # zoomed out, too
+        graph.zoom(out=True)
+        view.expand_all()
+        dx, dy = self._tree_offset(graph)
+        assert dx <= 2 and dy <= 2, (dx, dy)
+
     def test_dock_highlights_the_calls_a_pattern_became(self):
         _, code_view, _ = self._apply_error_exit_pattern()
         table = code_view.patterns_table
