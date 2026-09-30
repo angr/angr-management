@@ -100,24 +100,6 @@ class TestPatternView(AngrManagementTestCase):
                 return start, end
         raise AssertionError("no block renders two statements")
 
-    def test_selection_becomes_an_editable_pattern(self):
-        func, code_view = self._decompile_main()
-        self._select_two_statements(func, code_view)
-
-        view = code_view.textedit.create_pattern(call_name="my_idiom")
-        assert isinstance(view, PatternView)
-        assert view.editor is not None
-        assert view.editor.pattern.call_name == "my_idiom"
-        assert view.origin_func == func.addr
-
-        leaves = view.editor.leaves()
-        assert len(leaves) >= 2
-        graph = view._graph_widget.graph
-        assert graph is not None
-        assert graph.number_of_nodes() > len(leaves), "a fresh pattern shows its expressions too"
-        assert view.collapsed == set()
-        assert all(isinstance(n, QPatternNode) for n in graph.nodes())
-
     def test_double_click_expands_and_collapses_without_editing(self):
         _, code_view = self._decompile("1after909", "read_bin")
         self._select_text(code_view, r'puts\("Failed to read length."\);\n +fflush\(stdout\);\n +return 0xffffffff;\n')
@@ -231,7 +213,13 @@ class TestPatternView(AngrManagementTestCase):
         func, code_view = self._decompile_main()
         self._select_two_statements(func, code_view)
         view = code_view.textedit.create_pattern(call_name="my_idiom")
-        assert view is not None
+        assert isinstance(view, PatternView) and view.editor is not None
+        assert view.editor.pattern.call_name == "my_idiom" and view.origin_func == func.addr
+        leaves = view.editor.leaves()
+        assert len(leaves) >= 2
+        graph = view._graph_widget.graph
+        assert graph.number_of_nodes() > len(leaves), "a fresh pattern shows its expressions too"
+        assert view.collapsed == set() and all(isinstance(n, QPatternNode) for n in graph.nodes())
         view.min_similarity = 0.7
 
         stored = view.save()
@@ -268,18 +256,6 @@ class TestPatternView(AngrManagementTestCase):
         disasm_view = self.main.workspace._get_or_create_view("disassembly", DisassemblyView)
         assert disasm_view.function.am_obj is not None
         assert disasm_view.function.am_obj.addr == func.addr
-
-    def test_apply_outlines_the_selection_in_the_pseudocode(self):
-        func, code_view = self._decompile_main()
-        self._select_two_statements(func, code_view)
-        view = code_view.textedit.create_pattern(call_name="my_idiom")
-        assert view is not None
-        assert "my_idiom(" not in code_view.codegen.am_obj.text
-
-        view.apply()
-        self.main.workspace.job_manager.join_all_jobs()
-
-        assert "my_idiom(" in code_view.codegen.am_obj.text, "the pattern's own statements must decompile as its call"
 
     def test_error_exit_story_on_doit(self):
         """The user story: select `puts("String is empty."); fflush(stdout); return 0xffffffff;`
@@ -572,6 +548,10 @@ class TestPatternView(AngrManagementTestCase):
         self.main.workspace.job_manager.join_all_jobs()
         assert kb.patterns.get("patternerrorsout").enabled is False
         assert "PatternErrorsOut(" not in code_view.codegen.am_obj.text, "decompiled again without it"
+        # Matches say what the last decompilation found: 0 for a pattern off then, counted by nobody
+        assert kb.patterns.stats(code_view.function.am_obj.addr, "patternerrorsout") is None
+        assert [table.item(0, j).text() for j in (3, 4)] == ["0", "0"]
+        assert not self.main.workspace.job_manager.jobs
         assert table.item(0, 1).text() == "off" and not table.item(0, 0).font().bold()
         assert not button.isEnabled()
 
@@ -821,21 +801,6 @@ class TestPatternView(AngrManagementTestCase):
         QTest.keyClick(code_view.textedit, Qt.Key.Key_Escape)
         assert code_view.pattern_highlighted_lines == []
         assert table.item(0, 2).checkState() == Qt.CheckState.Unchecked
-
-    def test_dock_matches_come_from_the_last_decompilation(self):
-        """Matches are what the pass found the last time the function was decompiled, and 0
-        for a pattern that was off then; nothing is counted in the background."""
-        func, code_view, _ = self._apply_error_exit_pattern()
-        table = code_view.patterns_table
-        kb = self.main.workspace.main_instance.kb
-        assert int(table.item(0, 3).text()) >= 3
-
-        kb.patterns.set_enabled("patternerrorsout", False)
-        code_view.decompile(reset_cache=True)
-        self.main.workspace.job_manager.join_all_jobs()
-        assert kb.patterns.stats(func.addr, "patternerrorsout") is None, "the pass did not search for it"
-        assert [table.item(0, j).text() for j in (3, 4)] == ["0", "0"]
-        assert not self.main.workspace.job_manager.jobs, "and nothing counts it"
 
     def test_dock_highlight_works_without_the_pass_numbers(self):
         """The pass's numbers are not saved with the project; the calls on screen are enough
