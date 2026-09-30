@@ -335,7 +335,8 @@ class CodeView(FunctionView):
         self._rebuild_pattern_selections()
 
     def set_pattern_highlight(self, name: str, on: bool) -> None:
-        """Band the calls the named pattern was outlined into, in whatever function is shown."""
+        """Band the named pattern's matches in whatever function is shown: the calls the
+        outlined ones became, and the lines of the rest."""
         if on:
             self._highlighted_patterns.add(name)
         else:
@@ -347,12 +348,19 @@ class CodeView(FunctionView):
 
     @property
     def has_pattern_highlight(self) -> bool:
-        """Whether anything is highlighted: a Discover family or a pattern's calls."""
-        return bool(self._highlight_layers or self._highlighted_patterns)
+        """Whether anything is highlighted: a Discover family, a pattern's matches, or either in the disassembly."""
+        return bool(self._highlight_layers or self._highlighted_patterns or self._disasm_pattern_addrs())
+
+    def _disasm_pattern_addrs(self) -> set[int]:
+        disasm = self.workspace.view_manager.first_view_in_category("disassembly")
+        return set(getattr(disasm, "pattern_highlight_addrs", ()))
 
     def clear_pattern_highlight(self) -> bool:
         """Drop every pattern highlight; returns whether there was any."""
         had = bool(self._highlight_layers or self._highlighted_patterns)
+        disasm = self.workspace.view_manager.first_view_in_category("disassembly")
+        if disasm is not None and disasm.clear_pattern_highlight():
+            had = True
         self._highlight_layers.clear()
         self._highlighted_patterns.clear()
         self._pattern_selections = []
@@ -391,6 +399,8 @@ class CodeView(FunctionView):
             stats = kb.patterns.stats(func_addr, name)
             if stats is not None:
                 addrs.update(stats.call_addrs)
+                # an outlined match's statements are gone and match nothing; the rest still render
+                addrs.update(*stats.match_addrs)
         return addrs
 
     def _rebuild_pattern_selections(self) -> None:
@@ -948,6 +958,7 @@ class CodeView(FunctionView):
             current_func=lambda: None if self._function.am_none else self._function.am_obj.addr,
             on_apply=self._on_patterns_applied,
             highlight=(self.is_pattern_highlighted, self.set_pattern_highlight),
+            code_view=lambda: self,
         )
         self._patterns_dock = QDockWidget("Patterns", window)
         self._patterns_dock.setWidget(self._pattern_library)

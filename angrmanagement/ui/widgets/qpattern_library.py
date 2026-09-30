@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
     QHeaderView,
+    QMenu,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -22,6 +23,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from angrmanagement.data.instance import Instance
+    from angrmanagement.ui.views.code_view import CodeView
     from angrmanagement.ui.workspace import Workspace
 
 
@@ -64,6 +66,7 @@ class QPatternLibrary(QWidget):
         on_status: Callable[[str], None] | None = None,
         on_apply: Callable[[], None] | None = None,
         highlight: tuple[Callable[[str], bool], Callable[[str, bool], None]] | None = None,
+        code_view: Callable[[], CodeView | None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -77,6 +80,8 @@ class QPatternLibrary(QWidget):
         self._pending: dict[str, bool] = {}
         #: (is it highlighted, set it) for a pattern name, when the owner can highlight
         self._highlight = highlight
+        #: the pseudocode view whose function the highlight actions act on
+        self._code_view = code_view or (lambda: self.workspace.view_manager.first_view_in_category("pseudocode"))
         self.rows: list[StoredPattern] = []
         # set while the table is being filled, so its own writes are not taken for clicks
         self._filling = False
@@ -92,6 +97,10 @@ class QPatternLibrary(QWidget):
         self.table.itemChanged.connect(self._on_item_changed)
         self.table.setSortingEnabled(True)
         self.table.sortItems(0, Qt.SortOrder.AscendingOrder)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(
+            lambda pos: self.context_menu().exec(self.table.viewport().mapToGlobal(pos))
+        )
 
         buttons = QHBoxLayout()
         for label, handler in (
@@ -217,6 +226,60 @@ class QPatternLibrary(QWidget):
             self.toggle(stored)
         elif column == "Highlight" and self._highlight is not None and checked != self._highlight[0](stored.name):
             self._highlight[1](stored.name, checked)
+
+    def selections(self) -> list[StoredPattern]:
+        """The patterns of the selected rows, in table order."""
+        rows = sorted({index.row() for index in self.table.selectedIndexes()})
+        return [s for s in (self.stored_at(r) for r in rows) if s is not None]
+
+    def context_menu(self) -> QMenu:
+        selected = self.selections()
+        menu = QMenu(self.table)
+        pseudocode = menu.addAction("Highlight patterns in pseudocode", lambda: self.highlight_in_pseudocode(selected))
+        disassembly = menu.addAction(
+            "Highlight patterns in disassembly", lambda: self.highlight_in_disassembly(selected)
+        )
+        for action in (pseudocode, disassembly):
+            action.setEnabled(bool(selected))
+        edit = menu.addAction("Edit pattern...", lambda: self._on_edit(selected[0]))
+        edit.setEnabled(len(selected) == 1)
+        return menu
+
+    def _matches_here(self, patterns: list[StoredPattern]) -> tuple[CodeView | None, dict[str, list[frozenset[int]]]]:
+        """The pseudocode view, and each pattern's matches in its function at the last decompilation."""
+        code_view = self._code_view()
+        if code_view is None or code_view.function.am_none:
+            self._status("no function is decompiled in the pseudocode view")
+            return None, {}
+        func_addr = code_view.function.am_obj.addr
+        found = {}
+        for stored in patterns:
+            stats = self.instance.kb.patterns.stats(func_addr, stored.name)
+            if stats is not None and stats.matches:
+                found[stored.name] = list(stats.match_addrs)
+        missing = [s.name for s in patterns if s.name not in found]
+        if missing:
+            self._status(
+                f"no matches in {code_view.function.am_obj.name} at its last decompilation: {', '.join(missing)}"
+            )
+        return code_view, found
+
+    def highlight_in_pseudocode(self, patterns: list[StoredPattern]) -> None:
+        """Band the patterns' matches in the pseudocode view's function."""
+        code_view, found = self._matches_here(patterns)
+        if code_view is None or not found:
+            return
+        for name in found:
+            code_view.set_pattern_highlight(name, True)
+        code_view.reload_patterns()
+        self.workspace.raise_view(code_view)
+
+    def highlight_in_disassembly(self, patterns: list[StoredPattern]) -> None:
+        """Paint every instruction the patterns' matches cover in the pseudocode view's function."""
+        _, found = self._matches_here(patterns)
+        addrs = {a for copies in found.values() for copy in copies for a in copy}
+        if addrs:
+            self.workspace.highlight_in_disassembly(addrs)
 
     def selection(self) -> StoredPattern | None:
         rows = {index.row() for index in self.table.selectedIndexes()}

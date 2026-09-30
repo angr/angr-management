@@ -86,6 +86,8 @@ class DisassemblyView(SynchronizedFunctionView):
         super().__init__("disassembly", workspace, default_docking_position, instance)
 
         self.base_caption = "Disassembly"
+        #: instructions a pattern or a discovered family covers, painted in their own color
+        self.pattern_highlight_addrs: set[int] = set()
         self._disassembly_level = DisassemblyLevel.MachineCode
         self._show_minimap: bool = True
         self._show_address = True
@@ -358,6 +360,19 @@ class DisassemblyView(SynchronizedFunctionView):
             return
 
         super().keyPressEvent(event)
+
+    def highlight_pattern_addrs(self, addrs) -> None:
+        """Paint the instructions at ``addrs``, replacing any earlier pattern highlight."""
+        self.pattern_highlight_addrs = set(addrs)
+        self.redraw_current_graph()
+
+    def clear_pattern_highlight(self) -> bool:
+        """Drop the pattern highlight; returns whether there was one."""
+        had = bool(self.pattern_highlight_addrs)
+        self.pattern_highlight_addrs = set()
+        if had:
+            self.redraw_current_graph()
+        return had
 
     def redraw_current_graph(self, **kwargs) -> None:  # pylint: disable=unused-argument
         """

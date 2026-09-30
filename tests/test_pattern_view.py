@@ -694,6 +694,114 @@ class TestPatternView(AngrManagementTestCase):
         assert "Const &stdout" in labels.values(), labels
         assert not any(t.startswith(("assign", "store", "call statement", "load", "var")) for t in labels.values())
 
+    @staticmethod
+    def _menu_actions(menu):
+        return {a.text(): a for a in menu.actions()}
+
+    def _disasm(self):
+        return self.main.workspace.view_manager.first_view_in_category("disassembly")
+
+    def test_discover_table_context_menu(self):
+        from PySide6.QtWidgets import QPushButton  # pylint:disable=import-outside-toplevel
+
+        func, code_view = self._decompile("1after909", "doit")
+        view = self._run_discovery()
+        self.main.workspace.job_manager.join_all_jobs()
+        table = view._families_table
+        buttons = [b.text() for b in view._discover_tab.findChildren(QPushButton)]
+        assert "Edit pattern" not in buttons, "the menu replaced the button"
+
+        rows = [r for r in range(table.rowCount()) if view.families[view.family_at(r)].pattern is not None][:2]
+        table.selectRow(rows[0])
+        index = view.family_at(rows[0])
+        menu = view.families_context_menu()
+        actions = self._menu_actions(menu)
+        assert list(actions) == [
+            "Highlight patterns in pseudocode",
+            "Highlight patterns in disassembly",
+            "Edit pattern...",
+        ]
+        assert all(a.isEnabled() for a in actions.values())
+
+        actions["Highlight patterns in disassembly"].trigger()
+        disasm = self._disasm()
+        assert disasm.pattern_highlight_addrs == set().union(*view.families[index].copy_addrs)
+        assert self.main.workspace.view_manager.current_tab is disasm
+        assert code_view.has_pattern_highlight, "Clear highlights reaches the disassembly"
+        from angrmanagement.ui.widgets.qinstruction import QInstruction  # pylint:disable=import-outside-toplevel
+
+        insns = [i for i in disasm.current_graph.scene().items() if isinstance(i, QInstruction)]
+        painted = [i for i in insns if i._calc_backcolor() == Conf.disasm_view_pattern_highlight_color]
+        assert painted and {i.addr for i in painted} <= disasm.pattern_highlight_addrs
+
+        actions["Highlight patterns in pseudocode"].trigger()
+        self.main.workspace.job_manager.join_all_jobs()
+        assert code_view.function.am_obj is func and code_view.pattern_highlighted_lines
+        assert code_view.clear_pattern_highlight()
+        assert not disasm.pattern_highlight_addrs and not code_view.pattern_highlighted_lines
+
+        actions["Edit pattern..."].trigger()
+        assert view.editor is not None and view._tabs.currentWidget() is view._pattern_tab
+
+        # two families: both highlight, but only one can be edited
+        view._tabs.setCurrentWidget(view._discover_tab)
+        table.selectRow(rows[0])
+        table.selectionModel().select(
+            table.model().index(rows[1], 0),
+            table.selectionModel().SelectionFlag.Select | table.selectionModel().SelectionFlag.Rows,
+        )
+        menu = view.families_context_menu()
+        actions = self._menu_actions(menu)
+        assert not actions["Edit pattern..."].isEnabled()
+        actions["Highlight patterns in disassembly"].trigger()
+        both = [view.families[view.family_at(r)] for r in rows]
+        assert disasm.pattern_highlight_addrs == set().union(*(a for f in both for a in f.copy_addrs))
+
+    def test_pattern_tables_context_menu(self):
+        func, code_view, view = self._apply_error_exit_pattern()
+        kb = self.main.workspace.main_instance.kb
+        stats = kb.patterns.stats(func.addr, "patternerrorsout")
+        table = code_view.patterns_table
+        table.selectRow(0)
+        menu = code_view._pattern_library.context_menu()
+        actions = self._menu_actions(menu)
+        assert list(actions) == [
+            "Highlight patterns in pseudocode",
+            "Highlight patterns in disassembly",
+            "Edit pattern...",
+        ]
+
+        actions["Highlight patterns in pseudocode"].trigger()
+        texts = [code_view._doc.findBlockByNumber(n).text().strip() for n in code_view.pattern_highlighted_lines]
+        assert len(texts) == 8 and all("PatternErrorsOut(" in t for t in texts), texts
+        assert table.item(0, 2).checkState() == Qt.CheckState.Checked, "the Highlight box follows"
+
+        actions["Highlight patterns in disassembly"].trigger()
+        assert self._disasm().pattern_highlight_addrs == set().union(*stats.match_addrs)
+
+        # the Pattern view's table acts on the pseudocode view's function, too
+        view._library_table.selectRow(0)
+        menu = view._library.context_menu()
+        actions = self._menu_actions(menu)
+        code_view.clear_pattern_highlight()
+        actions["Highlight patterns in disassembly"].trigger()
+        assert self._disasm().pattern_highlight_addrs == set().union(*stats.match_addrs)
+        view.editor = None
+        actions["Edit pattern..."].trigger()
+        assert view.editor is not None and view.editor.pattern.name == "patternerrorsout"
+
+        # a pattern that did not apply at the last decompilation has nothing to highlight
+        code_view.clear_pattern_highlight()
+        kb.patterns.set_enabled("patternerrorsout", False)
+        code_view.decompile(reset_cache=True)
+        self.main.workspace.job_manager.join_all_jobs()
+        table.selectRow(0)
+        menu = code_view._pattern_library.context_menu()
+        actions = self._menu_actions(menu)
+        actions["Highlight patterns in disassembly"].trigger()
+        actions["Highlight patterns in pseudocode"].trigger()
+        assert not self._disasm().pattern_highlight_addrs and not code_view.pattern_highlighted_lines
+
     def test_dock_highlights_the_calls_a_pattern_became(self):
         _, code_view, _ = self._apply_error_exit_pattern()
         table = code_view.patterns_table

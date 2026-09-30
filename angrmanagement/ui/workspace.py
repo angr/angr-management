@@ -694,6 +694,19 @@ class Workspace:
         self.raise_view(view)
         return view
 
+    def highlight_in_disassembly(self, addrs) -> DisassemblyView | None:
+        """Paint the instructions at ``addrs`` in the disassembly view and show the first."""
+        view = self._get_or_create_view("disassembly", DisassemblyView)
+        view.highlight_pattern_addrs(addrs)
+        if addrs:
+            view.jump_to(min(addrs))
+        self.raise_view(view)
+        code_view = self.view_manager.first_view_in_category("pseudocode")
+        if code_view is not None:
+            # its Clear highlights clears this one too
+            code_view._update_clear_highlights()
+        return view
+
     def show_pattern_discovery(self) -> PatternView | None:
         """Open the pattern view on its Discover tab, where a discovery run is set up and started."""
         if self.main_instance.project.am_none:

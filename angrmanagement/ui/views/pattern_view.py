@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QMenu,
     QPushButton,
     QSpinBox,
     QSplitter,
@@ -498,16 +499,20 @@ class PatternView(InstanceView):
 
     def open_family(self, index: int) -> None:
         """Show the family in the pseudocode view: every copy's lines highlighted, the cursor on the first."""
-        if not (0 <= index < len(self.families)) or self.discovered_func is None:
+        self.open_families([index])
+
+    def open_families(self, indices: list[int]) -> None:
+        """Highlight every copy of the families in the pseudocode view, the cursor on the first family's."""
+        families = [self.families[i] for i in indices if 0 <= i < len(self.families)]
+        if not families or self.discovered_func is None:
             return
         func = self.instance.kb.functions.get(self.discovered_func)
         if func is None:
             return
-        family = self.families[index]
-        self.workspace.decompile_function(func, curr_ins=family.start_addr)
+        self.workspace.decompile_function(func, curr_ins=families[0].start_addr)
         code_view = self.workspace.view_manager.first_view_in_category("pseudocode")
         if code_view is not None:
-            code_view.highlight_pattern(func.addr, family.copy_addrs)
+            code_view.highlight_pattern(func.addr, [addrs for f in families for addrs in f.copy_addrs])
             self.workspace.raise_view(code_view)
 
     @staticmethod
@@ -703,10 +708,32 @@ class PatternView(InstanceView):
         if index is not None:
             self.open_family(index)
 
-    def _on_family_edit(self, row: int) -> None:
-        index = self.family_at(row)
-        if index is not None:
-            self.load_family(index)
+    def selected_families(self) -> list[int]:
+        """Indices into ``families`` of the selected rows, in table order."""
+        rows = sorted({index.row() for index in self._families_table.selectedIndexes()})
+        return [i for i in (self.family_at(r) for r in rows) if i is not None]
+
+    def families_context_menu(self) -> QMenu:
+        indices = self.selected_families()
+        menu = QMenu(self._families_table)
+        pseudocode = menu.addAction("Highlight patterns in pseudocode", lambda: self.open_families(indices))
+        disassembly = menu.addAction(
+            "Highlight patterns in disassembly", lambda: self.highlight_families_in_disassembly(indices)
+        )
+        for action in (pseudocode, disassembly):
+            action.setEnabled(bool(indices))
+        edit = menu.addAction("Edit pattern...", lambda: self.load_family(indices[0]))
+        edit.setEnabled(len(indices) == 1 and self.families[indices[0]].pattern is not None)
+        return menu
+
+    def highlight_families_in_disassembly(self, indices: list[int]) -> None:
+        """Paint every instruction of every copy of the families in the disassembly view."""
+        addrs: set[int] = set()
+        for i in indices:
+            if 0 <= i < len(self.families):
+                addrs.update(*self.families[i].copy_addrs)
+        if addrs:
+            self.workspace.highlight_in_disassembly(addrs)
 
     def _init_discover_tab(self) -> QWidget:
         self._min_size = QSpinBox()
@@ -761,12 +788,10 @@ class PatternView(InstanceView):
         self._families_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._families_table.setSortingEnabled(True)
         self._families_table.cellDoubleClicked.connect(lambda row, _col: self._on_family_open(row))
-        edit_btn = QPushButton("Edit pattern")
-        edit_btn.setToolTip("Load the pattern lifted from the selected family into the editor")
-        edit_btn.clicked.connect(lambda: self._on_family_edit(self._families_table.currentRow()))
-        family_buttons = QHBoxLayout()
-        family_buttons.addWidget(edit_btn)
-        family_buttons.addStretch()
+        self._families_table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._families_table.customContextMenuRequested.connect(
+            lambda pos: self.families_context_menu().exec(self._families_table.viewport().mapToGlobal(pos))
+        )
 
         self._discover_status = QLabel("no discovery run yet")
         self._discover_status.setWordWrap(True)
@@ -776,7 +801,6 @@ class PatternView(InstanceView):
         layout.setContentsMargins(3, 3, 3, 3)
         layout.addLayout(knobs)
         layout.addWidget(self._families_table, 1)
-        layout.addLayout(family_buttons)
         layout.addWidget(self._discover_status)
         tab.setLayout(layout)
         return tab

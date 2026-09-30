@@ -135,6 +135,9 @@ class QInstruction(QCachedGraphicsItem):
         if self.selected:
             return self._config.disasm_view_node_instruction_selected_background_color
 
+        if self.insn.addr in getattr(self.disasm_view, "pattern_highlight_addrs", ()):
+            return self._config.disasm_view_pattern_highlight_color
+
         if not self.instance.patches.am_none:
             patches = self.instance.patches.get_all_patches(self.insn.addr, self.insn.size)
             if len(patches):
