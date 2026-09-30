@@ -680,6 +680,14 @@ class TestPatternView(AngrManagementTestCase):
         again = where()
         assert abs(again.x() - before.x()) <= 1 and abs(again.y() - before.y()) <= 1, (before, again)
 
+    def test_nodes_are_labelled_with_ail_class_names(self):
+        _, _, view = self._apply_error_exit_pattern()
+        labels = {b.path: b._title.text() for b in view._graph_widget.blocks}
+        statements = [labels[p] for p, _ in view.editor.leaves()]
+        assert statements == ["Call puts", "Call fflush", "Return"], statements
+        assert "Const &stdout" in labels.values(), labels
+        assert not any(t.startswith(("assign", "store", "call statement", "load", "var")) for t in labels.values())
+
     def test_dock_highlights_the_calls_a_pattern_became(self):
         _, code_view, _ = self._apply_error_exit_pattern()
         table = code_view.patterns_table
