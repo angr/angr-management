@@ -196,10 +196,12 @@ class QPatternLibrary(QWidget):
                     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                     on = self._highlight[0](stored.name)
                     item.setCheckState(Qt.CheckState.Checked if on else Qt.CheckState.Unchecked)
-                    if stats is None or not stats.call_addrs:
-                        item.setToolTip("No call to this pattern in this function to highlight")
+                    code_view = self._code_view()
+                    calls = code_view.pattern_call_count(stored.name) if code_view is not None else 0
+                    if calls:
+                        item.setToolTip(f"Highlight the {calls} call(s) to {stored.pattern.call_name}")
                     else:
-                        item.setToolTip(f"Highlight the {len(stats.call_addrs)} call(s) to {stored.pattern.call_name}")
+                        item.setToolTip("No call to this pattern in this function to highlight")
                 self.table.setItem(i, j, item)
         self.table.setSortingEnabled(True)
         self._filling = False
@@ -245,8 +247,11 @@ class QPatternLibrary(QWidget):
         edit.setEnabled(len(selected) == 1)
         return menu
 
-    def _matches_here(self, patterns: list[StoredPattern]) -> tuple[CodeView | None, dict[str, list[frozenset[int]]]]:
-        """The pseudocode view, and each pattern's matches in its function at the last decompilation."""
+    def _matches_here(
+        self, patterns: list[StoredPattern], calls_count: bool = False
+    ) -> tuple[CodeView | None, dict[str, list[frozenset[int]]]]:
+        """The pseudocode view, and each pattern's matches in its function at the last decompilation.
+        With ``calls_count``, a pattern whose calls the pseudocode shows counts even without them."""
         code_view = self._code_view()
         if code_view is None or code_view.function.am_none:
             self._status("no function is decompiled in the pseudocode view")
@@ -257,6 +262,8 @@ class QPatternLibrary(QWidget):
             stats = self.instance.kb.patterns.stats(func_addr, stored.name)
             if stats is not None and stats.matches:
                 found[stored.name] = list(stats.match_addrs)
+            elif calls_count and code_view.pattern_call_count(stored.name):
+                found[stored.name] = []
         missing = [s.name for s in patterns if s.name not in found]
         if missing:
             self._status(
@@ -266,7 +273,7 @@ class QPatternLibrary(QWidget):
 
     def highlight_in_pseudocode(self, patterns: list[StoredPattern]) -> None:
         """Band the patterns' matches in the pseudocode view's function."""
-        code_view, found = self._matches_here(patterns)
+        code_view, found = self._matches_here(patterns, calls_count=True)
         if code_view is None or not found:
             return
         for name in found:

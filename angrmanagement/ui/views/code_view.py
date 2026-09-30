@@ -336,7 +336,7 @@ class CodeView(FunctionView):
 
     def set_pattern_highlight(self, name: str, on: bool) -> None:
         """Band the named pattern's matches in whatever function is shown: the calls the
-        outlined ones became, and the lines of the rest."""
+        outlined ones became, found in the pseudocode itself, and the lines of the rest."""
         if on:
             self._highlighted_patterns.add(name)
         else:
@@ -403,11 +403,47 @@ class CodeView(FunctionView):
                 addrs.update(*stats.match_addrs)
         return addrs
 
+    def _highlighted_call_names(self) -> set[str]:
+        kb = self.instance.kb
+        names = set()
+        for name in self._highlighted_patterns:
+            stored = kb.patterns.get(name) if kb is not None else None
+            if stored is not None:
+                names.add(stored.pattern.call_name)
+        return names
+
+    def _call_positions(self, call_names: set[str]) -> list[int]:
+        """Where the pseudocode calls any of ``call_names``. An applied pattern is a call to its
+        call name, so this needs neither the outliner pass's numbers nor a new decompilation."""
+        if not call_names or self.codegen.am_none:
+            return []
+        positions = []
+        for pos, elem in self.codegen.am_obj.map_pos_to_node.items():
+            obj = elem.obj
+            if not isinstance(obj, CFunctionCall):
+                continue
+            target = obj.callee_func.name if obj.callee_func is not None else obj.callee_target
+            if isinstance(target, str) and target in call_names:
+                positions.append(pos)
+        return positions
+
+    def pattern_call_count(self, name: str) -> int:
+        """How many times the pseudocode on screen calls the named pattern's call name."""
+        kb = self.instance.kb
+        stored = kb.patterns.get(name) if kb is not None else None
+        if stored is None:
+            return 0
+        return len(self._call_positions({stored.pattern.call_name}))
+
     def _rebuild_pattern_selections(self) -> None:
         self._pattern_selections = []
         addrs = self._highlight_addrs()
-        if addrs and not self.codegen.am_none and self._doc is not None:
+        call_positions = self._call_positions(self._highlighted_call_names())
+        if (addrs or call_positions) and not self.codegen.am_none and self._doc is not None:
             lines: dict[int, int] = {}
+            for pos in call_positions:
+                block = self._doc.findBlock(pos)
+                lines.setdefault(block.blockNumber(), block.position())
             for pos, elem in self.codegen.am_obj.map_pos_to_node.items():
                 ins = (getattr(elem.obj, "tags", None) or {}).get("ins_addr")
                 if ins in addrs:

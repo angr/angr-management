@@ -843,6 +843,30 @@ class TestPatternView(AngrManagementTestCase):
         assert [table.item(0, j).text() for j in (3, 4)] == ["0", "0"]
         assert not self.main.workspace.job_manager.jobs, "and nothing counts it"
 
+    def test_dock_highlight_works_without_the_pass_numbers(self):
+        """The pass's numbers are not saved with the project; the calls on screen are enough
+        to highlight an applied pattern, and nothing is decompiled again."""
+        _, code_view, _ = self._apply_error_exit_pattern()
+        kb = self.main.workspace.main_instance.kb
+        kb.patterns._stats.clear()  # what a project loaded from a database has
+        code_view.reload_patterns()
+        table = code_view.patterns_table
+        codegen = code_view.codegen.am_obj
+        assert "8 call(s)" in table.item(0, 2).toolTip()
+
+        table.item(0, 2).setCheckState(Qt.CheckState.Checked)
+        texts = [code_view._doc.findBlockByNumber(n).text().strip() for n in code_view.pattern_highlighted_lines]
+        assert len(texts) == 8 and all("PatternErrorsOut(" in t for t in texts), texts
+        table.item(0, 2).setCheckState(Qt.CheckState.Unchecked)
+        assert code_view.pattern_highlighted_lines == []
+
+        table.selectRow(0)
+        menu = code_view._pattern_library.context_menu()
+        {a.text(): a for a in menu.actions()}["Highlight patterns in pseudocode"].trigger()
+        assert len(code_view.pattern_highlighted_lines) == 8
+        self.main.workspace.job_manager.join_all_jobs()
+        assert code_view.codegen.am_obj is codegen, "never decompiled again"
+
     def test_pattern_highlights_can_be_cleared_from_the_menu_or_the_dock(self):
         func, code_view, _ = self._apply_error_exit_pattern()
         table = code_view.patterns_table
