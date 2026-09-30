@@ -7,11 +7,10 @@ import sys
 import tempfile
 import unittest
 
-import angr
 from angr.ailment.statement import Assignment, Store
 from angr.analyses.decompiler.known_patterns import PAny, PAnyStmt, PCallStmt, PConst, PLoad, PReturn, PStmtSeq
 from angr.analyses.decompiler.known_patterns.dsl import PatternExpr
-from common import AngrManagementTestCase, test_location
+from common import AngrManagementTestCase, open_analyzed_project, test_location
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QTextCursor, QTextFormat
 from PySide6.QtTest import QTest
@@ -35,9 +34,7 @@ class TestPatternView(AngrManagementTestCase):
     def _decompile_main(self):
         main = self.main
         binpath = os.path.join(test_location, "x86_64", "fauxware")
-        main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
-        main.workspace.main_instance.project.am_event()
-        main.workspace.job_manager.join_all_jobs()
+        open_analyzed_project(main, binpath)
         func = main.workspace.main_instance.project.kb.functions["main"]
 
         disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
@@ -52,9 +49,7 @@ class TestPatternView(AngrManagementTestCase):
     def _decompile(self, binary: str, func_name: str):
         main = self.main
         binpath = os.path.join(test_location, "x86_64", binary)
-        main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
-        main.workspace.main_instance.project.am_event()
-        main.workspace.job_manager.join_all_jobs()
+        open_analyzed_project(main, binpath)
         func = main.workspace.main_instance.project.kb.functions[func_name]
 
         disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
@@ -381,9 +376,7 @@ class TestPatternView(AngrManagementTestCase):
 
         main = self.main
         binpath = os.path.join(test_location, "x86_64", "1after909")
-        main.workspace.main_instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
-        main.workspace.main_instance.project.am_event()
-        main.workspace.job_manager.join_all_jobs()
+        open_analyzed_project(main, binpath)
         started = []
         main.workspace.job_manager.job_starting.connect(started.append)
 
