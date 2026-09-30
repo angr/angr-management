@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, Any
 
 from angr.analyses.decompiler.known_patterns import PAnyStmt
 from angr.analyses.decompiler.known_patterns.edit import describe
-from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QPen
+from PySide6.QtCore import QPoint, QPointF, QRectF, Qt
+from PySide6.QtGui import QColor, QPen, QTransform
 from PySide6.QtWidgets import QGraphicsSimpleTextItem, QMenu
 
 from angrmanagement.config import Conf
@@ -196,15 +196,24 @@ class QPatternGraph(QZoomableDraggableGraphicsView):
 
     @graph.setter
     def graph(self, v: networkx.DiGraph | None) -> None:
-        self._graph = v
-        self.request_relayout()
+        self.set_graph(v)
+
+    def set_graph(self, graph: networkx.DiGraph | None, anchor: NodePath | None = None) -> None:
+        """Show ``graph``. With ``anchor``, the node at that path stays where it is on screen, at
+        the same zoom; without one, or when it was not shown, the view centers on the tree."""
+        keep = None
+        old = next((b for b in self.blocks if b.path == anchor), None) if anchor is not None else None
+        if old is not None and old.scene() is self.scene():
+            keep = (anchor, self.mapFromScene(old.scenePos()), self.transform())
+        self._graph = graph
+        self.request_relayout(keep)
 
     def refresh(self) -> None:
         scene = self.scene()
         if scene is not None:
             scene.update(self.sceneRect())
 
-    def request_relayout(self) -> None:
+    def request_relayout(self, keep: tuple[NodePath, QPoint, QTransform] | None = None) -> None:
         self._reset_scene()
         self._arrows.clear()
         self.blocks.clear()
@@ -239,7 +248,14 @@ class QPatternGraph(QZoomableDraggableGraphicsView):
                 -self.LEFT_PADDING, -self.TOP_PADDING, self.LEFT_PADDING, self.TOP_PADDING
             )
         )
-        self._reset_view()
+        new = next((b for b in self.blocks if b.path == keep[0]), None) if keep is not None else None
+        if new is None:
+            self._reset_view()
+            return
+        self.setTransform(keep[2])
+        delta = self.mapFromScene(new.scenePos()) - keep[1]
+        self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + delta.x())
+        self.verticalScrollBar().setValue(self.verticalScrollBar().value() + delta.y())
 
     def _initial_position(self):
         return self.scene().itemsBoundingRect().center()

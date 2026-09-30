@@ -218,14 +218,14 @@ class PatternView(InstanceView):
         if self.editor is None:
             return
         self.collapsed = set()
-        self._rebuild()
+        self._rebuild(recenter=True)
 
     def collapse_all(self) -> None:
         """Show the statements only."""
         if self.editor is None:
             return
         self.collapsed = {path for path, _ in self.editor.leaves() if self.editor.children(path)}
-        self._rebuild()
+        self._rebuild(recenter=True)
 
     #: past this many nodes a fully expanded tree is unreadable and slow to lay out
     MAX_EXPANDED_NODES = 400
@@ -796,12 +796,13 @@ class PatternView(InstanceView):
     # graph
     #
 
-    def _rebuild(self) -> None:
-        self._rebuild_graph()
+    def _rebuild(self, recenter: bool = False) -> None:
+        """Redraw everything. The graph keeps the selected node in place unless ``recenter``."""
+        self._rebuild_graph(recenter)
         self._rebuild_properties()
         self._undo_btn.setEnabled(self.editor is not None and self.editor.can_undo)
 
-    def _rebuild_graph(self) -> None:
+    def _rebuild_graph(self, recenter: bool = False) -> None:
         self._nodes_by_path.clear()
         self.hovered_block = None
         if self.editor is None:
@@ -817,7 +818,7 @@ class PatternView(InstanceView):
             previous = item
             if path not in self.collapsed:
                 self._add_expression_nodes(graph, item, path)
-        self._graph_widget.graph = graph
+        self._graph_widget.set_graph(graph, anchor=None if recenter else self.selected_path)
 
     def _add_expression_nodes(self, graph: networkx.DiGraph, parent: QPatternNode, path: NodePath) -> None:
         assert self.editor is not None

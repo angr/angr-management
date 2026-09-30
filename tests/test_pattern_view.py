@@ -662,6 +662,24 @@ class TestPatternView(AngrManagementTestCase):
         dx, dy = self._tree_offset(graph)
         assert dx <= 2 and dy <= 2, (dx, dy)
 
+    def test_double_click_keeps_the_node_in_place(self):
+        _, _, view = self._apply_error_exit_pattern()
+        graph = self._show_graph(view)
+        path = next(p for p, _ in view.editor.leaves()[1:] if view.editor.children(p))
+
+        def where():
+            node = next(b for b in graph.blocks if b.path == path)
+            return graph.mapFromScene(node.scenePos())
+
+        before = where()
+        view.activate_node(path)  # what a double click does: collapse
+        assert path in view.collapsed
+        after = where()
+        assert abs(after.x() - before.x()) <= 1 and abs(after.y() - before.y()) <= 1, (before, after)
+        view.activate_node(path)  # and expand again
+        again = where()
+        assert abs(again.x() - before.x()) <= 1 and abs(again.y() - before.y()) <= 1, (before, again)
+
     def test_dock_highlights_the_calls_a_pattern_became(self):
         _, code_view, _ = self._apply_error_exit_pattern()
         table = code_view.patterns_table
