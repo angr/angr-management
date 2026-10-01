@@ -610,7 +610,8 @@ class Workspace:
             return False
 
         self.plugins.handle_project_save(file_path)
-        angrdb = AngrDB(project=self.main_instance.project.am_obj)
+        # no connection pool: a pooled SQLite connection keeps the file open, and locked on Windows
+        angrdb = AngrDB(project=self.main_instance.project.am_obj, nullpool=True)
         extra_info = self.plugins.angrdb_store_entries()
         angrdb.dump(file_path, kbs=[self.main_instance.kb], extra_info=extra_info)
         self.main_instance.database_path = file_path
