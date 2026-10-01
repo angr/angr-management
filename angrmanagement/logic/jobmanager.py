@@ -152,19 +152,23 @@ class JobManager(QObject):
         if self._current_job:
             self._current_job.state = JobState.CANCELLED
 
-    def join_all_jobs(self, wait_period: float = 2.0) -> None:
+    def join_all_jobs(self, wait_period: float = 0.05) -> None:
         """
-        Wait until self.jobs is empty for at least `wait_period` seconds.
+        Wait until self.jobs has stayed empty for `wait_period` seconds.
 
-        This is because one job may add another job upon completion. We cannot simply wait until self.jobs becomes
-        empty.
+        One job may add another upon completion, so an empty list alone does not mean done; events keep
+        being processed meanwhile so such follow-up jobs get queued. The exit checks the list at that
+        instant, not only the clock: a worker holding the GIL can delay this thread past any deadline.
         """
-        last_has_job = time.time()
-        while time.time() - last_has_job <= wait_period:
-            while self.jobs:
-                QApplication.processEvents()
-                last_has_job = time.time()
-                time.sleep(0.05)
+        last_has_job = time.monotonic()
+        while True:
+            QApplication.processEvents()
+            now = time.monotonic()
+            if self.jobs:
+                last_has_job = now
+            elif now - last_has_job > wait_period:
+                return
+            time.sleep(0.001)
 
     def _on_job_starting(self, job):
         self._current_job = job
