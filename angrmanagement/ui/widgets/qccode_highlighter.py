@@ -219,6 +219,79 @@ class QCCodeHighlighter(SyntaxHighlighter):
         (r"\bwhile\b", "keyword"),
     ]
 
+    GO_HIGHLIGHTING_RULES = [
+        # Go keywords
+        (r"\bbreak\b", "keyword"),
+        (r"\bcase\b", "keyword"),
+        (r"\bchan\b", "keyword"),
+        (r"\bconst\b", "keyword"),
+        (r"\bcontinue\b", "keyword"),
+        (r"\bdefault\b", "keyword"),
+        (r"\bdefer\b", "keyword"),
+        (r"\belse\b", "keyword"),
+        (r"\bfallthrough\b", "keyword"),
+        (r"\bfor\b", "keyword"),
+        (r"\bfunc\b", "keyword"),
+        (r"\bgo\b", "keyword"),
+        (r"\bgoto\b", "keyword"),
+        (r"\bif\b", "keyword"),
+        (r"\bimport\b", "keyword"),
+        (r"\binterface\b", "keyword"),
+        (r"\bmap\b", "keyword"),
+        (r"\bpackage\b", "keyword"),
+        (r"\brange\b", "keyword"),
+        (r"\breturn\b", "keyword"),
+        (r"\bselect\b", "keyword"),
+        (r"\bstruct\b", "keyword"),
+        (r"\bswitch\b", "keyword"),
+        (r"\btype\b", "keyword"),
+        (r"\bvar\b", "keyword"),
+        (r"\bnil\b", "keyword"),
+        (r"\btrue\b", "keyword"),
+        (r"\bfalse\b", "keyword"),
+        (r"\biota\b", "keyword"),
+        # builtin functions and types
+        (r"\bappend\b", "function"),
+        (r"\bcap\b", "function"),
+        (r"\bclear\b", "function"),
+        (r"\bclose\b", "function"),
+        (r"\bcomplex\b", "function"),
+        (r"\bcopy\b", "function"),
+        (r"\bdelete\b", "function"),
+        (r"\bimag\b", "function"),
+        (r"\blen\b", "function"),
+        (r"\bmake\b", "function"),
+        (r"\bmax\b", "function"),
+        (r"\bmin\b", "function"),
+        (r"\bnew\b", "function"),
+        (r"\bpanic\b", "function"),
+        (r"\bprint\b", "function"),
+        (r"\bprintln\b", "function"),
+        (r"\breal\b", "function"),
+        (r"\brecover\b", "function"),
+        (r"\bany\b", "function"),
+        (r"\berror\b", "function"),
+        (r"\bbool\b", "function"),
+        (r"\bbyte\b", "function"),
+        (r"\brune\b", "function"),
+        (r"\bstring\b", "function"),
+        (r"\bint\b", "function"),
+        (r"\bint8\b", "function"),
+        (r"\bint16\b", "function"),
+        (r"\bint32\b", "function"),
+        (r"\bint64\b", "function"),
+        (r"\buint\b", "function"),
+        (r"\buint8\b", "function"),
+        (r"\buint16\b", "function"),
+        (r"\buint32\b", "function"),
+        (r"\buint64\b", "function"),
+        (r"\buintptr\b", "function"),
+        (r"\bfloat32\b", "function"),
+        (r"\bfloat64\b", "function"),
+        (r"\bcomplex64\b", "function"),
+        (r"\bcomplex128\b", "function"),
+    ]
+
     RUST_HIGHLIGHTING_RULES = [
         # Rust keywords
         (r"\bas\b", "keyword"),
@@ -368,7 +441,12 @@ class QCCodeHighlighter(SyntaxHighlighter):
                 self.setFormat(element.start - start_pos, element.length, fmt)
             current_idx = (element.start - start_pos) + element.length
 
-        rules = self.RUST_HIGHLIGHTING_RULES if self.flavor == "rust" else self.C_CPP_HIGHLIGHTING_RULES
+        if self.flavor == "rust":
+            rules = self.RUST_HIGHLIGHTING_RULES
+        elif self.flavor == "go":
+            rules = self.GO_HIGHLIGHTING_RULES
+        else:
+            rules = self.C_CPP_HIGHLIGHTING_RULES
         for pattern, format_id in rules:
             for mo in list(re.finditer(pattern, text)):
                 start = mo.start()
