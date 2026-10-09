@@ -764,9 +764,9 @@ class MainWindow(QMainWindow):
             Conf.last_used_directory,
             "All files (*);;Trace files (*.trace);;",
         )
-        Conf.last_used_directory = os.path.dirname(file_path)
         if not file_path:
             return
+        Conf.last_used_directory = os.path.dirname(file_path)
         self.load_trace_file(file_path)
 
     def load_signature_button(self) -> None:
