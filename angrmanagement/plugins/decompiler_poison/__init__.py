@@ -4,7 +4,9 @@ from collections import defaultdict
 
 import angr.ailment as ailment
 from angr.analyses.decompiler.optimization_passes.optimization_pass import OptimizationPass, OptimizationPassStage
-from angr.analyses.decompiler.structured_codegen.c import CFunctionCall
+from angr.analyses.decompiler.structured_codegen import (
+    FunctionCallNode,
+)
 from angr.knowledge_plugins import KnowledgeBasePlugin
 
 from angrmanagement.plugins import BasePlugin
@@ -99,7 +101,7 @@ class PoisonPlugin(BasePlugin):
     OPTIMIZATION_PASSES = [(PoisonPass, True)]
 
     def build_context_menu_node(self, node):
-        if isinstance(node, CFunctionCall) and node.callee_func is not None:
+        if isinstance(node, FunctionCallNode) and node.callee_func is not None:
             yield None
             if self.knowledge.is_poisoned_local(node.codegen._func.addr, node.callee_func.addr):
                 yield (

@@ -3,30 +3,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from angr.analyses.decompiler.structured_codegen.c import (
-    CArrayTypeLength,
-    CClosingObject,
-    CConstant,
-    CExpression,
-    CFunction,
-    CFunctionCall,
-    CLabel,
-    CStatement,
-    CStructFieldNameDef,
-    CVariable,
-)
-from angr.analyses.decompiler.structured_codegen.rust import (
-    RustArrayTypeLength,
-    RustClosingObject,
-    RustConstant,
-    RustExpression,
-    RustFunction,
-    RustFunctionCall,
-    RustLabel,
-    RustStatement,
-    RustStructFieldNameDef,
-    RustVariable,
-)
+from angr.analyses.decompiler.structured_codegen import FunctionCallNode, FunctionNode, LabelNode, VariableNode
 from angr.sim_type import SimType
 from angr.sim_variable import SimMemoryVariable
 from pyqodeng.core.api import SyntaxHighlighter
@@ -104,51 +81,20 @@ def _format_node(obj):
     """
     if isinstance(obj, SimType):
         return FORMATS["type"]
-    elif isinstance(obj, CFunctionCall):
+    if isinstance(obj, FunctionCallNode):
         if obj.callee_func is not None and (
             obj.callee_func.is_simprocedure or obj.callee_func.is_plt or obj.callee_func.is_syscall
         ):
             return FORMATS["library_function"]
         return FORMATS["function"]
-    elif isinstance(obj, CFunction):
+    if isinstance(obj, FunctionNode):
         return FORMATS["function"]
-    elif isinstance(obj, CLabel):
+    if isinstance(obj, LabelNode):
         return FORMATS["label"]
-    elif isinstance(obj, CVariable):
+    if isinstance(obj, VariableNode):
         if type(obj.variable) is SimMemoryVariable:
             return FORMATS["global_variable"]
         return FORMATS["variable"]
-    elif isinstance(obj, (CArrayTypeLength, CStructFieldNameDef, CClosingObject, CStatement, CConstant, CExpression)):
-        return FORMATS["normal"]
-
-    # Rust codegen node types
-    if isinstance(obj, RustFunctionCall):
-        if obj.callee_func is not None and (
-            obj.callee_func.is_simprocedure or obj.callee_func.is_plt or obj.callee_func.is_syscall
-        ):
-            return FORMATS["library_function"]
-        return FORMATS["function"]
-    elif isinstance(obj, RustFunction):
-        return FORMATS["function"]
-    elif isinstance(obj, RustLabel):
-        return FORMATS["label"]
-    elif isinstance(obj, RustVariable):
-        if type(obj.variable) is SimMemoryVariable:
-            return FORMATS["global_variable"]
-        return FORMATS["variable"]
-    elif isinstance(
-        obj,
-        (
-            RustArrayTypeLength,
-            RustStructFieldNameDef,
-            RustClosingObject,
-            RustStatement,
-            RustConstant,
-            RustExpression,
-        ),
-    ):
-        return FORMATS["normal"]
-
     return FORMATS["normal"]
 
 
