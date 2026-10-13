@@ -14,6 +14,7 @@ from angrmanagement.data.jobs import (
     CFGGenerationJob,
     CodeTaggingJob,
     FlirtSignatureRecognitionJob,
+    GoGlobalsRecoveryJob,
     PrototypeFindingJob,
     RustSymbolRecoveryJob,
     RustTypeDBLoaderJob,
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
 class TestAnalysisManager(AngrManagementTestCase):
     """Smoke test analysis configuration."""
 
-    def common(self, analysis_config_callback):
+    def common(self, analysis_config_callback, binpath: str = "x86_64/true"):
         # Patch _schedule_job to inspect job kind and success
         _schedule_job = self.main.workspace.analysis_manager._schedule_job
         with patch.object(AnalysisManager, "_schedule_job", wraps=_schedule_job) as mocked:
@@ -45,7 +46,7 @@ class TestAnalysisManager(AngrManagementTestCase):
             mocked.side_effect = _schedule_job_wrapper
 
             self.main.workspace.main_instance.project.am_obj = angr.Project(
-                os.path.join(test_location, "x86_64", "true"), auto_load_libs=False
+                os.path.join(test_location, binpath), auto_load_libs=False
             )
             conf = self.main.workspace.analysis_manager.get_default_analyses_configuration()
             analysis_config_callback(conf)
@@ -71,8 +72,42 @@ class TestAnalysisManager(AngrManagementTestCase):
             CallingConventionRecoveryJob,
             RustSymbolRecoveryJob,
             RustTypeDBLoaderJob,
+            GoGlobalsRecoveryJob,
             VariableRecoveryJob,
         ]
+
+    def test_go_globals_recovery_on_go_binary(self):
+        """The Go job is on by default only for Go binaries and fills kb.go_globals in the background."""
+        progress = []
+        self.main.workspace.job_manager.job_progressed.connect(
+            lambda job, pct, _text: progress.append(pct) if isinstance(job, GoGlobalsRecoveryJob) else None
+        )
+
+        def config_analysis(conf: AnalysesConfiguration):
+            assert conf["go_globals_recovery"].enabled is True
+            assert conf["rust_symbol_recovery"].enabled is False
+            for analysis in conf.analyses:
+                analysis.enabled = analysis.name in ("cfg", "go_globals_recovery")
+
+        jobs = self.common(config_analysis, "x86_64/go/go1.27.1/basics_stripped")
+        assert [type(j) for j in jobs] == [CFGGenerationJob, GoGlobalsRecoveryJob]
+        assert all(j.state == JobState.FINISHED for j in jobs)
+        assert progress and progress[-1] == 100.0 and progress == sorted(progress)
+        go_globals = self.main.workspace.main_instance.project.kb.go_globals
+        assert go_globals.loaded
+        assert "runtime.writeBarrier" in {v.name for v in go_globals.variables.values()}
+
+    def test_go_globals_recovery_off_by_default_on_c_binary(self):
+        conf = None
+
+        def config_analysis(c: AnalysesConfiguration):
+            nonlocal conf
+            conf = c
+            for analysis in c.analyses:
+                analysis.enabled = False
+
+        self.common(config_analysis)
+        assert conf["go_globals_recovery"].enabled is False
 
     def test_all_analyses_off(self):
         def config_analysis(conf: AnalysesConfiguration):

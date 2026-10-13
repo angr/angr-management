@@ -41,7 +41,12 @@ if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
 
 
-RUST_DEPENDENT_ANALYSES = ("rust_symbol_recovery", "rust_typedb_loader")
+#: language -> (display name, analyses enabled by default only for binaries of that language)
+LANGUAGE_DEPENDENT_ANALYSES: dict[str, tuple[str, tuple[str, ...]]] = {
+    "rust": ("Rust", ("rust_symbol_recovery", "rust_typedb_loader")),
+    "go": ("Go", ("go_globals_recovery",)),
+}
+RUST_DEPENDENT_ANALYSES = LANGUAGE_DEPENDENT_ANALYSES["rust"][1]
 
 
 def map_option_to_property(option: AnalysisOption):
@@ -197,9 +202,12 @@ class AnalysisOptionsDialog(QDialog):
         if overview is not None and not overview.instance.project.am_none:
             overview.instance.project._languages = [language]
 
-        want_enabled = language == "rust"
+        for lang, (lang_name, names) in LANGUAGE_DEPENDENT_ANALYSES.items():
+            self._prompt_language_analyses(language == lang, lang_name, names)
+
+    def _prompt_language_analyses(self, want_enabled: bool, lang_name: str, names: tuple[str, ...]) -> None:
         targets = []
-        for name in RUST_DEPENDENT_ANALYSES:
+        for name in names:
             try:
                 config = self._analyses.by_name(name)
             except KeyError:
@@ -211,14 +219,14 @@ class AnalysisOptionsDialog(QDialog):
             return
 
         action_word = "enable" if want_enabled else "disable"
-        names = ", ".join(c.display_name for c in targets)
+        display_names = ", ".join(c.display_name for c in targets)
         reply = QMessageBox.question(
             self,
-            f"{action_word.capitalize()} Rust-specific analyses?",
-            f"The selected language is {'Rust' if want_enabled else 'not Rust'}. "
-            f"Would you like to {action_word} the following Rust-specific "
+            f"{action_word.capitalize()} {lang_name}-specific analyses?",
+            f"The selected language is {lang_name if want_enabled else 'not ' + lang_name}. "
+            f"Would you like to {action_word} the following {lang_name}-specific "
             f"{'analyses' if len(targets) > 1 else 'analysis'}?\n\n"
-            f"{names}",
+            f"{display_names}",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.Yes,
         )
