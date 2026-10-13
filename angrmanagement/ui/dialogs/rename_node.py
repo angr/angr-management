@@ -3,7 +3,13 @@ from __future__ import annotations
 from collections import OrderedDict
 from typing import TYPE_CHECKING
 
-from angr.analyses.decompiler.structured_codegen.c import CConstruct, CFunction, CFunctionCall, CStructField, CVariable
+from angr.analyses.decompiler.structured_codegen import (
+    CodegenNode,
+    FunctionCallNode,
+    FunctionNode,
+    StructFieldNode,
+    VariableNode,
+)
 from angr.sim_type import NamedTypeMixin, SimType, SimTypePointer, TypeRef
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import (
@@ -54,7 +60,7 @@ class RenameNode(QDialog):
     def __init__(
         self,
         code_view: CodeView | None = None,
-        node: CConstruct | None = None,
+        node: CodegenNode | None = None,
         parent=None,
         func: Function | None = None,
     ) -> None:
@@ -78,7 +84,7 @@ class RenameNode(QDialog):
 
         self._init_widgets()
 
-        if not isinstance(self._node, CVariable):
+        if not isinstance(self._node, VariableNode):
             self._suggestion_box.setEnabled(False)
         else:
             if self._node.unified_variable is not None:
@@ -103,15 +109,19 @@ class RenameNode(QDialog):
         name_box = NodeNameBox(self._on_name_changed, self)
         if self._node is not None:
             # parse node type, either a Function header or a Variable.
-            if isinstance(self._node, CVariable) and self._node.unified_variable and self._node.unified_variable.name:
+            if (
+                isinstance(self._node, VariableNode)
+                and self._node.unified_variable
+                and self._node.unified_variable.name
+            ):
                 name_box.setText(self._node.unified_variable.name)
-            elif isinstance(self._node, CVariable) and not self._node.variable.region:
+            elif isinstance(self._node, VariableNode) and not self._node.variable.region:
                 name_box.setText(self._node.variable.name)
-            elif isinstance(self._node, CFunction) and self._node.name:
+            elif isinstance(self._node, FunctionNode) and self._node.name:
                 name_box.setText(self._node.name)
-            elif isinstance(self._node, CFunctionCall):
+            elif isinstance(self._node, FunctionCallNode):
                 name_box.setText(self._node.callee_func.name)
-            elif isinstance(self._node, CStructField):
+            elif isinstance(self._node, StructFieldNode):
                 name_box.setText(self._node.field)
 
             name_box.selectAll()
@@ -181,7 +191,7 @@ class RenameNode(QDialog):
                 self.close()
                 return
 
-            if isinstance(self._node, CVariable) and self._node.unified_variable is not None:
+            if isinstance(self._node, VariableNode) and self._node.unified_variable is not None:
                 # Stack variable
                 if hasattr(self._node.variable, "offset") and self._node.variable.offset is not None:
                     workspace.plugins.handle_stack_var_renamed(
@@ -207,7 +217,7 @@ class RenameNode(QDialog):
                 self._node.unified_variable.renamed = True
 
             # global variable
-            elif isinstance(self._node, CVariable) and not self._node.variable.region:
+            elif isinstance(self._node, VariableNode) and not self._node.variable.region:
                 workspace.plugins.handle_global_var_renamed(
                     self._node.variable.addr, self._node.variable.name, node_name
                 )
@@ -217,7 +227,7 @@ class RenameNode(QDialog):
                 self._node.variable.renamed = True
 
             # function name
-            elif isinstance(self._node, CFunction):
+            elif isinstance(self._node, FunctionNode):
                 workspace.plugins.handle_function_renamed(code_kb.functions[cfunc.addr], self._node.name, node_name)
 
                 code_kb.functions.get_by_addr(self._node.addr).name = node_name
@@ -226,7 +236,7 @@ class RenameNode(QDialog):
                 self._code_view.workspace.on_function_updated()
 
             # function renaming (as a call)
-            elif isinstance(self._node, CFunctionCall):
+            elif isinstance(self._node, FunctionCallNode):
                 if self._node.callee_func is not None:
                     workspace.plugins.handle_function_renamed(
                         code_kb.functions[cfunc.addr], self._node.callee_func.name, node_name
@@ -236,7 +246,7 @@ class RenameNode(QDialog):
                     self._code_view.workspace.on_function_updated()
 
             # struct renaming
-            elif isinstance(self._node, CStructField):
+            elif isinstance(self._node, StructFieldNode):
                 # TODO add a better callback
                 # TODO prevent name duplication. reuse logic from CTypeEditor?
                 # TODO if this is a temporary struct, make it permanent and add it to kb.types
