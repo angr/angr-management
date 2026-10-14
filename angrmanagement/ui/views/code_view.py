@@ -476,6 +476,9 @@ class CodeView(FunctionView):
             return []
         selections = []
         for bookmark in self.instance.annotations.bookmarks:
+            owner = self._function_at(bookmark.addr)
+            if owner is not None and owner is not self._function.am_obj:
+                continue
             pos = self._doc.find_closest_node_pos(bookmark.addr)
             if pos is None:
                 continue
@@ -633,34 +636,45 @@ class CodeView(FunctionView):
         if already_moved:
             return
 
-        # get closest node for ins
-        new_text_pos = self._doc.find_closest_node_pos(self.addr.am_obj) if self._doc is not None else None
+        addr = self.addr.am_obj
 
-        if new_text_pos is not None:
-            # set the new cursor position
-            textedit = self.textedit
-            cursor = textedit.textCursor()
-            cursor.setPosition(new_text_pos)
-            textedit.setTextCursor(cursor)
-            if focus:
-                textedit.setFocus()
-                self._focus_core(True, None)
-        else:
-            # try to find the right function
-            try:
-                block_addr, _ = self.instance.cfb.floor_item(self.addr.am_obj)
-            except KeyError:
-                return
-            block = self.instance.cfg.get_any_node(block_addr)
-            if block is not None:
-                func = self.instance.kb.functions[block.function_address]
-                if func is not self._function.am_obj:
-                    self._function.am_obj = func
-                    self._function.am_event(focus_addr=self.addr.am_obj, focus=focus)
-                else:
-                    log.error(
-                        "There is a block which is in the current function but find_closest_node_pos failed on it"
-                    )
+        # the address may belong to another function (e.g., jumping back across a call); the nearest rendered
+        # position is only meaningful within the current function
+        func = self._function_at(addr)
+        if func is not None and func is not self._function.am_obj:
+            self._function.am_obj = func
+            self._function.am_event(focus_addr=addr, focus=focus)
+            return
+
+        new_text_pos = self._doc.find_closest_node_pos(addr) if self._doc is not None else None
+        if new_text_pos is None:
+            if func is not None:
+                log.error("There is a block which is in the current function but find_closest_node_pos failed on it")
+            return
+
+        # set the new cursor position
+        textedit = self.textedit
+        cursor = textedit.textCursor()
+        cursor.setPosition(new_text_pos)
+        textedit.setTextCursor(cursor)
+        if focus:
+            textedit.setFocus()
+            self._focus_core(True, None)
+
+    def _function_at(self, addr: int) -> Function | None:
+        """
+        The function owning the block that contains addr, or None if unknown.
+        """
+        if self.instance.cfb.am_none or self.instance.cfg.am_none:
+            return None
+        try:
+            block_addr, _ = self.instance.cfb.floor_item(addr)
+        except KeyError:
+            return None
+        block = self.instance.cfg.get_any_node(block_addr)
+        if block is None or block.function_address not in self.instance.kb.functions:
+            return None
+        return self.instance.kb.functions[block.function_address]
 
     def _on_new_node(self, **kwargs) -> None:  # pylint: disable=unused-argument
         self.addr.am_obj = self._textedit.get_src_to_inst()
@@ -918,7 +932,7 @@ class CodeView(FunctionView):
         key = event.key()
         if key == Qt.Key_Tab:
             # Switch back to disassembly view
-            self.workspace.jump_to(self.addr.am_obj)
+            self.workspace.jump_to(self._disassembly_target_addr())
             return True
         elif key == Qt.Key_G:
             # jump to window
@@ -939,6 +953,17 @@ class CodeView(FunctionView):
             return True
 
         return super().keyPressEvent(event)
+
+    def _disassembly_target_addr(self) -> int | None:
+        """
+        The address the disassembly view should show for the current cursor; falls back to the function head when the
+        cursor address is unset or points outside the binary (e.g., a synthesized node tagged with address 0).
+        """
+        addr = self.addr.am_obj
+        loader = self.instance.project.loader if not self.instance.project.am_none else None
+        if isinstance(addr, int) and addr and (loader is None or loader.find_object_containing(addr) is not None):
+            return addr
+        return self._function.addr if not self._function.am_none else None
 
     def _update_available_views(self, available) -> None:
         for _ in range(self._view_selector.count()):

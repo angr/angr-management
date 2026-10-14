@@ -13,6 +13,7 @@ import angr
 from common import AngrManagementTestCase, ProjectOpenTestCase, test_location
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QKeyEvent
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QDialog
 
 from angrmanagement.ui.dialogs.assemble_patch import AssemblePatchDialog
@@ -520,6 +521,50 @@ class TestLinearViewFunctionTracking(AngrManagementTestCase):
         view.infodock.selected_insns.am_obj = {func_b.addr}
         view.infodock.selected_insns.am_event(insn_addr=func_b.addr)
         assert view.function.am_obj.addr == func_a.addr
+
+
+class TestJumpWithinFunction(ProjectOpenTestCase):
+    """Repeated jumps inside the displayed function must land on the target, not on the function head."""
+
+    def setUp(self):
+        super().setUp()
+        self.view = self.workspace._get_or_create_view("disassembly", DisassemblyView)
+        self.view.resize(800, 600)
+        self.view.show()
+        self.func = self.project.kb.functions["main"]
+        insns = sorted(a for b in self.func.blocks for a in b.instruction_addrs)
+        self.target = insns[len(insns) // 2]
+
+    def _scene_pos(self, insn_addr):
+        graph = self.view._flow_graph
+        block = graph._insaddr_to_block[insn_addr]
+        return block.mapToScene(*block.instruction_position(insn_addr))
+
+    def _viewport_center(self):
+        graph = self.view._flow_graph
+        viewport = graph.viewport()
+        return graph.mapToScene(viewport.width() // 2, viewport.height() // 2)
+
+    def test_repeated_jump_to_stays_on_target(self):
+        for _ in range(3):
+            assert self.view.jump_to(self.target)
+            QTest.qWait(800)  # let any viewport animation finish
+            assert self.view.function.am_obj is self.func
+            assert self.view.infodock.selected_insns == {self.target}
+            center = self._viewport_center()
+            target = self._scene_pos(self.target)
+            assert abs(center.x() - target.x()) < 2 and abs(center.y() - target.y()) < 2
+            # the function head must not be recorded after the jump target
+            assert self.view.jump_history.history[-1] == self.target
+
+    def test_display_function_via_container_still_works(self):
+        other = next(f for f in self.project.kb.functions.values() if f is not self.func and f.block_addrs_set)
+        self.view.function = other
+        assert self.view.function.am_obj is other
+        assert self.view._flow_graph.function_graph.function is other
+
+    def test_jump_to_none_is_rejected(self):
+        assert self.view.jump_to(None) is False
 
 
 if __name__ == "__main__":
