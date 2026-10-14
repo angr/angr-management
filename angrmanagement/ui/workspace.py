@@ -286,15 +286,30 @@ class Workspace:
         manually navigated anywhere during the recovery, ask before yanking the view away.
         """
         if self._user_navigated_during_cfg:
-            r = QMessageBox.question(
-                self.main_window,
-                "CFG recovery finished",
-                f"CFG recovery finished. Jump to {func.name} and switch to graph view?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.Yes,
-            )
-            if r != QMessageBox.StandardButton.Yes:
-                return
+            self._ask_navigate_to_function_after_cfg(func)
+            return
+        self._do_navigate_to_function_after_cfg(func)
+
+    def _ask_navigate_to_function_after_cfg(self, func: Function) -> None:
+        # modeless: a modal here would block whoever waits on the job queue (e.g., a headless test) forever
+        box = QMessageBox(
+            QMessageBox.Icon.Question,
+            "CFG recovery finished",
+            f"CFG recovery finished. Jump to {func.name} and switch to graph view?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            self.main_window,
+        )
+        box.setDefaultButton(QMessageBox.StandardButton.Yes)
+        box.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+
+        def on_finished(result: int) -> None:
+            if result == QMessageBox.StandardButton.Yes:
+                self._do_navigate_to_function_after_cfg(func)
+
+        box.finished.connect(on_finished)
+        box.open()
+
+    def _do_navigate_to_function_after_cfg(self, func: Function) -> None:
         self._user_navigated_during_cfg = False
         with self._nav_tracking_suppressed():
             view = self.view_manager.first_view_in_category("disassembly")
