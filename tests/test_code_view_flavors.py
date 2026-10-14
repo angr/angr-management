@@ -13,7 +13,8 @@ import angr
 import cle
 from angr.sim_variable import SimMemoryVariable, SimStackVariable
 from common import AngrManagementTestCase, test_location
-from PySide6.QtGui import QColor
+from PySide6.QtCore import QEvent, Qt
+from PySide6.QtGui import QColor, QKeyEvent
 
 from angrmanagement.config import Conf
 from angrmanagement.ui.views.code_view import CodeView
@@ -164,6 +165,33 @@ class TestGoCodeView(FlavorCodeViewTest):
         addr = cle.Loader(path, auto_load_libs=False).find_symbol("main.main").rebased_addr
         proj = angr.Project(path, auto_load_libs=False)
         return proj, _scoped_cfg(proj, addr).model, addr
+
+    def _first_statement_pos(self) -> int:
+        return min(elem.posmap_pos for _, elem in self.code_view.codegen.map_addr_to_pos.items())
+
+    def test_focus_on_function_head_places_cursor(self):
+        # the Go stack-check preamble has no statement, so the head precedes every rendered address
+        cursor = self.code_view.textedit.textCursor()
+        cursor.setPosition(len(self.code_view.codegen.text) - 1)
+        self.code_view.textedit.setTextCursor(cursor)
+        self.main.workspace.decompile_function(self.func, curr_ins=self.func.addr)
+        self.main.workspace.job_manager.join_all_jobs()
+        assert self.code_view.textedit.textCursor().position() == self._first_statement_pos()
+
+    def test_tab_falls_back_to_function_head(self):
+        self.code_view.addr.am_obj = 0
+        with patch.object(self.main.workspace, "jump_to") as jump_to:
+            self.code_view.keyPressEvent(QKeyEvent(QEvent.KeyPress, Qt.Key_Tab, Qt.NoModifier))
+        jump_to.assert_called_once_with(self.func.addr)
+
+    def test_jump_to_another_function_switches_function(self):
+        inst = self.main.workspace.main_instance
+        inst.cfb.am_obj = inst.project.analyses.CFB(kb=inst.project.kb)
+        callee = inst.project.kb.functions["main.parse"]
+        with patch.object(self.code_view, "decompile") as decompile:
+            self.code_view.jump_to(callee.addr)
+        assert self.code_view.function.am_obj is callee
+        decompile.assert_called_once()
 
 
 class TestRustCodeView(FlavorCodeViewTest):
