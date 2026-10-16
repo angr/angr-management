@@ -31,7 +31,9 @@ class QtServices:
     """
     UIServices for the Qt frontend.
 
-    Dialogs have no parent, as the core's own message boxes had none; call the methods on the GUI thread.
+    Call the methods on the GUI thread. message() and the file pickers open their dialogs with no parent, as the
+    core's own message boxes and file dialogs had none. question() and prompt_text() are parented on the main window,
+    so they stay in front of it, as the symbol download confirmation that question() replaced was.
     """
 
     def message(self, level: MessageLevel, title: str, text: str) -> None:
