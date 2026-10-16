@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import angr
 from common import AngrManagementTestCase, ProjectOpenTestCase, test_location
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QCoreApplication, QEvent, Qt
 
 from angrmanagement.config import Conf
 from angrmanagement.data.annotations import CommentKind
@@ -31,6 +31,11 @@ class TestInlineComments(ProjectOpenTestCase):
 
     def tearDown(self):
         self.disasm_view.close()
+        # The view has no Qt parent; delete it through Qt now. Left to Python's cyclic collector, it is torn down
+        # whenever that next runs, on whatever thread, and that can crash the process.
+        self.disasm_view.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        del self.disasm_view
         super().tearDown()
 
     def test_inline_editor_sets_comment(self):
