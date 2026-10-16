@@ -29,9 +29,9 @@ from angrmanagement.data.library_docs import LibraryDocs
 from angrmanagement.data.signatures import init_flirt_signatures
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
-from angrmanagement.logic.commands import BasicCommand
 from angrmanagement.mcp import MCPServerManager, is_mcp_available
 from angrmanagement.mcp.manager import DEFAULT_HOST, DEFAULT_PATH
+from angrmanagement.present.shell import DOCUMENTATION_URL, register_basic_commands
 from angrmanagement.ui.dialogs.archive_loader import ArchiveLoaderDialog
 from angrmanagement.ui.dialogs.progress_dialog import ProgressDialog
 from angrmanagement.ui.views import DisassemblyView
@@ -255,9 +255,7 @@ class MainWindow(QMainWindow):
         new_state_dialog.exec_()
 
     def open_doc_link(self) -> None:
-        QDesktopServices.openUrl(
-            QUrl("https://angr-management.readthedocs.io/en/latest/", QUrl.ParsingMode.TolerantMode)
-        )
+        QDesktopServices.openUrl(QUrl(DOCUMENTATION_URL, QUrl.ParsingMode.TolerantMode))
 
     def open_about_dialog(self) -> None:
         dlg = LoadAboutDialog()
@@ -580,65 +578,7 @@ class MainWindow(QMainWindow):
         """
         Register basic window commands.
         """
-        self.workspace.command_manager.register_commands(
-            [
-                BasicCommand(action.__name__, caption, action)
-                for caption, action in [
-                    ("AI: LLM Refine All", self.llm_refine_all),
-                    ("AI: LLM Suggest Variable Names", self.llm_suggest_variable_names),
-                    ("AI: LLM Suggest Function Name", self.llm_suggest_function_name),
-                    ("AI: LLM Suggest Variable Types", self.llm_suggest_variable_types),
-                    ("AI: LLM Summarize Function", self.llm_summarize_function),
-                    ("AI: Start MCP Server", self.start_mcp_server),
-                    ("AI: Stop MCP Server", self.stop_mcp_server),
-                    ("AI: Copy MCP Server URL", self.copy_mcp_url),
-                    ("Analyze: Decompile", self.decompile_current_function),
-                    ("Analyze: Run Analysis...", self.run_analysis),
-                    ("Bookmarks: Go to next bookmark", self.workspace.goto_next_bookmark),
-                    ("Bookmarks: Toggle bookmark", self.workspace.toggle_bookmark),
-                    ("File: Close project", self.close_project),
-                    ("File: Exit", self.quit),
-                    ("File: Load a new binary...", self.open_file_button),
-                    ("File: Load a new trace...", self.load_trace),
-                    ("File: Load angr database...", self.load_database),
-                    ("File: Load FLIRT signature file...", self.load_signature_button),
-                    ("File: Preferences...", self.preferences),
-                    ("File: Save angr database as...", self.save_database_as),
-                    ("File: Save angr database...", self.save_database),
-                    ("File: Save patched binary as...", self.save_patched_binary_as),
-                    ("Help: About", self.open_about_dialog),
-                    ("Help: Documentation", self.open_doc_link),
-                    ("View: Bookmarks", self.workspace.show_bookmarks_view),
-                    ("View: Breakpoints", self.workspace.show_breakpoints_view),
-                    ("View: Call Explorer", self.workspace.show_call_explorer_view),
-                    ("View: Comments", self.workspace.show_comments_view),
-                    ("View: Console", self.workspace.show_console_view),
-                    ("View: Disassembly (Graph)", self.workspace.show_graph_disassembly_view),
-                    ("View: Disassembly (Linear)", self.workspace.show_linear_disassembly_view),
-                    ("View: Functions", self.workspace.show_functions_view),
-                    ("View: Hex", self.workspace.show_hex_view),
-                    ("View: Function Signatures", self.workspace.show_signatures_view),
-                    ("View: Jobs", self.workspace.show_jobs_view),
-                    ("View: Log", self.workspace.show_log_view),
-                    ("View: MCP History", self.workspace.show_mcp_history_view),
-                    ("View: New Disassembly (Graph)", self.workspace.create_and_show_graph_disassembly_view),
-                    ("View: New Disassembly (Linear)", self.workspace.create_and_show_linear_disassembly_view),
-                    ("View: New Hex", self.workspace.create_and_show_hex_view),
-                    ("View: Patches", self.workspace.show_patches_view),
-                    ("View: Proximity", self.workspace.view_proximity_for_current_function),
-                    ("View: Pseudocode", self.workspace.show_pseudocode_view),
-                    ("View: Registers", self.workspace.show_registers_view),
-                    ("View: Search", self.workspace.show_search_view),
-                    ("View: Stack", self.workspace.show_stack_view),
-                    ("View: States", self.workspace.show_states_view),
-                    ("View: Strings", self.workspace.show_strings_view),
-                    ("View: Symbolic Execution", self.workspace.show_symexec_view),
-                    ("View: Trace map", self.workspace.show_trace_map_view),
-                    ("View: Traces", self.workspace.show_traces_view),
-                    ("View: Types", self.workspace.show_types_view),
-                ]
-            ]
-        )
+        register_basic_commands(self.workspace.command_manager, self)
 
     #
     # Event
