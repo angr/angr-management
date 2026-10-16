@@ -184,6 +184,9 @@ class _RecordingAdapter:
     def font_metrics(self, font):
         return (font.size * 2, font.size, font.size * 1.5)
 
+    def font_metrics_object(self, font):
+        return ["metrics", font]
+
     def default_fonts(self):
         return {"ui_default_font": FontSpec("UI", 8), "tabular_view_font": FontSpec("Table", 7)}
 
@@ -201,6 +204,7 @@ class TestFrontendAdapter(unittest.TestCase):
         assert isinstance(self.conf.pseudocode_comment_weight, FontWeight)
         assert self.conf.pseudocode_comment_style is FontStyle.NORMAL
         assert (self.conf.disasm_font_height, self.conf.disasm_font_width, self.conf.disasm_font_ascent) == (1, 1, 1)
+        assert self.conf.disasm_font_metrics == (1, 1, 1)
         self.conf.init_font_config()
         assert self.conf.ui_default_font == FontSpec("DejaVu Sans Mono", 10)
 
@@ -259,6 +263,7 @@ class TestFrontendAdapter(unittest.TestCase):
         self.conf.set_frontend_adapter(self.adapter)
         self.conf.code_font = FontSpec("Mono", 10)
         assert (self.conf.code_font_height, self.conf.code_font_width, self.conf.code_font_ascent) == (20, 10, 15)
+        assert self.conf.code_font_metrics == ["metrics", FontSpec("Mono", 10)]
         self.conf.init_font_config()
         assert self.conf.entry("ui_default_font").value == FontSpec("UI", 8)
         assert self.conf.entry("tabular_view_font").value == FontSpec("Table", 7)

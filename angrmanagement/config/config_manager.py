@@ -45,6 +45,14 @@ class FrontendAdapter(Protocol):
         """The (height, width of "A", ascent) of a font, in the frontend's units."""
         raise NotImplementedError
 
+    def font_metrics_object(self, font: FontSpec) -> Any:
+        """
+        What ``Conf.<font>_metrics`` returns: the frontend's own font metrics object, such as Qt's QFontMetricsF.
+
+        A frontend without one returns the ``font_metrics`` tuple.
+        """
+        raise NotImplementedError
+
     def default_fonts(self) -> dict[str, FontSpec]:
         """The fonts to use for ``ui_default_font`` and ``tabular_view_font`` when the configuration sets none."""
         raise NotImplementedError
@@ -65,6 +73,9 @@ class HeadlessFrontendAdapter:  # pylint:disable=no-self-use
 
     def font_metrics(self, font: FontSpec) -> tuple[float, float, float]:  # pylint:disable=unused-argument
         return 1, 1, 1
+
+    def font_metrics_object(self, font: FontSpec) -> tuple[float, float, float]:
+        return self.font_metrics(font)
 
     def default_fonts(self) -> dict[str, FontSpec]:
         return {"ui_default_font": HEADLESS_DEFAULT_FONT, "tabular_view_font": HEADLESS_DEFAULT_FONT}
@@ -509,11 +520,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         return metrics
 
     def _font_metrics_object(self, name: str):
-        # QFontMetricsF under the Qt frontend; the (height, width, ascent) tuple under any other
-        factory = getattr(self._adapter, "font_metrics_object", None)
-        if factory is None:
-            return self._font_metrics(name)
-        return factory(self._entries[name].value)  # pylint:disable=not-callable
+        return self._adapter.font_metrics_object(self._entries[name].value)
 
     disasm_font: Any
     symexec_font: Any
