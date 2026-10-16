@@ -31,8 +31,8 @@ class GraphControl:
     """
     The graph of one function, laid out in cells.
 
-    :attr:`focus` is where the viewport should be: ``(x, y)`` in the layout's cells, set when an instruction is
-    shown; the frontend scrolls there and clears it.
+    :attr:`focus` is an instruction the viewport should show: ``(x, y)`` in the layout's cells; and
+    :attr:`reset_pending` asks for the initial view (the entry block). The frontend scrolls and clears both.
 
     :param presenter:   The disassembly presenter.
     :param on_change:   Called with no arguments when the frontend should draw again.
@@ -47,6 +47,8 @@ class GraphControl:
         self.disasm = None
         self.focus: tuple[int, int] | None = None
         self.focus_center = False
+        #: the view should first go to the entry block, as a newly laid out graph does
+        self.reset_pending = False
         #: the last instruction shown
         self.shown_insn: int | None = None
         self._insaddr_to_block: dict[int, Any] = {}
@@ -134,8 +136,19 @@ class GraphControl:
         self.refresh()
 
     def refresh(self) -> None:
-        """The display options changed: lay out again, keeping the viewport."""
-        self._layout()
+        """
+        Something shown changed (options, comments): read each node's data again and lay the blocks out again,
+        keeping the viewport. As QDisassemblyGraph.refresh, the nodes stay; only a reload makes new ones.
+        """
+        if self.doc is None:
+            self._layout()
+        else:
+            for block in self.doc.blocks.values():
+                for node in _unique(block.nodes):
+                    node.refresh()
+            self.restyle()
+            self.presenter.layout_graph(self.doc, self.disasm, self._measure, **self.margins)
+            self._insaddr_to_block = dict(self.doc.insn_block)
         self._changed()
 
     def redraw(self) -> None:
@@ -187,11 +200,13 @@ class GraphControl:
         return x + 2, y + 1 + (rows[0] if rows else 0)
 
     def _reset_view(self) -> None:
-        """Show the top of the entry block (QDisassemblyGraph._initial_position)."""
+        """Show the top of the entry block (QDisassemblyGraph._initial_position) once the frontend can."""
         self.focus = None
+        self.shown_insn = None
+        self.reset_pending = False
         if self.doc is None or self.doc.entry is None or self.doc.entry not in self.doc.layout:
             return
-        self.focus = self.doc.layout[self.doc.entry]
+        self.reset_pending = True
         self.focus_center = False
 
     def get_selected_operand_info(self):
@@ -211,7 +226,9 @@ class GraphControl:
         return key, ins_addr, insn.get_operand(operand_idx)
 
     def update_label(self, addr: int, is_renaming: bool = False) -> None:  # pylint:disable=unused-argument
-        self.refresh()
+        """A label was renamed: make the blocks again (QDisassemblyGraph reloads the block), keeping the viewport."""
+        self._layout()
+        self._changed()
 
     def instruction_widget_rect(self, insn_addr: int):  # pylint:disable=unused-argument,no-self-use
         return None

@@ -110,9 +110,10 @@ class TestStartup(TuiTestCase):
 
     def test_categories_without_a_view_do_nothing(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
-            app.action_show_view("disassembly")
+            # the hex view is a later phase's
+            app.action_show_view("hex")
             await settle(pilot)
-            assert app.view_widget("disassembly") is None
+            assert app.view_widget("hex") is None
 
         run_app(scenario, binary=None)
 
@@ -134,7 +135,8 @@ class TestFunctionsTable(TuiTestCase):
             # Enter in the filter box opens the first function and clears the filter
             await pilot.press("enter")
             await settle(pilot)
-            assert app.status_bar.status_text.startswith("authenticate at 0x")
+            disasm: Any = app.view_widget("disassembly")
+            assert disasm is not None and disasm.presenter.function.am_obj.name == "authenticate"
             assert view.table.filter_box.value == ""
             assert view.table_widget.row_count == total
             # Escape clears a filter typed in the table
@@ -207,7 +209,8 @@ class TestPalettes(TuiTestCase):
             await settle(pilot, 6)
             await pilot.press("enter")
             await settle(pilot, 6)
-            assert app.status_bar.status_text.startswith("rejected at 0x")
+            disasm: Any = app.view_widget("disassembly")
+            assert disasm is not None and disasm.presenter.function.am_obj.name == "rejected"
 
         run_app(scenario)
 

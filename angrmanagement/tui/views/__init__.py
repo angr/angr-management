@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from .base import TuiView
 from .console import ConsoleTuiView
+from .disassembly import DisassemblyTuiView
 from .search import SearchTuiView
 from .tables import (
     BookmarksTuiView,
@@ -23,6 +24,7 @@ from .tables import (
 
 #: The view class of each category the terminal frontend has.
 TUI_VIEW_CLASSES: dict[str, type[TuiView]] = {
+    "disassembly": DisassemblyTuiView,
     "functions": FunctionsTuiView,
     "strings": StringsTuiView,
     "search": SearchTuiView,

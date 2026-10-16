@@ -248,6 +248,8 @@ class GraphDoc:
     edges: list[EdgeRoute] = field(default_factory=list)
     entry: Any = None
     insn_block: dict[int, Any] = field(default_factory=dict)
+    #: the supergraph laid out
+    graph: Any = None
 
     @property
     def size(self) -> tuple[int, int]:
@@ -903,18 +905,36 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
                     doc.insn_block.setdefault(node.addr, n)
         if doc.entry is None and doc.blocks:
             doc.entry = doc.insn_block.get(func.addr, next(iter(doc.blocks)))
-        if not doc.blocks:
-            return doc, disasm
+        doc.graph = supergraph
+        self.layout_graph(doc, disasm, None, **margins)
+        return doc, disasm
+
+    @staticmethod
+    def layout_graph(
+        doc: GraphDoc,
+        disasm,
+        measure: Callable[[BlockDoc], tuple[int, int]] | None = None,
+        **margins: int,
+    ) -> GraphDoc:
+        """
+        Place the blocks of ``doc`` and route its edges with GraphLayouter; ``measure`` gives each block's size
+        again (after its lines changed), else the sizes in ``doc`` are used. Margins as for :meth:`graph_doc`.
+        """
+        if measure is not None:
+            doc.sizes = {key: measure(block) for key, block in doc.blocks.items()}
+        if not doc.blocks or doc.graph is None:
+            doc.layout, doc.edges = {}, []
+            return doc
         layout_margins = dict(CELL_MARGINS)
         layout_margins.update(margins)
-        gl = GraphLayouter(supergraph, doc.sizes, **layout_margins)
+        gl = GraphLayouter(doc.graph, doc.sizes, **layout_margins)
         doc.layout = {node: (int(x), int(y)) for node, (x, y) in gl.node_coordinates.items()}
         categorize_edges(disasm, gl.edges)
         doc.edges = [
             EdgeRoute([(int(x), int(y)) for x, y in edge.coordinates], edge.sort, edge.src.addr, edge.dst.addr)
             for edge in gl.edges
         ]
-        return doc, disasm
+        return doc
 
     def marks_at(self, addr: int, view: Any = None) -> list[Mark]:
         """

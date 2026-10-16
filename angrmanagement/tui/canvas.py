@@ -210,6 +210,16 @@ class CharCanvas:
         if not 0 <= y < self.height:
             return Strip.blank(width, blank)
         segments: list[Segment] = []
+        if x0 < 0:
+            # columns left of the canvas are blank
+            lead = min(-x0, width)
+            segments.append(Segment(" " * lead, blank))
+            width -= lead
+            x0 = 0
+            if width <= 0:
+                return Strip(segments, lead)
+            rest = self.strip(y, style_of, x0, width)
+            return Strip([*segments, *rest], lead + width)
         run: list[str] = []
         run_style: str | None = None
         end = min(x0 + width, self.width)
