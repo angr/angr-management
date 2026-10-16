@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtGui import QKeySequence
-
 from .menu import Menu, MenuEntry, MenuSeparator
 
 if TYPE_CHECKING:
@@ -22,7 +20,7 @@ class AIMenu(Menu):
                 MenuEntry(
                     "Refine &All",
                     main_window.llm_refine_all,
-                    shortcut=QKeySequence("Ctrl+I"),
+                    shortcut="Ctrl+I",
                 ),
                 MenuSeparator(),
                 MenuEntry(

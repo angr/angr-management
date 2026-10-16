@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtGui import QKeySequence
-
 from .menu import Menu, MenuEntry, MenuSeparator
 
 if TYPE_CHECKING:
@@ -19,7 +17,7 @@ class LogMenu(Menu):
                 MenuEntry(
                     "&Copy selected content",
                     log_widget.copy_selected_messages,
-                    shortcut=QKeySequence("Ctrl+C"),
+                    shortcut="Ctrl+C",
                 ),
                 MenuEntry("Copy selected message", log_widget.copy_selected),
                 MenuEntry("Copy all content", log_widget.copy_all_messages),

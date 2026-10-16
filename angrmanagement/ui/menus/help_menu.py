@@ -2,10 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtGui import QAction, QKeySequence
-
-from angrmanagement.ui.icons import icon
-
 from .menu import Menu, MenuEntry, MenuSeparator
 
 if TYPE_CHECKING:
@@ -22,15 +18,13 @@ class HelpMenu(Menu):
 
         self.entries.extend(
             [
-                MenuEntry(
-                    "&Documentation", main_window.open_doc_link, shortcut=QKeySequence("Alt+H"), icon=icon("docs")
-                ),
+                MenuEntry("&Documentation", main_window.open_doc_link, shortcut="Alt+H", icon="docs"),
                 MenuSeparator(),
                 MenuEntry(
                     "&About angr-management",
                     main_window.open_about_dialog,
-                    role=QAction.MenuRole.AboutRole,
-                    icon=icon("about"),
+                    role="about",
+                    icon="about",
                 ),
             ]
         )

@@ -3,10 +3,7 @@ from __future__ import annotations
 import platform
 from typing import TYPE_CHECKING
 
-from PySide6.QtGui import QAction, QKeySequence
-
 from angrmanagement.logic import GlobalInfo
-from angrmanagement.ui.icons import icon
 
 from .menu import Menu, MenuEntry, MenuSeparator
 
@@ -21,7 +18,7 @@ class RecentMenuEntry(MenuEntry):
 
     def __init__(self, path) -> None:
         self.path = path
-        super().__init__(path, self.action_target, icon=icon("file"))
+        super().__init__(path, self.action_target, icon="file")
 
     def action_target(self) -> None:
         GlobalInfo.main_window.load_file(self.path)
@@ -39,20 +36,20 @@ class FileMenu(Menu):
         self._close_entry = MenuEntry(
             "&Close project",
             main_window.close_project,
-            shortcut=QKeySequence("Ctrl+W"),
+            shortcut="Ctrl+W",
         )
         self._save_entries = [
             MenuEntry(
                 "&Save angr database...",
                 main_window.save_database,
-                shortcut=QKeySequence("Ctrl+S"),
-                icon=icon("file-save"),
+                shortcut="Ctrl+S",
+                icon="file-save",
             ),
             MenuEntry(
                 "S&ave angr database as...",
                 main_window.save_database_as,
-                shortcut=QKeySequence("Ctrl+Shift+S"),
-                icon=icon("file-save"),
+                shortcut="Ctrl+Shift+S",
+                icon="file-save",
             ),
             MenuEntry("Save patched binary as...", main_window.save_patched_binary_as),
         ]
@@ -66,18 +63,18 @@ class FileMenu(Menu):
                 MenuEntry(
                     "L&oad a new binary...",
                     main_window.open_file_button,
-                    shortcut=QKeySequence("Ctrl+O"),
-                    icon=icon("file-open"),
+                    shortcut="Ctrl+O",
+                    icon="file-open",
                 ),
                 MenuEntry(
                     "Load a &trace file...",
                     main_window.open_trace_file_button,
-                    shortcut=QKeySequence("Ctrl+Shift+T"),
+                    shortcut="Ctrl+Shift+T",
                 ),
                 MenuEntry(
                     "Load a &FLIRT signature file...",
                     main_window.load_signature_button,
-                    shortcut=QKeySequence("Ctrl+Alt+F"),
+                    shortcut="Ctrl+Alt+F",
                 ),
                 self.recent_menu,
                 MenuSeparator(),
@@ -85,8 +82,8 @@ class FileMenu(Menu):
                 MenuEntry(
                     "&Load angr database...",
                     main_window.load_database,
-                    shortcut=QKeySequence("Ctrl+L"),
-                    icon=icon("file-open"),
+                    shortcut="Ctrl+L",
+                    icon="file-open",
                 ),
                 *self._save_entries,
                 MenuSeparator(),
@@ -95,9 +92,9 @@ class FileMenu(Menu):
                 MenuEntry(
                     "&Preferences...",
                     main_window.preferences,
-                    shortcut=QKeySequence("Ctrl+Comma"),
-                    role=QAction.MenuRole.PreferencesRole,
-                    icon=icon("preferences") if platform.system() != "Darwin" else None,
+                    shortcut="Ctrl+Comma",
+                    role="preferences",
+                    icon="preferences" if platform.system() != "Darwin" else None,
                 ),
                 MenuSeparator(),
                 MenuEntry("E&xit", main_window.quit),

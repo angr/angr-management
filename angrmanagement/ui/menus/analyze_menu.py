@@ -2,11 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QKeySequence
-
-from angrmanagement.ui.icons import icon
-
 from .menu import Menu, MenuEntry, MenuSeparator
 
 if TYPE_CHECKING:
@@ -21,25 +16,25 @@ class AnalyzeMenu(Menu):
                 MenuEntry(
                     "&Run Analysis...",
                     main_window.run_analysis,
-                    shortcut=QKeySequence(Qt.Key.Key_F4),
-                    icon=icon("run-analysis"),
+                    shortcut="F4",
+                    icon="run-analysis",
                 ),
                 MenuSeparator(),
                 MenuEntry(
                     "&Decompile",
                     main_window.decompile_current_function,
-                    shortcut=QKeySequence(Qt.Key.Key_F5),
-                    icon=icon("pseudocode-view"),
+                    shortcut="F5",
+                    icon="pseudocode-view",
                 ),
                 MenuEntry(
                     "View in Proximity &Browser",
                     main_window.view_proximity_for_current_function,
-                    shortcut=QKeySequence("Ctrl+B"),
+                    shortcut="Ctrl+B",
                 ),
                 MenuEntry(
                     "Discover &Patterns...",
                     main_window.discover_patterns,
-                    icon=icon("pattern-view"),
+                    icon="pattern-view",
                 ),
             ],
         )

@@ -177,7 +177,7 @@ class PluginManager:
             self.workspace._main_window._file_toolbar.add(action)
 
     def _register_menu_buttons(self, plugin_cls: type[BasePlugin], plugin: BasePlugin) -> None:
-        from angrmanagement.ui.menus.menu import MenuEntry, MenuSeparator
+        from angrmanagement.present.menus import MenuEntry, MenuSeparator
 
         if plugin_cls.MENU_BUTTONS:
             self.workspace._main_window._plugin_menu.add(MenuSeparator())
