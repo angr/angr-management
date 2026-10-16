@@ -6,9 +6,6 @@ from typing import Any
 
 import archinfo
 import cle
-from angr.calling_conventions import unify_arch_name
-from angr.simos import os_mapping
-from cle.backends.pe.symbolserver import SymbolPathParser
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -43,6 +40,23 @@ try:
 except ImportError:
     pypcode = None
 
+from angrmanagement.data.load_options import (
+    CART_BACKEND_NAME,
+    CART_ENCKEY_ARGNAME,
+    NO_OUTER_BACKEND,
+    LoadSelection,
+    available_archs,
+    available_backends,
+    available_simos,
+    build_load_options,
+    loaded_addresses,
+    requested_dependencies,
+    split_arches,
+    suggested_backend_name,
+    suggested_outer_backend_name,
+    suggested_simos_name,
+    symbol_path_rows,
+)
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.ui.dialogs.set_encryption_key import SetEncryptionKeyDialog, key_to_hex
@@ -69,9 +83,8 @@ class ArchTreeWidgetItem(QTreeWidgetItem):
 
 DEPENDENCIES_TAB_INDEX = 1
 
-# cart is the only outer backend that takes an encryption key, and this is the load option it takes it in
-CART_BACKEND_NAME = "cart"
-CART_ENCKEY_ARGNAME = "arc4_key"
+# the cart constants moved to angrmanagement.data.load_options; they stay importable from here
+__all__ = ["CART_BACKEND_NAME", "CART_ENCKEY_ARGNAME", "ArchTreeWidgetItem", "LoadBinary", "LoadBinaryError"]
 
 
 class LoadBinary(QDialog):
@@ -110,10 +123,10 @@ class LoadBinary(QDialog):
         self.suggested_main_opts = suggested_main_opts or {}
         self.suggested_original_backend = suggested_original_backend
         self.suggested_main_filename = suggested_main_filename
-        self.available_backends: dict[str, cle.Backend] = cle.ALL_BACKENDS
-        self.available_simos = {}
+        self.available_backends: dict[str, cle.Backend] = available_backends()
+        self.available_simos = available_simos()
         self.arch = partial_ld.main_object.arch
-        self.available_archs = archinfo.all_arches[::]
+        self.available_archs = available_archs()
         # _try_loading will try its best to fill in the following two properties from partial_ld
         self._base_addr: int | None = None
         self._entry_addr: int | None = None
@@ -127,17 +140,9 @@ class LoadBinary(QDialog):
         # load, in which case the user is only overriding it.
         self._enckey: bytes | None = self.suggested_main_opts.get(CART_ENCKEY_ARGNAME)
 
-        if pypcode:
-            for a in pypcode.Arch.enumerate():
-                self.available_archs.extend(sorted(a.languages, key=lambda lang: lang.id))
-
         # return values
         self.load_options = None
         self.simos = None
-
-        for _, simos in os_mapping.items():
-            self.available_simos[simos.__name__] = simos
-        self.available_simos["Unknown"] = None
 
         self.setWindowTitle("Load a new binary")
 
@@ -166,9 +171,7 @@ class LoadBinary(QDialog):
     #
 
     def _try_loading(self, partial_ld: cle.Loader) -> None:
-        deps = []
-        for ident in sorted(partial_ld.requested_names):
-            deps.append(ident)
+        deps = requested_dependencies(partial_ld)
 
         # dependencies
 
@@ -181,20 +184,7 @@ class LoadBinary(QDialog):
         # update the dependencies tab text
         self.tab.setTabText(DEPENDENCIES_TAB_INDEX, f"Dependencies ({len(deps)})")
 
-        if partial_ld.main_object is not None:
-            if isinstance(partial_ld.main_object, cle.MetaELF | cle.PE | cle.MachO | cle.CGC):
-                self._base_addr = partial_ld.main_object.mapped_base
-                self._entry_addr = partial_ld.main_object.entry
-                self._offset = getattr(partial_ld.main_object, "offset", 0)
-            else:
-                if hasattr(partial_ld.main_object, "mapped_base"):
-                    self._base_addr = partial_ld.main_object.mapped_base
-                if hasattr(partial_ld.main_object, "entry"):
-                    self._entry_addr = partial_ld.main_object.entry
-                if hasattr(partial_ld.main_object, "offset"):
-                    self._offset = partial_ld.main_object.offset
-
-            # don't know what to do with other backends...
+        self._base_addr, self._entry_addr, self._offset = loaded_addresses(partial_ld)
 
     def _set_base_addr(self) -> None:
         # special handling for blobs. note that suggested_backend is a class, not an instance.
@@ -290,16 +280,12 @@ class LoadBinary(QDialog):
         outer_backend_layout.addWidget(outer_backend_caption)
 
         outer_backend_dropdown = QComboBox()
-        suggested_outer_backend_name = None
-        outer_backend_dropdown.addItem("<None>")
+        outer_backend_dropdown.addItem(NO_OUTER_BACKEND)
         for backend_name, backend in self.available_backends.items():
             if getattr(backend, "is_outer", False) is True:
                 outer_backend_dropdown.addItem(backend_name)
-                if backend is self.suggested_original_backend:
-                    suggested_outer_backend_name = backend_name
-        outer_backend_dropdown.setCurrentText(
-            suggested_outer_backend_name if suggested_outer_backend_name is not None else "<None>"
-        )
+        outer_name = suggested_outer_backend_name(self.suggested_original_backend)
+        outer_backend_dropdown.setCurrentText(outer_name if outer_name is not None else NO_OUTER_BACKEND)
         outer_backend_dropdown.currentTextChanged.connect(self._on_outer_backend_changed)
         outer_backend_layout.addWidget(outer_backend_dropdown)
 
@@ -328,14 +314,12 @@ class LoadBinary(QDialog):
         backend_layout.addWidget(backend_caption)
 
         backend_dropdown = QComboBox()
-        suggested_backend_name = None
         for backend_name, backend in self.available_backends.items():
             if getattr(backend, "is_outer", False) is False:
                 backend_dropdown.addItem(backend_name)
-                if backend is self.suggested_backend:
-                    suggested_backend_name = backend_name
-        if suggested_backend_name is not None:
-            backend_dropdown.setCurrentText(suggested_backend_name)
+        inner_name = suggested_backend_name(self.suggested_backend)
+        if inner_name is not None:
+            backend_dropdown.setCurrentText(inner_name)
         backend_layout.addWidget(backend_dropdown)
 
         self.option_widgets["backend"] = backend_dropdown
@@ -352,12 +336,7 @@ class LoadBinary(QDialog):
         os_dropdown = QComboBox()
         for simos_name in self.available_simos:
             os_dropdown.addItem(simos_name)
-        if "Unknown" in self.available_simos:
-            os_dropdown.setCurrentText("Unknown")
-        if self.suggested_os_name is not None:
-            suggested_os = os_mapping[self.suggested_os_name].__name__
-            if suggested_os in self.available_simos:
-                os_dropdown.setCurrentText(suggested_os)
+        os_dropdown.setCurrentText(suggested_simos_name(self.suggested_os_name, self.available_simos))
         os_layout.addWidget(os_dropdown)
 
         self.option_widgets["os"] = os_dropdown
@@ -599,29 +578,18 @@ class LoadBinary(QDialog):
         self._parse_symbol_path_str_and_populate_symbol_paths_table(text)
 
     def _parse_symbol_path_str_and_populate_symbol_paths_table(self, text: str) -> None:
-        entries = SymbolPathParser.parse(text)
+        rows = symbol_path_rows(text)
 
         symbol_paths_table: QTableWidget = self.option_widgets["symbol_paths_table"]
-        symbol_paths_table.setRowCount(len(entries))
+        symbol_paths_table.setRowCount(len(rows))
         symbol_paths_table.clearContents()
 
-        for row, entry in enumerate(entries):
+        for row, (entry_type, cache, path) in enumerate(rows):
             # Path type
-            type_item = QTableWidgetItem(entry.entry_type)
+            type_item = QTableWidgetItem(entry_type)
             type_item.setFlags(type_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             symbol_paths_table.setItem(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_TYPE, type_item)
 
-            # Path
-            match entry.entry_type:
-                case "local":
-                    cache = ""
-                    path = entry.local_path
-                case "srv" | "symsrv":
-                    cache = entry.cache_path
-                    path = entry.server_url
-                case "cache":
-                    cache = entry.cache_path
-                    path = ""
             cache_item = QTableWidgetItem(cache)
             symbol_paths_table.setItem(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_CACHE, cache_item)
             path_item = QTableWidgetItem(path)
@@ -773,33 +741,7 @@ class LoadBinary(QDialog):
         Split a list of architectures into three categories: The (probably) ideal architecture, recommended
         architectures, and other architectures.
         """
-        the_arch = None
-        recommended_arches = []
-        other_arches = []
-
-        self_arch_str = str(self.arch)
-        arch_names = self.partial_ld.main_object.available_arches if self.partial_ld.main_object is not None else []
-
-        for arch in all_arches:
-            if isinstance(arch, archinfo.Arch):
-                if str(arch) == self_arch_str:
-                    the_arch = arch
-                elif arch.name in arch_names:
-                    recommended_arches.append(arch)
-                else:
-                    other_arches.append(arch)
-            elif pypcode and isinstance(arch, pypcode.ArchLanguage):
-                if self.arch is not None:
-                    if self.arch.name == arch.id:
-                        the_arch = arch
-                    elif self.arch.name.lower() in arch.id.lower() or self.arch.name == unify_arch_name(arch.id):
-                        recommended_arches.append(arch)
-                    else:
-                        other_arches.append(arch)
-            else:
-                raise TypeError(f"Unknown architecture type {type(arch)}")
-
-        return the_arch, recommended_arches, other_arches
+        return split_arches(self.partial_ld, all_arches)
 
     def _update_enckey_widgets(self) -> None:
         """
@@ -885,7 +827,7 @@ class LoadBinary(QDialog):
 
         outer_backend_dropdown: QComboBox = self.option_widgets["outer_backend"]
         outer_backend: str | None = outer_backend_dropdown.currentText()
-        if outer_backend == "<None>":
+        if outer_backend == NO_OUTER_BACKEND:
             outer_backend = None
         elif not outer_backend or outer_backend not in self.available_backends:
             QMessageBox.critical(None, "Incorrect backend selection", "Please select a backend before continue.")
@@ -916,90 +858,70 @@ class LoadBinary(QDialog):
             arch = archinfo.ArchPcode(arch.id)
         self.load_options["arch"] = arch
 
-        # options for the object the user picked a backend for. it ends up in either main_opts or, when an outer
-        # backend unpacks it, lib_opts.
-        main_opts = {
-            "backend": backend,
-        }
-
         self.simos = self.available_simos[cur_simos_name]
 
-        if self._base_addr_checkbox is not None and self._base_addr_checkbox.isChecked():
-            try:
-                base_addr = int(self.option_widgets["base_addr"].text(), 16)
-            except ValueError:
-                QMessageBox.critical(None, "Incorrect base address", "Please input a valid base address.")
-                return
-            main_opts["base_addr"] = base_addr
+        addresses = {}
+        for key, checkbox, caption, message in (
+            ("base_addr", self._base_addr_checkbox, "Incorrect base address", "Please input a valid base address."),
+            (
+                "entry_addr",
+                self._entry_addr_checkbox,
+                "Incorrect entry point address",
+                "Please input a valid entry point address.",
+            ),
+            ("offset", self._offset_checkbox, "Incorrect offset", "Please input a valid offset."),
+        ):
+            if checkbox is not None and checkbox.isChecked():
+                try:
+                    addresses[key] = int(self.option_widgets[key].text(), 16)
+                except ValueError:
+                    QMessageBox.critical(None, caption, message)
+                    return
 
-        if self._entry_addr_checkbox is not None and self._entry_addr_checkbox.isChecked():
-            try:
-                entry_addr = int(self.option_widgets["entry_addr"].text(), 16)
-            except ValueError:
-                QMessageBox.critical(None, "Incorrect entry point address", "Please input a valid entry point address.")
-                return
-            main_opts["entry_point"] = entry_addr
+        allow_symbol_download = True
+        rows = []
+        if "allow_symbol_download" in self.option_widgets:
+            allow_symbol_download = self.option_widgets["allow_symbol_download"].isChecked()
+        if "symbol_paths_table" in self.option_widgets:
+            symbol_paths_table: QTableWidget = self.option_widgets["symbol_paths_table"]
+            for row in range(symbol_paths_table.rowCount()):
+                rows.append(
+                    tuple(
+                        symbol_paths_table.item(row, col).text()
+                        for col in (
+                            LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_TYPE,
+                            LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_CACHE,
+                            LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_PATH,
+                        )
+                    )
+                )
 
-        if self._offset_checkbox is not None and self._offset_checkbox.isChecked():
-            try:
-                offset_addr = int(self.option_widgets["offset"].text(), 16)
-            except ValueError:
-                QMessageBox.critical(None, "Incorrect offset", "Please input a valid offset.")
-                return
-            main_opts["offset"] = offset_addr
-
-        if force_load_libs:
-            self.load_options["force_load_libs"] = force_load_libs
-        if skip_libs:
-            self.load_options["skip_libs"] = skip_libs
-
-        # Collect symbol search options for PE files
-        if isinstance(self.partial_ld.main_object, cle.PE):
-            if "allow_symbol_download" in self.option_widgets:
-                main_opts["download_debug_symbols"] = self.option_widgets["allow_symbol_download"].isChecked()
-
-            if "symbol_paths_table" in self.option_widgets:
-                symbol_paths_table: QTableWidget = self.option_widgets["symbol_paths_table"]
-                symbol_paths = []
-                for row in range(symbol_paths_table.rowCount()):
-                    type_item = symbol_paths_table.item(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_TYPE)
-                    cache_item = symbol_paths_table.item(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_CACHE)
-                    path_item = symbol_paths_table.item(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_PATH)
-                    # build symbol path string
-                    match type_item.text():
-                        case "local":
-                            symbol_paths.append(path_item.text())
-                        case "srv" | "symsrv":
-                            if path_item.text():
-                                if cache_item.text():
-                                    symbol_paths.append(f"srv*{cache_item.text()}*{path_item.text()}")
-                                else:
-                                    symbol_paths.append(f"srv*{path_item.text()}")
-                        case "cache":
-                            if cache_item.text():
-                                symbol_paths.append(f"cache*{cache_item.text()}")
-                if symbol_paths:
-                    main_opts["symbol_paths"] = ";".join(symbol_paths)
-
-            # Add confirmation and progress callbacks
-            main_opts["download_debug_symbol_confirm"] = LoadBinary._allow_symbol_download
-            main_opts["download_debug_symbol_progress"] = LoadBinary._symbol_download_progress
-
-        if outer_backend is not None:
-            # the outer backend is the real main object; the options above apply to the object it unpacks
-            outer_main_opts = {
-                "backend": outer_backend,
-            } | self.suggested_main_opts
-            if outer_backend == CART_BACKEND_NAME and self._enckey is not None:
-                # the key the user picked wins over the one the partial load used
-                outer_main_opts[CART_ENCKEY_ARGNAME] = self._enckey
-            self.load_options["main_opts"] = outer_main_opts
-            if self.suggested_main_filename is not None:
-                self.load_options["lib_opts"] = {
-                    self.suggested_main_filename: main_opts,
-                }
-        else:
-            self.load_options["main_opts"] = main_opts | self.suggested_main_opts
+        selection = LoadSelection(
+            backend=backend,
+            simos_name=cur_simos_name,
+            arch=item.arch,
+            outer_backend=outer_backend,
+            auto_load_libs=self.load_options["auto_load_libs"],
+            load_debug_info=self.load_options["load_debug_info"],
+            force_load_libs=force_load_libs,
+            skip_libs=skip_libs,
+            base_addr=addresses.get("base_addr"),
+            entry_addr=addresses.get("entry_addr"),
+            offset=addresses.get("offset"),
+            allow_symbol_download=allow_symbol_download,
+            symbol_path_rows=rows,
+            enckey=self._enckey,
+        )
+        result = build_load_options(
+            self.partial_ld,
+            selection,
+            suggested_main_opts=self.suggested_main_opts,
+            suggested_main_filename=self.suggested_main_filename,
+            confirm_symbol_download=LoadBinary._allow_symbol_download,
+            symbol_download_progress=LoadBinary._symbol_download_progress,
+        )
+        self.load_options = result.load_options
+        self.simos = result.simos
 
         self.close()
 

@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING
 import angr
 import angr.flirt
 from angr.flirt import FLIRT_SIGNATURES_BY_ARCH, FlirtSignature
-from PySide6.QtWidgets import QFileDialog
 
 from angrmanagement.config import Conf
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.utils.env import app_root, is_pyinstaller
 
 from .object_container import ObjectContainer
@@ -156,21 +156,21 @@ class SignatureManager:
         Open a dialog to select binaries for bindiff analysis.
         Returns the list of selected filenames, or None if cancelled.
         """
-        filenames, _ = QFileDialog.getOpenFileNames(
-            None,
+        filenames = GlobalInfo.ui_services.pick_open_files(
             "Load binaries to bindiff from",
             "",
             "Object Files (*.a *.o);;All files (*)",
+            True,
         )
         return filenames if filenames else None
 
     def load_signatures(self) -> None:
         # open a dialog to select signatures files
-        filenames, _ = QFileDialog.getOpenFileNames(
-            None,
+        filenames = GlobalInfo.ui_services.pick_open_files(
             "Load FLIRT signature files",
             "",
             "FLIRT signature files (*.sig);;All files (*)",
+            True,
         )
         for filename in filenames:
             basename = os.path.basename(filename)

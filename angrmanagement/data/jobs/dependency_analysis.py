@@ -11,7 +11,6 @@ from angr.knowledge_plugins import Function
 from angr.knowledge_plugins.key_definitions.atoms import Register
 from angr.knowledge_plugins.key_definitions.constants import OP_BEFORE
 from angr.sim_type import SimType
-from PySide6.QtWidgets import QMessageBox
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule_async
@@ -238,8 +237,8 @@ class DependencyAnalysisJob(InstanceJob):
 
     @staticmethod
     def _display_import_error() -> None:
-        QMessageBox.critical(
-            None,
+        GlobalInfo.ui_services.message(
+            "critical",
             "Import error",
             "Failed to import argument_resolver package. Is operation-mango installed?",
         )

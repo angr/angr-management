@@ -7,11 +7,10 @@ import angr
 import archinfo
 import cle
 from angr.angrdb import AngrDB
-from PySide6.QtWidgets import QMessageBox
 
+from angrmanagement.data.load_options import key_to_hex
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule
-from angrmanagement.ui.dialogs import LoadBinary, SetEncryptionKeyDialog
-from angrmanagement.ui.dialogs.set_encryption_key import key_to_hex
 from angrmanagement.utils.cart_config import CART_CONFIG_KEY_OPTION, CART_CONFIG_PATH, load_cart_config_key
 
 from .job import InstanceJob
@@ -48,7 +47,11 @@ class LoadBinaryJob(InstanceJob):
 
         if partial_ld is None:
             _l.warning("Failed to load binary in Cle; partial_ld is None.")
-            gui_thread_schedule(LoadBinary.binary_loading_failed, (self.fname,))
+            # TODO: Normalize the path for Windows
+            gui_thread_schedule(
+                GlobalInfo.ui_services.message,
+                ("critical", "Failed to load binary", f"angr failed to load binary {self.fname}."),
+            )
             return
 
         # ignore_missing_arch is only useful during the partial load
@@ -58,8 +61,8 @@ class LoadBinaryJob(InstanceJob):
         # when an outer backend (e.g., CaRT) is in play, original_main_object is the outer object that wraps the real
         # main object; otherwise it is the main object itself
         original_main_object = partial_ld.original_main_object
-        new_load_options, simos = gui_thread_schedule(
-            LoadBinary.run,
+        options = gui_thread_schedule(
+            GlobalInfo.ui_services.load_binary_options,
             (partial_ld,),
             kwargs={
                 "suggested_backend": partial_ld.main_object.__class__,
@@ -69,8 +72,9 @@ class LoadBinaryJob(InstanceJob):
                 "suggested_main_filename": original_main_object.unpacked_name,
             },
         )
-        if new_load_options is None:
+        if options is None:
             return
+        new_load_options, simos = options
 
         self.load_options.update(new_load_options)
 
@@ -101,12 +105,9 @@ class LoadBinaryJob(InstanceJob):
             if enckey is not None:
                 prompt += f"\nPre-filled with {CART_CONFIG_KEY_OPTION} from {CART_CONFIG_PATH}."
 
-            dialog = SetEncryptionKeyDialog(
-                prompt_msg=prompt,
-                initial_text="" if enckey is None else key_to_hex(enckey),
+            return GlobalInfo.ui_services.encryption_key(
+                self.fname, prompt=prompt, initial_text="" if enckey is None else key_to_hex(enckey)
             )
-            dialog.exec_()
-            return dialog.result
 
         try:
             # Try automatic loading
@@ -189,14 +190,19 @@ class LoadAngrDBJob(InstanceJob):
         except angr.errors.AngrIncompatibleDBError as ex:
             _l.critical("Failed to load the angr database because of compatibility issues.", exc_info=True)
             gui_thread_schedule(
-                QMessageBox.critical,
-                (None, "Error", f"Failed to load the angr database because of compatibility issues.\nDetails: {ex}"),
+                GlobalInfo.ui_services.message,
+                (
+                    "critical",
+                    "Error",
+                    f"Failed to load the angr database because of compatibility issues.\nDetails: {ex}",
+                ),
             )
             return
         except angr.errors.AngrDBError as ex:
             _l.critical("Failed to load the angr database because of compatibility issues.", exc_info=True)
             gui_thread_schedule(
-                QMessageBox.critical, (None, "Error", f"Failed to load the angr database.\nDetails: {ex}")
+                GlobalInfo.ui_services.message,
+                ("critical", "Error", f"Failed to load the angr database.\nDetails: {ex}"),
             )
             _l.critical("Failed to load the angr database.", exc_info=True)
             return

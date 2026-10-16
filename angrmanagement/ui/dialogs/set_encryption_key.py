@@ -16,6 +16,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from angrmanagement.data.load_options import key_to_hex
+
+__all__ = ["EncKeyFormat", "SetEncryptionKeyDialog", "key_to_hex"]
+
 
 class EncKeyFormat(IntEnum):
     """
@@ -26,13 +30,6 @@ class EncKeyFormat(IntEnum):
     BYTESTRING = 1
     ASCII = 2
     HEX = 3
-
-
-def key_to_hex(key: bytes) -> str:
-    """
-    Render a key the way this dialog expects it to be typed back in.
-    """
-    return " ".join(f"{x:02x}" for x in key)
 
 
 class SetEncryptionKeyDialog(QDialog):

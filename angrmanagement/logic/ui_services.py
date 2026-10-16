@@ -1,0 +1,150 @@
+"""
+Asking the user things, without depending on a frontend.
+
+Code outside the frontends reaches the user through ``GlobalInfo.ui_services``, an object implementing
+:class:`UIServices`. The Qt frontend installs ``QtServices`` (angrmanagement.ui.qt_services); headless code gets
+:class:`HeadlessServices`, which logs messages and answers every question with its default. Call these on the UI
+thread, through ``gui_thread_schedule`` when on another thread.
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING, Literal, Protocol
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    import cle
+
+    from angrmanagement.data.load_options import LoadOptions
+
+_l = logging.getLogger(__name__)
+
+MessageLevel = Literal["info", "warning", "critical"]
+
+
+class UIServices(Protocol):
+    """The questions and notices the core can put to the user."""
+
+    def message(self, level: MessageLevel, title: str, text: str) -> None:
+        """Tell the user something and wait until they acknowledge it."""
+
+    def question(self, title: str, text: str, buttons: Sequence[str], default: str) -> str:
+        """Ask the user to pick one of ``buttons``; returns the one picked, or ``default`` when there is no answer."""
+
+    def prompt_text(self, title: str, label: str, default: str = "") -> str | None:
+        """Ask for a line of text; None if the user cancelled."""
+
+    def pick_open_files(self, caption: str, directory: str, name_filter: str, multiple: bool) -> list[str]:
+        """
+        Ask for existing files to open; an empty list if the user cancelled.
+
+        ``name_filter`` is in Qt's format, such as ``"Object Files (*.a *.o);;All files (*)"``.
+        """
+
+    def pick_save_file(self, caption: str, directory: str, name_filter: str) -> str | None:
+        """Ask for a file to save to; None if the user cancelled. ``directory`` may include a file name."""
+
+    def pick_directory(self, caption: str, directory: str) -> str | None:
+        """Ask for a directory; None if the user cancelled."""
+
+    def load_binary_options(
+        self,
+        partial_ld: cle.Loader,
+        suggested_backend: type[cle.Backend] | None = None,
+        suggested_os_name: str | None = None,
+        suggested_main_opts: dict | None = None,
+        suggested_original_backend: type[cle.Backend] | None = None,
+        suggested_main_filename: str | None = None,
+    ) -> LoadOptions | None:
+        """Ask how to load a binary that ``partial_ld`` has partially loaded; None if the user cancelled."""
+
+    def encryption_key(self, filename: str, prompt: str = "", initial_text: str = "") -> bytes | None:
+        """
+        Ask for the key of the encrypted file ``filename``; None if the user gave none.
+
+        ``prompt`` explains what the key is for, and ``initial_text`` pre-fills the answer (a key in hex).
+        """
+
+    def clipboard_text(self) -> str:
+        """The text on the clipboard."""
+
+    def set_clipboard_text(self, text: str) -> None:
+        """Put text on the clipboard."""
+
+    def open_url(self, url: str) -> bool:
+        """Open a URL in the user's browser; whether that worked."""
+
+
+class HeadlessServices:
+    """
+    The UI services of a process with nobody to ask.
+
+    Messages are logged at their level; questions get their default answer; pickers and prompts return nothing;
+    binaries load with the options the load dialog would preselect; there is no encryption key. The clipboard is a
+    string held in this object.
+    """
+
+    _LOG_LEVELS = {"info": logging.INFO, "warning": logging.WARNING, "critical": logging.CRITICAL}
+
+    def __init__(self) -> None:
+        self._clipboard = ""
+
+    def message(self, level: MessageLevel, title: str, text: str) -> None:
+        _l.log(self._LOG_LEVELS.get(level, logging.INFO), "%s: %s", title, text)
+
+    def question(self, title: str, text: str, buttons: Sequence[str], default: str) -> str:
+        _l.info("%s: %s [%s] -> %s", title, text, "/".join(buttons), default)
+        return default
+
+    def prompt_text(self, title: str, label: str, default: str = "") -> str | None:  # pylint:disable=unused-argument
+        return None
+
+    def pick_open_files(  # pylint:disable=unused-argument
+        self, caption: str, directory: str, name_filter: str, multiple: bool
+    ) -> list[str]:
+        return []
+
+    def pick_save_file(  # pylint:disable=unused-argument
+        self, caption: str, directory: str, name_filter: str
+    ) -> str | None:
+        return None
+
+    def pick_directory(self, caption: str, directory: str) -> str | None:  # pylint:disable=unused-argument
+        return None
+
+    def load_binary_options(
+        self,
+        partial_ld: cle.Loader,
+        suggested_backend: type[cle.Backend] | None = None,
+        suggested_os_name: str | None = None,
+        suggested_main_opts: dict | None = None,
+        suggested_original_backend: type[cle.Backend] | None = None,
+        suggested_main_filename: str | None = None,
+    ) -> LoadOptions | None:
+        from angrmanagement.data.load_options import default_load_options  # pylint:disable=import-outside-toplevel
+
+        return default_load_options(
+            partial_ld,
+            suggested_backend=suggested_backend,
+            suggested_os_name=suggested_os_name,
+            suggested_main_opts=suggested_main_opts,
+            suggested_original_backend=suggested_original_backend,
+            suggested_main_filename=suggested_main_filename,
+        )
+
+    def encryption_key(  # pylint:disable=unused-argument
+        self, filename: str, prompt: str = "", initial_text: str = ""
+    ) -> bytes | None:
+        return None
+
+    def clipboard_text(self) -> str:
+        return self._clipboard
+
+    def set_clipboard_text(self, text: str) -> None:
+        self._clipboard = text
+
+    def open_url(self, url: str) -> bool:
+        _l.info("Not opening %s: there is no browser in a headless process", url)
+        return False

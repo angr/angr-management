@@ -5,10 +5,10 @@ import re
 import urllib.parse
 
 import requests
-from PySide6.QtWidgets import QFileDialog
 
 from angrmanagement.config import Conf
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
+from angrmanagement.logic import GlobalInfo
 
 
 def isurl(uri) -> bool:
@@ -22,7 +22,13 @@ def isurl(uri) -> bool:
     return False
 
 
-def download_url(url, parent=None, to_file: bool = True, file_path=None, use_proxies: bool = True):
+def download_url(  # pylint:disable=unused-argument
+    url, parent=None, to_file: bool = True, file_path=None, use_proxies: bool = True
+):
+    """
+    Download ``url``. With ``to_file``, save it to ``file_path``, or ask the user where when that is None, and return
+    the path; otherwise return the content. ``parent`` is ignored; it was the parent of the file dialog.
+    """
     if not isurl(url):
         raise TypeError("The given URL %s is not a valid URL.", url)
 
@@ -53,10 +59,8 @@ def download_url(url, parent=None, to_file: bool = True, file_path=None, use_pro
     if to_file:
         # save the content to a file and then return the path
         if file_path is None:
-            filename, folder = QFileDialog.getSaveFileName(parent, "Download a file to...", basename, "Any file (*);")
-            if filename and folder:
-                target_path = os.path.join(folder, filename)
-            else:
+            target_path = GlobalInfo.ui_services.pick_save_file("Download a file to...", basename, "Any file (*);")
+            if not target_path:
                 # terminated
                 return None
         else:
