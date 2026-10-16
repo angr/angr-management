@@ -82,10 +82,6 @@ class Signal:
                     return True
         return False
 
-    @property
-    def listener_count(self) -> int:
-        return len(self._listeners)
-
     def emit(self, *args: Any) -> None:
         """Call every listener with ``args``, on the UI thread."""
         executor = GlobalInfo.executor

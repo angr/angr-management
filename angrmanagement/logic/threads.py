@@ -103,10 +103,6 @@ class DirectExecutor:
         self._owner = threading.get_ident()
         self._queue: queue.SimpleQueue[_PendingCall] = queue.SimpleQueue()
 
-    @property
-    def owner_thread_id(self) -> int:
-        return self._owner
-
     def is_ui_thread(self) -> bool:
         return threading.get_ident() == self._owner
 

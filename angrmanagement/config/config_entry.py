@@ -33,10 +33,6 @@ class ConfigurationEntryValue(EventSentinel):
             self.changed.emit(value)
 
 
-def _make_config_entry_value(init_value, type_):  # pylint:disable=unused-argument
-    return ConfigurationEntryValue(init_value)
-
-
 def _neutral_type_and_value(type_, value) -> tuple[Any, Any]:
     """
     Translate an entry declared with a Qt type (as plugins written for the Qt frontend do) to the neutral type.
@@ -77,7 +73,7 @@ class ConfigurationEntry:
             _, default_value = _neutral_type_and_value(declared_type, default_value)
         self.name = name
         self.type_ = type_
-        self._value = _make_config_entry_value(value, self.type_)
+        self._value = ConfigurationEntryValue(value)
         self.default_value = value if default_value is None and value is not None else default_value
 
     def copy(self):
