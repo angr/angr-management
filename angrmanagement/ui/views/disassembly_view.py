@@ -52,10 +52,6 @@ if TYPE_CHECKING:
 
 _l = logging.getLogger(__name__)
 
-# the minimum interval (in seconds) between two viewport refreshes triggered by incremental CFB object additions
-# during CFG recovery
-MIN_OBJECTS_ADDED_REFRESH_INTERVAL = 0.25
-
 
 def _forward(name: str, doc: str | None = None):
     """A property that reads and writes the presenter's attribute ``name``."""
