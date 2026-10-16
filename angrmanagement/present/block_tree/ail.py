@@ -248,8 +248,11 @@ class QAilRegisterObj(QAilTextObj):
         if variable is not None:
             self.add_variable(variable)
         else:
-            reg_name = getattr(obj, "reg_name", None)
-            s = f"{reg_name}" if hasattr(obj, "reg_name") else f"reg_{obj.reg_offset}<{obj.bits // 8}>"
+            s = (
+                f"{obj.reg_name}"  # pyright: ignore[reportAttributeAccessIssue]
+                if hasattr(obj, "reg_name")
+                else f"reg_{obj.reg_offset}<{obj.bits // 8}>"
+            )
             self.add_text(s)
 
     def should_highlight(self) -> bool:
@@ -277,8 +280,7 @@ class QAilBinaryOpObj(QAilTextObj):
     def create_subobjs(self, obj: ailment.expression.BinaryOp) -> None:
         self.add_text("(")
         self.add_ailobj(obj.operands[0])
-        opstr_map: dict = getattr(obj, "OPSTR_MAP")  # noqa: B009 (the stubs do not declare it)
-        verbose_op = opstr_map.get(obj.verbose_op, obj.verbose_op)
+        verbose_op = obj.OPSTR_MAP.get(obj.verbose_op, obj.verbose_op)  # pyright: ignore[reportAttributeAccessIssue]
         if verbose_op is None:
             verbose_op = "unknown_op"
         self.add_text(" " + verbose_op + " ")
