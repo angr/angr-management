@@ -14,6 +14,7 @@ import logging
 import os
 import tempfile
 import threading
+import time
 import unittest
 from typing import TYPE_CHECKING, Any
 
@@ -304,8 +305,10 @@ class TestViewKeys(TuiTestCase):
         run_app(scenario, binary=None)
 
 
-async def wait_for_checklist(pilot: Pilot, title: str) -> ChecklistScreen:
-    for _ in range(300):
+async def wait_for_checklist(pilot: Pilot, title: str, timeout: float = 120) -> ChecklistScreen:
+    # loading fauxware takes seconds, and much longer on a loaded machine
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
         await pilot.pause(0.05)
         screen = pilot.app.screen
         if isinstance(screen, ChecklistScreen) and screen.title_text == title:
