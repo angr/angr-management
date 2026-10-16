@@ -10,21 +10,25 @@ from .config_manager import ConfigurationManager
 APP_NAME = "angr-management"
 
 
-def _legacy_config_dir() -> str | None:
+#: the Qt application name angrmanagement.boot() used, so Qt kept that entry point's settings under this name
+BOOT_APP_NAME = "angr"
+
+
+def _legacy_config_dir(app_name: str = APP_NAME) -> str | None:
     """
     The directory the Qt frontend used to keep its configuration in, QStandardPaths' AppConfigLocation for an
-    application named angr-management.
+    application named ``app_name``.
 
-    That is ``~/.config/angr-management`` on Linux (``$XDG_CONFIG_HOME`` if set),
+    For angr-management that is ``~/.config/angr-management`` on Linux (``$XDG_CONFIG_HOME`` if set),
     ``~/Library/Preferences/angr-management`` on macOS, and ``%LOCALAPPDATA%\\angr-management`` on Windows.
     """
     if sys.platform == "darwin":
-        return os.path.join(os.path.expanduser("~"), "Library", "Preferences", APP_NAME)
+        return os.path.join(os.path.expanduser("~"), "Library", "Preferences", app_name)
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA")
-        return os.path.join(local_appdata, APP_NAME) if local_appdata else None
+        return os.path.join(local_appdata, app_name) if local_appdata else None
     xdg_config_home = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
-    return os.path.join(xdg_config_home, APP_NAME)
+    return os.path.join(xdg_config_home, app_name)
 
 
 def _find_config_dir() -> str:
@@ -32,9 +36,13 @@ def _find_config_dir() -> str:
     Pick the configuration directory, creating it if needed. "" means there is none and settings are not saved.
 
     The rule: ANGR_MANAGEMENT_CONFIG_DIR wins if it is set. Otherwise, if the directory that earlier versions of
-    angr management used (QStandardPaths' AppConfigLocation) exists, keep using it. Otherwise use platformdirs'
-    user configuration directory. The two are the same path on Linux and Windows; they differ on macOS, where Qt used
-    ``~/Library/Preferences/angr-management`` and platformdirs uses ``~/Library/Application Support/angr-management``.
+    angr management used (QStandardPaths' AppConfigLocation) exists, keep using it. Otherwise, if
+    angrmanagement.boot() saved a configuration file under its application name, "angr", use that directory.
+    Otherwise use platformdirs' user configuration directory. That and the angr-management directory are the same
+    path on Linux and Windows; they differ on macOS, where Qt used ``~/Library/Preferences/angr-management`` and
+    platformdirs uses ``~/Library/Application Support/angr-management``.
+
+    The "angr" directory needs a config.toml, not just to exist, because the name is not angr management's alone.
     """
     override = os.environ.get("ANGR_MANAGEMENT_CONFIG_DIR")
     if override:
@@ -43,6 +51,9 @@ def _find_config_dir() -> str:
         legacy = _legacy_config_dir()
         if legacy is not None and os.path.isdir(legacy):
             return legacy
+        boot_dir = _legacy_config_dir(BOOT_APP_NAME)
+        if boot_dir is not None and os.path.isfile(os.path.join(boot_dir, "config.toml")):
+            return boot_dir
         candidate = platformdirs.user_config_dir(APP_NAME, appauthor=False)
     try:
         os.makedirs(candidate, exist_ok=True)

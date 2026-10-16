@@ -366,6 +366,24 @@ class TestConfigDirectory(unittest.TestCase):
                 # now it exists and is kept
                 assert config_module._find_config_dir() == legacy
 
+    @unittest.skipUnless(sys.platform.startswith("linux"), "this checks the Linux locations")
+    def test_the_directory_boot_used_is_read_when_it_holds_a_config_file(self):
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.dict(os.environ, {"ANGR_MANAGEMENT_CONFIG_DIR": "", "XDG_CONFIG_HOME": tmp}),
+        ):
+            boot_dir = os.path.join(tmp, "angr")
+            os.makedirs(boot_dir)
+            # an "angr" directory without a configuration file is somebody else's
+            assert config_module._find_config_dir() == os.path.join(tmp, "angr-management")
+            os.rmdir(os.path.join(tmp, "angr-management"))
+            with open(os.path.join(boot_dir, "config.toml"), "w", encoding="utf-8"):
+                pass
+            assert config_module._find_config_dir() == boot_dir
+            # the angr-management directory, once it exists, comes first
+            os.makedirs(os.path.join(tmp, "angr-management"))
+            assert config_module._find_config_dir() == os.path.join(tmp, "angr-management")
+
     def test_legacy_directory_wins_when_it_exists(self):
         with tempfile.TemporaryDirectory() as tmp:
             legacy = os.path.join(tmp, "legacy")
