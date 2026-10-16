@@ -15,10 +15,12 @@ import logging
 from typing import TYPE_CHECKING, Literal, Protocol
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
     import cle
+    from angr.knowledge_plugins.functions import Function
 
+    from angrmanagement.data.analysis_options import AnalysesConfiguration
     from angrmanagement.data.load_options import LoadOptions
 
 _l = logging.getLogger(__name__)
@@ -35,6 +37,31 @@ class UIServices(Protocol):
 
     def question(self, title: str, text: str, buttons: Sequence[str], default: str) -> str:
         """Ask the user to pick one of ``buttons``; returns the one picked, or ``default`` when there is no answer."""
+        raise NotImplementedError
+
+    def notify(self, level: MessageLevel, title: str, text: str) -> None:
+        """Tell the user something without waiting: the caller carries on while the notice is shown."""
+        raise NotImplementedError
+
+    def question_async(
+        self, title: str, text: str, buttons: Sequence[str], default: str, callback: Callable[[str], None]
+    ) -> None:
+        """
+        Ask like :meth:`question` without waiting; ``callback`` gets the button picked, or ``default``, later, on
+        the UI thread.
+        """
+        raise NotImplementedError
+
+    def analysis_options(self, workspace, configuration: AnalysesConfiguration) -> AnalysesConfiguration | None:
+        """
+        Let the user choose which analyses to run and with what options, editing ``configuration`` in place.
+
+        :returns: The configuration to run, or None if the user cancelled.
+        """
+        raise NotImplementedError
+
+    def function_info(self, function: Function) -> None:
+        """Show what is known about a function."""
         raise NotImplementedError
 
     def prompt_text(self, title: str, label: str, default: str = "") -> str | None:
@@ -94,7 +121,8 @@ class HeadlessServices:
     """
     The UI services of a process with nobody to ask.
 
-    Messages are logged at their level; questions get their default answer; pickers and prompts return nothing;
+    Messages are logged at their level; questions get their default answer; pickers and prompts return nothing; the
+    analyses run with the options they are given;
     binaries load with the options the load dialog would preselect; there is no encryption key. The clipboard is a
     string held in this object.
     """
@@ -110,6 +138,22 @@ class HeadlessServices:
     def question(self, title: str, text: str, buttons: Sequence[str], default: str) -> str:
         _l.info("%s: %s [%s] -> %s", title, text, "/".join(buttons), default)
         return default
+
+    def notify(self, level: MessageLevel, title: str, text: str) -> None:
+        self.message(level, title, text)
+
+    def question_async(
+        self, title: str, text: str, buttons: Sequence[str], default: str, callback: Callable[[str], None]
+    ) -> None:
+        callback(self.question(title, text, buttons, default))
+
+    def analysis_options(  # pylint:disable=unused-argument
+        self, workspace, configuration: AnalysesConfiguration
+    ) -> AnalysesConfiguration | None:
+        return configuration
+
+    def function_info(self, function: Function) -> None:
+        _l.info("Function %s at %#x", function.name, function.addr)
 
     def prompt_text(self, title: str, label: str, default: str = "") -> str | None:  # pylint:disable=unused-argument
         return None

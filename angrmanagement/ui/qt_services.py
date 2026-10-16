@@ -6,24 +6,41 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QGuiApplication
 from PySide6.QtWidgets import QFileDialog, QInputDialog, QLineEdit, QMessageBox
 
 from angrmanagement.data.load_options import LoadOptions
 from angrmanagement.logic import GlobalInfo
 
+from .dialogs.analysis_options import AnalysisOptionsDialog
+
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
     import cle
+    from angr.knowledge_plugins.functions import Function
 
+    from angrmanagement.data.analysis_options import AnalysesConfiguration
     from angrmanagement.logic.ui_services import MessageLevel
 
+# looked up on QMessageBox when called, so that a test can replace QMessageBox.warning and see the call
 _MESSAGE_BOXES = {
-    "info": QMessageBox.information,
-    "warning": QMessageBox.warning,
-    "critical": QMessageBox.critical,
+    "info": "information",
+    "warning": "warning",
+    "critical": "critical",
+}
+_MESSAGE_ICONS = {
+    "info": QMessageBox.Icon.Information,
+    "warning": QMessageBox.Icon.Warning,
+    "critical": QMessageBox.Icon.Critical,
+}
+_STANDARD_BUTTONS = {
+    "Yes": QMessageBox.StandardButton.Yes,
+    "No": QMessageBox.StandardButton.No,
+    "Ok": QMessageBox.StandardButton.Ok,
+    "OK": QMessageBox.StandardButton.Ok,
+    "Cancel": QMessageBox.StandardButton.Cancel,
 }
 
 
@@ -37,7 +54,59 @@ class QtServices:
     """
 
     def message(self, level: MessageLevel, title: str, text: str) -> None:
-        _MESSAGE_BOXES.get(level, QMessageBox.information)(None, title, text)
+        getattr(QMessageBox, _MESSAGE_BOXES.get(level, "information"))(None, title, text)
+
+    def notify(self, level: MessageLevel, title: str, text: str) -> None:
+        box = QMessageBox(GlobalInfo.main_window)
+        box.setIcon(_MESSAGE_ICONS.get(level, QMessageBox.Icon.Information))
+        box.setWindowTitle(title)
+        box.setText(text)
+        box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        box.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        # shown without blocking: whoever reported this carries on, and nothing waits behind the box
+        box.show()
+
+    def question_async(
+        self, title: str, text: str, buttons: Sequence[str], default: str, callback: Callable[[str], None]
+    ) -> None:
+        box = QMessageBox(
+            QMessageBox.Icon.Question, title, text, QMessageBox.StandardButton.NoButton, GlobalInfo.main_window
+        )
+        by_result: dict[int, str] = {}
+        if all(caption in _STANDARD_BUTTONS for caption in buttons):
+            # standard buttons, so that finished() reports which one was pressed
+            for caption in buttons:
+                standard = _STANDARD_BUTTONS[caption]
+                box.addButton(standard)
+                by_result[int(standard.value)] = caption
+                if caption == default:
+                    box.setDefaultButton(standard)
+        else:
+            for idx, caption in enumerate(buttons):
+                button = box.addButton(caption, QMessageBox.ButtonRole.AcceptRole)
+                by_result[idx] = caption
+                if caption == default:
+                    box.setDefaultButton(button)
+        box.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+
+        def on_finished(result: int) -> None:
+            callback(by_result.get(int(result), default))
+
+        box.finished.connect(on_finished)
+        # modeless: a modal box here would block whoever waits on the job queue (e.g., a headless test) forever
+        box.open()
+
+    def analysis_options(self, workspace, configuration: AnalysesConfiguration) -> AnalysesConfiguration | None:
+        dlg = AnalysisOptionsDialog(configuration, workspace, GlobalInfo.main_window)
+        dlg.setModal(True)
+        if not dlg.exec_():
+            return None
+        return configuration
+
+    def function_info(self, function: Function) -> None:
+        from .dialogs.function import FunctionDialog  # pylint:disable=import-outside-toplevel
+
+        FunctionDialog(function).exec_()
 
     def question(self, title: str, text: str, buttons: Sequence[str], default: str) -> str:
         box = QMessageBox(GlobalInfo.main_window)
