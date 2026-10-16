@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QPointF, QRectF, Qt
@@ -9,6 +8,7 @@ from PySide6.QtWidgets import QGraphicsSceneMouseEvent, QGraphicsSimpleTextItem
 
 from angrmanagement.config import Conf, ConfigurationManager
 from angrmanagement.present.block_tree.base import HIGHLIGHT_STYLE
+from angrmanagement.present.block_tree.disasm_nodes import CodeSelectionMode
 
 from .qgraph_object import QCachedGraphicsItem
 
@@ -54,14 +54,8 @@ def highlight_char_format(fmt: QTextCharFormat, highlighted: bool) -> QTextCharF
     return fmt
 
 
-class QBlockCodeSelectionMode(Enum):
-    """
-    Defines the selection mode of this QBlockCode object.
-    """
-
-    SELECT_INSTRUCTION = 1
-    INVOKE_OBJ = 2
-    NOOP = 3
+#: The selection mode of a QBlockCode object: what a click on it selects.
+QBlockCodeSelectionMode = CodeSelectionMode
 
 
 class QBlockCode(QCachedGraphicsItem):

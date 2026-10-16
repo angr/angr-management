@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtWidgets import QApplication, QGraphicsSimpleTextItem
 
+from angrmanagement.present.block_tree.disasm_nodes import VariableNode
+
 from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
@@ -12,11 +14,19 @@ if TYPE_CHECKING:
 
 
 class QVariable(QCachedGraphicsItem):
+    """
+    A stack variable on the scene: the text items of a VariableNode.
+    """
+
     IDENT_LEFT_PADDING = 5
     OFFSET_LEFT_PADDING = 12
 
-    def __init__(self, instance: Instance, disasm_view, variable, config, infodock, parent=None) -> None:
+    def __init__(
+        self, instance: Instance, disasm_view, variable, config, infodock, parent=None, node: VariableNode | None = None
+    ) -> None:
         super().__init__(parent=parent)
+        #: the variable's text
+        self.node = node if node is not None else VariableNode(variable, infodock)
 
         # initialization
         self.instance = instance
@@ -36,7 +46,7 @@ class QVariable(QCachedGraphicsItem):
 
     @property
     def selected(self):
-        return self.infodock.is_variable_selected(self.variable)
+        return self.node.selected
 
     #
     # Public methods
@@ -63,10 +73,7 @@ class QVariable(QCachedGraphicsItem):
 
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
-            self.infodock.toggle_variable_selection(
-                self.variable,
-                unique=QApplication.keyboardModifiers() != Qt.KeyboardModifier.ControlModifier,
-            )
+            self.node.activate("left", unique=QApplication.keyboardModifiers() != Qt.KeyboardModifier.ControlModifier)
         else:
             super().mousePressEvent(event)
 
@@ -76,20 +83,20 @@ class QVariable(QCachedGraphicsItem):
 
     def _init_widgets(self) -> None:
         # variable name
-        self._variable_name = "" if not self.variable.name else self.variable.name
+        self._variable_name = self.node.name
         self._variable_name_item = QGraphicsSimpleTextItem(self._variable_name, self)
         self._variable_name_item.setFont(self._config.disasm_font)
         self._variable_name_item.setBrush(self._config.disasm_view_variable_label_color)
 
         # variable ident
-        self._variable_ident = "<%s>" % ("" if not self.variable.ident else self.variable.ident)
+        self._variable_ident = self.node.ident
         self._variable_ident_item = QGraphicsSimpleTextItem(self._variable_ident, self)
         self._variable_ident_item.setFont(self._config.disasm_font)
         self._variable_ident_item.setBrush(self._config.disasm_view_variable_ident_color)
         self._variable_ident_item.setVisible(self.disasm_view.show_variable_identifier)
 
         # variable offset
-        self._variable_offset = f"{self.variable.offset:#x}"
+        self._variable_offset = self.node.offset_text
         self._variable_offset_item = QGraphicsSimpleTextItem(self._variable_offset, self)
         self._variable_offset_item.setFont(self._config.disasm_font)
         self._variable_offset_item.setBrush(self._config.disasm_view_variable_offset_color)

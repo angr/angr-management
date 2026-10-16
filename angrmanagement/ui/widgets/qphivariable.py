@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QRectF, Qt
 
+from angrmanagement.present.block_tree.disasm_nodes import PhiVariableNode
+
 from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
@@ -18,7 +20,9 @@ class QPhiVariable(QCachedGraphicsItem):
 
     IDENT_LEFT_PADDING = 5
 
-    def __init__(self, instance: Instance, disasm_view, phi_variable, config, parent=None) -> None:
+    def __init__(
+        self, instance: Instance, disasm_view, phi_variable, config, parent=None, node: PhiVariableNode | None = None
+    ) -> None:
         """
 
         :param workspace:
@@ -32,8 +36,10 @@ class QPhiVariable(QCachedGraphicsItem):
         # initialization
         self.instance = instance
         self.disasm_view = disasm_view
-        self.phi = phi_variable.variable  # the major variable
-        self.variables = phi_variable.variables  # the sub variables
+        #: the phi variable's text
+        self.node = node if node is not None else PhiVariableNode(phi_variable)
+        self.phi = self.node.phi  # the major variable
+        self.variables = self.node.variables  # the sub variables
         self._config = config
 
         self._variable_name = None
@@ -113,19 +119,11 @@ class QPhiVariable(QCachedGraphicsItem):
     #
 
     def _init_widgets(self) -> None:
-        # variable name
-        self._variable_name = "{%s}" % ("Unk" if not self.phi.name else self.phi.name)
-        # variable ident
-        self._variable_ident = "<%s>" % ("Unk" if not self.phi.ident else self.phi.ident)
-
-        # subvariables
-        self._subvar_names = []
-        self._subvar_idents = []
-        for subvar in self.variables:
-            name = "Unk" if not subvar.name else subvar.name
-            self._subvar_names.append(name)
-            ident = "<%s>" % ("Unk" if not subvar.ident else subvar.ident)
-            self._subvar_idents.append(ident)
+        # variable name and ident, and those of the subvariables
+        self._variable_name = self.node.variable_name
+        self._variable_ident = self.node.variable_ident
+        self._subvar_names = list(self.node.subvar_names)
+        self._subvar_idents = list(self.node.subvar_idents)
 
         self._update_size()
 
