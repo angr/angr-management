@@ -14,7 +14,7 @@ import random
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from angrmanagement import config as config_module
 from angrmanagement.config.color import Color
@@ -382,22 +382,49 @@ class TestConfigDirectory(unittest.TestCase):
                 assert config_module._find_config_dir() == legacy
 
     @unittest.skipUnless(sys.platform.startswith("linux"), "this checks the Linux locations")
-    def test_the_directory_boot_used_is_read_when_it_holds_a_config_file(self):
+    def test_boot_reads_the_directory_it_used_when_that_holds_a_config_file(self):
         with (
             tempfile.TemporaryDirectory() as tmp,
             patch.dict(os.environ, {"ANGR_MANAGEMENT_CONFIG_DIR": "", "XDG_CONFIG_HOME": tmp}),
+            patch.object(config_module, "_running_qt_application_name", return_value="angr"),
         ):
             boot_dir = os.path.join(tmp, "angr")
+            am_dir = os.path.join(tmp, "angr-management")
             os.makedirs(boot_dir)
             # an "angr" directory without a configuration file is somebody else's
-            assert config_module._find_config_dir() == os.path.join(tmp, "angr-management")
-            os.rmdir(os.path.join(tmp, "angr-management"))
+            assert config_module._find_config_dir() == am_dir
             with open(os.path.join(boot_dir, "config.toml"), "w", encoding="utf-8"):
                 pass
+            # boot() kept its settings there, and keeps reading them even though the angr-management one exists
+            assert os.path.isdir(am_dir)
             assert config_module._find_config_dir() == boot_dir
-            # the angr-management directory, once it exists, comes first
-            os.makedirs(os.path.join(tmp, "angr-management"))
-            assert config_module._find_config_dir() == os.path.join(tmp, "angr-management")
+
+    @unittest.skipUnless(sys.platform.startswith("linux"), "this checks the Linux locations")
+    def test_other_entry_points_do_not_read_the_directory_boot_used(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            boot_dir = os.path.join(tmp, "angr")
+            os.makedirs(boot_dir)
+            with open(os.path.join(boot_dir, "config.toml"), "w", encoding="utf-8"):
+                pass
+            for app_name in (None, "angr-management"):
+                with (
+                    patch.dict(os.environ, {"ANGR_MANAGEMENT_CONFIG_DIR": "", "XDG_CONFIG_HOME": tmp}),
+                    patch.object(config_module, "_running_qt_application_name", return_value=app_name),
+                ):
+                    assert config_module._find_config_dir() == os.path.join(tmp, "angr-management")
+
+    def test_the_qt_application_name_is_read_without_importing_qt(self):
+        with patch.dict(sys.modules):
+            sys.modules.pop("PySide6.QtCore", None)
+            assert config_module._running_qt_application_name() is None
+            assert "PySide6.QtCore" not in sys.modules
+
+        qtcore = MagicMock()
+        qtcore.QCoreApplication.instance.return_value = None
+        with patch.dict(sys.modules, {"PySide6.QtCore": qtcore}):
+            assert config_module._running_qt_application_name() is None
+            qtcore.QCoreApplication.instance.return_value = MagicMock(**{"applicationName.return_value": "angr"})
+            assert config_module._running_qt_application_name() == "angr"
 
     def test_legacy_directory_wins_when_it_exists(self):
         with tempfile.TemporaryDirectory() as tmp:

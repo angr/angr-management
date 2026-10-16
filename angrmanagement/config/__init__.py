@@ -31,16 +31,26 @@ def _legacy_config_dir(app_name: str = APP_NAME) -> str | None:
     return os.path.join(xdg_config_home, app_name)
 
 
+def _running_qt_application_name() -> str | None:
+    """The name of the running Qt application, or None if there is none. This never imports Qt."""
+    qtcore = sys.modules.get("PySide6.QtCore")
+    if qtcore is None:
+        return None
+    app = qtcore.QCoreApplication.instance()
+    return None if app is None else app.applicationName()
+
+
 def _find_config_dir() -> str:
     """
     Pick the configuration directory, creating it if needed. "" means there is none and settings are not saved.
 
-    The rule: ANGR_MANAGEMENT_CONFIG_DIR wins if it is set. Otherwise, if the directory that earlier versions of
-    angr management used (QStandardPaths' AppConfigLocation) exists, keep using it. Otherwise, if
-    angrmanagement.boot() saved a configuration file under its application name, "angr", use that directory.
-    Otherwise use platformdirs' user configuration directory. That and the angr-management directory are the same
-    path on Linux and Windows; they differ on macOS, where Qt used ``~/Library/Preferences/angr-management`` and
-    platformdirs uses ``~/Library/Application Support/angr-management``.
+    The rule: ANGR_MANAGEMENT_CONFIG_DIR wins if it is set. Otherwise, when the running Qt application is the one
+    angrmanagement.boot() creates, named "angr", and the directory Qt kept its settings in under that name holds a
+    config.toml, use that directory, as earlier versions did for boot(). Otherwise, if the directory that earlier
+    versions of angr management used (QStandardPaths' AppConfigLocation) exists, keep using it. Otherwise use
+    platformdirs' user configuration directory. That and the angr-management directory are the same path on Linux and
+    Windows; they differ on macOS, where Qt used ``~/Library/Preferences/angr-management`` and platformdirs uses
+    ``~/Library/Application Support/angr-management``.
 
     The "angr" directory needs a config.toml, not just to exist, because the name is not angr management's alone.
     """
@@ -48,12 +58,13 @@ def _find_config_dir() -> str:
     if override:
         candidate = override
     else:
+        if _running_qt_application_name() == BOOT_APP_NAME:
+            boot_dir = _legacy_config_dir(BOOT_APP_NAME)
+            if boot_dir is not None and os.path.isfile(os.path.join(boot_dir, "config.toml")):
+                return boot_dir
         legacy = _legacy_config_dir()
         if legacy is not None and os.path.isdir(legacy):
             return legacy
-        boot_dir = _legacy_config_dir(BOOT_APP_NAME)
-        if boot_dir is not None and os.path.isfile(os.path.join(boot_dir, "config.toml")):
-            return boot_dir
         candidate = platformdirs.user_config_dir(APP_NAME, appauthor=False)
     try:
         os.makedirs(candidate, exist_ok=True)
