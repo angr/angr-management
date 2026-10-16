@@ -12,6 +12,7 @@ import unittest
 
 from common import AngrManagementTestCase, open_analyzed_project, test_location
 from headless import run_without_qt  # pylint: disable=import-error
+from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtGui import QColor
 
 from angrmanagement.config.color import Color
@@ -122,6 +123,9 @@ class TestShimInQt(AngrManagementTestCase):
         # a Qt plugin's own annotation items reach the block (they used to be dropped for a stray object)
         assert [a.text() for a in block.qblock_annotations.get(self.insns[1])] == ["hook"]
         view.close()
+        # no Qt parent: delete it through Qt, not whenever the cyclic collector runs, on whatever thread
+        view.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 
 
 HEADLESS_SCRIPT = """

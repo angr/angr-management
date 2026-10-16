@@ -13,6 +13,7 @@ import re
 import unittest
 
 from common import AngrManagementTestCase, open_analyzed_project, test_location
+from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
 from angrmanagement.config import Conf
@@ -98,6 +99,11 @@ class TestDisasmTextParity(AngrManagementTestCase):
             assert squeeze(qt_lines) == squeeze(tui_blocks[key]), f"block {key[0]:#x}"
         tui_view.close()
         qt_view.close()
+        # The view has no Qt parent; delete it through Qt now. Left to Python's cyclic collector, it is torn down
+        # whenever that next runs, on whatever thread, and that can crash the process (as in test_comments).
+        qt_view.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        del qt_view
         return len(qt_blocks)
 
     def test_main_machine_code(self):
