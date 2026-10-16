@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QFrame, QMenu
 
 from angrmanagement.present.base import (
@@ -195,26 +194,11 @@ class SynchronizedView(Synchronized, BaseView):
 
     def get_synchronize_with_submenu(self) -> QMenu:
         """
-        Get submenu for 'Synchronize with' context menu.
+        Get submenu for 'Synchronize with' context menu: :meth:`Synchronized.synchronize_with_menu` as a QMenu.
         """
-        mnu = QMenu("&Synchronize with", self)
-        groups = {
-            v.sync_state
-            for v in self.workspace.view_manager.views
-            if (v is not self) and isinstance(v, SynchronizedView)
-        }
-        if len(groups) == 0:
-            act = QAction("None available", self)
-            act.setEnabled(False)
-            mnu.addAction(act)
-        else:
-            for group in groups:
-                act = QAction(", ".join([v.caption for v in group.views if v is not self]), self)
-                act.setCheckable(True)
-                act.setChecked(group is self.sync_state)
-                act.toggled.connect(lambda checked, s=group: self.sync_with_state_object(s if checked else None))
-                mnu.addAction(act)
-        return mnu
+        menu = self.synchronize_with_menu()
+        menu.parent = self
+        return menu.qmenu(cached=False)
 
 
 class SynchronizedInstanceView(InstanceView, SynchronizedView):

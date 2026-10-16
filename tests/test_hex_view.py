@@ -2576,6 +2576,34 @@ class TestHexViewSynchronizedViews(TestHexViewBase):
         self.hex_view.on_synchronized_view_group_changed()
         assert self.hex_view.inner_widget.hex.always_show_cursor is False
 
+    def test_synchronize_with_submenu(self):
+        """The 'Synchronize with' submenu offers the other views and joins the chosen group."""
+        other = HexView(self.workspace, "center", self.instance)
+        self.workspace.add_view(other)
+        try:
+            menu = self.hex_view.get_synchronize_with_submenu()
+            actions = {a.text(): a for a in menu.actions()}
+            assert other.caption in actions, list(actions)
+            action = actions[other.caption]
+            assert action.isCheckable() and not action.isChecked()
+            action.trigger()
+            assert self.hex_view.sync_state is other.sync_state
+            assert self.hex_view in other.sync_state.views
+            # the menu built now shows the group as chosen
+            menu = self.hex_view.get_synchronize_with_submenu()
+            checked = [a.text() for a in menu.actions() if a.isChecked()]
+            assert checked == [other.caption]
+        finally:
+            self.hex_view.desync()
+            self.workspace.remove_view(other)
+
+    def test_synchronize_with_submenu_without_other_views(self):
+        """With no other synchronized view the submenu says so."""
+        with patch.object(self.workspace.view_manager, "views", [self.hex_view]):
+            menu = self.hex_view.get_synchronize_with_submenu()
+        assert [a.text() for a in menu.actions()] == ["None available"]
+        assert not menu.actions()[0].isEnabled()
+
     def test_on_synchronized_highlight_regions_changed(self):
         """on_synchronized_highlight_regions_changed updates sync highlights."""
         self.hex_view.on_synchronized_highlight_regions_changed()
