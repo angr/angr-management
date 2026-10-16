@@ -50,3 +50,16 @@ def qthread_coverage(monkeypatch):
         self._base_run()
 
     monkeypatch.setattr(QThread, "__init__", init_with_trace)
+
+
+def pytest_collection_modifyitems(config, items):
+    """
+    Skip the snapshot tests where pytest-textual-snapshot is not loaded. It is in the ``testing`` dependency group,
+    which the upstream test image does not install, and its ``snap_compare`` fixture would otherwise fail at setup.
+    """
+    if config.pluginmanager.hasplugin("textual-snapshot"):
+        return
+    skip = pytest.mark.skip(reason="pytest-textual-snapshot is not installed")
+    for item in items:
+        if "snap_compare" in getattr(item, "fixturenames", ()):
+            item.add_marker(skip)
