@@ -30,7 +30,7 @@ def download_url(  # pylint:disable=unused-argument
     the path; otherwise return the content. ``parent`` is ignored; it was the parent of the file dialog.
     """
     if not isurl(url):
-        raise TypeError("The given URL %s is not a valid URL.", url)
+        raise TypeError(f"The given URL {url} is not a valid URL.")
 
     r = urllib.parse.urlparse(url)
     basename = os.path.basename(r.path)

@@ -122,8 +122,7 @@ def loaded_addresses(partial_ld: cle.Loader) -> tuple[int | None, int | None, in
                 base_addr = main_object.mapped_base
             if hasattr(main_object, "entry"):
                 entry_addr = main_object.entry
-            if hasattr(main_object, "offset"):
-                offset = main_object.offset
+            offset = getattr(main_object, "offset", offset)
     return base_addr, entry_addr, offset
 
 
@@ -207,6 +206,8 @@ def symbol_path_rows(text: str) -> list[tuple[str, str, str]]:
             case "cache":
                 cache = entry.cache_path
                 path = ""
+            case _:
+                cache = path = ""
         rows.append((entry.entry_type, cache, path))
     return rows
 

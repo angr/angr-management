@@ -34,22 +34,26 @@ class FrontendAdapter(Protocol):
 
     def to_frontend(self, entry_name: str, value: Any) -> Any:
         """Convert a stored value to the frontend's type. Values the frontend has no type for are returned as is."""
+        raise NotImplementedError
 
     def from_frontend(self, entry_name: str, value: Any) -> Any:
         """Convert a frontend value to the stored type. Values that are already neutral are returned as is."""
+        raise NotImplementedError
 
     def font_metrics(self, font: FontSpec) -> tuple[float, float, float]:
         """The (height, width of "A", ascent) of a font, in the frontend's units."""
+        raise NotImplementedError
 
     def default_fonts(self) -> dict[str, FontSpec]:
         """The fonts to use for ``ui_default_font`` and ``tabular_view_font`` when the configuration sets none."""
+        raise NotImplementedError
 
 
 #: the fonts a frontend without fonts of its own uses
 HEADLESS_DEFAULT_FONT = FontSpec("DejaVu Sans Mono", 10)
 
 
-class HeadlessFrontendAdapter:
+class HeadlessFrontendAdapter:  # pylint:disable=no-self-use
     """The adapter of a frontend that uses the neutral values directly: a character cell is 1 by 1."""
 
     def to_frontend(self, entry_name: str, value: Any) -> Any:  # pylint:disable=unused-argument
@@ -499,7 +503,7 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         factory = getattr(self._adapter, "font_metrics_object", None)
         if factory is None:
             return self._font_metrics(name)
-        return factory(self._entries[name].value)
+        return factory(self._entries[name].value)  # pylint:disable=not-callable
 
     disasm_font: Any
     symexec_font: Any

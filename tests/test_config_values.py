@@ -6,6 +6,7 @@ The configuration's frontend-neutral values: Color, FontSpec, FontWeight, FontSt
 
 from __future__ import annotations
 
+import importlib.util
 import io
 import os
 import random
@@ -20,12 +21,7 @@ from angrmanagement.config.config_entry import ConfigurationEntry
 from angrmanagement.config.config_manager import ConfigurationManager, data_serializers
 from angrmanagement.config.font import STYLE_NAMES, WEIGHT_NAMES, FontSpec, FontStyle, FontWeight
 
-try:
-    from PySide6.QtGui import QColor, QFont
-except ImportError:
-    QColor = QFont = None
-
-needs_qt = unittest.skipIf(QColor is None, "PySide6 is not installed")
+needs_qt = unittest.skipIf(importlib.util.find_spec("PySide6") is None, "PySide6 is not installed")
 
 
 class TestColor(unittest.TestCase):
@@ -71,6 +67,8 @@ class TestColor(unittest.TestCase):
 
     @needs_qt
     def test_equal_to_qcolor_by_channels(self):
+        from PySide6.QtGui import QColor  # pylint: disable=import-outside-toplevel
+
         assert Color(1, 2, 3) == QColor(1, 2, 3)
         assert Color(1, 2, 3, 4) == QColor(1, 2, 3, 4)
         assert Color(1, 2, 3) != QColor(1, 2, 4)
@@ -81,6 +79,8 @@ class TestColor(unittest.TestCase):
 
     @needs_qt
     def test_lighter_and_darker_follow_qcolor(self):
+        from PySide6.QtGui import QColor  # pylint: disable=import-outside-toplevel
+
         rnd = random.Random(0)
         for _ in range(2000):
             rgba = (rnd.randrange(256), rnd.randrange(256), rnd.randrange(256), rnd.randrange(256))
@@ -146,6 +146,8 @@ class TestFont(unittest.TestCase):
 
     @needs_qt
     def test_qt_names_match_qfont(self):
+        from PySide6.QtGui import QFont  # pylint: disable=import-outside-toplevel
+
         assert {weight.name: weight.value for weight in QFont.Weight} == WEIGHT_NAMES
         assert {style.name for style in QFont.Style} == set(STYLE_NAMES)
         qfont = FontSpec("DejaVu Sans Mono", 11, 700, FontStyle.ITALIC).to_qfont()
@@ -261,6 +263,8 @@ class TestFrontendAdapter(unittest.TestCase):
 
     @needs_qt
     def test_plugin_entries_declared_with_qt_types_become_neutral(self):
+        from PySide6.QtGui import QColor, QFont  # pylint: disable=import-outside-toplevel
+
         entry = ConfigurationEntry("plugin_color", QColor, QColor(1, 2, 3))
         assert entry.type_ is Color and entry.value == Color(1, 2, 3)
         entry = ConfigurationEntry("plugin_font", QFont, QFont("Mono", 9))

@@ -10,14 +10,15 @@ import tempfile
 with contextlib.suppress(ImportError):
     import fastmcp  # noqa: F401  # pylint:disable=unused-import
 
-# Keep the tests' configuration away from the user's: angr management reads and saves config.toml in this directory.
-os.environ.setdefault("ANGR_MANAGEMENT_CONFIG_DIR", tempfile.mkdtemp(prefix="angr-management-test-config-"))
 
 import sys
 import threading
 from functools import partial
 
 import pytest
+
+# Keep the tests' configuration away from the user's: angr management reads and saves config.toml in this directory.
+os.environ.setdefault("ANGR_MANAGEMENT_CONFIG_DIR", tempfile.mkdtemp(prefix="angr-management-test-config-"))
 
 
 @pytest.fixture(autouse=True)

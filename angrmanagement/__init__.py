@@ -44,7 +44,7 @@ def _boot(project=None, response=None):
     icon_location = os.path.join(IMG_LOCATION, "angr.png")
     QApplication.setWindowIcon(QIcon(icon_location))
 
-    from .ui.qt_frontend import install_qt_frontend
+    from .ui.qt_frontend import install_qt_frontend  # pylint:disable=import-outside-toplevel
 
     install_qt_frontend()
 

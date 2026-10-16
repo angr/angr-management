@@ -90,7 +90,7 @@ class Instance:
         self._insn_backcolor_callback: Callable[[int, bool], None] | None = None  # (addr, is_selected)
         self._label_rename_callback: Callable[[int, str], None] | None = None  # (addr, new_name)
         self._set_comment_callback: Callable[[int, str], None] | None = None  # (addr, comment_text)
-        self.handle_comment_changed_callback: Callable[[int, str, bool, bool, bool], None] | None = None
+        self.handle_comment_changed_callback: Callable[[int, str, str, bool, bool], object] | None = None
 
         # Setup logging
         initialize(self)

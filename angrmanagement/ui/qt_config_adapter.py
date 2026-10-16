@@ -69,6 +69,6 @@ class QtConfigAdapter:
     def default_fonts(self) -> dict[str, FontSpec]:
         defaults = {}
         for entry_name in ("ui_default_font", "tabular_view_font"):
-            qfont = QApplication.font("QMenu")
+            qfont = QApplication.font("QMenu")  # pyright: ignore[reportCallIssue,reportArgumentType]
             defaults[entry_name] = self.from_frontend(entry_name, qfont)
         return defaults

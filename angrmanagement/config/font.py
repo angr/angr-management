@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from PySide6.QtGui import QFont
@@ -135,8 +135,8 @@ class FontSpec:
         return cls(
             qfont.family(),
             qfont.pointSize(),
-            int(getattr(weight, "value", weight)),
-            FontStyle(int(getattr(style, "value", style))),
+            int(cast("int", getattr(weight, "value", weight))),
+            FontStyle(int(cast("int", getattr(style, "value", style)))),
         )
 
     def to_qfont(self) -> QFont:

@@ -17,6 +17,7 @@ from .load import load_plugin_descriptions_from_dir, load_plugins_from_file
 if TYPE_CHECKING:
     from PySide6.QtGui import QColor
 
+    from angrmanagement.logic.headless_workspace import HeadlessWorkspace
     from angrmanagement.ui.widgets.qblock import QBlock
     from angrmanagement.ui.workspace import Workspace
 
@@ -44,7 +45,7 @@ class PluginManager:
     first-boot autoload part) and the LoadPlugins dialog (the extra loading and tweaking activation)
     """
 
-    def __init__(self, workspace: Workspace | None) -> None:
+    def __init__(self, workspace: Workspace | HeadlessWorkspace | None) -> None:
         self.workspace = workspace
         # should one or both of these be ObjectContainers? I think no since we should be synchronizing on models, not
         # views/controllers. not super clear... that's not a hard and fast rule

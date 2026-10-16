@@ -101,9 +101,9 @@ def apply_loaded_database(workspace, job: LoadAngrDBJob) -> bool:
 
     instance.database_path = job.file_path
     instance._reset_containers()  # pylint:disable=protected-access
-    instance.project = proj
-    instance.cfg = cfg
-    instance.cfb = cfb
+    instance.project.am_obj = proj
+    instance.cfg.am_obj = cfg
+    instance.cfb.am_obj = cfb
     instance.project.am_event(initialized=True)
 
     # trigger callbacks
@@ -212,7 +212,7 @@ class HeadlessWorkspace:
         pass
 
     def on_cfg_recovery_started(self, cfb) -> None:
-        self.main_instance.cfb = cfb
+        self.main_instance.cfb.am_obj = cfb
         self.main_instance.cfb.am_event()
 
     def jump_to(self, addr: int, view=None, use_animation: bool = False) -> None:  # pylint:disable=unused-argument
@@ -266,7 +266,8 @@ class HeadlessWorkspace:
     def _on_project_changed(self, **kwargs) -> None:  # pylint:disable=unused-argument
         if self.main_instance.project.am_none:
             return
-        if self.auto_analyze and not self.main_instance.kb.cfgs.cfgs:
+        kb = self.main_instance.kb
+        if self.auto_analyze and kb is not None and not kb.cfgs.cfgs:
             self._suppress_analysis_options_dialog = False
             GlobalInfo.executor.schedule_async(self.run_analysis)
         self.plugins.handle_project_initialization()

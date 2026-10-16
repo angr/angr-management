@@ -998,7 +998,7 @@ class LoadBinary(QDialog):
         suggested_os_name: str | None = None,
         suggested_main_opts: dict | None = None,
         **kwargs,
-    ) -> tuple[dict | None, dict | None]:
+    ) -> tuple[dict | None, type | None]:
         try:
             dialog = LoadBinary(
                 partial_ld,

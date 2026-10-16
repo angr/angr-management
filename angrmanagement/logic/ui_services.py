@@ -31,12 +31,15 @@ class UIServices(Protocol):
 
     def message(self, level: MessageLevel, title: str, text: str) -> None:
         """Tell the user something and wait until they acknowledge it."""
+        raise NotImplementedError
 
     def question(self, title: str, text: str, buttons: Sequence[str], default: str) -> str:
         """Ask the user to pick one of ``buttons``; returns the one picked, or ``default`` when there is no answer."""
+        raise NotImplementedError
 
     def prompt_text(self, title: str, label: str, default: str = "") -> str | None:
         """Ask for a line of text; None if the user cancelled."""
+        raise NotImplementedError
 
     def pick_open_files(self, caption: str, directory: str, name_filter: str, multiple: bool) -> list[str]:
         """
@@ -44,12 +47,15 @@ class UIServices(Protocol):
 
         ``name_filter`` is in Qt's format, such as ``"Object Files (*.a *.o);;All files (*)"``.
         """
+        raise NotImplementedError
 
     def pick_save_file(self, caption: str, directory: str, name_filter: str) -> str | None:
         """Ask for a file to save to; None if the user cancelled. ``directory`` may include a file name."""
+        raise NotImplementedError
 
     def pick_directory(self, caption: str, directory: str) -> str | None:
         """Ask for a directory; None if the user cancelled."""
+        raise NotImplementedError
 
     def load_binary_options(
         self,
@@ -61,6 +67,7 @@ class UIServices(Protocol):
         suggested_main_filename: str | None = None,
     ) -> LoadOptions | None:
         """Ask how to load a binary that ``partial_ld`` has partially loaded; None if the user cancelled."""
+        raise NotImplementedError
 
     def encryption_key(self, filename: str, prompt: str = "", initial_text: str = "") -> bytes | None:
         """
@@ -68,15 +75,19 @@ class UIServices(Protocol):
 
         ``prompt`` explains what the key is for, and ``initial_text`` pre-fills the answer (a key in hex).
         """
+        raise NotImplementedError
 
     def clipboard_text(self) -> str:
         """The text on the clipboard."""
+        raise NotImplementedError
 
     def set_clipboard_text(self, text: str) -> None:
         """Put text on the clipboard."""
+        raise NotImplementedError
 
     def open_url(self, url: str) -> bool:
         """Open a URL in the user's browser; whether that worked."""
+        raise NotImplementedError
 
 
 class HeadlessServices:

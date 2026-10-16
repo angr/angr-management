@@ -35,6 +35,7 @@ class UIExecutor(Protocol):
 
     def is_ui_thread(self) -> bool:
         """Whether the calling thread is the UI thread."""
+        raise NotImplementedError
 
     def schedule[T](
         self,
@@ -49,11 +50,13 @@ class UIExecutor(Protocol):
         :raises: Whatever ``func`` raises.
         :returns: The result of ``func``, or None if it did not run within ``timeout`` seconds.
         """
+        raise NotImplementedError
 
     def schedule_async(
         self, func: Callable[..., Any], args: tuple[Any, ...] | None = None, kwargs: dict[str, Any] | None = None
     ) -> None:
         """Run ``func`` on the UI thread without waiting for it; inline when called on the UI thread."""
+        raise NotImplementedError
 
     def process_pending(self) -> int | None:
         """
@@ -61,6 +64,7 @@ class UIExecutor(Protocol):
 
         :returns: How many callables ran, when the executor knows.
         """
+        raise NotImplementedError
 
 
 class _PendingCall:
@@ -198,7 +202,7 @@ def needs_gui_thread(f):
 def gui_thread_schedule[T](
     func: Callable[..., T],
     args: tuple[Any, ...] | None = None,
-    timeout: int | None = None,
+    timeout: float | None = None,
     kwargs: dict[str, Any] | None = None,
 ) -> T | None:
     """
