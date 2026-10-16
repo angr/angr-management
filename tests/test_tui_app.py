@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import tempfile
 import threading
@@ -19,15 +20,17 @@ from typing import TYPE_CHECKING, Any
 from textual.command import CommandPalette
 
 from angrmanagement.config import Conf
+from angrmanagement.data.log import LogDumpHandler
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.view_manager import default_position
 from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps, caps_from_environment
 from angrmanagement.tui.executor import TextualExecutor
-from angrmanagement.tui.screens import QuestionScreen
+from angrmanagement.tui.screens import ChecklistScreen, MessageScreen, QuestionScreen
 from angrmanagement.tui.screenshot import shoot, show_view
 from angrmanagement.tui.views import TUI_VIEW_CLASSES
 from angrmanagement.tui.widgets.menubar import MenuPopup
+from angrmanagement.tui.xrefs import XRefsScreen
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -65,6 +68,7 @@ class TuiTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.saved = (GlobalInfo._executor, GlobalInfo._ui_services, GlobalInfo.main_window, Conf.frontend_adapter)
         self.saved_layout = Conf.tui_layout
+        self.saved_recent = list(Conf.recent_files)
 
     def tearDown(self) -> None:
         executor, services, main_window, adapter = self.saved
@@ -73,6 +77,7 @@ class TuiTestCase(unittest.TestCase):
         assert GlobalInfo.main_window is main_window
         assert Conf.frontend_adapter is adapter
         Conf.tui_layout = self.saved_layout
+        Conf.recent_files = self.saved_recent
 
 
 class TestStartup(TuiTestCase):
@@ -239,6 +244,112 @@ class TestMenus(TuiTestCase):
             assert app.shortcut_text("Ctrl+O") == "Ctrl+O"
 
         run_app(scenario, tier=0, binary=None)
+
+
+class TestViewKeys(TuiTestCase):
+    def test_strings_x_shows_cross_references(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = await show_view(pilot, "strings")
+            model = view.presenter.model
+            row = next(i for i, s in enumerate(model.rows) if model.column_text(s, 3) == "Go away!")
+            view.table_widget.focus()
+            view.table_widget.move_cursor(row=row)
+            await settle(pilot)
+            await pilot.press("x")
+            await settle(pilot)
+            assert isinstance(app.screen, XRefsScreen)
+            assert app.screen.model.row_count >= 1
+            await pilot.press("escape")
+            await settle(pilot)
+            assert not isinstance(app.screen, XRefsScreen)
+
+        run_app(scenario)
+
+    def test_log_ctrl_c_copies_the_message(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = await show_view(pilot, "log")
+            model = view.presenter.model
+            # the global queue listener serves only the first Instance created in the process, so emit through
+            # this instance's own handler, as the listener would
+            handler = LogDumpHandler(app.workspace.main_instance)
+            handler.emit(
+                logging.LogRecord(
+                    "angrmanagement.tests", logging.WARNING, __file__, 0, "a message for the log view", None, None
+                )
+            )
+            rows: list[int] = []
+            for _ in range(100):
+                await pilot.pause(0.05)
+                rows = [i for i, r in enumerate(model.rows) if r.content == "a message for the log view"]
+                if rows:
+                    break
+            assert rows
+            view.table_widget.focus()
+            view.table_widget.move_cursor(row=rows[0])
+            await settle(pilot)
+            await pilot.press("ctrl+c")
+            await settle(pilot)
+            assert app.services.clipboard_text() == "a message for the log view"
+
+        run_app(scenario, binary=None)
+
+    def test_copy_mcp_url(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            app.copy_mcp_url()
+            await settle(pilot)
+            assert app.services.clipboard_text().startswith("http://")
+            assert app.status_bar.status_text.startswith("Copied")
+
+        run_app(scenario, binary=None)
+
+
+class TestInteractiveLoad(TuiTestCase):
+    def test_load_asks_for_options_then_analyses(self) -> None:
+        async def wait_for(pilot: Pilot, title: str) -> ChecklistScreen:
+            for _ in range(300):
+                await pilot.pause(0.05)
+                screen = pilot.app.screen
+                if isinstance(screen, ChecklistScreen) and screen.title_text == title:
+                    return screen
+            raise AssertionError(f"no {title!r} screen")
+
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            app.services.interactive = True
+            app.interactive = True
+            app.load_file(FAUXWARE)
+            # the load job waits in its thread while the options screen is up
+            await wait_for(pilot, "Load a binary")
+            assert app.workspace.main_instance.project.am_none
+            await pilot.click("#ok")
+            # then the analyses are offered, as the Qt analysis options dialog is
+            await wait_for(pilot, "Run analysis")
+            await pilot.click("#ok")
+            await app.wait_for_jobs()
+            await settle(pilot)
+            kb = app.workspace.main_instance.kb
+            assert kb is not None and "main" in {f.name for f in kb.functions.values()}
+            assert app.workspace.main_instance.project.loader.main_object.binary.endswith("fauxware")
+
+        run_app(scenario, binary=None)
+
+
+class TestJobErrors(TuiTestCase):
+    def test_a_failing_job_is_reported(self) -> None:
+        from angrmanagement.data.jobs.job import Job  # pylint: disable=import-outside-toplevel
+
+        class Failing(Job):
+            def run(self, ctx):
+                raise RuntimeError("this job always fails")
+
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            app.workspace.job_manager.add_job(Failing("Failing job"))
+            await app.wait_for_jobs()
+            await settle(pilot)
+            assert isinstance(app.screen, MessageScreen)
+            assert "Failing job" in app.screen.title_text and "this job always fails" in app.screen.text
+            assert not app.workspace.job_manager.jobs
+
+        run_app(scenario, binary=None)
 
 
 class TestConsole(TuiTestCase):

@@ -12,6 +12,7 @@ from typing import Any
 
 from common import AngrManagementTestCase
 
+from angrmanagement.config import Conf
 from angrmanagement.present.menus import Menu, MenuEntry, MenuSeparator
 from angrmanagement.present.shell import basic_command_table, build_main_menus
 from angrmanagement.ui.menus.view_menu import ToolbarMenu
@@ -52,7 +53,8 @@ class TestMenuParity(AngrManagementTestCase):
             self.main._plugin_menu,
             self.main._help_menu,
         ]
-        neutral = build_main_menus(self.main, recent_files=())
+        # the Qt "Load recent" submenu was built from this same list when the window was made
+        neutral = build_main_menus(self.main, recent_files=Conf.recent_files)
         assert [m.caption for m in neutral] == [m.caption for m in qt_menus]
         for qt_menu, menu in zip(qt_menus, neutral, strict=True):
             assert shape(menu) == shape(qt_menu), qt_menu.caption

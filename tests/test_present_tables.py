@@ -93,6 +93,8 @@ class FauxwareTestCase(unittest.TestCase):
         self.instance.cfg.am_obj = self.cfg.model
         self.instance.cfg.am_event()
         self.saved_services = GlobalInfo._ui_services
+        # never the Qt services an earlier test in this process installed: their dialogs would wait for a click
+        set_services(HeadlessServices())
 
     def tearDown(self):
         set_services(self.saved_services)
