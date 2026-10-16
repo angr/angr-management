@@ -153,7 +153,7 @@ class LogPresenter(InstancePresenter):
         self.copy_to_clipboard(self.copy(self.model.log, whole=False))
 
     def log_menu(self, rows: Sequence[int]) -> Menu:
-        """The context menu: what LogMenu offers in the Qt view."""
+        """The context menu of the log table: copy actions and clear."""
         rows = list(rows)
         menu = Menu("")
         menu.add(MenuEntry("&Copy selected content", lambda: self.copy_selected_messages(rows), shortcut="Ctrl+C"))
