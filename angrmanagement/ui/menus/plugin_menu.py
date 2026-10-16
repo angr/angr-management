@@ -2,16 +2,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .menu import Menu, MenuEntry
+from angrmanagement.present.shell import build_plugin_menu
+
+from .menu import Menu
 
 if TYPE_CHECKING:
     from angrmanagement.ui.main_window import MainWindow
 
 
 class PluginMenu(Menu):
-    """The Plugins menu of the main window."""
+    """The Plugins menu of the main window, from :func:`~angrmanagement.present.shell.build_plugin_menu`."""
 
     def __init__(self, main_window: MainWindow) -> None:
-        super().__init__("&Plugins", parent=main_window)
-
-        self.entries.extend([MenuEntry("&Manage Plugins...", main_window.open_load_plugins_dialog, icon="plugins")])
+        built = build_plugin_menu(main_window)
+        super().__init__(built.caption, built.entries, parent=main_window)

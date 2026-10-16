@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from angrmanagement.present.shell import build_new_view_menu, build_view_menu
+
 from .menu import Menu, MenuEntry, MenuSeparator
 
 if TYPE_CHECKING:
@@ -11,29 +13,12 @@ if TYPE_CHECKING:
 
 class NewViewMenu(Menu):
     """
-    Sub-menu to construct new Views
+    Sub-menu to construct new Views, from :func:`~angrmanagement.present.shell.build_new_view_menu`.
     """
 
     def __init__(self, main_window: MainWindow) -> None:
-        super().__init__("&New", parent=main_window)
-
-        self.entries.extend(
-            [
-                MenuEntry(
-                    "&Linear Disassembly",
-                    main_window.workspace.create_and_show_linear_disassembly_view,
-                    icon="disassembly-linear",
-                ),
-                MenuEntry(
-                    "&Graph Disassembly",
-                    main_window.workspace.create_and_show_graph_disassembly_view,
-                    shortcut="Ctrl+N",
-                    icon="disassembly-graph",
-                ),
-                MenuSeparator(),
-                MenuEntry("&Hex", main_window.workspace.create_and_show_hex_view, icon="hex-view"),
-            ]
-        )
+        built = build_new_view_menu(main_window)
+        super().__init__(built.caption, built.entries, parent=main_window)
 
 
 class ToolbarMenuEntry(MenuEntry):
@@ -80,72 +65,9 @@ class ToolbarMenu(Menu):
 
 class ViewMenu(Menu):
     """
-    Main View menu
+    Main View menu, from :func:`~angrmanagement.present.shell.build_view_menu`, with the Qt toolbars submenu.
     """
 
     def __init__(self, main_window: MainWindow) -> None:
-        super().__init__("&View", parent=main_window)
-
-        self.entries.extend(
-            [
-                MenuEntry(
-                    "Command Palette...",
-                    main_window.show_command_palette,
-                    shortcut="Ctrl+Shift+P",
-                    icon="command-palette",
-                ),
-                MenuSeparator(),
-                ToolbarMenu(main_window),
-                MenuSeparator(),
-                MenuEntry("Next Tab", main_window.workspace.view_manager.next_tab, shortcut="Ctrl+Tab"),
-                MenuEntry(
-                    "Previous Tab",
-                    main_window.workspace.view_manager.previous_tab,
-                    shortcut="Ctrl+Shift+Tab",
-                ),
-                MenuSeparator(),
-                NewViewMenu(main_window),
-                MenuSeparator(),
-                MenuEntry(
-                    "&Linear Disassembly",
-                    main_window.workspace.show_linear_disassembly_view,
-                    icon="disassembly-linear",
-                ),
-                MenuEntry(
-                    "&Graph Disassembly",
-                    main_window.workspace.show_graph_disassembly_view,
-                    icon="disassembly-graph",
-                ),
-                MenuSeparator(),
-                MenuEntry("&Hex", main_window.workspace.show_hex_view, icon="hex-view"),
-                MenuEntry("Pro&ximity", main_window.view_proximity_for_current_function),
-                MenuEntry("Pseudo&code", main_window.workspace.show_pseudocode_view, icon="pseudocode-view"),
-                MenuEntry("&Strings", main_window.workspace.show_strings_view, icon="strings-view"),
-                MenuEntry(
-                    "S&earch",
-                    main_window.workspace.show_search_view,
-                    shortcut="Ctrl+Shift+F",
-                    icon="search-view",
-                ),
-                MenuEntry("&Patches", main_window.workspace.show_patches_view, icon="patches-view"),
-                MenuEntry("&Types", main_window.workspace.show_types_view, icon="types-view"),
-                MenuEntry("&Functions", main_window.workspace.show_functions_view, icon="functions-view"),
-                MenuEntry("Co&mments", main_window.workspace.show_comments_view, icon="comments-view"),
-                MenuEntry("Book&marks", main_window.workspace.show_bookmarks_view, icon="bookmarks-view"),
-                MenuEntry("Function Si&gnatures", main_window.workspace.show_signatures_view),
-                MenuEntry("&Traces", main_window.workspace.show_traces_view, icon="traces-view"),
-                MenuEntry("Trace &Map", main_window.workspace.show_trace_map_view),
-                MenuSeparator(),
-                MenuEntry("Symbolic &Execution", main_window.workspace.show_symexec_view),
-                MenuEntry("S&ymbolic States", main_window.workspace.show_states_view),
-                MenuEntry("&Registers", main_window.workspace.show_registers_view),
-                MenuEntry("&Stack", main_window.workspace.show_stack_view),
-                MenuEntry("&Breakpoints", main_window.workspace.show_breakpoints_view),
-                MenuEntry("&Call Explorer", main_window.workspace.show_call_explorer_view),
-                MenuSeparator(),
-                MenuEntry("&Console", main_window.workspace.show_console_view, icon="console-view"),
-                MenuEntry("&Log", main_window.workspace.show_log_view, icon="log-view"),
-                MenuEntry("&Jobs", main_window.workspace.show_jobs_view, icon="jobs-view"),
-                MenuEntry("&MCP History", main_window.workspace.show_mcp_history_view, icon="mcp_history-view"),
-            ]
-        )
+        built = build_view_menu(main_window, [ToolbarMenu(main_window)], new_menu=NewViewMenu(main_window))
+        super().__init__(built.caption, built.entries, parent=main_window)

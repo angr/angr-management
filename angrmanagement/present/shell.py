@@ -1,9 +1,10 @@
 """
 The main window's menus and commands, without a toolkit.
 
-:func:`build_main_menus` returns the menu bar of angr management (File, View, Analyze, AI, Plugins, Help) with the
-captions and shortcuts of the Qt menus, bound to the methods of a *host*: the frontend's main window object, which has
-a ``workspace`` and the actions the menus name (``open_file_button``, ``save_database``, ...).
+:func:`build_main_menus` returns the menu bar of angr management (File, View, Analyze, AI, Plugins, Help), bound to the
+methods of a *host*: the frontend's main window object, which has a ``workspace`` and the actions the menus name
+(``open_file_button``, ``save_database``, ...). Both frontends build their menu bars from these functions; the Qt menu
+classes in ``angrmanagement.ui.menus`` wrap them.
 :func:`basic_command_table` is the list of commands the command palette offers in every view.
 """
 
@@ -104,18 +105,21 @@ class RecentMenuEntry(MenuEntry):
 class FileMenu(Menu):
     """The File menu; the entries that need a project are disabled while none is loaded."""
 
-    def __init__(self) -> None:
-        super().__init__("&File")
+    def __init__(self, parent=None) -> None:
+        super().__init__("&File", parent=parent)
         self.project_entries: list[MenuEntry] = []
+        self.recent_menu = Menu("Load recent")
 
     def set_project_loaded(self, loaded: bool) -> None:
         for entry in self.project_entries:
             (entry.enable if loaded else entry.disable)()
 
 
-def build_file_menu(host: Any, recent_files: Iterable[str] = ()) -> FileMenu:
-    menu = FileMenu()
-    recent = Menu("Load recent")
+def build_file_menu(host: Any, recent_files: Iterable[str] = (), menu: FileMenu | None = None) -> FileMenu:
+    """The File menu, with ``recent_files`` (oldest first) in "Load recent"; fills ``menu`` when given."""
+    if menu is None:
+        menu = FileMenu()
+    recent = menu.recent_menu
     for path in reversed(list(recent_files)):
         recent.add(RecentMenuEntry(path, host.load_file))
     project_entries = [
@@ -151,10 +155,10 @@ def build_file_menu(host: Any, recent_files: Iterable[str] = ()) -> FileMenu:
     return menu
 
 
-def build_view_menu(host: Any, extra_entries: Iterable[Any] = ()) -> Menu:
-    """The View menu; ``extra_entries`` stand where the Qt menu has its Toolbars submenu."""
+def build_new_view_menu(host: Any) -> Menu:
+    """The View > New submenu."""
     ws = host.workspace
-    new_menu = Menu(
+    return Menu(
         "&New",
         [
             MenuEntry("&Linear Disassembly", ws.create_and_show_linear_disassembly_view, icon="disassembly-linear"),
@@ -168,6 +172,13 @@ def build_view_menu(host: Any, extra_entries: Iterable[Any] = ()) -> Menu:
             MenuEntry("&Hex", ws.create_and_show_hex_view, icon="hex-view"),
         ],
     )
+
+
+def build_view_menu(host: Any, extra_entries: Iterable[Any] = (), new_menu: Menu | None = None) -> Menu:
+    """The View menu; ``extra_entries`` stand where the Qt menu has its Toolbars submenu."""
+    ws = host.workspace
+    if new_menu is None:
+        new_menu = build_new_view_menu(host)
     return Menu(
         "&View",
         [

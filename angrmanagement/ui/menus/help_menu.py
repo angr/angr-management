@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .menu import Menu, MenuEntry, MenuSeparator
+from angrmanagement.present.shell import build_help_menu
+
+from .menu import Menu
 
 if TYPE_CHECKING:
     from angrmanagement.ui.main_window import MainWindow
@@ -10,21 +12,9 @@ if TYPE_CHECKING:
 
 class HelpMenu(Menu):
     """
-    Main 'Help' menu
+    Main 'Help' menu, from :func:`~angrmanagement.present.shell.build_help_menu`.
     """
 
     def __init__(self, main_window: MainWindow) -> None:
-        super().__init__("&Help", parent=main_window)
-
-        self.entries.extend(
-            [
-                MenuEntry("&Documentation", main_window.open_doc_link, shortcut="Alt+H", icon="docs"),
-                MenuSeparator(),
-                MenuEntry(
-                    "&About angr-management",
-                    main_window.open_about_dialog,
-                    role="about",
-                    icon="about",
-                ),
-            ]
-        )
+        built = build_help_menu(main_window)
+        super().__init__(built.caption, built.entries, parent=main_window)
