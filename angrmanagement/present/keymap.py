@@ -83,6 +83,9 @@ _CTRL_PUNCTUATION_LEGACY_KEEPS = frozenset("\\]^@ ")
 _LEGACY_MODIFIABLE_KEYS = frozenset(
     {"up", "down", "left", "right", "home", "end", "pageup", "pagedown", "delete", "insert"}
 )
+# Alt+key arrives as Escape and the key. Textual reads Escape-b and Escape-f as word movement (Ctrl+Left and
+# Ctrl+Right), Escape-digit as the macOS Option character of the digit, and Escape-punctuation as the bare key.
+_ALT_LETTERS_LEGACY_LOSES = frozenset("bf")
 
 
 def textual_character_name(character: str) -> str:
@@ -198,10 +201,19 @@ class Chord:
         if self.alt and named and key in ("up", "down", "left", "right"):
             # Alt+arrow arrives as Escape followed by the arrow
             return False
+        if named and key == "f3" and (self.shift or self.ctrl):
+            # CSI 1;2R and CSI 1;5R read as cursor position reports
+            return False
+        if self.alt and not named:
+            if self.ctrl:
+                # Escape and a control byte reads as the control key alone
+                return False
+            return self.key.isalpha() and self.key.lower() not in _ALT_LETTERS_LEGACY_LOSES
         if self.ctrl:
             if named:
                 if key in ("tab", "enter", "escape", "backspace", "space"):
-                    return key == "space" and not self.shift
+                    # Ctrl+Space arrives as NUL, which Textual names ctrl+@
+                    return False
                 return key in _LEGACY_MODIFIABLE_KEYS or key.startswith("f")
             if self.shift:
                 # Ctrl+Shift+letter sends the same byte as Ctrl+letter
@@ -342,12 +354,12 @@ def global_keymap() -> Keymap:
     bindings = [
         _any("Ctrl+O", "open_file", "Load a new binary"),
         _kitty("Ctrl+Shift+T", "open_trace_file", "Load a trace file", "Alt+T"),
-        _any("Ctrl+Alt+F", "load_signatures", "Load a FLIRT signature file"),
+        _kitty("Ctrl+Alt+F", "load_signatures", "Load a FLIRT signature file", "Alt+L"),
         _any("Ctrl+W", "close_project", "Close project"),
         _any("Ctrl+L", "load_database", "Load angr database"),
         _any("Ctrl+S", "save_database", "Save angr database"),
         _kitty("Ctrl+Shift+S", "save_database_as", "Save angr database as", "Alt+S"),
-        _kitty("Ctrl+,", "preferences", "Preferences", "Alt+,"),
+        _kitty("Ctrl+,", "preferences", "Preferences", "Alt+O"),
         _kitty("Ctrl+Shift+P", "command_palette", "Command palette", "Ctrl+P"),
         _kitty("Shift, Shift", "goto_palette", "Goto anything", "Ctrl+G"),
         _kitty("Ctrl+Tab", "next_tab", "Next tab", "Ctrl+PgDown"),
@@ -363,13 +375,14 @@ def global_keymap() -> Keymap:
         _any("F2", "toggle_exec_breakpoint", "Toggle execution breakpoint"),
         _any("F7", "step_forward", "Step forward"),
         _any("F9", "continue_forward", "Continue"),
-        _kitty("Ctrl+M", "toggle_bookmark", "Toggle bookmark", "Alt+B"),
+        _kitty("Ctrl+M", "toggle_bookmark", "Toggle bookmark", "Alt+K"),
         _kitty("Ctrl+Shift+M", "next_bookmark", "Go to next bookmark", "Alt+M"),
         _any("F10", "open_menu_bar", "Open the menu bar"),
     ]
+    # a legacy terminal cannot report Alt+digit to Textual; Ctrl+PgUp and Ctrl+PgDown cycle the tabs there
     for idx in range(1, 10):
-        bindings.append(_any(f"Alt+{idx}", "raise_view_by_index", f"Raise view {idx}", idx - 1))
-    bindings.append(_any("Alt+0", "raise_view_by_index", "Raise view 10", 9))
+        bindings.append(_kitty(f"Alt+{idx}", "raise_view_by_index", f"Raise view {idx}", None, idx - 1))
+    bindings.append(_kitty("Alt+0", "raise_view_by_index", "Raise view 10", None, 9))
     return Keymap("global", bindings)
 
 
