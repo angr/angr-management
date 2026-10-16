@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QAction
@@ -40,7 +40,8 @@ class BaseView(QFrame):
     Base class for all main views.
     """
 
-    presenter: Presenter
+    # Any, so that a view can declare its own presenter class
+    presenter: Any
 
     def __init__(
         self,

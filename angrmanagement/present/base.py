@@ -107,9 +107,9 @@ class InstancePresenter(Presenter):
     def notify_view_state_updated(self) -> None:
         shown = self.view if self.view is not None else self
         if self.workspace.view_manager.most_recently_focused_view is shown:
-            container = cast("ObjectContainer", self.instance.active_view_state)
-            container.am_obj = self.published_view_state
-            container.am_event()
+            state = container(self.instance.active_view_state)
+            state.am_obj = self.published_view_state
+            state.am_event()
 
 
 class FunctionPresenter(InstancePresenter):
@@ -127,6 +127,11 @@ class FunctionPresenter(InstancePresenter):
     def function(self, function: angr.knowledge_plugins.Function | None) -> None:
         self._function.am_obj = function
         self._function.am_event()
+
+
+def container(obj: Any) -> ObjectContainer:
+    """``obj``, an attribute of an instance such as ``instance.cfg``, typed as the ObjectContainer it is."""
+    return cast("ObjectContainer", obj)
 
 
 def project_of(instance: Instance) -> angr.Project | None:
