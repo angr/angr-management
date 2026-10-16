@@ -118,7 +118,7 @@ class DisasmInsnContextMenu(Menu):
     def _view_docs(self) -> None:
         if self._disasm_view is None:
             return
-        addr = self._disasm_view._address_in_selection()
+        addr = self._disasm_view.address_in_selection()
         if addr is not None:
             self._disasm_view.popup_func_doc_dialog(addr)
 

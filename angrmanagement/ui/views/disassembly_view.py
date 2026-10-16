@@ -121,7 +121,7 @@ class DisassemblyView(SynchronizedFunctionView):
     pattern_highlight_addrs: set[int] = _forward(  # type: ignore[assignment]
         "pattern_highlight_addrs", "instructions a pattern or a discovered family covers, painted in their own color"
     )
-    _insn_addr_on_context_menu = _forward("_insn_addr_on_context_menu")
+    _insn_addr_on_context_menu = _forward("insn_addr_on_context_menu")
     _current_view = _forward("_current_view")
     _prefer_graph = _forward("_prefer_graph")
     _displaying_function = _forward("_displaying_function")
@@ -336,16 +336,16 @@ class DisassemblyView(SynchronizedFunctionView):
         self.presenter.on_screen_changed()
 
     def _reload_current_function_if_changed(self) -> None:
-        self.presenter._reload_current_function_if_changed()  # pylint:disable=protected-access
+        self.presenter.reload_current_function_if_changed()
 
     def _on_cfb_event(self, **kwargs) -> None:
-        self.presenter._on_cfb_event(**kwargs)  # pylint:disable=protected-access
+        self.presenter.on_cfb_event(**kwargs)
 
     def _refresh_linear_viewer_on_objects_added(self, objects) -> None:
         """
         Refresh the linear viewer if any of the newly added CFB objects land within the visible address range.
         """
-        self.presenter._refresh_linear_viewer_on_objects_added(objects)  # pylint:disable=protected-access
+        self.presenter.refresh_linear_viewer_on_objects_added(objects)
 
     def on_synchronized_cursor_address_changed(self) -> None:
         """
@@ -905,35 +905,37 @@ class DisassemblyView(SynchronizedFunctionView):
     #
 
     def _display_function(self, the_func, send_event=True) -> None:
-        self.presenter._display_function(the_func, send_event=send_event)  # pylint:disable=protected-access
+        self.presenter.display_function_without_history(the_func, send_event=send_event)
 
     def _jump_to(self, addr: int, use_animation: bool = False, is_real_addr: bool = False) -> bool:
-        return self.presenter._jump_to(  # pylint:disable=protected-access
-            addr, use_animation=use_animation, is_real_addr=is_real_addr
-        )
+        return self.presenter.jump_to_without_history(addr, use_animation=use_animation, is_real_addr=is_real_addr)
 
     #
     # Utils
     #
 
+    def address_in_selection(self) -> tuple[str, int] | None:
+        """What the selection points at, as ``(kind, address)``; the context menus ask for it."""
+        return self._address_in_selection()
+
     def _address_in_selection(self) -> tuple[str, int] | None:
-        return self.presenter._address_in_selection()  # pylint:disable=protected-access
+        return self.presenter.address_in_selection()
 
     def _comment_address_in_selection(self) -> int | None:
         """
         The address to comment on: the selected instruction, or the function whose name is selected.
         """
-        return self.presenter._comment_address_in_selection()  # pylint:disable=protected-access
+        return self.presenter.comment_address_in_selection()
 
     def _commit_inline_comment(self, addr: int, text: str) -> None:
         self._inline_comment_editor = None
         self.presenter.set_comment(addr, text)
 
     def _instruction_address_in_selection(self) -> int | None:
-        return self.presenter._instruction_address_in_selection()  # pylint:disable=protected-access
+        return self.presenter.instruction_address_in_selection()
 
     def _get_instruction_size(self, addr: int) -> int | None:
-        return self.presenter._get_instruction_size(addr)  # pylint:disable=protected-access
+        return self.presenter.get_instruction_size(addr)
 
     @property
     def flow_graph(self):

@@ -997,17 +997,11 @@ class DisassemblyTuiView(TuiView):
                     return
             node.activate(button, unique=not ctrl)
             if button == "right":
-                presenter._insn_addr_on_context_menu = node.addr  # pylint:disable=protected-access
-                try:
+                with presenter.context_menu_address(node.addr):
                     self.open_menu(presenter.insn_context_menu(node.addr, node.insn))
-                finally:
-                    presenter._insn_addr_on_context_menu = None  # pylint:disable=protected-access
             elif chain >= 2:
-                presenter._insn_addr_on_context_menu = node.addr  # pylint:disable=protected-access
-                try:
+                with presenter.context_menu_address(node.addr):
                     presenter.popup_patch_dialog()
-                finally:
-                    presenter._insn_addr_on_context_menu = None  # pylint:disable=protected-access
             return
         if isinstance(node, (LabelNode, MemoryDataNode)):
             node.activate(button)
@@ -1067,7 +1061,7 @@ class DisassemblyTuiView(TuiView):
         return self.presenter.jump_to(addr, *args, **kwargs)
 
     def _instruction_address_in_selection(self) -> int | None:
-        return self.presenter._instruction_address_in_selection()  # pylint:disable=protected-access
+        return self.presenter.instruction_address_in_selection()
 
     def display_function(self, func, send_event: bool = True) -> None:
         self.presenter.display_function(func, send_event=send_event)

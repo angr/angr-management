@@ -591,7 +591,8 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         self._variable_recovery_flavor = "fast"
         self.variable_manager: VariableManager | None = None
 
-        self._insn_addr_on_context_menu: int | None = None
+        #: the instruction a context menu or a double click is about; it wins over the selection while it is set
+        self.insn_addr_on_context_menu: int | None = None
 
         #: the find bar the view shows (a QFindBar, or the terminal's); it holds the query and shows the counter
         self.find_bar: Any = None
@@ -1064,7 +1065,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         self.infodock.selected_block_tree_node.am_subscribe(self.redraw_current_graph)
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
-        container(self.instance.cfb).am_subscribe(self._on_cfb_event)
+        container(self.instance.cfb).am_subscribe(self.on_cfb_event)
         self.function.am_subscribe(self._on_function_event)
 
     def unregister_events(self) -> None:
@@ -1083,7 +1084,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         self.infodock.selected_block_tree_node.am_unsubscribe(self.redraw_current_graph)
         self.workspace.current_screen.am_unsubscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_unsubscribe(self._on_breakpoints_updated)
-        container(self.instance.cfb).am_unsubscribe(self._on_cfb_event)
+        container(self.instance.cfb).am_unsubscribe(self.on_cfb_event)
 
     def close(self) -> None:
         self.unregister_events()
@@ -1097,13 +1098,13 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         return self._view_method(name) or getattr(self, name)
 
     def _on_function_event(self, **kwargs) -> None:  # pylint:disable=unused-argument
-        # the event was fired by _display_function itself; re-displaying would re-record the function head in the
-        # jump history and scroll away from the jump target
+        # the event was fired by display_function_without_history itself; re-displaying would re-record the function
+        # head in the jump history and scroll away from the jump target
         if self._displaying_function:
             return
         self.display_function(self.function.am_obj, send_event=False)
 
-    def _on_cfb_event(self, **kwargs) -> None:
+    def on_cfb_event(self, **kwargs) -> None:
         if not kwargs:
             self._find_text_cache.clear()
             if self.instance.project.am_none:
@@ -1114,7 +1115,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
                 if self.linear is not None:
                     self.linear.reload()
                 return
-            self._reload_current_function_if_changed()
+            self.reload_current_function_if_changed()
             if self.linear is not None:
                 self.linear.reload()
         elif "objects_added" in kwargs:
@@ -1123,9 +1124,9 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
             if now - self._last_objects_added_refresh < MIN_OBJECTS_ADDED_REFRESH_INTERVAL:
                 return
             self._last_objects_added_refresh = now
-            gui_thread_schedule_async(self._refresh_linear_viewer_on_objects_added, args=(kwargs["objects_added"],))
+            gui_thread_schedule_async(self.refresh_linear_viewer_on_objects_added, args=(kwargs["objects_added"],))
 
-    def _refresh_linear_viewer_on_objects_added(self, objects) -> None:
+    def refresh_linear_viewer_on_objects_added(self, objects) -> None:
         """
         Refresh the linear viewer if any of the newly added CFB objects land within the visible address range.
         """
@@ -1171,7 +1172,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         old_infodock = self.infodock.copy()
         self.infodock.initialize()
         # Reload the current graph to make sure it gets the latest information, such as variables.
-        self._reload_current_function_if_changed()
+        self.reload_current_function_if_changed()
         if self._current_view is not None:
             self._current_view.reload(old_infodock=old_infodock)
 
@@ -1197,7 +1198,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
             self.redraw_current_graph()
         return had
 
-    def _reload_current_function_if_changed(self) -> None:
+    def reload_current_function_if_changed(self) -> None:
         graph = self.graph
         if graph is not None and graph.function_graph is not None:
             func_addr = graph.function_graph.function.addr
@@ -1206,9 +1207,9 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
             except KeyError:
                 func = None
             if graph.function_graph.function is not func:
-                self._display_function(func)
+                self.display_function_without_history(func)
             if func is None:
-                self._jump_to(func_addr)
+                self.jump_to_without_history(func_addr)
 
     #
     # Levels and options
@@ -1327,7 +1328,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
 
         if self.infodock.selected_insns:
             # display the currently selected instruction
-            self._jump_to(next(iter(self.infodock.selected_insns)))
+            self.jump_to_without_history(next(iter(self.infodock.selected_insns)))
         elif self.function.am_obj is not None:
             graph.show_instruction(self.function.addr)
 
@@ -1362,7 +1363,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
             return
         self.workspace.note_user_navigation()
         self.jump_history.jump_to(function.addr)
-        self._display_function(function, send_event=send_event)
+        self.display_function_without_history(function, send_event=send_event)
 
     def decompile_current_function(self) -> None:
         if self.function.am_obj is not None:
@@ -1386,26 +1387,26 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
             self.jump_history.record_address(src_ins_addr)
 
         self.jump_history.jump_to(addr)
-        self._jump_to(addr, use_animation=use_animation, is_real_addr=is_real_addr)
+        self.jump_to_without_history(addr, use_animation=use_animation, is_real_addr=is_real_addr)
         return True
 
     def jump_back(self) -> None:
         addr = self.jump_history.backtrack()
         if addr is not None:
             self.workspace.note_user_navigation()
-            self._jump_to(addr, use_animation=False)
+            self.jump_to_without_history(addr, use_animation=False)
 
     def jump_forward(self) -> None:
         addr = self.jump_history.forwardstep()
         if addr is not None:
             self.workspace.note_user_navigation()
-            self._jump_to(addr, use_animation=False)
+            self.jump_to_without_history(addr, use_animation=False)
 
     def jump_to_history_position(self, pos: int) -> None:
         addr = self.jump_history.step_position(pos)
         if addr is not None:
             self.workspace.note_user_navigation()
-            self._jump_to(addr, use_animation=False)
+            self.jump_to_without_history(addr, use_animation=False)
 
     def history_menu(self) -> Menu:
         """The jump history, newest first, as a menu of entries that go there (the Nav toolbar's drop-down)."""
@@ -1428,7 +1429,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
     def select_label(self, label_addr) -> None:
         self.infodock.select_label(label_addr)
 
-    def _display_function(self, the_func, send_event: bool = True) -> None:
+    def display_function_without_history(self, the_func, send_event: bool = True) -> None:
         if the_func is not None:
             self.set_synchronized_cursor_address(the_func.addr)
 
@@ -1479,7 +1480,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         if console_view is not None:
             console_view.set_current_function(the_func)
 
-    def _jump_to(self, addr: int, use_animation: bool = False, is_real_addr: bool = False) -> bool:
+    def jump_to_without_history(self, addr: int, use_animation: bool = False, is_real_addr: bool = False) -> bool:
         if self._prefer_graph and self._current_view is self.linear:
             self.view_or_self("display_disasm_graph")(prefer=False)
 
@@ -1501,7 +1502,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
                     or graph.function_graph.function is not function
                 ):
                     # only switch functions when needed; re-displaying the current one scrolls to its head
-                    self._display_function(function)
+                    self.display_function_without_history(function)
                 instr_addr = function.addr_to_instruction_addr(code_addr)
                 if instr_addr is None:
                     instr_addr = code_addr
@@ -1566,15 +1567,24 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         regions = []
         is_arm = is_arm_arch(self.instance.project.arch) if not self.instance.project.am_none else False
         for addr in self.infodock.selected_insns:
-            s = self._get_instruction_size(addr)
+            s = self.get_instruction_size(addr)
             if s is not None:
                 real_addr = addr & 0xFFFF_FFFE if is_arm else addr
                 regions.append(SynchronizedHighlightRegion(real_addr, s))
         self.set_synchronized_highlight_regions(regions)
 
-    def _address_in_selection(self) -> tuple[str, int] | None:
-        if self._insn_addr_on_context_menu is not None:
-            return "insn", self._insn_addr_on_context_menu
+    @contextlib.contextmanager
+    def context_menu_address(self, addr: int):
+        """Within the block, the actions act on the instruction at ``addr`` (:attr:`insn_addr_on_context_menu`)."""
+        self.insn_addr_on_context_menu = addr
+        try:
+            yield
+        finally:
+            self.insn_addr_on_context_menu = None
+
+    def address_in_selection(self) -> tuple[str, int] | None:
+        if self.insn_addr_on_context_menu is not None:
+            return "insn", self.insn_addr_on_context_menu
         if len(self.infodock.selected_operands) == 1:
             selected_operand: OperandDescriptor = next(iter(self.infodock.selected_operands.values()))
             if selected_operand.num_value is not None:
@@ -1592,26 +1602,27 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
                 return ty, addr
         return None
 
-    def _comment_address_in_selection(self) -> int | None:
+    def comment_address_in_selection(self) -> int | None:
         """The address to comment on: the selected instruction, or the function whose name is selected."""
-        addr = self.view_or_self("_instruction_address_in_selection")()
+        # the Qt view's own selection helpers win (its code and tests use them)
+        addr = (self._view_method("_instruction_address_in_selection") or self.instruction_address_in_selection)()
         if addr is not None:
             return addr
-        selection = self.view_or_self("_address_in_selection")()
+        selection = (self._view_method("_address_in_selection") or self.address_in_selection)()
         if selection is not None and selection[0] == "func_name":
             return selection[1]
         return None
 
-    def _instruction_address_in_selection(self) -> int | None:
-        if self._insn_addr_on_context_menu is not None:
-            return self._insn_addr_on_context_menu
+    def instruction_address_in_selection(self) -> int | None:
+        if self.insn_addr_on_context_menu is not None:
+            return self.insn_addr_on_context_menu
         if len(self.infodock.selected_insns) == 1:
             return next(iter(self.infodock.selected_insns))
         if len(self.infodock.selected_labels) == 1:
             return next(iter(self.infodock.selected_labels))
         return None
 
-    def _get_instruction_size(self, addr: int) -> int | None:
+    def get_instruction_size(self, addr: int) -> int | None:
         kb = self.instance.project.kb
         f = kb.functions.floor_func(addr)
         if f is None:
@@ -1702,17 +1713,14 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         if own is not None:
             return own(addr)
         if addr is None:
-            addr = self._comment_address_in_selection()
+            addr = self.comment_address_in_selection()
         if addr is None:
             return None
         kb = self.kb
         text = "" if kb is None else kb.comments.get(addr, "")
         if "\n" in text:
-            self._insn_addr_on_context_menu = addr
-            try:
+            with self.context_menu_address(addr):
                 self.popup_comment_dialog()
-            finally:
-                self._insn_addr_on_context_menu = None
             return None
 
         def then(answer: str | None) -> None:
@@ -1728,7 +1736,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
     def set_function_comment(self, addr: int | None = None) -> None:
         """Edit the comment shown as a header block above the containing function."""
         if addr is None:
-            addr = self._comment_address_in_selection()
+            addr = self.comment_address_in_selection()
         if addr is None:
             return
         kb = self.kb
@@ -1743,7 +1751,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
     def toggle_repeatable_comment(self, addr: int | None = None) -> None:
         """Flip the comment at ``addr`` between repeatable and its default kind."""
         if addr is None:
-            addr = self._comment_address_in_selection()
+            addr = self.comment_address_in_selection()
         if addr is None:
             return
         annotations = self.instance.annotations
@@ -1753,7 +1761,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         self.view_or_self("refresh")()
 
     def toggle_bookmark_at_selection(self) -> None:
-        addr = self._comment_address_in_selection()
+        addr = self.comment_address_in_selection()
         if addr is not None:
             self.workspace.toggle_bookmark(addr)
 
@@ -1805,7 +1813,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         if own is not None:
             own()
             return
-        addr = self._instruction_address_in_selection()
+        addr = self.instruction_address_in_selection()
         if addr is None:
             return
         kb = self.kb
@@ -1823,7 +1831,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         if own is not None:
             own()
             return
-        selection = self._address_in_selection()
+        selection = self.address_in_selection()
         if selection is None:
             return
         type_, label_addr = selection
@@ -1929,7 +1937,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         if own is not None:
             own()
             return
-        addr = self._instruction_address_in_selection()
+        addr = self.instruction_address_in_selection()
         if addr is None:
             return
 
@@ -2080,7 +2088,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
 
     def context_menu(self, *args, **kwargs) -> Menu | None:  # pylint:disable=unused-argument
         """The menu for the selection: the instruction's, the label's, or the selected node's."""
-        insn_addr = self._instruction_address_in_selection()
+        insn_addr = self.instruction_address_in_selection()
         if insn_addr is not None and insn_addr in self.infodock.selected_insns:
             return self.insn_context_menu(insn_addr)
         if len(self.infodock.selected_labels) == 1:
