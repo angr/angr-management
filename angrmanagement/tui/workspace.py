@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from angrmanagement.config import Conf
 from angrmanagement.logic import GlobalInfo
@@ -12,6 +12,8 @@ from angrmanagement.present.shell import register_basic_commands
 from .view_manager import TuiViewManager
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from angr.knowledge_plugins.functions import Function
 
     from .app import AmApp
@@ -58,27 +60,17 @@ class TuiWorkspace(BaseWorkspace):
         else:
             view.refresh()
 
-    def run_analysis(self, use_default_options: bool = False) -> None:
-        if self.main_instance.project.am_none:
-            return
-        if self.main_instance.analysis_configuration is None:
-            self.main_instance.analysis_configuration = self.analysis_manager.get_default_analyses_configuration()
-        if not self.interactive or use_default_options:
-            self.analysis_manager.run_analysis()
+    def _ask_analysis_options(self, configuration, then: Callable[[Any], None]) -> None:
+        # the UI thread cannot wait for the screen, so the answer arrives in a worker on the loop
+        ask = getattr(GlobalInfo.ui_services, "ask_analysis_options", None)
+        if ask is None:
+            super()._ask_analysis_options(configuration, then)
             return
 
-        async def ask_then_run() -> None:
-            services = GlobalInfo.ui_services
-            ask = getattr(services, "ask_analysis_options", None)
-            configuration = self.main_instance.analysis_configuration
-            if ask is not None:
-                configuration = await ask(configuration)
-            if configuration is None:
-                return
-            self.main_instance.analysis_configuration = configuration
-            self.analysis_manager.run_analysis()
+        async def ask_then() -> None:
+            then(await ask(configuration))
 
-        self.app.run_worker(ask_then_run(), exit_on_error=False)
+        self.app.run_worker(ask_then(), exit_on_error=False)
 
     def on_function_selected(self, func: Function) -> None:
         super().on_function_selected(func)

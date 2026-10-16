@@ -844,15 +844,20 @@ class BaseWorkspace:
         # Ask for the options only when there is a user and the caller has not opted into the default settings
         # (headless runs and programmatic loads use the defaults directly).
         if self.interactive and not use_default_options:
-            configuration = self._ask_analysis_options(self.main_instance.analysis_configuration)
-            if configuration is None:
-                return
-            self.main_instance.analysis_configuration = configuration
+            self._ask_analysis_options(self.main_instance.analysis_configuration, self._run_analysis_with)
+            return
 
         self.analysis_manager.run_analysis()
 
-    def _ask_analysis_options(self, configuration):
-        return GlobalInfo.ui_services.analysis_options(self, configuration)
+    def _ask_analysis_options(self, configuration, then: Callable[[Any], None]) -> None:
+        """Ask which analyses to run, then call ``then`` with the answer (None when the user cancelled)."""
+        then(GlobalInfo.ui_services.analysis_options(self, configuration))
+
+    def _run_analysis_with(self, configuration) -> None:
+        if configuration is None:
+            return
+        self.main_instance.analysis_configuration = configuration
+        self.analysis_manager.run_analysis()
 
     def decompile_current_function(self) -> None:
         current = self.view_manager.current_tab
@@ -1278,22 +1283,29 @@ class BaseWorkspace:
                 )
                 thing = None
 
-        if not thing:
-            thing = self._pick_binary()
+        def load(thing: str | None) -> None:
+            if not thing:
+                on_complete()
+                return
+            self.main_instance.binary_path = thing
+            self.main_instance.original_binary_path = thing
+            job = LoadBinaryJob(self.main_instance, thing, load_options=load_options, on_finish=on_complete)
+            self.job_manager.add_job(job)
 
-        if not thing:
-            on_complete()
-            return
+        if thing:
+            load(thing)
+        else:
+            self._pick_binary(load)
 
-        self.main_instance.binary_path = thing
-        self.main_instance.original_binary_path = thing
-        job = LoadBinaryJob(self.main_instance, thing, load_options=load_options, on_finish=on_complete)
-        self.job_manager.add_job(job)
-
-    def _pick_binary(self) -> str | None:  # pylint:disable=no-self-use
-        """Ask the user for a binary to open."""
-        picked = GlobalInfo.ui_services.pick_open_files("Open a binary", recent_directory(), BINARY_FILE_FILTER, False)
-        return picked[0] if picked else None
+    def _pick_binary(self, then: Callable[[str | None], None]) -> None:  # pylint:disable=no-self-use
+        """Ask the user for a binary to open, then call ``then`` with its path (None when the user cancelled)."""
+        GlobalInfo.ui_services.pick_open_files_async(
+            "Open a binary",
+            recent_directory(),
+            BINARY_FILE_FILTER,
+            False,
+            lambda picked: then(picked[0] if picked else None),
+        )
 
     #
     # The console

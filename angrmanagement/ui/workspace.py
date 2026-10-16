@@ -31,6 +31,8 @@ from .views import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from angrmanagement.ui.main_window import MainWindow
 
 __all__ = ["BaseView", "Instance", "Workspace"]
@@ -90,5 +92,5 @@ class Workspace(BaseWorkspace):
         """The analysis options dialog is shown only when the main window was shown at start."""
         return bool(self.main_window.shown_at_start)
 
-    def _pick_binary(self) -> str | None:
-        return self.main_window.open_mainfile_dialog() or None
+    def _pick_binary(self, then: Callable[[str | None], None]) -> None:
+        then(self.main_window.open_mainfile_dialog() or None)
