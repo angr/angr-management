@@ -205,7 +205,7 @@ def font_style_serializer(config_option, value: FontStyle) -> str:
 
 # not used for the built-in entries any more; a plugin may use it to register an Enum type in data_serializers
 def enum_parser_serializer_generator(
-    the_enum: enum.Enum, default
+    the_enum: type[enum.Enum], default
 ) -> tuple[Callable[[str, str], enum.Enum], Callable[[str, enum.Enum], str]]:
     def parser(config_option: str, value: str) -> enum.Enum:
         try:

@@ -346,6 +346,8 @@ class TestEnumSerializers(unittest.TestCase):
 
     def test_enum_parser_serializer_generator(self):
         class Shade(enum.Enum):
+            """A plugin's own Enum type."""
+
             LIGHT = 1
             DARK = 2
 
