@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from types import SimpleNamespace
 from typing import Any
 
 import angr
@@ -443,6 +444,49 @@ class TestMenusKeysCommands(FauxwareDisasmCase):
         doc, _ = self.presenter.graph_doc(FunctionGraph(self.main))
         labels = [n for b in doc.blocks.values() for n in b.nodes if isinstance(n, LabelNode)]
         assert all(n.text.endswith(":") for n in labels)
+
+
+class InductionExpr:
+    """Stands in for the expression class the induction variable hack matches by name."""
+
+    def __init__(self, stride: int, init: int) -> None:
+        self.stride = stride
+        self.init = init
+
+
+class Add:
+    def __init__(self, *operands: Any) -> None:
+        self.operands = operands
+
+
+class FakeInductionVariables:
+    """Every variable is ``i*4 + 8`` plus 2."""
+
+    def __init__(self) -> None:
+        self.variables = self
+
+    def get(self, ident: Any, default: Any = None) -> Any:  # pylint:disable=unused-argument
+        return SimpleNamespace(expr=Add(InductionExpr(4, 8), SimpleNamespace(value=2)))
+
+
+class TestOperandText(FauxwareDisasmCase):
+    def test_induction_variable_offset_is_computed(self):
+        analyses: Any = self.project.analyses
+        analyses.VariableRecoveryFast(self.main)
+        self.presenter.display_function(self.main)
+        self.presenter.infodock.induction_variable_analysis = FakeInductionVariables()
+        doc, _ = self.presenter.graph_doc(FunctionGraph(self.main))
+        labels = [
+            op.variable_label
+            for b in doc.blocks.values()
+            for n in b.nodes
+            if isinstance(n, InsnNode)
+            for op in n.operands
+            if op.variable is not None and op.variable_label
+        ]
+        assert labels, "no memory operand of main has a variable"
+        assert all("i*4+10" in label for label in labels), labels
+        assert not any("r.expr" in label for label in labels), labels
 
 
 if __name__ == "__main__":

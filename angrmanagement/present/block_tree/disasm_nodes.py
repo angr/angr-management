@@ -345,9 +345,8 @@ class OperandNode:
                             and r.expr.__class__.__name__ == "Add"
                             and r.expr.operands[0].__class__.__name__ == "InductionExpr"
                         ):
-                            custom_value_str = (
-                                f"i*{r.expr.operands[0].stride}+{{r.expr.operands[0].init + r.expr.operands[1].value}}"
-                            )
+                            induction, const = r.expr.operands[0], r.expr.operands[1]
+                            custom_value_str = f"i*{induction.stride}+{induction.init + const.value}"
 
                     formatting["custom_values_str"][ident] = custom_value_str
 
