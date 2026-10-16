@@ -317,7 +317,7 @@ async def wait_for_screen(pilot: Pilot, kind: type[Any], title: str, timeout: fl
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         await pilot.pause(0.05)
-        screen = pilot.app.screen
+        screen: Any = pilot.app.screen
         if isinstance(screen, kind) and screen.title_text == title:
             return screen
         if isinstance(screen, MessageScreen):
