@@ -10,7 +10,9 @@ from unittest.mock import MagicMock
 from common import create_qapp  # pylint: disable=import-error
 from PySide6.QtWidgets import QApplication, QListWidget, QSplitter
 
-from angrmanagement.ui.dialogs.preferences import Preferences
+from angrmanagement.config import Conf
+from angrmanagement.config.font import FontStyle, FontWeight
+from angrmanagement.ui.dialogs.preferences import Preferences, ThemeAndColors
 
 
 class TestPreferences(unittest.TestCase):
@@ -43,6 +45,28 @@ class TestPreferences(unittest.TestCase):
         QApplication.processEvents()
 
         assert splitter.sizes()[0] >= minimum_width
+
+
+class TestThemeAndColors(unittest.TestCase):
+    """The theme page saves colours, and leaves the font styles and weights no colour scheme sets alone."""
+
+    _NAMES = ("pseudocode_comment_style", "pseudocode_comment_weight")
+
+    def setUp(self) -> None:
+        create_qapp()
+        self._saved = {name: Conf.entry(name).value for name in self._NAMES + ("theme_name", "base_theme_name")}
+
+    def tearDown(self) -> None:
+        for name, value in self._saved.items():
+            setattr(Conf, name, value)
+
+    def test_saving_keeps_font_styles_and_weights(self) -> None:
+        Conf.pseudocode_comment_style = FontStyle.OBLIQUE
+        Conf.pseudocode_comment_weight = FontWeight(900)
+        page = ThemeAndColors()
+        page.save_config()
+        assert Conf.entry("pseudocode_comment_style").value is FontStyle.OBLIQUE
+        assert Conf.entry("pseudocode_comment_weight").value == 900
 
 
 if __name__ == "__main__":

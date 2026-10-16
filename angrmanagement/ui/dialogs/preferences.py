@@ -37,6 +37,7 @@ from angrmanagement.config import Conf, save_config
 from angrmanagement.config.color import Color
 from angrmanagement.config.color_schemes import BASE_SCHEME, COLOR_SCHEMES
 from angrmanagement.config.config_manager import ENTRIES
+from angrmanagement.config.font import FontWeight
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.url_scheme import AngrUrlScheme
 from angrmanagement.mcp import MCPServerManager
@@ -179,8 +180,9 @@ class ThemeAndColors(Page):
                 prop = ColorPropertyItem(ce.name, getattr(Conf, ce.name))
                 root.addChild(prop)
                 self._colors_to_save[ce.name] = (ce, prop)
-            elif issubclass(ce.type_, enum.Enum):
-                self._conf_to_save[ce.name] = ce.value
+            elif ce.type_ is FontWeight or issubclass(ce.type_, enum.Enum):
+                # start from the current value, so saving keeps it unless a colour scheme sets this entry
+                self._conf_to_save[ce.name] = Conf.entry(ce.name).value
 
         self._model = PropertyModel(root)
         self._tree = QPropertyEditor()
