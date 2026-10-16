@@ -15,7 +15,7 @@ from .qt_table import QtTableModelAdapter
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from angrmanagement.data.annotations import Comment, CommentKind
+    from angrmanagement.data.annotations import Comment
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
 
@@ -45,10 +45,6 @@ class QCommentTableModel(QtTableModelAdapter):
     def comments(self, v: Sequence[Comment]) -> None:
         self.table_model.comments = v
 
-    @property
-    def _raw_comments(self) -> list[Comment]:
-        return self.table_model.all_rows
-
     def filter(self, keyword: str) -> None:
         self.table_model.filter(keyword)
 
@@ -62,12 +58,16 @@ class QCommentTableView(QFastTableView):
     """
 
     def __init__(
-        self, parent: QCommentTable, workspace: Workspace, instance: Instance, presenter: CommentsPresenter
+        self,
+        parent: QCommentTable,
+        workspace: Workspace,
+        instance: Instance,
+        presenter: CommentsPresenter | None = None,
     ) -> None:
         super().__init__(parent)
         self.workspace = workspace
         self.instance = instance
-        self.presenter = presenter
+        self.presenter = presenter if presenter is not None else CommentsPresenter(workspace, instance)
         self._comment_table: QCommentTable = parent
 
         header = self.header()
@@ -78,7 +78,7 @@ class QCommentTableView(QFastTableView):
         header.setStretchLastSection(True)
         self.set_row_height(24)
 
-        self._model = QCommentTableModel(presenter.model)
+        self._model = QCommentTableModel(self.presenter.model)
         self.setModel(self._model)
 
         for idx, width in enumerate([110, 150, 90]):
@@ -130,12 +130,6 @@ class QCommentTableView(QFastTableView):
         from angrmanagement.ui.dialogs.set_comment import SetComment  # pylint:disable=import-outside-toplevel
 
         SetComment(self.workspace, comment.addr, parent=self).exec_()
-
-    def _copy_text(self, comment: Comment) -> None:
-        self.presenter.copy_text(comment)
-
-    def _set_kind(self, comment: Comment, kind: CommentKind) -> None:
-        self.presenter.set_kind(comment, kind)
 
     def _delete(self, comments: list[Comment]) -> None:
         self.presenter.delete(comments)

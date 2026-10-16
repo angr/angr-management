@@ -15,14 +15,33 @@ __all__ = ["QXRefAddressModel", "QXRefModel", "QXRefVariableModel", "QXRefViewer
 
 
 class QXRefModel(QtTableModelAdapter):
-    """Qt model over a :class:`~angrmanagement.present.xrefs.XRefsModel`."""
+    """
+    Qt model over a :class:`~angrmanagement.present.xrefs.XRefsModel`.
+
+    It also takes the arguments it took before there was a neutral model, ``QXRefModel(addr, instance, view)``: it then
+    shows the view's ``xrefs_model``, or a new model of the references to ``addr``.
+    """
 
     HEADER: list[tuple[str, int]] = []
 
     table_model: XRefsModel
 
-    def __init__(self, xrefs_model: XRefsModel) -> None:
+    def __init__(
+        self, xrefs_model: XRefsModel | int | None = None, instance: Instance | None = None, view=None
+    ) -> None:
+        if not isinstance(xrefs_model, XRefsModel):
+            addr = xrefs_model
+            model = getattr(view, "xrefs_model", None)
+            if not isinstance(model, XRefsModel):
+                kb = instance.kb if instance is not None else None
+                model = XRefsModel(
+                    instance, addr=addr, xrefs_manager=kb.xrefs if kb is not None else None, dst_addr=addr
+                )
+            xrefs_model = model
         super().__init__(xrefs_model)
+        self.addr = xrefs_model.addr
+        self.instance = instance if instance is not None else xrefs_model.instance
+        self.view = view
 
     @property
     def xrefs(self) -> list:
@@ -95,7 +114,7 @@ class QXRefViewer(QTableView):
         )
         self.mode = self.xrefs_model.mode
         model_class = QXRefVariableModel if self.mode == XRefMode.Variable else QXRefAddressModel
-        self._model = model_class(self.xrefs_model)
+        self._model = model_class(self.xrefs_model, instance, self)
         self.setModel(self._model)
 
         # set initial column widths
