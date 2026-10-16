@@ -264,6 +264,19 @@ class TestFrontendAdapter(unittest.TestCase):
         self.conf.palette_window = Color(7, 8, 9)
         assert calls == ["called"]
 
+    def test_listeners_that_take_no_value_are_called_without_one_on_init(self):
+        self.conf.set_frontend_adapter(self.adapter)
+        calls = []
+
+        def listener():
+            calls.append("called")
+
+        self.conf.connect("palette_window", listener, True)
+        assert calls == ["called"]
+        self.conf.palette_window = Color(4, 5, 6)
+        assert calls == ["called", "called"]
+        self.conf.disconnect("palette_window", listener)
+
     def test_font_metrics_and_defaults_come_from_the_adapter(self):
         self.conf.set_frontend_adapter(self.adapter)
         self.conf.code_font = FontSpec("Mono", 10)

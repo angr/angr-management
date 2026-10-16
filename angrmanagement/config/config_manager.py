@@ -466,8 +466,12 @@ class _FrontendListener:
         self._takes_value = _max_positional_args(func) != 0
 
     def __call__(self, value) -> None:
+        self.deliver(self._manager.frontend_value(self._key, value))
+
+    def deliver(self, frontend_value) -> None:
+        """Call the listener with ``frontend_value``, already converted for the frontend, or with nothing."""
         if self._takes_value:
-            self.func(self._manager.frontend_value(self._key, value))
+            self.func(frontend_value)
         else:
             self.func()
 
@@ -655,16 +659,17 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
 
         raise AttributeError(key)
 
-    def connect(self, key: str, func: Callable[[Any], None], init: bool) -> None:
+    def connect(self, key: str, func: Callable[..., None], init: bool) -> None:
         """
-        Connect func to the signal emitted when the key changes; func receives the value as the frontend sees it.
-        If init, calls func on the value associated with key after connecting
+        Connect func to the signal emitted when the key changes; func receives the value as the frontend sees it,
+        or nothing if it takes no arguments. If init, calls func the same way on the current value after connecting.
         """
-        self._entries[key].changed.connect(_FrontendListener(self, key, func))
+        listener = _FrontendListener(self, key, func)
+        self._entries[key].changed.connect(listener)
         if init:
-            func(getattr(self, key))
+            listener.deliver(getattr(self, key))
 
-    def disconnect(self, key: str, func: Callable[[Any], None]) -> None:
+    def disconnect(self, key: str, func: Callable[..., None]) -> None:
         """
         Disconnect func from the signal emitted when the key changes
         """
