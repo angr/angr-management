@@ -6,17 +6,33 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QFrame, QMenu
 
-from angrmanagement.data.object_container import ObjectContainer
+from angrmanagement.present.base import (
+    FunctionPresenter,
+    InstancePresenter,
+    Presenter,
+    Synchronized,
+    SynchronizedViewState,
+    ViewState,
+)
 from angrmanagement.ui.icons import icon
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     import angr
     import PySide6.QtGui
 
-    from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
+    from angrmanagement.data.object_container import ObjectContainer
     from angrmanagement.ui.workspace import Instance, Workspace
+
+__all__ = [
+    "BaseView",
+    "FunctionView",
+    "InstanceView",
+    "SynchronizedFunctionView",
+    "SynchronizedInstanceView",
+    "SynchronizedView",
+    "SynchronizedViewState",
+    "ViewState",
+]
 
 
 class BaseView(QFrame):
@@ -24,24 +40,46 @@ class BaseView(QFrame):
     Base class for all main views.
     """
 
+    presenter: Presenter
+
     def __init__(
         self,
         category: str,
         workspace: Workspace,
         default_docking_position: str,
+        presenter: Presenter | None = None,
     ) -> None:
         super().__init__()
 
         self.workspace = workspace
         self.category = category
         self.default_docking_position = default_docking_position
+        self.presenter = (
+            presenter if presenter is not None else Presenter(workspace, category, default_docking_position)
+        )
+        self.presenter.view = self
 
         self.old_height = None
         self.width_hint = -1
         self.height_hint = -1
-        self.index: int = 1
-        self.base_caption: str = "View"
         self.icon = icon(category + "-view")
+
+    @property
+    def index(self) -> int:
+        """The number of this view among the views of its category, from 1."""
+        return self.presenter.index
+
+    @index.setter
+    def index(self, value: int) -> None:
+        self.presenter.index = value
+
+    @property
+    def base_caption(self) -> str:
+        return self.presenter.base_caption
+
+    @base_caption.setter
+    def base_caption(self, value: str) -> None:
+        self.presenter.base_caption = value
 
     def focus(self) -> None:
         self.workspace.view_manager.raise_view(self)
@@ -72,21 +110,7 @@ class BaseView(QFrame):
 
     @property
     def caption(self) -> str:
-        s = self.base_caption
-        if self.index > 1:
-            s += f"-{self.index}"
-        return s
-
-
-class ViewState:
-    """
-    A basic view state to be published through ViewStatePublisherMixin.
-    """
-
-    cursors: list[int]
-
-    def __init__(self, cursors: list[int] | None = None) -> None:
-        self.cursors = cursors or []
+        return self.presenter.caption
 
 
 class InstanceView(BaseView):
@@ -97,10 +121,19 @@ class InstanceView(BaseView):
     instance: Instance
     published_view_state: ViewState
 
-    def __init__(self, category: str, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        BaseView.__init__(self, category, workspace, default_docking_position)
+    def __init__(
+        self,
+        category: str,
+        workspace: Workspace,
+        default_docking_position: str,
+        instance: Instance,
+        presenter: InstancePresenter | None = None,
+    ) -> None:
+        if presenter is None:
+            presenter = InstancePresenter(workspace, category, instance, default_docking_position)
+        BaseView.__init__(self, category, workspace, default_docking_position, presenter)
         self.instance = instance
-        self.published_view_state = ViewState()
+        self.published_view_state = presenter.published_view_state
 
     def on_focused(self) -> None:
         self.notify_view_state_updated()
@@ -119,9 +152,18 @@ class FunctionView(InstanceView):
     # TODO: function would ideally be provided in the constructor
     _function: ObjectContainer
 
-    def __init__(self, category: str, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        InstanceView.__init__(self, category, workspace, default_docking_position, instance)
-        self._function = ObjectContainer(None, "Current function")
+    def __init__(
+        self,
+        category: str,
+        workspace: Workspace,
+        default_docking_position: str,
+        instance: Instance,
+        presenter: FunctionPresenter | None = None,
+    ) -> None:
+        if presenter is None:
+            presenter = FunctionPresenter(workspace, category, instance, default_docking_position)
+        InstanceView.__init__(self, category, workspace, default_docking_position, instance, presenter)
+        self._function = presenter.function
 
     @property
     def function(self) -> angr.knowledge_plugins.Function | None:
@@ -133,116 +175,15 @@ class FunctionView(InstanceView):
         self._function.am_event()
 
 
-class SynchronizedViewState:
-    """
-    Simple state tracking for synchronized views.
-    """
-
-    views: set[SynchronizedView]
-    cursor_address: int | None
-    highlight_regions: dict[SynchronizedView, Sequence[SynchronizedHighlightRegion]]
-
-    def __init__(self) -> None:
-        self.views = set()
-        self.cursor_address = None
-        self.highlight_regions = {}
-
-    def register_view(self, view: SynchronizedView) -> None:
-        """
-        Register a synchronized view.
-        """
-        self.views.add(view)
-        for v in self.views:
-            v.on_synchronized_view_group_changed()
-
-    def unregister_view(self, view: SynchronizedView) -> None:
-        """
-        Unregister a synchronized view.
-        """
-        rgns = self.highlight_regions.pop(view, None)
-        if rgns is not None:
-            for v in self.views:
-                v.on_synchronized_highlight_regions_changed()
-        self.views.remove(view)
-        for v in self.views:
-            v.on_synchronized_view_group_changed()
-
-
-class SynchronizedView(BaseView):
+class SynchronizedView(Synchronized, BaseView):
     """
     Base class for views which can be synchronized.
+
+    The synchronization itself is :class:`angrmanagement.present.base.Synchronized`.
     """
 
-    _processing_synchronized_cursor_update: bool
-    sync_state: SynchronizedViewState
-
     def __init__(self) -> None:  # pylint: disable=super-init-not-called
-        self._processing_synchronized_cursor_update = False
-        self.sync_state = SynchronizedViewState()
-        self.sync_state.register_view(self)
-
-    def desync(self) -> None:
-        """
-        Stop synchronization with any previously synchronized views.
-        """
-        self.sync_with_state_object()
-
-    def sync_with_state_object(self, state: SynchronizedViewState | None = None) -> None:
-        """
-        Synchronize with another view state.
-        """
-        self.sync_state.unregister_view(self)
-        self.sync_state = state or SynchronizedViewState()
-        self.sync_state.register_view(self)
-        self.sync_from_state()
-
-    def sync_from_state(self) -> None:
-        """
-        Update this view to reflect the synchronized view state.
-        """
-        self.on_synchronized_cursor_address_changed()
-        self.on_synchronized_highlight_regions_changed()
-
-    def set_synchronized_cursor_address(self, address: int | None) -> None:
-        """
-        Set synchronized cursor address.
-        """
-        if not self._processing_synchronized_cursor_update:
-            self.sync_state.cursor_address = address
-            for view in self.sync_state.views:
-                if view is not self:
-                    view.on_synchronized_cursor_address_changed()
-
-    def on_synchronized_cursor_address_changed(self) -> None:
-        """
-        Handle synchronized cursor address change event.
-        """
-        assert not self._processing_synchronized_cursor_update
-        self._processing_synchronized_cursor_update = True
-        try:
-            if self.sync_state.cursor_address is not None:
-                self.jump_to(self.sync_state.cursor_address)
-        finally:
-            self._processing_synchronized_cursor_update = False
-
-    def set_synchronized_highlight_regions(self, regions: Sequence[SynchronizedHighlightRegion]) -> None:
-        """
-        Set synchronized highlight regions for this view.
-        """
-        self.sync_state.highlight_regions[self] = regions
-        for view in self.sync_state.views:
-            if view is not self:
-                view.on_synchronized_highlight_regions_changed()
-
-    def on_synchronized_highlight_regions_changed(self) -> None:
-        """
-        Handle synchronized highlight region change event.
-        """
-
-    def on_synchronized_view_group_changed(self) -> None:
-        """
-        Handle view being added to or removed from the view synchronization group.
-        """
+        Synchronized.__init__(self)
 
     def closeEvent(self, event: PySide6.QtGui.QCloseEvent) -> None:
         """
