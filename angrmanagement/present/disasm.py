@@ -1992,11 +1992,28 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
     # Context menus
     #
 
+    def instruction_at(self, addr: int) -> Any:
+        """
+        The angr Instruction at ``addr`` in the graph or listing shown, or None. The plugins' instruction menu
+        entries are built from it.
+        """
+        node_of = getattr(self._current_view, "insn_node", None)
+        node = node_of(addr) if node_of is not None else None
+        if node is not None:
+            return node.insn
+        raw_result_map = getattr(self.disasm, "raw_result_map", None)
+        return raw_result_map["instructions"].get(addr) if raw_result_map is not None else None
+
     def insn_context_menu(self, insn_addr: int, insn: Any = None) -> Menu:
-        """The instruction's context menu: the instruction menu, plugin entries and "Synchronize with"."""
+        """
+        The instruction's context menu: the instruction menu, plugin entries and "Synchronize with". The plugins
+        get ``insn``, the angr Instruction; when it is not given, the one at ``insn_addr`` in the view.
+        """
         menu = DisasmInsnContextMenu(self)
         menu.insn_addr = insn_addr
         self.update_resume_cfg_entries(menu, insn_addr)
+        if insn is None:
+            insn = self.instruction_at(insn_addr)
         plugins = getattr(self.workspace, "plugins", None)
         extra = list(plugins.build_context_menu_insn(insn)) if plugins is not None and insn is not None else []
         return self._with_view_entries(menu, extra)
@@ -2063,9 +2080,9 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
 
     def context_menu(self, *args, **kwargs) -> Menu | None:  # pylint:disable=unused-argument
         """The menu for the selection: the instruction's, the label's, or the selected node's."""
-        insn = self._instruction_address_in_selection()
-        if insn is not None and insn in self.infodock.selected_insns:
-            return self.insn_context_menu(insn)
+        insn_addr = self._instruction_address_in_selection()
+        if insn_addr is not None and insn_addr in self.infodock.selected_insns:
+            return self.insn_context_menu(insn_addr)
         if len(self.infodock.selected_labels) == 1:
             return self.label_context_menu(next(iter(self.infodock.selected_labels)))
         menu = self.get_context_menu_for_selected_object()

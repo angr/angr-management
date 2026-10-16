@@ -230,21 +230,22 @@ class GraphControl:
         self.reset_pending = True
         self.focus_center = False
 
+    def insn_node(self, insn_addr: int) -> InsnNode | None:
+        """The node of the instruction at ``insn_addr`` in the graph, or None."""
+        key = self._insaddr_to_block.get(insn_addr)
+        if key is None or self.doc is None:
+            return None
+        return next((n for n in self.doc.blocks[key].nodes if isinstance(n, InsnNode) and n.addr == insn_addr), None)
+
     def get_selected_operand_info(self):
         """``(block key, insn addr, operand node)`` of the first selected operand, or None."""
         if not self.infodock.selected_operands or self.doc is None:
             return None
         ins_addr, operand_idx = next(iter(self.infodock.selected_operands))
-        key = self._insaddr_to_block.get(ins_addr)
-        if key is None:
-            return None
-        insn = next(
-            (n for n in self.doc.blocks[key].nodes if isinstance(n, InsnNode) and n.addr == ins_addr),
-            None,
-        )
+        insn = self.insn_node(ins_addr)
         if insn is None:
             return None
-        return key, ins_addr, insn.get_operand(operand_idx)
+        return self._insaddr_to_block[ins_addr], ins_addr, insn.get_operand(operand_idx)
 
     def update_label(self, addr: int, is_renaming: bool = False) -> None:  # pylint:disable=unused-argument
         """A label was renamed: make the blocks again (QDisassemblyGraph reloads the block), keeping the viewport."""
@@ -478,15 +479,19 @@ class LinearControl:
         items.sort(key=lambda item: item[0])
         return items
 
+    def insn_node(self, insn_addr: int) -> InsnNode | None:
+        """The node of the instruction at ``insn_addr`` in the blocks the listing has made, or None."""
+        block = self._insaddr_to_block.get(insn_addr)
+        if block is None:
+            return None
+        return next((n for n in block.nodes if isinstance(n, InsnNode) and n.addr == insn_addr), None)
+
     def get_selected_operand_info(self):
         if not self.presenter.infodock.selected_operands:
             return None
         ins_addr, operand_idx = next(iter(self.presenter.infodock.selected_operands))
-        block = self._insaddr_to_block.get(ins_addr)
-        if block is None:
-            return None
-        insn = next((n for n in block.nodes if isinstance(n, InsnNode) and n.addr == ins_addr), None)
-        return None if insn is None else (block, ins_addr, insn.get_operand(operand_idx))
+        insn = self.insn_node(ins_addr)
+        return None if insn is None else (self._insaddr_to_block[ins_addr], ins_addr, insn.get_operand(operand_idx))
 
     def instruction_widget_rect(self, insn_addr: int):  # pylint:disable=unused-argument,no-self-use
         return None

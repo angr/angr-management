@@ -359,6 +359,9 @@ class NeutralPlugin(BasePlugin):
     def block_style(self, addr):
         return Color(0x12, 0x34, 0x56) if addr == 0x40071D else None
 
+    def build_context_menu_insn(self, item):
+        return [("Plugin entry", lambda: None)] if item is not None and item.addr == 0x400721 else []
+
     def status_bar_text(self):
         return "neutral: on"
 
@@ -380,6 +383,38 @@ class TestPlugins(unittest.TestCase):
                 assert "bg:#123456" in view.graph_widget.canvas.styles[y + 1][x + 1]
                 app.status_bar.refresh_plugin_texts()
                 assert app.status_bar.plugin_text == "neutral: on"
+            finally:
+                plugins.active_plugins.pop("neutral", None)
+
+        run_app(scenario)
+
+    def test_plugin_insn_entries_in_both_context_menus(self):
+        async def scenario(app: AmApp, pilot: Pilot, view: Any) -> None:
+            plugins = app.workspace.plugins
+            plugins.active_plugins["neutral"] = NeutralPlugin(app.workspace)  # type: ignore[arg-type]
+            try:
+                view.presenter.reload()
+                await settle(pilot)
+                # a right click on the instruction
+                await pilot.click(view.graph_widget, offset=screen_offset(view, 0x400721), button=3)
+                await settle(pilot)
+                assert isinstance(app.screen, MenuPopup)
+                assert "Plugin entry" in menu_texts(app.screen.menu)
+                await pilot.press("escape")
+                await settle(pilot)
+                # the keyboard menu of the selected instruction (Shift+F10) asks the plugins for the same entries
+                view.graph_widget.focus()
+                await pilot.press("shift+f10")
+                await settle(pilot)
+                assert isinstance(app.screen, MenuPopup)
+                assert "Plugin entry" in menu_texts(app.screen.menu)
+                await pilot.press("escape")
+                await settle(pilot)
+                # and so does the linear listing's
+                view.display_linear_viewer()
+                await settle(pilot)
+                menu = view.presenter.context_menu()
+                assert menu is not None and "Plugin entry" in menu_texts(menu)
             finally:
                 plugins.active_plugins.pop("neutral", None)
 

@@ -943,17 +943,8 @@ class DisassemblyTuiView(TuiView):
                 presenter.jump_to(target, src_ins_addr=addr)
 
     def _insn_node(self, addr: int) -> InsnNode | None:
-        doc = self.flow_graph.doc
-        if self.presenter.is_linear:
-            for node, _line in self.linear_viewer.lines():
-                if isinstance(node, InsnNode) and node.addr == addr:
-                    return node
-            return None
-        if doc is None or addr not in doc.insn_block:
-            return None
-        return next(
-            (n for n in doc.blocks[doc.insn_block[addr]].nodes if isinstance(n, InsnNode) and n.addr == addr), None
-        )
+        control = self.linear_viewer if self.presenter.is_linear else self.flow_graph
+        return control.insn_node(addr)
 
     def step_selection(self, delta: int) -> None:
         """Select the next (or previous) instruction of the function shown, or the first one."""
