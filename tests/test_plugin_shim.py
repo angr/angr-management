@@ -18,6 +18,7 @@ from PySide6.QtGui import QColor
 from angrmanagement.config.color import Color
 from angrmanagement.plugins import BasePlugin
 from angrmanagement.present.marks import Mark
+from angrmanagement.present.menus import walk_entries
 from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.ui.widgets.qinst_annotation import QHookAnnotation, QMarkAnnotation
 
@@ -44,6 +45,9 @@ class LegacyPlugin(BasePlugin):
         if self.insn_addr in qblock.addr_to_insns:
             return [QHookAnnotation(self.insn_addr)]
         return []
+
+    def build_context_menu_insn(self, item):
+        return [("Legacy entry", lambda: None)] if item is not None and item.addr == self.insn_addr else []
 
 
 class NeutralPlugin(BasePlugin):
@@ -122,6 +126,10 @@ class TestShimInQt(AngrManagementTestCase):
         assert sorted(a.text() for a in marks if isinstance(a, QMarkAnnotation)) == ["blk", "hit"]
         # a Qt plugin's own annotation items reach the block (they used to be dropped for a stray object)
         assert [a.text() for a in block.qblock_annotations.get(self.insns[1])] == ["hook"]
+        # the menu of the selected instruction (what a keyboard menu opens) has the plugin's instruction entries
+        view.infodock.select_instruction(self.insns[1], unique=True, use_animation=False)
+        menu = view.presenter.context_menu()
+        assert menu is not None and "Legacy entry" in [e.text for _p, e in walk_entries(menu)]
         view.close()
         # no Qt parent: delete it through Qt, not whenever the cyclic collector runs, on whatever thread
         view.deleteLater()
