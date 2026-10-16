@@ -261,11 +261,14 @@ class AmApp(App):
 
     def shutdown(self) -> None:
         """Stop the MCP server and the job worker, and give back the globals the app installed."""
+        # a job waiting for an answer from a screen gets the screen's cancel answer, so the worker can return
+        self.executor.close()
         if self.mcp_server_manager is not None:
             with contextlib.suppress(Exception):
                 self.mcp_server_manager.stop(timeout=2)
             self.mcp_server_manager = None
         with contextlib.suppress(Exception):
+            self.workspace.job_manager.interrupt_current_job()
             self.workspace.job_manager.quit()
         executor, services, main_window, adapter = self._saved_globals
         if GlobalInfo._executor is self.executor:  # pylint:disable=protected-access

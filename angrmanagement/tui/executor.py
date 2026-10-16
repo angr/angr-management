@@ -5,6 +5,11 @@ Running code on the Textual UI thread.
 the Textual app's event loop; callables scheduled from other threads are posted to that loop with
 ``call_soon_threadsafe``. A callable that returns a :class:`Deferred` (a UI service waiting for the user, say) completes
 when the deferred future does, so a worker thread can wait for an answer without the loop blocking.
+
+When the frontend goes away, :meth:`TextualExecutor.close` answers every call a worker thread is still waiting on
+(with the deferred's ``default``, or None for a call that never ran, as the Qt executor answers a call it could not
+deliver), and later calls from worker threads return None at once, so a job asking the user cannot keep the app from
+exiting.
 """
 
 from __future__ import annotations
@@ -34,7 +39,7 @@ class Deferred:
 class _Call:
     """A callable waiting to run on the UI loop, and its outcome."""
 
-    __slots__ = ("args", "blocking", "done", "exception", "func", "kwargs", "result")
+    __slots__ = ("args", "blocking", "deferred", "done", "exception", "func", "kwargs", "result")
 
     def __init__(self, func: Callable[..., Any], args, kwargs, blocking: bool) -> None:
         self.func = func
@@ -44,12 +49,18 @@ class _Call:
         self.done = threading.Event()
         self.result: Any = None
         self.exception: BaseException | None = None
+        #: what the callable returned when that is an answer still to come
+        self.deferred: Deferred | None = None
 
     def succeed(self, result: Any) -> None:
+        if self.done.is_set():
+            return
         self.result = result
         self.done.set()
 
     def fail(self, exception: BaseException) -> None:
+        if self.done.is_set():
+            return
         self.exception = exception
         if not self.blocking:
             _l.error("Exception occurred in an async job:", exc_info=exception)
@@ -70,6 +81,9 @@ class TextualExecutor:
         # the context of the UI loop (Textual keeps the active app in a context variable)
         self._context: contextvars.Context | None = None
         self._pending: list[_Call] = []
+        # blocking calls whose worker thread is waiting for the outcome
+        self._waiting: set[_Call] = set()
+        self._closed = False
         self._lock = threading.Lock()
         #: whether the callable running now was scheduled by a thread that waits for its result
         self.serving_blocking_call = False
@@ -79,6 +93,7 @@ class TextualExecutor:
         self._owner = threading.get_ident()
         loop = loop if loop is not None else asyncio.get_running_loop()
         with self._lock:
+            self._closed = False
             self._loop = loop
             self._context = contextvars.copy_context()
             pending, self._pending = self._pending, []
@@ -90,9 +105,28 @@ class TextualExecutor:
         with self._lock:
             self._loop = None
 
+    def close(self) -> None:
+        """
+        The frontend is shutting down: answer every call a worker thread waits on, and answer later ones at once.
+
+        A call waiting for the user gets its deferred's ``default``; a call that has not run gets None.
+        """
+        with self._lock:
+            self._closed = True
+            self._loop = None
+            waiting, self._waiting = list(self._waiting), set()
+            self._pending = []
+        for call in waiting:
+            call.succeed(call.deferred.default if call.deferred is not None else None)
+
     @property
     def attached(self) -> bool:
         return self._loop is not None
+
+    @property
+    def closed(self) -> bool:
+        """Whether :meth:`close` was called and no loop was attached since."""
+        return self._closed
 
     def is_ui_thread(self) -> bool:
         return threading.get_ident() == self._owner
@@ -108,10 +142,19 @@ class TextualExecutor:
             result = func(*(args or ()), **(kwargs or {}))
             return result.default if isinstance(result, Deferred) else result
         call = _Call(func, args, kwargs, True)
-        self._submit(call)
-        # like the Qt executor, a call that times out stays queued and still runs later
-        if not call.done.wait(timeout=timeout):
-            return None
+        with self._lock:
+            if self._closed:
+                # like the Qt executor once the application is exiting
+                return None
+            self._waiting.add(call)
+        try:
+            self._submit(call)
+            # like the Qt executor, a call that times out stays queued and still runs later
+            if not call.done.wait(timeout=timeout):
+                return None
+        finally:
+            with self._lock:
+                self._waiting.discard(call)
         if call.exception is not None:
             raise call.exception
         return call.result
@@ -121,6 +164,9 @@ class TextualExecutor:
     ) -> None:
         if self.is_ui_thread():
             func(*(args or ()), **(kwargs or {}))
+            return
+        if self._closed:
+            _l.debug("The frontend has shut down; dropping %r", func)
             return
         self._submit(_Call(func, args, kwargs, False))
 
@@ -153,6 +199,7 @@ class TextualExecutor:
         finally:
             self.serving_blocking_call = False
         if isinstance(result, Deferred):
+            call.deferred = result
 
             def on_done(future: asyncio.Future) -> None:
                 if future.cancelled():

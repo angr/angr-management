@@ -17,6 +17,7 @@ import threading
 import unittest
 from typing import TYPE_CHECKING, Any
 
+import pytest
 from textual.command import CommandPalette
 
 from angrmanagement.config import Conf
@@ -25,7 +26,7 @@ from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.view_manager import default_position
 from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps, caps_from_environment
-from angrmanagement.tui.executor import TextualExecutor
+from angrmanagement.tui.executor import Deferred, TextualExecutor
 from angrmanagement.tui.screens import ChecklistScreen, MessageScreen, QuestionScreen
 from angrmanagement.tui.screenshot import shoot, show_view
 from angrmanagement.tui.views import TUI_VIEW_CLASSES
@@ -303,15 +304,18 @@ class TestViewKeys(TuiTestCase):
         run_app(scenario, binary=None)
 
 
+async def wait_for_checklist(pilot: Pilot, title: str) -> ChecklistScreen:
+    for _ in range(300):
+        await pilot.pause(0.05)
+        screen = pilot.app.screen
+        if isinstance(screen, ChecklistScreen) and screen.title_text == title:
+            return screen
+    raise AssertionError(f"no {title!r} screen")
+
+
 class TestInteractiveLoad(TuiTestCase):
     def test_load_asks_for_options_then_analyses(self) -> None:
-        async def wait_for(pilot: Pilot, title: str) -> ChecklistScreen:
-            for _ in range(300):
-                await pilot.pause(0.05)
-                screen = pilot.app.screen
-                if isinstance(screen, ChecklistScreen) and screen.title_text == title:
-                    return screen
-            raise AssertionError(f"no {title!r} screen")
+        wait_for = wait_for_checklist
 
         async def scenario(app: AmApp, pilot: Pilot) -> None:
             app.services.interactive = True
@@ -331,6 +335,61 @@ class TestInteractiveLoad(TuiTestCase):
             assert app.workspace.main_instance.project.loader.main_object.binary.endswith("fauxware")
 
         run_app(scenario, binary=None)
+
+    def test_cancelling_the_options_stops_the_load(self) -> None:
+        # as cancelling the Qt load dialog does: no project, and no analyses offered
+        for how in ("escape", "#cancel"):
+            with self.subTest(how=how):
+
+                async def scenario(app: AmApp, pilot: Pilot, how: str = how) -> None:
+                    app.services.interactive = True
+                    app.interactive = True
+                    app.load_file(FAUXWARE)
+                    await wait_for_checklist(pilot, "Load a binary")
+                    if how == "escape":
+                        await pilot.press("escape")
+                    else:
+                        await pilot.click(how)
+                    await app.wait_for_jobs()
+                    await settle(pilot)
+                    assert app.workspace.main_instance.project.am_none
+                    assert not isinstance(app.screen, ChecklistScreen)
+
+                run_app(scenario, binary=None)
+
+    def test_cancelling_the_analyses_runs_none(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            app.services.interactive = True
+            app.interactive = True
+            started: list[str] = []
+            app.workspace.job_manager.job_starting.connect(lambda job: started.append(job.name))
+            app.load_file(FAUXWARE)
+            await wait_for_checklist(pilot, "Load a binary")
+            await pilot.click("#ok")
+            await wait_for_checklist(pilot, "Run analysis")
+            await pilot.press("escape")
+            await app.wait_for_jobs()
+            await settle(pilot)
+            assert not app.workspace.main_instance.project.am_none
+            assert len(started) == 1, started
+
+        run_app(scenario, binary=None)
+
+    @pytest.mark.timeout(180)
+    def test_exit_while_the_options_screen_is_up(self) -> None:
+        # the load job waits for the screen in its thread; exiting must answer it, not wait for it
+        worker: list[threading.Thread] = []
+
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            app.services.interactive = True
+            app.interactive = True
+            app.load_file(FAUXWARE)
+            await wait_for_checklist(pilot, "Load a binary")
+            worker.append(app.workspace.job_manager._worker_thread)
+            app.exit()
+
+        run_app(scenario, binary=None)
+        assert worker and not worker[0].is_alive()
 
 
 class TestJobErrors(TuiTestCase):
@@ -389,6 +448,42 @@ class TestServices(TuiTestCase):
             await settle(pilot)
             thread.join(5)
             assert answers == ["Yes"]
+
+        run_app(scenario, binary=None)
+
+    def test_a_question_on_the_ui_thread_says_it_was_not_asked(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            app.services.interactive = True
+            notices: list[str] = []
+            app.notify = lambda message, **kwargs: notices.append(str(message))  # type: ignore[method-assign]
+            assert app.services.question("Q", "Go?", ["Yes", "No"], "No") == "No"
+            assert notices and "could not be shown" in notices[0]
+
+        run_app(scenario, binary=None)
+
+    def test_closing_the_executor_answers_a_waiting_thread(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            executor = app.executor
+            never: asyncio.Future = asyncio.get_running_loop().create_future()
+            answers: list[Any] = []
+            thread = threading.Thread(
+                target=lambda: answers.append(executor.schedule(lambda: Deferred(never, "cancelled"))), daemon=True
+            )
+            thread.start()
+            for _ in range(50):
+                await pilot.pause(0.02)
+                if executor._waiting and next(iter(executor._waiting)).deferred is not None:
+                    break
+            executor.close()
+            thread.join(5)
+            assert answers == ["cancelled"]
+            # later calls from a thread do not wait either
+            late: list[Any] = []
+            thread = threading.Thread(target=lambda: late.append(executor.schedule(lambda: 1)), daemon=True)
+            thread.start()
+            thread.join(5)
+            assert late == [None]
+            executor.attach()
 
         run_app(scenario, binary=None)
 

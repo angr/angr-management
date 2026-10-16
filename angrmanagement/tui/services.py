@@ -3,8 +3,14 @@ UI services of the terminal frontend.
 
 :class:`TuiServices` asks the user through modal screens. A worker thread that asks (the load job, say) waits for the
 answer; the UI thread cannot wait, so the frontend's own code asks through the ``async`` methods (``await
-services.ask_question(...)``) instead, and a synchronous question on the UI thread gets its default answer. With
-``interactive`` off, every question gets its default and loads use the default options, as in a headless process.
+services.ask_question(...)``) or the ``*_async`` UIServices methods instead, and a synchronous question on the UI
+thread gets its default answer and a notice saying so. With ``interactive`` off, every question gets its default and
+loads use the default options, as in a headless process.
+
+A question has two answers that nobody chose: the *default*, given when nobody is asked at all, and the *cancel*
+answer, given when the user cancels the screen or the app shuts down while it is up. They differ for the load and
+analysis options: nobody asked means "use the defaults", a cancel means "do not load" or "do not analyse", as with
+the Qt dialogs.
 """
 
 from __future__ import annotations
@@ -35,6 +41,9 @@ if TYPE_CHECKING:
 _l = logging.getLogger(__name__)
 
 _SEVERITIES = {"info": "information", "warning": "warning", "critical": "error"}
+
+#: ``cancelled`` of :meth:`TuiServices._ask_sync` when a cancel gives the default answer
+_DEFAULT: Any = object()
 
 
 def function_info_rows(function: Function) -> list[tuple[str, str]]:
@@ -79,19 +88,29 @@ class TuiServices:
         executor = GlobalInfo.executor
         return executor if isinstance(executor, TextualExecutor) else None
 
-    def _ask_sync(self, make_screen: Callable[[], Screen], default: Any) -> Any:
+    def _ask_sync(self, make_screen: Callable[[], Screen], default: Any, cancelled: Any = _DEFAULT) -> Any:
         """
         Show a screen and return its answer. From a worker thread the thread waits; on the UI thread a call that a
         waiting worker scheduled is answered when the screen is dismissed; any other call on the UI thread gets
         ``default`` at once.
+
+        :param default:     The answer when nobody can be asked.
+        :param cancelled:   The answer when the user cancels the screen (it dismisses with None) or the app shuts
+                            down while the screen is up; ``default`` unless given.
         """
+        if cancelled is _DEFAULT:
+            cancelled = default
         if not self.interactive or not self._running:
             return default
         executor = self._executor()
         if executor is None:
             return default
+        if executor.closed:
+            return cancelled
         if not executor.is_ui_thread():
-            return executor.schedule(self._ask_sync, (make_screen, default))
+            answer = executor.schedule(self._ask_sync, (make_screen, default, cancelled))
+            # None is what a call gets that the executor could not deliver because the app shut down
+            return cancelled if answer is None else answer
         if executor.serving_blocking_call:
             # only the call the worker scheduled may wait; questions it asks in turn get their default
             executor.serving_blocking_call = False
@@ -100,12 +119,13 @@ class TuiServices:
 
             def done(result: Any) -> None:
                 if not future.done():
-                    future.set_result(default if result is None and default is not None else result)
+                    future.set_result(cancelled if result is None else result)
 
             assert self.app is not None
             self.app.push_screen(make_screen(), callback=done)
-            return Deferred(future, default)
+            return Deferred(future, cancelled)
         _l.warning("A question was asked on the UI thread and cannot wait; answering %r", default)
+        self.toast(f"A question could not be shown here; answered {default!r}.", "warning")
         return default
 
     async def ask(self, screen: Screen, default: Any = None) -> Any:
@@ -253,7 +273,8 @@ class TuiServices:
         def make_screen() -> Screen:
             return ChecklistScreen("Load a binary", text, items, ok="Load")
 
-        result = self._ask_sync(make_screen, [selection.auto_load_libs, selection.load_debug_info])
+        # a cancel is None, and the load job stops, as it does when the Qt load dialog is cancelled
+        result = self._ask_sync(make_screen, [selection.auto_load_libs, selection.load_debug_info], cancelled=None)
         if isinstance(result, Deferred):
             # scheduled from the load job: finish building once the user answered
             outer = result
@@ -304,7 +325,9 @@ class TuiServices:
 
     def analysis_options(self, workspace, configuration: AnalysesConfiguration) -> AnalysesConfiguration | None:  # pylint:disable=unused-argument
         items = [(a.display_name or a.name, a.enabled) for a in configuration]
-        result = self._ask_sync(lambda: analyses_screen(configuration), [enabled for _, enabled in items])
+        result = self._ask_sync(
+            lambda: analyses_screen(configuration), [enabled for _, enabled in items], cancelled=None
+        )
         if result is None:
             return None
         for analysis, enabled in zip(configuration, result, strict=False):
