@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from rich.segment import Segment
 from rich.text import Text
 from textual.containers import Horizontal
-from textual.geometry import Size
+from textual.geometry import Region, Size
 from textual.scroll_view import ScrollView
 from textual.strip import Strip
 from textual.widget import Widget
@@ -297,34 +297,37 @@ class FindBarWidget(Horizontal):
 #
 
 
+def draw_block(canvas: CharCanvas, doc: GraphDoc, key: Any, control: GraphControl, presenter: DisasmPresenter) -> None:
+    """One block on the canvas: its background, its frame (heavier when selected) and its lines."""
+    block = doc.blocks[key]
+    x, y = doc.layout[key]
+    w, h = doc.sizes[key]
+    selected = presenter.infodock.is_block_selected(block.addr)
+    border = BLOCK_SELECTED_BORDER_STYLE if selected else BLOCK_BORDER_STYLE
+    plugins = getattr(presenter.workspace, "plugins", None)
+    color = plugins.block_style(block.addr) if plugins is not None else None
+    background = f"{BACKGROUND_PREFIX}#{color.rgb_hex}" if color is not None else BACKGROUND_PREFIX + BLOCK_STYLE
+    canvas.clear(x, y, w, h)
+    canvas.fill(x, y, w, h, background, " ")
+    canvas.box(x, y, w, h, style=f"{background} {border}")
+    canvas.blit(control.block_lines(block), x + 2, y + 1, base_style=background, width=w - 4)
+    # where edges leave the block, its bottom border joins them
+    for edge in doc.edges:
+        if edge.src_addr == block.addr and len(edge.points) >= 2:
+            sx, _sy = edge.points[0]
+            if x < sx < x + w - 1:
+                canvas.mark(sx, y + h - 1, DOWN, f"{background} {border}")
+
+
 def draw_graph(doc: GraphDoc, control: GraphControl, presenter: DisasmPresenter, margin: int = 2) -> CharCanvas:
-    """The graph on a canvas: block frames and their lines, then the edges in their colours."""
+    """The graph on a canvas: the blocks, then the edges in their colours."""
     width, height = doc.size
     canvas = CharCanvas(width + margin, height + margin, style=CANVAS_STYLE)
-    block_bg = BACKGROUND_PREFIX + BLOCK_STYLE
-    for key, block in doc.blocks.items():
-        x, y = doc.layout[key]
-        w, h = doc.sizes[key]
-        selected = presenter.infodock.is_block_selected(block.addr)
-        border = BLOCK_SELECTED_BORDER_STYLE if selected else BLOCK_BORDER_STYLE
-        plugins = getattr(presenter.workspace, "plugins", None)
-        color = plugins.block_style(block.addr) if plugins is not None else None
-        background = f"{BACKGROUND_PREFIX}#{color.rgb_hex}" if color is not None else block_bg
-        canvas.fill(x, y, w, h, background, " ")
-        canvas.box(x, y, w, h, style=f"{background} {border}")
-        canvas.blit(control.block_lines(block), x + 2, y + 1, base_style=background, width=w - 4)
+    for key in doc.blocks:
+        draw_block(canvas, doc, key, control, presenter)
     for edge in doc.edges:
-        if len(edge.points) < 2:
-            continue
-        style = f"{CANVAS_STYLE} {edge_style(edge.sort)}"
-        src = next((k for k in doc.blocks if k.addr == edge.src_addr), None)
-        if src is not None:
-            sx, _sy = edge.points[0]
-            bx, by = doc.layout[src]
-            bw, bh = doc.sizes[src]
-            if bx < sx < bx + bw - 1:
-                canvas.mark(sx, by + bh - 1, DOWN, f"{block_bg} {BLOCK_BORDER_STYLE}")
-        canvas.polyline(edge.points, style)
+        if len(edge.points) >= 2:
+            canvas.polyline(edge.points, f"{CANVAS_STYLE} {edge_style(edge.sort)}")
     return canvas
 
 
@@ -394,12 +397,30 @@ class GraphWidget(ScrollView, can_focus=True):
     def rebuild(self) -> None:
         """Draw the graph again and apply the scroll position the control asked for."""
         doc = self.control.doc
+        changed = self.control.changed_blocks
+        if changed is not None and doc is not None and self.canvas is not None:
+            self._redraw_blocks(doc, changed)
+            return
         self.canvas = draw_graph(doc, self.control, self.presenter) if doc is not None else None
         self._update_virtual_size()
         if self.is_mounted and self.size.width and self.size.height:
             self.apply_focus()
         self.refresh()
         self.view.header_changed()
+
+    def _redraw_blocks(self, doc: GraphDoc, keys: set[Any]) -> None:
+        """Draw only the blocks in ``keys`` again (a selection changed), and repaint only their cells."""
+        assert self.canvas is not None
+        sx, sy = self.scroll_offset
+        for key in keys:
+            draw_block(self.canvas, doc, key, self.control, self.presenter)
+            x, y = doc.layout[key]
+            w, h = doc.sizes[key]
+            self.refresh(Region(x + self.pad[0] - sx, y + self.pad[1] - sy, w, h))
+        if self.presenter.show_minimap:
+            self.refresh(Region(0, 0, 32, len(self.minimap_rows) + 2))
+        if self.control.focus is not None and self.is_mounted:
+            self.apply_focus()
 
     def _update_virtual_size(self) -> None:
         vw, vh = self.size.width, self.size.height

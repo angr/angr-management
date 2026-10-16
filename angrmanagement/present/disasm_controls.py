@@ -56,6 +56,9 @@ class GraphControl:
         self.visible = True
         #: blocks collapsed to their header line
         self.collapsed: set[Any] = set()
+        #: while on_change runs for a redraw, the blocks whose lines or frame changed; None means everything
+        self.changed_blocks: set[Any] | None = None
+        self._drawn_states: dict[Any, tuple] = {}
         #: how much each block shows: 0 everything, 1 no comments, 2 no addresses either, 3 headers only
         self.detail = 0
 
@@ -101,6 +104,7 @@ class GraphControl:
     def _layout(self) -> None:
         self.doc, self.disasm = None, None
         self._insaddr_to_block = {}
+        self._drawn_states = {}
         if self._function_graph is None:
             return
         result = self.presenter.graph_doc(self._function_graph, self._measure, options=self.display, **self.margins)
@@ -152,23 +156,40 @@ class GraphControl:
         self._changed()
 
     def redraw(self) -> None:
-        """The selection changed: draw again (the text does not move)."""
-        self.restyle()
-        self._changed()
+        """The selection changed: draw again the blocks whose text or frame changed (nothing moves)."""
+        changed = self.restyle()
+        self.changed_blocks = changed
+        if self.on_change is not None:
+            self.on_change()
+        self.changed_blocks = None
 
-    def restyle(self) -> None:
-        """Take every block's lines from its nodes again, for their selection and highlight styles."""
+    def _block_state(self, key: Any, block: BlockDoc) -> tuple:
+        lines = tuple(tuple((span.text, span.style) for span in line.spans) for line in block.lines)
+        return lines, self.infodock.is_block_selected(block.addr), key in self.collapsed
+
+    def restyle(self) -> set[Any]:
+        """
+        Take every block's lines from its nodes again, for their selection and highlight styles; returns the blocks
+        whose lines or frame changed.
+        """
+        changed: set[Any] = set()
         if self.doc is None:
-            return
-        for block in self.doc.blocks.values():
+            return changed
+        display = self.display
+        for key, block in self.doc.blocks.items():
+            before = self._block_state(key, block)
             lines: list[Line] = []
             owners = []
-            display = self.display
             for node in _unique(block.nodes):
                 for line in self.presenter.node_lines(node, display, linear=False):
                     lines.append(line)
                     owners.append(node)
             block.lines, block.nodes = lines, owners
+            after = self._block_state(key, block)
+            if after != before or key not in self._drawn_states or self._drawn_states[key] != after:
+                changed.add(key)
+            self._drawn_states[key] = after
+        return changed
 
     def set_disassembly_level(self, level) -> None:
         self._disassembly_level = level

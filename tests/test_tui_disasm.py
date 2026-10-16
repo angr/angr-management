@@ -126,6 +126,11 @@ class TestGraph(unittest.TestCase):
             assert view.presenter.infodock.selected_insns == {0x40071E}
             text = canvas_text(view)
             assert "0040071e  mov     rbp, rsp" in text
+            # the selected line's cells were drawn again in the selection colour (only the block that changed is)
+            x, y = view.flow_graph.position_of(0x40071E)
+            assert "disasm_view_node_instruction_selected_background_color" in view.graph_widget.canvas.styles[y][x]
+            x2, y2 = view.flow_graph.position_of(0x400721)
+            assert "selected_background" not in view.graph_widget.canvas.styles[y2][x2]
             await pilot.click(view.graph_widget, offset=screen_offset(view, 0x400721), button=3)
             await settle(pilot)
             assert isinstance(app.screen, MenuPopup)

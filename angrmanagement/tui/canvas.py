@@ -106,6 +106,17 @@ class CharCanvas:
                     self.chars[row][col] = char
                 self.styles[row][col] = style
 
+    def clear(self, x: int, y: int, width: int, height: int, style: str | None = None) -> None:
+        """Empty a rectangle: no text, no lines, ``style`` (the canvas's own by default)."""
+        style = self.default_style if style is None else style
+        for row in range(y, y + height):
+            for col in range(x, x + width):
+                if self.inside(col, row):
+                    self.chars[row][col] = " "
+                    self.styles[row][col] = style
+                    self.bits[row][col] = 0
+                    self._text[row][col] = False
+
     def blit(self, lines: Iterable[Line], x: int, y: int, base_style: str = "", width: int | None = None) -> None:
         """
         Write lines of spans from ``(x, y)`` down. Each span's style is laid over ``base_style``; ``width`` pads
