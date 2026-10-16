@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from enum import Enum
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QRect, Qt
 from PySide6.QtWidgets import QMessageBox
+
+from angrmanagement.present.disasm import DisassemblyLevel
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
@@ -12,11 +13,7 @@ if TYPE_CHECKING:
     from angrmanagement.ui.widgets.qblock import QBlock
     from angrmanagement.ui.widgets.qoperand import QOperand
 
-
-class DisassemblyLevel(Enum):
-    MachineCode = 0
-    LifterIR = 1
-    AIL = 2
+__all__ = ["DisassemblyLevel", "QDisassemblyBaseControl"]
 
 
 class QDisassemblyBaseControl:

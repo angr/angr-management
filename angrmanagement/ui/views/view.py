@@ -216,6 +216,13 @@ class SynchronizedFunctionView(FunctionView, SynchronizedView):
     Base class for views that are function-specific and can be synchronized.
     """
 
-    def __init__(self, category: str, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        FunctionView.__init__(self, category, workspace, default_docking_position, instance)
+    def __init__(
+        self,
+        category: str,
+        workspace: Workspace,
+        default_docking_position: str,
+        instance: Instance,
+        presenter: FunctionPresenter | None = None,
+    ) -> None:
+        FunctionView.__init__(self, category, workspace, default_docking_position, instance, presenter)
         SynchronizedView.__init__(self)

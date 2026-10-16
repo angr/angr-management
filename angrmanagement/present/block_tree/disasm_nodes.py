@@ -651,7 +651,7 @@ class InsnNode(DisasmNode):
                 first.append(self.INTERSPERSE_ARGS, MNEMONIC_STYLE, self)
             first.extend(operand.spans(show_variable, show_ident))
         out = [first]
-        comments = self.comment_lines
+        comments = self.comment_lines if getattr(disasm_view, "show_comments", True) else None
         if comments:
             first.append(" " * COMMENT_GAP, "", self)
             column = first.width
@@ -1020,7 +1020,7 @@ class UnknownNode(DisasmNode):
 class AlignmentNode(DisasmNode):
     """An alignment function in the linear view: one summary line, after an empty one."""
 
-    def __init__(self, addr: int, size: int) -> None:
+    def __init__(self, addr: int, size: Any) -> None:
         self.addr = addr
         self.size = size
         self.addr_text = f"{addr:08x}"

@@ -100,8 +100,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         # The first line that is rendered of the first object in self.objects. Start from 0.
         self._start_line_in_object = 0
 
-        self._disasms = SmartLRUCache(maxsize=1024)
-        self._ail_disasms = SmartLRUCache(maxsize=1024)
         self.objects = SmartLRUCache(maxsize=1024, evict=self._on_object_eviction)
 
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
@@ -291,8 +289,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.objects.clear()
         self._addr_to_region_offset.clear()
         self._offset_to_region.clear()
-        self._disasms.clear()
-        self._ail_disasms.clear()
+        self.disasm_view.presenter.clear_linear_disasm_cache()
         self._offset = None
         self._max_offset = None
         self._start_line_in_object = 0
@@ -729,14 +726,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
     def _get_disasm(self, func: Function) -> Clinic | Disassembly | None:
         """
-        Get disassembly analysis object for a given function
+        Get disassembly analysis object for a given function; the presenter keeps them
         """
-        if self._disassembly_level is DisassemblyLevel.AIL:
-            if func.addr not in self._ail_disasms:
-                self._ail_disasms[func.addr] = self.instance.project.analyses.Clinic(func)
-            return self._ail_disasms[func.addr]
-
-        if func.addr not in self._disasms:
-            include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
-            self._disasms[func.addr] = self.instance.project.analyses.Disassembly(function=func, include_ir=include_ir)
-        return self._disasms[func.addr]
+        return self.disasm_view.presenter.linear_disasm(func, self._disassembly_level)

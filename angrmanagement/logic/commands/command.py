@@ -61,6 +61,9 @@ class BasicCommand(Command):
 class ViewCommand(Command):
     """
     Commands to invoke a callable on a view.
+
+    ``view_class`` may be a view class or a presenter class; for a presenter class the command runs on the focused
+    view's presenter, so one command serves every frontend's view of that kind.
     """
 
     def __init__(
@@ -72,12 +75,20 @@ class ViewCommand(Command):
         self._view_class: type[BaseView] = view_class
         self._workspace: Workspace = workspace
 
-    @property
-    def is_visible(self) -> bool:
-        view = self._workspace.view_manager.most_recently_focused_view
-        return isinstance(view, self._view_class)
-
-    def run(self) -> None:
+    def _target(self):
         view = self._workspace.view_manager.most_recently_focused_view
         if isinstance(view, self._view_class):
-            self._action(view)
+            return view
+        presenter = getattr(view, "presenter", None)
+        if presenter is not None and isinstance(presenter, self._view_class):
+            return presenter
+        return None
+
+    @property
+    def is_visible(self) -> bool:
+        return self._target() is not None
+
+    def run(self) -> None:
+        target = self._target()
+        if target is not None:
+            self._action(target)

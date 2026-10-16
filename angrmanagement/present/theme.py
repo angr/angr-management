@@ -173,7 +173,15 @@ class Theme:
         return spec
 
     def _background_of(self, key: str) -> Color | None:
-        """The colour of ``key`` used as a background: a colour entry's, or an extra style's background or colour."""
+        """
+        The colour of ``key`` used as a background: a colour entry's, an extra style's background or colour, or the
+        colour ``#rrggbb`` itself (a plugin's colour).
+        """
+        if key.startswith("#"):
+            try:
+                return Color.from_hex(key)
+            except ValueError:
+                return None
         extra = EXTRA_STYLES.get(key)
         if extra is not None:
             return extra.bg if extra.bg is not None else extra.fg

@@ -3,14 +3,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from angr.analyses.decompiler.utils import to_ail_supergraph
 from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, Qt, QTimeLine
 from PySide6.QtWidgets import QFrame
 
 from angrmanagement.config import Conf
 from angrmanagement.logic.threads import needs_gui_thread
-from angrmanagement.utils import get_out_branches
-from angrmanagement.utils.cache import SmartLRUCache
 from angrmanagement.utils.cfg import categorize_edges
 from angrmanagement.utils.graph_layouter import GraphLayouter
 
@@ -79,8 +76,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         self.blocks = []
         self.entry_block: QGraphBlock | None = None
-        self._ail_disasms = SmartLRUCache(maxsize=1024)
-        self._disasms = SmartLRUCache(maxsize=1024)
 
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
@@ -137,36 +132,13 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         scene = self.scene()
         assert self.instance.kb is not None
 
-        if self._disassembly_level is DisassemblyLevel.AIL:
-            func = self._function_graph.function
-            try:
-                # always check if decompiler has cached a clinic object first
-                self.disasm = self.instance.kb.decompilations[(func.addr, "pseudocode")].clinic
-            except (KeyError, AttributeError):
-                try:
-                    self.disasm = self._ail_disasms[func.addr]
-                except KeyError:
-                    self.disasm = self._ail_disasms[func.addr] = self.instance.project.analyses.Clinic(func)
-
-            self._supergraph = to_ail_supergraph(self.disasm.cc_graph)
-
-            def nodefunc(n):
-                return self._supergraph.nodes[n]["original_nodes"]
-
-            def branchfunc(supernode):
-                return None
-
-            has_idx = True
-        else:
-            include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
-            addr = self._function_graph.function.addr
-            cache_key = (addr, include_ir)
-            try:
-                self.disasm = self._disasms[cache_key]
-            except KeyError:
-                self.disasm = self._disasms[cache_key] = self.instance.project.analyses.Disassembly(
-                    function=self._function_graph.function, include_ir=include_ir
-                )
+        # the presenter keeps the analyses shown, by function and level
+        presenter = self.disasm_view.presenter
+        self.disasm = presenter.graph_disasm(self._function_graph.function, self._disassembly_level)
+        self._supergraph, nodefunc, branchfunc, has_idx = presenter.supergraph_of(
+            self._function_graph, self.disasm, self._disassembly_level
+        )
+        if self._disassembly_level is not DisassemblyLevel.AIL:
             view = self.disasm_view.workspace.view_manager.first_view_in_category("console")
             if view is not None:
                 from angrmanagement.ui.views import ConsoleView  # pylint: disable=import-outside-toplevel
@@ -177,13 +149,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
                         "disasm": self.disasm,
                     }
                 )
-            self._supergraph = self._function_graph.supergraph
-
-            def nodefunc(n):
-                return n.cfg_nodes
-
-            branchfunc = get_out_branches
-            has_idx = False
 
         for n in self._supergraph.nodes():
             block = QGraphBlock(

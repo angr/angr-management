@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import networkx
 from angr.utils.graph import GraphUtils
@@ -9,7 +9,7 @@ from angr.utils.graph import GraphUtils
 from .edge import Edge, EdgeSort
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping
 
 
 class EdgeRouter:
@@ -286,14 +286,22 @@ class GraphLayouter:
     def __init__(
         self,
         graph,
-        node_sizes: Sequence[int],
+        node_sizes: Mapping[Any, tuple[int, int]],
         node_compare_key=None,
         node_sorter=None,
         x_margin: int = 10,
         y_margin: int = 5,
         row_margin: int = 16,
         col_margin: int = 16,
+        min_edge_col_width: int = 20,
+        arrow_gap: int = 6,
     ) -> None:
+        """
+        Node sizes and margins are in whatever unit the frontend draws in: pixels in Qt, cells in a terminal.
+
+        :param min_edge_col_width:  The least width of the outermost columns, which hold only edges.
+        :param arrow_gap:           How far above its destination node an edge ends, to leave room for the arrow head.
+        """
         self.graph = graph
         self._node_sizes = node_sizes
         self._node_compare_key = node_compare_key
@@ -306,6 +314,8 @@ class GraphLayouter:
         self.y_margin = y_margin
         self.row_margin = row_margin
         self.col_margin = col_margin
+        self.min_edge_col_width = min_edge_col_width
+        self.arrow_gap = arrow_gap
 
         self._cols = None
         self._rows = None
@@ -630,10 +640,10 @@ class GraphLayouter:
                         self._row_heights[row] = row_height
 
         # the left-most and the right-most column do not have any node assigned to it
-        if self._col_widths[0] < 20:
-            self._col_widths[0] = 20
-        if self._col_widths[-1] < 20:
-            self._col_widths[-1] = 20
+        if self._col_widths[0] < self.min_edge_col_width:
+            self._col_widths[0] = self.min_edge_col_width
+        if self._col_widths[-1] < self.min_edge_col_width:
+            self._col_widths[-1] = self.min_edge_col_width
 
     def _set_max_grid_edge_id(self) -> None:
         """
@@ -786,7 +796,7 @@ class GraphLayouter:
             if x != prev_x:
                 # add an extra coordinate to move horizontally
                 edge.add_coordinate(x, prev_y)
-            end_point = (x, dst_node_y - 6)
+            end_point = (x, dst_node_y - self.arrow_gap)
             edge.add_coordinate(*end_point)
 
     def _indexed_x(self, base_x, idx: int):
