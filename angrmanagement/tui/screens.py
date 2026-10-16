@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
     from textual.app import ComposeResult
+    from textual.screen import Screen
 
 _DIALOG_CSS = """
 {name} {{
@@ -63,6 +64,13 @@ def dialog_css(name: str) -> str:
 _LEVEL_TITLES = {"info": "", "warning": "⚠ ", "critical": "✖ "}
 
 
+def focus_if_present(screen: Screen, selector: str) -> None:
+    """Focus the widget ``selector`` names; a screen the app tears down while it mounts has no children."""
+    for widget in screen.query(selector):
+        widget.focus()
+        return
+
+
 class MessageScreen(ModalScreen[None]):
     """A notice with an OK button."""
 
@@ -84,7 +92,7 @@ class MessageScreen(ModalScreen[None]):
                 yield Button("OK", id="ok", variant="primary")
 
     def on_mount(self) -> None:
-        self.query_one("#ok", Button).focus()
+        focus_if_present(self, "#ok")
 
     def on_button_pressed(self, _event: Button.Pressed) -> None:
         self.dismiss(None)
@@ -125,7 +133,7 @@ class QuestionScreen(ModalScreen[str]):
 
     def on_mount(self) -> None:
         if self.default in self.buttons:
-            self.query_one(f"#button-{self.buttons.index(self.default)}", Button).focus()
+            focus_if_present(self, f"#button-{self.buttons.index(self.default)}")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         self.dismiss(str(event.button.label))
@@ -157,7 +165,7 @@ class PromptScreen(ModalScreen[str | None]):
                 yield Button("Cancel", id="cancel")
 
     def on_mount(self) -> None:
-        self.query_one("#answer", Input).focus()
+        focus_if_present(self, "#answer")
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         self.dismiss(event.value)
@@ -218,7 +226,7 @@ FilePickerScreen Input { width: 100%; }
                 yield Button("Cancel", id="cancel")
 
     def on_mount(self) -> None:
-        self.query_one("#path", Input).focus()
+        focus_if_present(self, "#path")
 
     def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
         self.query_one("#path", Input).value = str(event.path)
@@ -287,7 +295,7 @@ class ChecklistScreen(ModalScreen[list[bool] | None]):
                 yield Button("Cancel", id="cancel")
 
     def on_mount(self) -> None:
-        self.query_one("#ok", Button).focus()
+        focus_if_present(self, "#ok")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "ok":

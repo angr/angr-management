@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 from textual.command import CommandPalette
+from textual.widgets import Button
 
 from angrmanagement.config import Conf
 from angrmanagement.data.log import LogDumpHandler
@@ -348,11 +349,13 @@ class TestInteractiveLoad(TuiTestCase):
                     app.services.interactive = True
                     app.interactive = True
                     app.load_file(FAUXWARE)
-                    await wait_for_checklist(pilot, "Load a binary")
+                    screen = await wait_for_checklist(pilot, "Load a binary")
+                    await settle(pilot)
                     if how == "escape":
                         await pilot.press("escape")
                     else:
-                        await pilot.click(how)
+                        # a click can land before the screen is laid out on a busy machine; press the button itself
+                        screen.query_one(how, Button).press()
                     await app.wait_for_jobs()
                     await settle(pilot)
                     assert app.workspace.main_instance.project.am_none
@@ -453,6 +456,25 @@ class TestServices(TuiTestCase):
             assert answers == ["Yes"]
 
         run_app(scenario, binary=None)
+
+    def test_exit_while_a_screen_mounts(self) -> None:
+        # the app may tear a modal screen down before its children are there; focusing them must not fail
+        errors: list[BaseException] = []
+
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            app.services.interactive = True
+            original = app._handle_exception
+
+            def record(error: Exception) -> None:
+                errors.append(error)
+                original(error)
+
+            app._handle_exception = record  # type: ignore[method-assign]
+            app.push_screen(ChecklistScreen("Load a binary", "text", [("a", True)]))
+            app.exit()
+
+        run_app(scenario, binary=None)
+        assert not errors, errors
 
     def test_a_question_on_the_ui_thread_says_it_was_not_asked(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
