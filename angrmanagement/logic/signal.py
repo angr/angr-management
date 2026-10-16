@@ -59,8 +59,14 @@ class Signal:
     def __repr__(self) -> str:
         return f"<Signal {self.name or ''}{self.arg_types!r} with {len(self._listeners)} listeners>"
 
-    def connect(self, func: Callable[..., Any]) -> None:
-        """Add a listener. Connecting the same callable twice calls it twice per emit, as Qt does."""
+    def connect(self, func: Callable[..., Any], _type: object = None) -> None:
+        """
+        Add a listener. Connecting the same callable twice calls it twice per emit, as Qt does.
+
+        ``_type`` takes the connection type that code written for Qt signals may pass, such as
+        ``Qt.ConnectionType.QueuedConnection``, and ignores it: every listener is delivered on the UI thread, as an
+        automatic connection to a receiver on the GUI thread is.
+        """
         entry = (func, max_positional_args(func))
         with self._lock:
             self._listeners.append(entry)

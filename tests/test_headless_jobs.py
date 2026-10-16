@@ -139,6 +139,19 @@ class TestSignal(DirectExecutorTestCase):
         signal.emit("job", "exception")
         assert got == ["job", "no arguments"]
 
+    def test_a_qt_connection_type_is_accepted_and_ignored(self):
+        # code written for Qt signals may pass one, e.g. Qt.ConnectionType.QueuedConnection
+        signal = Signal(int)
+        got = []
+        signal.connect(got.append, object())
+        signal.emit(1)
+        assert got == [1]
+
+        self.run_in_thread(lambda: signal.emit(2)).join()
+        assert got == [1]
+        assert self.executor.process_pending() == 1
+        assert got == [1, 2]
+
     def test_a_raising_listener_is_logged_and_the_rest_still_run(self):
         signal = Signal()
         got = []
