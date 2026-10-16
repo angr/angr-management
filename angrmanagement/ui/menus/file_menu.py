@@ -31,9 +31,6 @@ class FileMenu(shell.FileMenu):
         super().__init__(parent=main_window)
         shell.build_file_menu(main_window, menu=self)
         self._project = main_window.workspace.main_instance.project
-        self._close_entry = self.project_entries[0]
-        self._save_entries = self.project_entries[1:]
-        self._project_entries = self.project_entries
         self._edit_save()
         self._project.am_subscribe(self._edit_save)
 
