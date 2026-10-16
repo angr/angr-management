@@ -193,7 +193,7 @@ class TestMCPLoadBinary(MCPTestCase):
             assert r["cfg_built"] is True
 
         try:
-            with patch("angrmanagement.ui.workspace.AnalysisOptionsDialog") as dialog:
+            with patch("angrmanagement.ui.qt_services.AnalysisOptionsDialog") as dialog:
                 self.run_client(scenario)
                 # default (show_analysis_options=False): the dialog is never constructed
                 assert dialog.call_count == 0
@@ -207,7 +207,7 @@ class TestMCPLoadBinary(MCPTestCase):
             await client.call_tool("load_binary", {"binary_path": self.binary, "show_analysis_options": True})
 
         try:
-            with patch("angrmanagement.ui.workspace.AnalysisOptionsDialog") as dialog:
+            with patch("angrmanagement.ui.qt_services.AnalysisOptionsDialog") as dialog:
                 dialog.return_value = MagicMock(**{"exec_.return_value": 1})  # user accepts
                 self.run_client(scenario)
                 assert dialog.call_count >= 1

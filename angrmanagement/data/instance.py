@@ -60,10 +60,10 @@ class Instance:
         self._container_defaults = {}
 
         # where this binary is coming from - if it's loaded from a URL, then original_binary_path will be the URL
-        self.original_binary_path = None
+        self.original_binary_path: str | None = None
         # where this binary is now - if it's loaded from a URL, then binary_path will be its temporary location on the
         # local machine
-        self.binary_path = None
+        self.binary_path: str | None = None
         self.register_container("project", lambda: None, angr.Project | None, "The current angr project")
         self.register_container("simgrs", list, list[angr.SimulationManager], "Global simulation managers list")
         self.register_container("states", list, list[angr.SimState], "Global states list")

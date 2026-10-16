@@ -3,7 +3,7 @@ A workspace without a user interface.
 
 :class:`HeadlessWorkspace` provides what the MCP server, the daemon and the jobs read from a workspace: the instance,
 a job manager, plugins and the MCP call history. It has no views, so ``view_manager`` finds none and refreshing is a
-no-op. The project database functions here are shared with the Qt workspace.
+no-op. The project database functions here are shared with every workspace.
 """
 
 # pylint: disable=no-self-use
@@ -12,27 +12,27 @@ from __future__ import annotations
 
 import logging
 from functools import partial
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from angr.angrdb import AngrDB
 
-from angrmanagement.data.instance import Instance
 from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
 from angrmanagement.data.jobs.loading import LoadAngrDBJob
 from angrmanagement.data.object_container import ObjectContainer
-from angrmanagement.plugins import PluginManager
 
 from . import GlobalInfo
-from .analysis_manager import AnalysisManager
-from .jobmanager import JobManager
 from .view_manager import BaseViewManager
+from .workspace import BaseWorkspace
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from angr.knowledge_plugins.functions import Function
 
+    from angrmanagement.data.instance import Instance
     from angrmanagement.data.jobs.job import Job
+
+    from .jobmanager import JobManager
 
 _l = logging.getLogger(__name__)
 
@@ -146,62 +146,29 @@ class HeadlessViewManager(BaseViewManager):
         return None
 
 
-class HeadlessWorkspace:
+class HeadlessWorkspace(BaseWorkspace):
     """
     A workspace for a process without a user interface.
 
     Create it on the thread that will act as the UI thread, and pump ``GlobalInfo.executor`` there (for example with
     ``job_manager.join_all_jobs()``), because job results and MCP edits are delivered on that thread.
 
+    It is a :class:`~angrmanagement.logic.workspace.BaseWorkspace` whose view manager creates no views, so everything
+    that would show something does nothing; jumping is not even sent to the UI thread, and decompilation runs in the
+    background.
+
     :param instance:        The instance to work on; a new one by default.
     :param auto_analyze:    Run the default initial analyses when a project without a CFG is set, as the Qt workspace
                             does after its analysis options dialog.
     """
 
+    VIEW_MANAGER_CLASS = HeadlessViewManager
+
     def __init__(self, instance: Instance | None = None, auto_analyze: bool = True) -> None:
         # the creating thread is the UI thread of the default executor
         _ = GlobalInfo.executor
-        self.main_window = None
-        self._main_instance = instance if instance is not None else Instance()
-        self.job_manager = JobManager(self)
-        self.job_manager.job_exception.connect(self._on_job_exception)
-        self.view_manager = HeadlessViewManager(self)
-        # PluginManager is typed for the Qt workspace; it only needs what this class provides until a plugin runs
-        self.plugins = PluginManager(self)  # pyright: ignore[reportArgumentType]
-        self.analysis_manager = AnalysisManager(self)
         self.auto_analyze = auto_analyze
-        # read by the MCP load_binary tool; there is no analysis options dialog to suppress here
-        self._suppress_analysis_options_dialog = False
-        # MCP tool calls made by an AI agent: a list of angrmanagement.mcp.history.MCPCallRecord
-        self.mcp_history = ObjectContainer([], name="mcp_history")
-
-        self._main_instance.project.am_subscribe(self._on_project_changed)
-        self._main_instance.handle_comment_changed_callback = self.plugins.handle_comment_changed
-
-    @property
-    def main_instance(self) -> Instance:
-        return self._main_instance
-
-    #
-    # What the Qt workspace refreshes; there is nothing to refresh here
-    #
-
-    def reload(self, categories: list[str] | None = None) -> None:
-        pass
-
-    def refresh(self, categories: list[str] | None = None) -> None:
-        pass
-
-    def on_function_updated(self) -> None:
-        pass
-
-    def on_cfg_generated(self) -> None:
-        pass
-
-    def on_cfg_recovery_started(self, cfb) -> None:
-        container = cast("ObjectContainer", self.main_instance.cfb)
-        container.am_obj = cfb
-        container.am_event()
+        super().__init__(None, instance)
 
     def jump_to(self, addr: int, view=None, use_animation: bool = False) -> None:  # pylint:disable=unused-argument
         _l.debug("Headless workspace: not jumping to %#x", addr)
@@ -212,53 +179,19 @@ class HeadlessWorkspace:
         else:
             _l.info("%s", msg)
 
-    #
-    # Analyses
-    #
-
-    def run_analysis(self) -> None:
-        """Run the initial analyses with the default configuration."""
-        if self.main_instance.project.am_none:
-            return
-        if self.main_instance.analysis_configuration is None:
-            self.main_instance.analysis_configuration = self.analysis_manager.get_default_analyses_configuration()
-        self.analysis_manager.run_analysis()
-
     def decompile_function(self, func: Function, curr_ins=None, view=None) -> None:  # pylint:disable=unused-argument
         """Decompile ``func`` in the background; there is no pseudocode view to show it in."""
         submit_background_decompilation(self.main_instance, self.job_manager, func)
 
     #
-    # Projects and databases
-    #
-
-    def close_project(self) -> None:
-        close_project(self.main_instance)
-
-    def save_database(self, file_path: str) -> bool:
-        return save_database(self, file_path)
-
-    def load_database(self, file_path: str, on_loaded: Callable[[str], None] | None = None) -> LoadAngrDBJob:
-        """Load an angr database in a background job; ``on_loaded(file_path)`` runs once it is installed."""
-
-        def on_finish(job: LoadAngrDBJob, *_args, **_kwargs) -> None:
-            if apply_loaded_database(self, job) and on_loaded is not None:
-                on_loaded(job.file_path)
-
-        return load_database(self, file_path, on_finish)
-
-    #
     # Callbacks
     #
 
-    def _on_project_changed(self, **kwargs) -> None:  # pylint:disable=unused-argument
-        if self.main_instance.project.am_none:
-            return
-        kb = self.main_instance.kb
-        if self.auto_analyze and kb is not None and not kb.cfgs.cfgs:
-            self._suppress_analysis_options_dialog = False
-            GlobalInfo.executor.schedule_async(self.run_analysis)
-        self.plugins.handle_project_initialization()
+    def _instance_project_initalization(self, **kwargs) -> None:
+        if self.auto_analyze:
+            super()._instance_project_initalization(**kwargs)
+        elif not self.main_instance.project.am_none:
+            self.plugins.handle_project_initialization()
 
-    def _on_job_exception(self, job: Job, ex: BaseException) -> None:
+    def _handle_job_exception(self, job: Job, ex: BaseException) -> None:
         _l.error('Exception while running job "%s":', job.name, exc_info=ex)

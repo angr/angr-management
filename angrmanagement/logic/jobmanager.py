@@ -15,8 +15,7 @@ from .signal import Signal
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from angrmanagement.logic.headless_workspace import HeadlessWorkspace
-    from angrmanagement.ui.workspace import Workspace
+    from angrmanagement.logic.workspace import BaseWorkspace
 
 
 log = logging.getLogger(__name__)
@@ -106,14 +105,14 @@ class JobManager:
     delivered on the UI thread through ``GlobalInfo.executor``.
     """
 
-    workspace: Workspace | HeadlessWorkspace | None
+    workspace: BaseWorkspace | None
     jobs: list[Job]
     job_worker_exception_callback: Callable[[Job, BaseException], None] | None
 
     _worker_thread: threading.Thread
     _worker: Worker
 
-    def __init__(self, workspace: Workspace | HeadlessWorkspace | None):
+    def __init__(self, workspace: BaseWorkspace | None):
         self.workspace = workspace
         self.jobs = []
         self._current_job: Job | None = None
