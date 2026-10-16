@@ -30,7 +30,7 @@ from angrmanagement.logic.workspace import BINARY_FILE_FILTER, recent_directory
 from angrmanagement.present.keymap import KITTY_KEYBOARD_TIER, Binding, Chord, Keymap, global_keymap
 from angrmanagement.present.menus import Menu as PresentMenu
 from angrmanagement.present.menus import MenuEntry, walk_entries
-from angrmanagement.present.shell import DOCUMENTATION_URL, build_main_menus
+from angrmanagement.present.shell import DOCUMENTATION_URL, FileMenu, build_main_menus
 from angrmanagement.present.theme import CUSTOM_SCHEME_NAME, Theme
 from angrmanagement.present.xrefs import XRefsModel
 from angrmanagement.tui.caps import TerminalCaps, caps_from_environment
@@ -164,7 +164,9 @@ class AmApp(App):
         self.workspace = TuiWorkspace(self)
         self.workspace.register_commands()
         self.menus: list[PresentMenu] = build_main_menus(self, Conf.recent_files, self._view_menu_extras())
-        self._file_menu = self.menus[0]
+        file_menu = self.menus[0]
+        assert isinstance(file_menu, FileMenu)
+        self._file_menu = file_menu
         self._plugin_menu = self.menus[4]
         self.workspace.main_instance.project.am_subscribe(self._on_project_changed)
         self.menu_bar = MenuBar(self.menus, self.shortcut_text)
@@ -380,7 +382,7 @@ class AmApp(App):
     def _on_project_changed(self, **_kwargs) -> None:
         instance = self.workspace.main_instance
         loaded = not instance.project.am_none
-        self._file_menu.set_project_loaded(loaded)  # type: ignore[attr-defined]
+        self._file_menu.set_project_loaded(loaded)
         if loaded and instance.project.filename:
             self.sub_title = os.path.basename(instance.project.filename)
         elif loaded:
