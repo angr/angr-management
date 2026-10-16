@@ -314,6 +314,17 @@ class TestFrontendAdapter(unittest.TestCase):
         for name in names:
             assert loaded.entry(name).value == self.conf.entry(name).value, name
 
+    def test_unset_fonts_are_not_saved(self):
+        # a frontend without fonts (the terminal) never fills them in; "UNSET" in the file is an error on the next load
+        conf = ConfigurationManager()
+        assert conf.entry("ui_default_font").value == "UNSET"
+        out = io.StringIO()
+        conf.save(out)
+        text = out.getvalue()
+        assert "UNSET" not in text and "ui_default_font" not in text and "tabular_view_font" not in text
+        loaded = ConfigurationManager.parse(io.StringIO(text))
+        assert loaded.entry("ui_default_font").value == "UNSET"
+
     @needs_qt
     def test_plugin_entries_declared_with_qt_types_become_neutral(self):
         from PySide6.QtGui import QColor, QFont  # pylint: disable=import-outside-toplevel

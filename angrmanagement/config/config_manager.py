@@ -777,6 +777,9 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
 
         for k, v in entries_to_save.items():
             v = v.value
+            if v is _FONT_UNSET or (isinstance(v, str) and v == _FONT_UNSET):
+                # a font the frontend never filled in (the terminal frontend has none): leave it to the next one
+                continue
             while type(v) in data_serializers:
                 v = data_serializers[type(v)][1](k, v)
             out[k] = v
