@@ -80,7 +80,17 @@ class StatusBar(Horizontal):
         self.set_interval(1, self._tick)
         self._show(False)
 
+    @property
+    def _live(self) -> bool:
+        """
+        Whether the parts of the bar are there to update: not before they are composed, and not once the app is
+        exiting, when a job signal queued earlier can still arrive while the parts are being removed.
+        """
+        return bool(self.children) and self.is_attached and self.app.is_running
+
     def _show(self, running: bool) -> None:
+        if not self._live:
+            return
         for widget_id in ("#status-progress-text", "#status-interrupt", "#status-progress"):
             self.query_one(widget_id).display = running
         if not running:
@@ -105,11 +115,13 @@ class StatusBar(Horizontal):
     def progress_done(self) -> None:
         self._job_running = False
         self._progress_message = ""
+        if not self._live:
+            return
         self.query_one("#status-message", Static).update(Text(self._temporary_message))
         self._show(False)
 
     def _refresh(self) -> None:
-        if not self.is_mounted:
+        if not self.is_mounted or not self._live:
             return
         self._show(self._job_running)
         if not self._job_running:
@@ -137,14 +149,14 @@ class StatusBar(Horizontal):
         self._temporary_message = text
         if self._message_timer is not None:
             self._message_timer.stop()
-        if not self._job_running:
+        if not self._job_running and self._live:
             self.query_one("#status-message", Static).update(Text(text))
-        if timeout:
+        if timeout and self._live:
             self._message_timer = self.set_timer(timeout, self._clear_message)
 
     def _clear_message(self) -> None:
         self._temporary_message = ""
-        if not self._job_running:
+        if not self._job_running and self._live:
             self.query_one("#status-message", Static).update("")
 
     def on_click(self, event: events.Click) -> None:

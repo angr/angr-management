@@ -16,7 +16,8 @@ import tempfile
 import threading
 import time
 import unittest
-from typing import TYPE_CHECKING, Any
+from types import SimpleNamespace
+from typing import TYPE_CHECKING, Any, ClassVar
 from unittest.mock import patch
 
 import pytest
@@ -34,6 +35,7 @@ from angrmanagement.tui.screens import ChecklistScreen, MessageScreen, PromptScr
 from angrmanagement.tui.screenshot import shoot, show_view
 from angrmanagement.tui.views import TUI_VIEW_CLASSES
 from angrmanagement.tui.widgets.menubar import MenuPopup
+from angrmanagement.tui.widgets.statusbar import StatusBar
 from angrmanagement.tui.xrefs import XRefsScreen
 
 if TYPE_CHECKING:
@@ -458,6 +460,46 @@ class TestJobErrors(TuiTestCase):
             assert not app.workspace.job_manager.jobs
 
         run_app(scenario, binary=None)
+
+
+class _ExitProbe(StatusBar):
+    """Delivers job signals as the app removes the bar, and records what that raised."""
+
+    seen: ClassVar[list[str]] = []
+
+    def on_unmount(self) -> None:
+        job = SimpleNamespace(name="CFG generation")
+        app: Any = self.app
+        self.seen.append(f"parts left: {len(self.children)}")
+        for deliver in (
+            lambda: app._on_job_starting(job),
+            lambda: app._on_job_progress(job, 50.0, "half"),
+            lambda: app._on_job_finished(job),
+            lambda: self.show_message("done"),
+            self._clear_message,
+        ):
+            try:
+                deliver()
+            except Exception as ex:  # pylint: disable=broad-exception-caught
+                self.seen.append(repr(ex))
+
+
+class TestExit(TuiTestCase):
+    def test_job_signals_while_the_app_exits(self) -> None:
+        # a job signal queued before the exit can be delivered while the app removes the status bar's parts
+        for how in ("exit", "teardown"):
+            with self.subTest(how=how):
+                _ExitProbe.seen.clear()
+
+                async def scenario(app: AmApp, pilot: Pilot, how: str = how) -> None:
+                    # with no job running, the bar shows no progress
+                    assert not app.status_bar.query_one("#status-progress").display
+                    app.status_bar.__class__ = _ExitProbe
+                    if how == "exit":
+                        app.exit()
+
+                run_app(scenario, binary=None)
+                assert _ExitProbe.seen == ["parts left: 0"], _ExitProbe.seen
 
 
 class TestConsole(TuiTestCase):
