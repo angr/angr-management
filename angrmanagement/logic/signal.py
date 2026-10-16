@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 _l = logging.getLogger(__name__)
 
 
-def _max_positional_args(func: Callable[..., Any]) -> int | None:
+def max_positional_args(func: Callable[..., Any]) -> int | None:
     """
     Return how many positional arguments ``func`` accepts, or None if it takes any number (or cannot be inspected).
 
@@ -61,7 +61,7 @@ class Signal:
 
     def connect(self, func: Callable[..., Any]) -> None:
         """Add a listener. Connecting the same callable twice calls it twice per emit, as Qt does."""
-        entry = (func, _max_positional_args(func))
+        entry = (func, max_positional_args(func))
         with self._lock:
             self._listeners.append(entry)
 

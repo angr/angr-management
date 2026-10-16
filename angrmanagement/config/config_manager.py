@@ -11,7 +11,7 @@ import tomlkit.exceptions
 import tomlkit.items
 
 from angrmanagement.logic import GlobalInfo
-from angrmanagement.logic.signal import _max_positional_args
+from angrmanagement.logic.signal import max_positional_args
 from angrmanagement.utils.env import app_root
 
 from .color import Color
@@ -463,7 +463,7 @@ class _FrontendListener:
         self._manager = manager
         self._key = key
         self.func = func
-        self._takes_value = _max_positional_args(func) != 0
+        self._takes_value = max_positional_args(func) != 0
 
     def __call__(self, value) -> None:
         self.deliver(self._manager.frontend_value(self._key, value))
