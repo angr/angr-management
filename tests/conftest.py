@@ -3,8 +3,10 @@ from __future__ import annotations
 # Preload fastmcp (and therefore pydantic) before any test module imports PySide6. PySide6's
 # shiboken __feature__ import hook otherwise collides with pydantic's lazy imports under pytest,
 # breaking fastmcp import and causing test_mcp_server to skip depending on collection order.
+import atexit
 import contextlib
 import os
+import shutil
 import tempfile
 
 with contextlib.suppress(ImportError):
@@ -18,7 +20,12 @@ from functools import partial
 import pytest
 
 # Keep the tests' configuration away from the user's: angr management reads and saves config.toml in this directory.
-os.environ.setdefault("ANGR_MANAGEMENT_CONFIG_DIR", tempfile.mkdtemp(prefix="angr-management-test-config-"))
+# It is set at import, before any test module imports angrmanagement.config, and removed when the process that made
+# it exits. xdist workers inherit the variable from the controller, so they use its directory and make none.
+if not os.environ.get("ANGR_MANAGEMENT_CONFIG_DIR"):
+    _config_dir = tempfile.mkdtemp(prefix="angr-management-test-config-")
+    os.environ["ANGR_MANAGEMENT_CONFIG_DIR"] = _config_dir
+    atexit.register(shutil.rmtree, _config_dir, ignore_errors=True)
 
 
 @pytest.fixture(autouse=True)
