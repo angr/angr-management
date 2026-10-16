@@ -446,6 +446,8 @@ ENTRIES = [
     CE("mcp_server_auth_token", str, ""),
     # Maximum number of MCP tool calls retained in the MCP History view (0 or less = unlimited).
     CE("mcp_server_history_limit", int, 2000),
+    # Terminal frontend: area sizes and whether the bottom area is hidden, as JSON
+    CE("tui_layout", str, ""),
 ]
 
 

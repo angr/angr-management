@@ -24,12 +24,12 @@ PACKAGES = [
     "angrmanagement.mcp",
     "angrmanagement.daemon",
     "angrmanagement.utils",
+    "angrmanagement.present",
+    "angrmanagement.tui",
 ]
 MODULES = [
     "angrmanagement.plugins.base_plugin",
     "angrmanagement.plugins.plugin_manager",
-    "angrmanagement.tui",
-    "angrmanagement.tui.__main__",
 ]
 
 names = list(MODULES)
@@ -80,6 +80,13 @@ class TestHeadlessImport(unittest.TestCase):
             "angrmanagement.mcp",
             "angrmanagement.daemon",
             "angrmanagement.utils.io",
+            "angrmanagement.logic.workspace",
+            "angrmanagement.logic.view_manager",
+            "angrmanagement.present.tables",
+            "angrmanagement.present.functions",
+            "angrmanagement.present.shell",
+            "angrmanagement.tui.app",
+            "angrmanagement.tui.__main__",
         ):
             assert name in result["imported"], name
         # the walk must have found the job modules, or it proves little
@@ -87,24 +94,28 @@ class TestHeadlessImport(unittest.TestCase):
 
 
 class TestTuiEntryPoint(unittest.TestCase):
-    """am-tui says what is missing: Textual is in the tui extra, not a dependency of angr management."""
+    """am-tui reads its options, and says what is missing when Textual is."""
 
-    def test_reports_the_missing_extra(self):
+    def test_reports_missing_textual(self):
         from angrmanagement.tui.__main__ import main  # pylint: disable=import-outside-toplevel
 
         err = io.StringIO()
         # a None entry in sys.modules makes the import raise ImportError, as a missing package does
         with patch.dict("sys.modules", {"textual": None}), redirect_stderr(err):
-            assert main() == 2
-        assert "angr-management[tui]" in err.getvalue()
+            assert main([]) == 2
+        assert "needs Textual" in err.getvalue()
 
-    def test_reports_that_the_frontend_is_not_written_yet(self):
-        from angrmanagement.tui.__main__ import main  # pylint: disable=import-outside-toplevel
+    def test_options(self):
+        from angrmanagement.tui.__main__ import parse_args  # pylint: disable=import-outside-toplevel
 
-        err = io.StringIO()
-        with redirect_stderr(err):
-            assert main() == 2
-        assert "not implemented yet" in err.getvalue()
+        args = parse_args(["/bin/true", "--size", "120x40", "--theme", "Dark", "--config-dir", "/tmp/x"])
+        assert args.binary == "/bin/true"
+        assert args.size == (120, 40)
+        assert args.theme == "Dark"
+        assert args.config_dir == "/tmp/x"
+        assert args.screenshot_dir is None
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            parse_args(["--size", "big"])
 
 
 if __name__ == "__main__":
