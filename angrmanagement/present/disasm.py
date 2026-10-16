@@ -164,7 +164,7 @@ def disassembly_keymap() -> Keymap:
     )
 
 
-def register_disasm_commands(workspace, view_class: type = None) -> None:  # type: ignore[assignment]
+def register_disasm_commands(workspace, view_class: type | None = None) -> None:
     """
     Register the disassembly view's palette commands. They run on the focused view's presenter, which forwards to the
     view whatever the view does itself (dialogs).
