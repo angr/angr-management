@@ -43,7 +43,8 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
         super().__init__(parent=parent)
 
         self.area: QLinearDisassembly = area
-        self._scene = QGraphicsScene(0, 0, self.width(), self.height())
+        # parented to the view, so Qt deletes it with the view, on its thread, not the cyclic collector wherever it runs
+        self._scene = QGraphicsScene(0, 0, self.width(), self.height(), self)
         self.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self.setScene(self._scene)
         self.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)

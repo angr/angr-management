@@ -136,7 +136,8 @@ class QMiniMapView(QGraphicsView):
         self._target_view: QBaseGraphicsView = target_view
         self._is_mouse_pressed: bool = False
         self._scale: float = 1.0
-        self._minimap_scene: QGraphicsScene = QGraphicsScene()
+        # parented to the view, so Qt deletes it with the view, on its thread, not the cyclic collector wherever it runs
+        self._minimap_scene: QGraphicsScene = QGraphicsScene(self)
         self.setScene(self._minimap_scene)
         self._minimap_target_viewport_box: QMiniMapViewportBox = QMiniMapViewportBox()
         self._minimap_scene.addItem(self._minimap_target_viewport_box)
