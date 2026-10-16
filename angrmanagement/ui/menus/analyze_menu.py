@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class AnalyzeMenu(Menu):
+    """The Analyze menu of the main window."""
+
     def __init__(self, main_window: MainWindow) -> None:
         super().__init__("&Analyze", parent=main_window)
         self.entries.extend(

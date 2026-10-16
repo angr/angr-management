@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class PluginMenu(Menu):
+    """The Plugins menu of the main window."""
+
     def __init__(self, main_window: MainWindow) -> None:
         super().__init__("&Plugins", parent=main_window)
 

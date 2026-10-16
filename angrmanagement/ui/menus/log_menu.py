@@ -9,6 +9,8 @@ if TYPE_CHECKING:
 
 
 class LogMenu(Menu):
+    """The context menu of the log table."""
+
     def __init__(self, log_widget: QLogWidget) -> None:
         super().__init__("", parent=log_widget)
 
