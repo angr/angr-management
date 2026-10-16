@@ -6,6 +6,8 @@ like QColor's (``red()``, ``name()``, ``lighter()`` and so on) behave like QColo
 keeps working on a Color.
 """
 
+# pylint: disable=no-self-use
+
 from __future__ import annotations
 
 import re

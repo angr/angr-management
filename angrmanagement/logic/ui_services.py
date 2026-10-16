@@ -7,6 +7,8 @@ Code outside the frontends reaches the user through ``GlobalInfo.ui_services``, 
 thread, through ``gui_thread_schedule`` when on another thread.
 """
 
+# pylint: disable=no-self-use
+
 from __future__ import annotations
 
 import logging

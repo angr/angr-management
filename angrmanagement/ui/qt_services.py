@@ -1,5 +1,7 @@
 """The UI services of the Qt frontend: message boxes, input dialogs, file dialogs, the clipboard and the browser."""
 
+# pylint: disable=no-self-use
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

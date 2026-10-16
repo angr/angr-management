@@ -1,5 +1,7 @@
 """The UI executor of the Qt frontend: callables run on the GUI thread as posted Qt events."""
 
+# pylint: disable=no-self-use
+
 from __future__ import annotations
 
 import contextlib

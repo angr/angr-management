@@ -5,11 +5,9 @@ import os
 import time
 import traceback
 from contextlib import contextmanager
-from functools import partial
 from typing import TYPE_CHECKING, TypeVar
 
 from angr import StateHierarchy
-from angr.angrdb import AngrDB
 from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
 from angr.knowledge_plugins.functions.function import Function
 from angr.knowledge_plugins.patches import Patch
@@ -28,8 +26,8 @@ from angrmanagement.data.jobs import (
     LoadBinaryJob,
 )
 from angrmanagement.data.jobs.job import JobState
-from angrmanagement.data.jobs.loading import LoadAngrDBJob
 from angrmanagement.data.trace import BintraceTrace, Trace
+from angrmanagement.logic import headless_workspace
 from angrmanagement.logic.analysis_manager import AnalysisManager
 from angrmanagement.logic.commands import CommandManager
 from angrmanagement.logic.debugger import DebuggerWatcher
@@ -607,13 +605,7 @@ class Workspace:
         views clear themselves in response to the container-reset events. Does nothing if no
         project is loaded.
         """
-        if self.main_instance.project.am_none:
-            return
-        self.main_instance.binary_path = None
-        self.main_instance.original_binary_path = None
-        self.main_instance.database_path = None
-        self.main_instance.analysis_configuration = None
-        self.main_instance._reset_containers()
+        headless_workspace.close_project(self.main_instance)
 
     def save_database(self, file_path: str) -> bool:
         """
@@ -621,16 +613,7 @@ class Workspace:
 
         :returns: True on success, False if no project is loaded.
         """
-        if self.main_instance.project.am_none:
-            return False
-
-        self.plugins.handle_project_save(file_path)
-        # no connection pool: a pooled SQLite connection keeps the file open, and locked on Windows
-        angrdb = AngrDB(project=self.main_instance.project.am_obj, nullpool=True)
-        extra_info = self.plugins.angrdb_store_entries()
-        angrdb.dump(file_path, kbs=[self.main_instance.kb], extra_info=extra_info)
-        self.main_instance.database_path = file_path
-        return True
+        return headless_workspace.save_database(self, file_path)
 
     def load_database(self, file_path: str, on_loaded=None):
         """
@@ -638,34 +621,13 @@ class Workspace:
         finishes, the project/CFG/CFB containers are populated and views are refreshed, then the
         optional ``on_loaded(file_path)`` callback is invoked.
         """
-        job = LoadAngrDBJob(self.main_instance, file_path, ["global"], other_kbs={}, extra_info={})
-        job._on_finish = partial(self._on_database_loaded, job, on_loaded)
-        self.job_manager.add_job(job)
-        return job
+        return headless_workspace.load_database(
+            self, file_path, lambda job, *args: self._on_database_loaded(job, on_loaded, *args)
+        )
 
     def _on_database_loaded(self, job, on_loaded, *args, **kwargs) -> None:  # pylint:disable=unused-argument
-        proj = job.project
-        if proj is None:
+        if not headless_workspace.apply_loaded_database(self, job):
             return
-
-        cfg = proj.kb.cfgs["CFGFast"]
-        cfb = proj.analyses.CFB()  # it will load functions from kb
-
-        self.main_instance.database_path = job.file_path
-        self.main_instance._reset_containers()
-        self.main_instance.project = proj
-        self.main_instance.cfg = cfg
-        self.main_instance.cfb = cfb
-        self.main_instance.project.am_event(initialized=True)
-
-        # trigger callbacks
-        self.reload()
-        for container in (self.main_instance.cfb, self.main_instance.cfg):
-            if isinstance(container, ObjectContainer):
-                container.am_event()
-        self.on_cfg_generated()
-        self.main_instance.annotations.deserialize(job.extra_info)
-        self.plugins.angrdb_load_entries(job.extra_info)
 
         if on_loaded is not None:
             on_loaded(job.file_path)
