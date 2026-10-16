@@ -2,6 +2,8 @@
 Test cases for the Preferences dialog.
 """
 
+# pylint: disable=no-self-use
+
 from __future__ import annotations
 
 import unittest
