@@ -27,6 +27,8 @@ dependencies = [
   "binsync==5.7.11",
   "rpyc",
   "qtconsole",
+  "platformdirs",
+  "textual>=8.2",
 ]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -42,6 +44,7 @@ bintrace = ["bintrace"]
 unicorn = ["angr[unicorn]"]
 llm = ["angr[llm]", "uvicorn"]
 keystone = ["angr[keystone]"]
+tui = ["textual-image"]
 
 [dependency-groups]
 dev = [
@@ -75,6 +78,7 @@ testing = [
 [project.scripts]
 am = "angrmanagement.__main__:main"
 angr-management = "angrmanagement.__main__:main"
+am-tui = "angrmanagement.tui.__main__:main"
 
 [tool.setuptools]
 include-package-data = true
