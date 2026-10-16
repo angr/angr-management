@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, get_args
 
 from bidict import bidict
 from PySide6.QtCore import QSize, QSortFilterProxyModel, Qt
-from PySide6.QtGui import QColor, QStandardItem, QStandardItemModel
+from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
     QCheckBox,
@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.config import Conf, save_config
+from angrmanagement.config.color import Color
 from angrmanagement.config.color_schemes import BASE_SCHEME, COLOR_SCHEMES
 from angrmanagement.config.config_manager import ENTRIES
 from angrmanagement.logic import GlobalInfo
@@ -174,7 +175,7 @@ class ThemeAndColors(Page):
 
         root = GroupPropertyItem("root")
         for ce in ENTRIES:
-            if ce.type_ is QColor:
+            if ce.type_ is Color:
                 prop = ColorPropertyItem(ce.name, getattr(Conf, ce.name))
                 root.addChild(prop)
                 self._colors_to_save[ce.name] = (ce, prop)
@@ -196,7 +197,8 @@ class ThemeAndColors(Page):
         for prop, value in scheme.items():
             if prop in self._colors_to_save:
                 row = self._colors_to_save[prop][1]
-                row.value = value
+                # the schemes hold neutral values; the property editor edits QColors
+                row.value = value.to_qcolor() if isinstance(value, Color) else value
             if prop in self._conf_to_save:
                 self._conf_to_save[prop] = value
         self._model.endResetModel()

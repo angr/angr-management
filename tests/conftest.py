@@ -4,9 +4,14 @@ from __future__ import annotations
 # shiboken __feature__ import hook otherwise collides with pydantic's lazy imports under pytest,
 # breaking fastmcp import and causing test_mcp_server to skip depending on collection order.
 import contextlib
+import os
+import tempfile
 
 with contextlib.suppress(ImportError):
     import fastmcp  # noqa: F401  # pylint:disable=unused-import
+
+# Keep the tests' configuration away from the user's: angr management reads and saves config.toml in this directory.
+os.environ.setdefault("ANGR_MANAGEMENT_CONFIG_DIR", tempfile.mkdtemp(prefix="angr-management-test-config-"))
 
 import sys
 import threading
