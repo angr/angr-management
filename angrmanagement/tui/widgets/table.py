@@ -143,7 +143,8 @@ class TableWidget(DataTable):
             columns = self.model.columns
             self.add_rows(self.cells_of_row(row, columns, theme) for row in range(first, last + 1))
             return
-        if kind == DATA and last < self.row_count:
+        if kind == DATA and last < self.row_count and last - first < 64:
+            # a few rows: update their cells; many: building the rows again is cheaper
             theme = current_theme(self)
             columns = self.model.columns
             for row in range(first, last + 1):
