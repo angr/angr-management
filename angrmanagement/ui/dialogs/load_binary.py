@@ -821,9 +821,10 @@ class LoadBinary(QDialog):
             else:
                 skip_libs.add(item.text())
 
-        self.load_options = {}
-        self.load_options["auto_load_libs"] = self.option_widgets["auto_load_libs"].isChecked()
-        self.load_options["load_debug_info"] = self.option_widgets["load_debug_info"].isChecked()
+        # self.load_options and self.simos are set only once every field is valid, so a selection that failed
+        # validation and was then cancelled is not loaded
+        auto_load_libs = self.option_widgets["auto_load_libs"].isChecked()
+        load_debug_info = self.option_widgets["load_debug_info"].isChecked()
 
         outer_backend_dropdown: QComboBox = self.option_widgets["outer_backend"]
         outer_backend: str | None = outer_backend_dropdown.currentText()
@@ -852,13 +853,6 @@ class LoadBinary(QDialog):
                 None, "Incorrect architecture selection", "Please select an architecture before continue."
             )
             return
-
-        arch = item.arch
-        if pypcode and isinstance(arch, pypcode.ArchLanguage):
-            arch = archinfo.ArchPcode(arch.id)
-        self.load_options["arch"] = arch
-
-        self.simos = self.available_simos[cur_simos_name]
 
         addresses = {}
         for key, checkbox, caption, message in (
@@ -901,8 +895,8 @@ class LoadBinary(QDialog):
             simos_name=cur_simos_name,
             arch=item.arch,
             outer_backend=outer_backend,
-            auto_load_libs=self.load_options["auto_load_libs"],
-            load_debug_info=self.load_options["load_debug_info"],
+            auto_load_libs=auto_load_libs,
+            load_debug_info=load_debug_info,
             force_load_libs=force_load_libs,
             skip_libs=skip_libs,
             base_addr=addresses.get("base_addr"),
@@ -1014,8 +1008,3 @@ class LoadBinary(QDialog):
         except LoadBinaryError:
             pass
         return None, None
-
-    @staticmethod
-    def binary_loading_failed(filename) -> None:
-        # TODO: Normalize the path for Windows
-        QMessageBox.critical(None, "Failed to load binary", f"angr failed to load binary {filename}.")
