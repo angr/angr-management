@@ -28,7 +28,6 @@ dependencies = [
   "rpyc",
   "qtconsole",
   "platformdirs",
-  "textual>=8.2",
 ]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -44,7 +43,7 @@ bintrace = ["bintrace"]
 unicorn = ["angr[unicorn]"]
 llm = ["angr[llm]", "uvicorn"]
 keystone = ["angr[keystone]"]
-tui = ["textual-image"]
+tui = ["textual>=8.2", "textual-image"]
 
 [dependency-groups]
 dev = [

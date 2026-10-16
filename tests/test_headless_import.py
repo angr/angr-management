@@ -6,7 +6,10 @@ The core of angr management imports without PySide6.
 
 from __future__ import annotations
 
+import io
 import unittest
+from contextlib import redirect_stderr
+from unittest.mock import patch
 
 from headless import run_without_qt  # pylint: disable=import-error
 
@@ -81,6 +84,27 @@ class TestHeadlessImport(unittest.TestCase):
             assert name in result["imported"], name
         # the walk must have found the job modules, or it proves little
         assert sum(name.startswith("angrmanagement.data.jobs.") for name in result["imported"]) >= 20
+
+
+class TestTuiEntryPoint(unittest.TestCase):
+    """am-tui says what is missing: Textual is in the tui extra, not a dependency of angr management."""
+
+    def test_reports_the_missing_extra(self):
+        from angrmanagement.tui.__main__ import main  # pylint: disable=import-outside-toplevel
+
+        err = io.StringIO()
+        # a None entry in sys.modules makes the import raise ImportError, as a missing package does
+        with patch.dict("sys.modules", {"textual": None}), redirect_stderr(err):
+            assert main() == 2
+        assert "angr-management[tui]" in err.getvalue()
+
+    def test_reports_that_the_frontend_is_not_written_yet(self):
+        from angrmanagement.tui.__main__ import main  # pylint: disable=import-outside-toplevel
+
+        err = io.StringIO()
+        with redirect_stderr(err):
+            assert main() == 2
+        assert "not implemented yet" in err.getvalue()
 
 
 if __name__ == "__main__":
