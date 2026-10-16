@@ -16,8 +16,8 @@ def install_qt_frontend() -> None:
     """
     Make the calling thread the GUI thread and install the Qt executor, UI services and configuration adapter.
 
-    Call it on the GUI thread once the QApplication exists. It sets ``GlobalInfo.gui_thread``, creates an event
-    receiver if there is none yet (the main window creates its own as well), installs a QtExecutor as
+    Call it on the GUI thread once the QApplication exists; calling it again on the same thread changes nothing. It sets
+    ``GlobalInfo.gui_thread``, creates the event receiver if there is none yet, installs a QtExecutor as
     ``GlobalInfo.executor`` and QtServices as ``GlobalInfo.ui_services``, and makes ``Conf`` hand out QColor and
     QFont values.
     """

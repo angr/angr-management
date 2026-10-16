@@ -6,12 +6,10 @@ import unittest
 from typing import TYPE_CHECKING
 
 import angr
-from PySide6.QtCore import QThread
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from angrmanagement.config import Conf
-from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.main_window import MainWindow
 from angrmanagement.ui.qt_frontend import install_qt_frontend
 
@@ -70,7 +68,6 @@ class AngrManagementTestCase(unittest.TestCase):
 
     def setUp(self):
         self.app = create_qapp()
-        GlobalInfo.gui_thread = QThread.currentThread()
         self.main = MainWindow(show=False)
         QTest.qWaitForWindowActive(self.main)
 

@@ -11,7 +11,7 @@ import sys
 import time
 import warnings
 
-from PySide6.QtCore import QThread, QTimer
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
 from . import __version__
@@ -206,7 +206,6 @@ def start_management(
     angr.procedures.definitions.load_all_definitions()
 
     splash.setProgress(0.9, "Initializing main window")
-    GlobalInfo.gui_thread = QThread.currentThread()
     file_to_open = filepath if filepath else None
     if mcp_port is not None:
         Conf.mcp_server_port = mcp_port
