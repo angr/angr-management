@@ -271,7 +271,8 @@ class FilterableTable(Vertical):
         self.status = status
         self.show_filter = show_filter
         self.table = TableWidget(model)
-        self.filter_box = Input(placeholder=placeholder, classes="filter", compact=True)
+        # not select_on_focus: the key that started filtering must not be replaced by the next one
+        self.filter_box = Input(placeholder=placeholder, classes="filter", compact=True, select_on_focus=False)
         self.status_label = Static("", classes="status")
 
     def compose(self) -> ComposeResult:

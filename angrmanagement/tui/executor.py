@@ -10,6 +10,7 @@ when the deferred future does, so a worker thread can wait for an answer without
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import logging
 import threading
 from typing import TYPE_CHECKING, Any
@@ -66,6 +67,8 @@ class TextualExecutor:
     def __init__(self) -> None:
         self._owner = threading.get_ident()
         self._loop: asyncio.AbstractEventLoop | None = None
+        # the context of the UI loop (Textual keeps the active app in a context variable)
+        self._context: contextvars.Context | None = None
         self._pending: list[_Call] = []
         self._lock = threading.Lock()
         #: whether the callable running now was scheduled by a thread that waits for its result
@@ -77,9 +80,10 @@ class TextualExecutor:
         loop = loop if loop is not None else asyncio.get_running_loop()
         with self._lock:
             self._loop = loop
+            self._context = contextvars.copy_context()
             pending, self._pending = self._pending, []
         for call in pending:
-            loop.call_soon(self._run, call)
+            loop.call_soon(self._run, call, context=self._context.copy())
 
     def detach(self) -> None:
         """The loop is gone; later calls wait for the next :meth:`attach`."""
@@ -127,11 +131,13 @@ class TextualExecutor:
     def _submit(self, call: _Call) -> None:
         with self._lock:
             loop = self._loop
-            if loop is None:
+            context = self._context
+            if loop is None or context is None:
                 self._pending.append(call)
                 return
         try:
-            loop.call_soon_threadsafe(self._run, call)
+            # a callback runs in the context of the thread that schedules it unless told otherwise
+            loop.call_soon_threadsafe(self._run, call, context=context.copy())
         except RuntimeError:
             # the loop closed under us
             with self._lock:

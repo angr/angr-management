@@ -27,7 +27,7 @@ from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.workspace import BINARY_FILE_FILTER, recent_directory
-from angrmanagement.present.keymap import Binding, Chord, Keymap, global_keymap
+from angrmanagement.present.keymap import KITTY_KEYBOARD_TIER, Binding, Chord, Keymap, global_keymap
 from angrmanagement.present.menus import Menu as PresentMenu
 from angrmanagement.present.menus import MenuEntry
 from angrmanagement.present.shell import DOCUMENTATION_URL, build_main_menus
@@ -198,6 +198,17 @@ class AmApp(App):
             if binding.args:
                 action += "(" + ", ".join(repr(a) for a in binding.args) + ")"
             self.bind(key, action, description=binding.description, show=False)
+        # Alt+mnemonic opens a menu, where the terminal reports it and no shortcut has the chord
+        taken = {Chord.parse(b.chord) for b in self.keymap.for_tier(self.caps) if not b.is_sequence}
+        for idx, menu in enumerate(self.menus):
+            if not menu.mnemonic:
+                continue
+            chord = Chord(menu.mnemonic.upper(), alt=True)
+            if chord in taken or (self.caps.tier < KITTY_KEYBOARD_TIER and not chord.legacy_reportable()):
+                continue
+            self.bind(
+                chord.to_textual(), f"open_menu_index({idx})", description=f"Open the {menu.text} menu", show=False
+            )
 
     #
     # The screen
@@ -798,6 +809,9 @@ class AmApp(App):
 
     def action_open_menu_bar(self) -> None:
         self.menu_bar.open_menu(0)
+
+    def action_open_menu_index(self, idx: int) -> None:
+        self.menu_bar.open_menu(idx)
 
     def action_raise_view_by_index(self, idx: int) -> None:
         self.workspace.view_manager.raise_view_by_index(idx)
