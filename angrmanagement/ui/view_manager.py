@@ -138,12 +138,7 @@ class ViewManager(BaseViewManager):
         """
         Handle dock focus events.
         """
-        view = self.view_to_dock.inverse.get(new, None)
-        if view:
-            self._promote_view(view)
-            on_focused = getattr(view, "on_focused", None)
-            if on_focused is not None:
-                on_focused()
+        self.handle_focus_changed(self.view_to_dock.inverse.get(new, None))
 
     def _on_dock_widget_closed(self, dock: QtAds.CDockWidget) -> None:
         """
