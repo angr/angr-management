@@ -2,8 +2,8 @@
 Screenshots of the terminal frontend, without a terminal.
 
 :func:`shoot` runs the app headless through Textual's pilot, opens a binary, shows each view in turn and saves an SVG
-of the screen for each, the way ``am-tui --screenshot-dir`` does. :func:`show_view` and :func:`capture` are the steps,
-for tests and other harnesses.
+of the screen for each, the way ``am-tui --screenshot-dir`` does. :func:`show_view` and :meth:`AmApp.capture` are the
+steps, for tests and other harnesses.
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps
+from angrmanagement.tui.views import TUI_VIEW_CLASSES
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -32,11 +33,6 @@ async def show_view(pilot: Pilot, category: str) -> Widget | None:
     return app.view_widget(category)
 
 
-def capture(app: AmApp, path: str) -> str:
-    """Save the screen as an SVG at ``path``; returns the path."""
-    return app.capture(path)
-
-
 async def shoot(
     outdir: str,
     binary: str | None = None,
@@ -54,8 +50,8 @@ async def shoot(
         if binary:
             await app.open_binary(binary, function=function)
             await pilot.pause()
-        written.append(capture(app, os.path.join(outdir, "window.svg")))
-        for category in categories if categories is not None else app.VIEW_CATEGORIES:
+        written.append(app.capture(os.path.join(outdir, "window.svg")))
+        for category in categories if categories is not None else list(TUI_VIEW_CLASSES):
             if await show_view(pilot, category) is not None:
-                written.append(capture(app, os.path.join(outdir, f"{category}.svg")))
+                written.append(app.capture(os.path.join(outdir, f"{category}.svg")))
     return written

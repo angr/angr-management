@@ -29,7 +29,7 @@ from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.workspace import BINARY_FILE_FILTER, recent_directory
 from angrmanagement.present.keymap import KITTY_KEYBOARD_TIER, Binding, Chord, Keymap, global_keymap
 from angrmanagement.present.menus import Menu as PresentMenu
-from angrmanagement.present.menus import MenuEntry
+from angrmanagement.present.menus import MenuEntry, walk_entries
 from angrmanagement.present.shell import DOCUMENTATION_URL, build_main_menus
 from angrmanagement.present.theme import CUSTOM_SCHEME_NAME, Theme
 from angrmanagement.present.xrefs import XRefsModel
@@ -39,7 +39,6 @@ from angrmanagement.tui.palette import AmCommandProvider, GotoProvider
 from angrmanagement.tui.services import TuiServices
 from angrmanagement.tui.theme import all_textual_themes, theme_id
 from angrmanagement.tui.view_manager import DockArea
-from angrmanagement.tui.views import TUI_VIEW_CLASSES
 from angrmanagement.tui.widgets.menubar import MenuBar, MenuPopup
 from angrmanagement.tui.widgets.statusbar import StatusBar
 from angrmanagement.tui.workspace import TuiWorkspace
@@ -75,13 +74,6 @@ TUI_BINDINGS = Keymap(
 SHIFT_SHIFT_TIMEOUT = 1.0
 
 
-def chord_display(chord: str | None) -> str | None:
-    """A chord as menus show it."""
-    if not chord:
-        return None
-    return chord
-
-
 class AmApp(App):
     """
     angr management in a terminal.
@@ -95,9 +87,6 @@ class AmApp(App):
 
     TITLE = "angr management"
     COMMANDS: ClassVar = App.COMMANDS | {AmCommandProvider}
-
-    #: The view categories the terminal frontend has (for the screenshot harness).
-    VIEW_CATEGORIES: ClassVar[list[str]] = list(TUI_VIEW_CLASSES)
 
     CSS = """
     Screen {
@@ -304,12 +293,12 @@ class AmApp(App):
         if shortcut is None:
             return None
         text = shortcut if isinstance(shortcut, str) else str(shortcut.toString())
-        return chord_display(self.keymap.effective_shortcut(text, self.caps))
+        return self.keymap.effective_shortcut(text, self.caps) or None
 
     def shortcut_for_command(self, command: Command) -> str | None:
         """The chord of the menu entry that runs ``command``, if any."""
         for menu in self.menus:
-            for entry in _walk(menu):
+            for _path, entry in walk_entries(menu):
                 if getattr(entry.action, "__name__", None) == command.name and entry.shortcut:
                     return self.shortcut_text(entry.shortcut)
         return None
@@ -835,7 +824,7 @@ class AmApp(App):
     # What the screenshot harness and the tests use
     #
 
-    async def open_binary(self, path: str, *, function: str | None = "main", decompile: bool = True) -> None:  # pylint:disable=unused-argument
+    async def open_binary(self, path: str, *, function: str | None = "main") -> None:
         """Load ``path`` without asking anything, run the default analyses, and show ``function``."""
         interactive = self.services.interactive
         self.services.interactive = False
@@ -864,31 +853,6 @@ class AmApp(App):
             self.workspace.view_manager.first_view_in_category(category)
         )
 
-    def describe_view(self, category: str) -> dict:
-        view = self.view_widget(category)
-        if view is None:
-            return {"category": category}
-        out: dict[str, Any] = {
-            "category": category,
-            "class": type(view).__name__,
-            "caption": getattr(view, "caption", ""),
-        }
-        console = self.workspace.view_manager.first_view_in_category("console")
-        func = None
-        if console is not None and console.presenter.kernel_manager is not None:
-            func = console.presenter.kernel_manager.kernel.shell.user_ns.get("func")
-        if func is not None:
-            out["function"] = {"name": func.name, "addr": hex(func.addr)}
-        return out
-
-
-def _walk(menu: PresentMenu):
-    for item in menu.items():
-        if isinstance(item, MenuEntry):
-            yield item
-        elif isinstance(item, PresentMenu):
-            yield from _walk(item)
-
 
 def config_file_path() -> str:
     """Where the configuration is saved."""
@@ -897,7 +861,4 @@ def config_file_path() -> str:
     return config.config_path or "(not saved)"
 
 
-#: The name the screenshot harness looks for.
-AngrManagementApp = AmApp
-
-__all__ = ["AmApp", "AngrManagementApp", "Chord"]
+__all__ = ["AmApp"]
