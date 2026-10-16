@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import functools
-from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import PySide6QtAds as QtAds
 from bidict import bidict
 from PySide6.QtWidgets import QSizePolicy
 
-from angrmanagement.ui.views.view import InstanceView
+from angrmanagement.logic.view_manager import BaseViewManager, default_position
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
@@ -16,9 +15,44 @@ if TYPE_CHECKING:
     from .views.view import BaseView
 
 
-class ViewManager:
+def qt_view_classes() -> dict[str, Any]:
+    """The Qt view class of each view category."""
+    from . import views  # pylint:disable=import-outside-toplevel
+
+    return {
+        "disassembly": views.DisassemblyView,
+        "pseudocode": views.CodeView,
+        "hex": views.HexView,
+        "functions": views.FunctionsView,
+        "strings": views.StringsView,
+        "search": views.SearchView,
+        "patches": views.PatchesView,
+        "types": views.TypesView,
+        "comments": views.CommentsView,
+        "bookmarks": views.BookmarksView,
+        "signatures": views.SignaturesView,
+        "traces": views.TracesView,
+        "tracemap": views.TraceMapView,
+        "symexec": views.SymexecView,
+        "states": views.StatesView,
+        "registers": views.RegistersView,
+        "stack": views.StackView,
+        "breakpoints": views.BreakpointsView,
+        "call_explorer": views.CallExplorerView,
+        "console": views.ConsoleView,
+        "log": views.LogView,
+        "jobs": views.JobsView,
+        "mcp_history": views.MCPHistoryView,
+        "proximity": views.ProximityView,
+        "dependencies": views.DependencyView,
+        "data_dependency": views.DataDepView,
+        "pattern": views.PatternView,
+    }
+
+
+class ViewManager(BaseViewManager):
     """
-    Manages views.
+    Manages views, docked with Qt Advanced Docking System.
     """
 
     DOCKING_POSITIONS = {
@@ -30,17 +64,32 @@ class ViewManager:
     }
 
     def __init__(self, workspace: Workspace) -> None:
-        self.workspace = workspace
-        self.views: list[BaseView] = []
+        super().__init__(workspace)
         self.docks = []
         self.view_to_dock = bidict()
-        self.views_by_category: dict[str, list[BaseView]] = defaultdict(list)
-        self.views_by_activation: list[BaseView] = []
+        self._view_classes: dict[str, Any] | None = None
         self.main_window.dock_manager.focusedDockWidgetChanged.connect(self._on_dock_widget_focus_changed)
 
     @property
     def main_window(self):
         return self.workspace._main_window
+
+    @property
+    def view_classes(self) -> dict[str, Any]:
+        if self._view_classes is None:
+            self._view_classes = qt_view_classes()
+        return self._view_classes
+
+    def view_categories(self):
+        return self.view_classes.keys()
+
+    def create_view(self, category: str, position: str | None = None) -> BaseView | None:
+        view_class = self.view_classes.get(category)
+        if view_class is None:
+            return None
+        view = view_class(self.workspace, position or default_position(category), self.workspace.main_instance)
+        self.add_view(view)
+        return view
 
     def main_window_initialized(self) -> None:
         """
@@ -49,25 +98,6 @@ class ViewManager:
         """
         for view in self.views:
             view.mainWindowInitializedEvent()
-
-    def _update_view_index_in_category(self, view: BaseView) -> None:
-        """
-        Set lowest available index value in category for a view not yet added.
-        """
-        existing_views = self.views_by_category[view.category]
-        if view in existing_views:
-            return
-        existing_ids = {view.index for view in existing_views}
-        max_id = max(existing_ids) if existing_ids else 0
-        candidates = set(range(1, max_id + 2)) - existing_ids
-        view.index = min(candidates)
-
-    def _promote_view(self, view: BaseView) -> None:
-        """
-        Move view to first position in views_by_activation.
-        """
-        self.views_by_activation.remove(view)
-        self.views_by_activation.insert(0, view)
 
     def add_view(self, view: BaseView) -> None:
         """
@@ -101,17 +131,8 @@ class ViewManager:
             policy.setVerticalStretch(1)
             area_widget.setSizePolicy(policy)
 
-    @property
-    def most_recently_focused_view(self) -> BaseView | None:
-        if self.views_by_activation:
-            return self.views_by_activation[0]
-        return None
-
-    def get_most_recently_focused_view_by_docking_area(self, area: str) -> BaseView | None:
-        for view in self.views_by_activation:
-            if view.default_docking_position == area:
-                return view
-        return None
+    def focus_view(self, view: BaseView) -> None:
+        view.setFocus()
 
     def _on_dock_widget_focus_changed(self, _, new: QtAds.CDockWidget | None) -> None:
         """
@@ -120,8 +141,9 @@ class ViewManager:
         view = self.view_to_dock.inverse.get(new, None)
         if view:
             self._promote_view(view)
-        if isinstance(view, InstanceView):
-            view.on_focused()
+            on_focused = getattr(view, "on_focused", None)
+            if on_focused is not None:
+                on_focused()
 
     def _on_dock_widget_closed(self, dock: QtAds.CDockWidget) -> None:
         """
@@ -168,23 +190,6 @@ class ViewManager:
         dock.raise_()
         view.focusWidget()
 
-    def first_view_in_category(self, category: str) -> BaseView | None:
-        """
-        Return the first view in a specific category.
-        """
-        if self.views_by_category[category]:
-            return self.views_by_category[category][0]
-        return None
-
-    def current_view_in_category(self, category: str) -> BaseView | None:
-        """
-        Return the current in a specific category.
-        """
-        for view in self.views_by_activation:
-            if view.category == category:
-                return view
-        return None
-
     def _adjust_current_tab_idx(self, offset: int) -> None:
         """
         Select tab in same dock area with index equal to index of most recently activated center view plus `offset`.
@@ -209,7 +214,3 @@ class ViewManager:
         Shift to the previous tab
         """
         self._adjust_current_tab_idx(-1)
-
-    @property
-    def current_tab(self) -> BaseView | None:
-        return self.get_most_recently_focused_view_by_docking_area("center")

@@ -11,9 +11,8 @@ no-op. The project database functions here are shared with the Qt workspace.
 from __future__ import annotations
 
 import logging
-from collections import defaultdict
 from functools import partial
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
 from angr.angrdb import AngrDB
 
@@ -26,6 +25,7 @@ from angrmanagement.plugins import PluginManager
 from . import GlobalInfo
 from .analysis_manager import AnalysisManager
 from .jobmanager import JobManager
+from .view_manager import BaseViewManager
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -139,25 +139,11 @@ def submit_background_decompilation(instance: Instance, job_manager: JobManager,
 #
 
 
-class HeadlessViewManager:
-    """The view manager of a workspace without views: every lookup finds nothing."""
+class HeadlessViewManager(BaseViewManager):
+    """The view manager of a workspace without views: it creates none, so every lookup finds nothing."""
 
-    def __init__(self) -> None:
-        self.views: list[Any] = []
-        self.current_tab = None
-
-    @property
-    def views_by_category(self) -> defaultdict[str, list[Any]]:
-        return defaultdict(list)
-
-    def first_view_in_category(self, category: str):  # pylint:disable=unused-argument
+    def create_view(self, category: str, position: str | None = None) -> None:  # pylint:disable=unused-argument
         return None
-
-    def current_view_in_category(self, category: str):  # pylint:disable=unused-argument
-        return None
-
-    def raise_view(self, view) -> None:
-        pass
 
 
 class HeadlessWorkspace:
@@ -179,7 +165,7 @@ class HeadlessWorkspace:
         self._main_instance = instance if instance is not None else Instance()
         self.job_manager = JobManager(self)
         self.job_manager.job_exception.connect(self._on_job_exception)
-        self.view_manager = HeadlessViewManager()
+        self.view_manager = HeadlessViewManager(self)
         # PluginManager is typed for the Qt workspace; it only needs what this class provides until a plugin runs
         self.plugins = PluginManager(self)  # pyright: ignore[reportArgumentType]
         self.analysis_manager = AnalysisManager(self)
