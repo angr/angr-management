@@ -1,5 +1,6 @@
 """
-The Qt table widgets still take the arguments they took before their rows moved into neutral models.
+The Qt table widgets still take the arguments they took before their rows moved into neutral models, and the menu
+classes they used can still be imported.
 """
 
 # pylint: disable=protected-access,missing-class-docstring
@@ -11,7 +12,11 @@ import unittest
 from common import ProjectOpenTestCase
 
 from angrmanagement.present.comments import CommentsPresenter
+from angrmanagement.present.functions import function_context_menu
+from angrmanagement.present.menus import MenuEntry
 from angrmanagement.present.xrefs import XRefsModel
+from angrmanagement.ui.menus.function_context_menu import FunctionContextMenu
+from angrmanagement.ui.menus.log_menu import LogMenu
 from angrmanagement.ui.widgets.qcomment_table import QCommentTable, QCommentTableView
 from angrmanagement.ui.widgets.qxref_viewer import QXRefAddressModel, QXRefViewer
 
@@ -51,6 +56,33 @@ class TestCommentTableArguments(ProjectOpenTestCase):
             assert view.comments_model.rowCount() == 1
         finally:
             table.close()
+
+
+def _captions(qmenu) -> list[str]:
+    return [action.text() for action in qmenu.actions() if not action.isSeparator()]
+
+
+class TestMenuModules(ProjectOpenTestCase):
+    """The menu classes the function table and the log view used before their menus moved into presenters."""
+
+    def test_function_context_menu(self):
+        func = self.project.kb.functions[self.project.entry]
+        old = FunctionContextMenu(self.workspace, parent=self.main).set([func])
+        new = function_context_menu(self.workspace, [func])
+        assert new is not None
+        expected = [e.caption for e in new.items() if isinstance(e, MenuEntry)]
+        assert expected[:2] == ["Show Function Info", "Edit Function Comment..."]
+        assert _captions(old.qmenu()) == expected
+        assert _captions(old.qmenu(extra_entries=[("Extra", lambda: None)])) == [*expected, "Extra"]
+
+    def test_log_menu(self):
+        view = self.workspace.view_manager.first_view_in_category("log")
+        assert view is not None
+        widget = view._log_widget
+        expected = [e.caption for e in widget.presenter.log_menu([]).entries if isinstance(e, MenuEntry)]
+        menu = LogMenu(widget)
+        assert menu.parent is widget
+        assert _captions(menu.qmenu()) == expected
 
 
 if __name__ == "__main__":
