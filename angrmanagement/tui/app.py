@@ -170,8 +170,14 @@ class AmApp(App):
         self._plugin_menu = self.menus[4]
         self.workspace.main_instance.project.am_subscribe(self._on_project_changed)
         self.menu_bar = MenuBar(self.menus, self.shortcut_text)
-        self.status_bar = StatusBar(self.workspace.job_manager.interrupt_current_job, self.caps.summary())
+        self.status_bar = StatusBar(
+            self.workspace.job_manager.interrupt_current_job, self.caps.summary(), self._plugin_status_texts
+        )
         self._bind_keys()
+
+    def _plugin_status_texts(self) -> list[str]:
+        plugins = getattr(self.workspace, "plugins", None)
+        return plugins.status_bar_texts() if plugins is not None else []
 
     @staticmethod
     def _known_scheme(name: str) -> bool:

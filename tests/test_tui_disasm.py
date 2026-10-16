@@ -292,6 +292,9 @@ class NeutralPlugin(BasePlugin):
     def decorate_insn(self, addr, view):
         return [Mark("hot", "disasm.mark", "after")] if addr == 0x400721 else []
 
+    def status_bar_text(self):
+        return "neutral: on"
+
 
 class TestPlugins(unittest.TestCase):
     def test_neutral_hooks_show_in_the_terminal(self):
@@ -306,6 +309,8 @@ class TestPlugins(unittest.TestCase):
                 block = doc.blocks[doc.entry]
                 line = block.lines[block.rows_of(0x400721)[0]]
                 assert all("bg:#abcdef" in span.style for span in line.spans)
+                app.status_bar.refresh_plugin_texts()
+                assert app.status_bar.plugin_text == "neutral: on"
             finally:
                 plugins.active_plugins.pop("neutral", None)
 

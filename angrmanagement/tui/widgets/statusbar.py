@@ -57,10 +57,18 @@ class StatusBar(Horizontal):
     }
     """
 
-    def __init__(self, on_interrupt: Callable[[], None] | None = None, caps_text: str = "") -> None:
+    def __init__(
+        self,
+        on_interrupt: Callable[[], None] | None = None,
+        caps_text: str = "",
+        plugin_texts: Callable[[], list[str]] | None = None,
+    ) -> None:
         super().__init__()
         self.on_interrupt = on_interrupt
         self.caps_text = caps_text
+        #: the plugins' status texts (their status_bar_text hooks), read every second
+        self.plugin_texts = plugin_texts
+        self._plugin_text = ""
         self._progress_message = ""
         self._progress_percentage = 0.0
         self._stopwatch_start = 0.0
@@ -74,11 +82,13 @@ class StatusBar(Horizontal):
         yield Static("", id="status-stopwatch")
         yield Static("", id="status-interrupt")
         yield ProgressBar(total=100, show_eta=False, show_percentage=False, id="status-progress")
+        yield Static("", id="status-plugins")
         yield Static(Text(self.caps_text), id="status-caps")
 
     def on_mount(self) -> None:
         self.set_interval(1, self._tick)
         self._show(False)
+        self.query_one("#status-plugins", Static).display = False
 
     @property
     def _live(self) -> bool:
@@ -139,6 +149,22 @@ class StatusBar(Horizontal):
     def _tick(self) -> None:
         if self._job_running:
             self._refresh()
+        self.refresh_plugin_texts()
+
+    def refresh_plugin_texts(self) -> None:
+        """Show what the plugins' status_bar_text hooks say now."""
+        if self.plugin_texts is None or not self._live:
+            return
+        text = "  ".join(self.plugin_texts())
+        if text != self._plugin_text:
+            self._plugin_text = text
+            label = self.query_one("#status-plugins", Static)
+            label.update(Text(text))
+            label.display = bool(text)
+
+    @property
+    def plugin_text(self) -> str:
+        return self._plugin_text
 
     #
     # Messages
