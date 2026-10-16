@@ -10,6 +10,7 @@ import tomlkit.exceptions
 import tomlkit.items
 
 from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.signal import _max_positional_args
 from angrmanagement.utils.env import app_root
 
 from .color import Color
@@ -402,17 +403,26 @@ ENTRIES = [
 
 
 class _FrontendListener:
-    """Calls a ``Conf.connect`` listener with the value converted for the frontend."""
+    """
+    Calls a ``Conf.connect`` listener with the value converted for the frontend.
 
-    __slots__ = ("_manager", "_key", "func")
+    A listener that takes no arguments is called with none, as a Qt slot that takes fewer arguments than its signal
+    is.
+    """
 
-    def __init__(self, manager: ConfigurationManager, key: str, func: Callable[[Any], None]) -> None:
+    __slots__ = ("_key", "_manager", "_takes_value", "func")
+
+    def __init__(self, manager: ConfigurationManager, key: str, func: Callable[..., None]) -> None:
         self._manager = manager
         self._key = key
         self.func = func
+        self._takes_value = _max_positional_args(func) != 0
 
     def __call__(self, value) -> None:
-        self.func(self._manager.frontend_value(self._key, value))
+        if self._takes_value:
+            self.func(self._manager.frontend_value(self._key, value))
+        else:
+            self.func()
 
     def __eq__(self, other) -> bool:
         return isinstance(other, _FrontendListener) and other._key == self._key and other.func == self.func

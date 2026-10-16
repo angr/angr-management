@@ -239,6 +239,22 @@ class TestFrontendAdapter(unittest.TestCase):
         self.conf.palette_window = Color(7, 8, 9)
         assert len(got) == 2
 
+    def test_listeners_that_take_no_value_are_called_without_one(self):
+        # a Qt slot taking fewer arguments than its signal was called with the rest dropped; so is this one
+        self.conf.set_frontend_adapter(self.adapter)
+        calls = []
+
+        def listener():
+            calls.append("called")
+
+        self.conf.connect("palette_window", listener, False)
+        with self.assertNoLogs("angrmanagement.logic.signal", level="ERROR"):
+            self.conf.palette_window = Color(4, 5, 6)
+        assert calls == ["called"]
+        self.conf.disconnect("palette_window", listener)
+        self.conf.palette_window = Color(7, 8, 9)
+        assert calls == ["called"]
+
     def test_font_metrics_and_defaults_come_from_the_adapter(self):
         self.conf.set_frontend_adapter(self.adapter)
         self.conf.code_font = FontSpec("Mono", 10)
