@@ -4,10 +4,11 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QPainter, QTextCursor, QTextDocument
+from PySide6.QtGui import QPainter, QTextCharFormat, QTextCursor, QTextDocument
 from PySide6.QtWidgets import QGraphicsSceneMouseEvent, QGraphicsSimpleTextItem
 
 from angrmanagement.config import Conf, ConfigurationManager
+from angrmanagement.present.block_tree.base import HIGHLIGHT_STYLE
 
 from .qgraph_object import QCachedGraphicsItem
 
@@ -17,6 +18,40 @@ if TYPE_CHECKING:
     from angrmanagement.ui.views import DisassemblyView
 
     from .block_code_objects import BlockTreeNode
+
+
+#: The style keys of a function header's parts, whose text format also names the disassembly font.
+_HEADER_STYLE_KEYS = frozenset(
+    {"disasm_view_function_color", "disasm_view_function_arg_type_color", "disasm_view_function_arg_name_color"}
+)
+
+
+def qt_char_format(style: str | QTextCharFormat) -> QTextCharFormat:
+    """
+    The text format of a block tree style key (see BlockTreeNode.fmt): the foreground of its colour entry, and the
+    highlight background when the key includes the highlight, else a transparent one. A QTextCharFormat that an older
+    node class made itself is returned as it is.
+    """
+    if isinstance(style, QTextCharFormat):
+        return style
+    fmt = QTextCharFormat()
+    keys = style.split()
+    for key in keys:
+        if key == HIGHLIGHT_STYLE:
+            continue
+        if key in _HEADER_STYLE_KEYS:
+            fmt.setFont(Conf.disasm_font)
+        fmt.setForeground(getattr(Conf, key))
+    return highlight_char_format(fmt, HIGHLIGHT_STYLE in keys)
+
+
+def highlight_char_format(fmt: QTextCharFormat, highlighted: bool) -> QTextCharFormat:
+    """``fmt`` with the operand highlight background, or a transparent one."""
+    if highlighted:
+        fmt.setBackground(Conf.disasm_view_operand_highlight_color)
+    else:
+        fmt.setBackground(Qt.GlobalColor.transparent)
+    return fmt
 
 
 class QBlockCodeSelectionMode(Enum):

@@ -1,9 +1,17 @@
+"""
+Moved to :mod:`angrmanagement.present.block_tree`; this package re-exports it for compatibility.
+"""
+
 from __future__ import annotations
 
-from .ail_objects import QAilObj
-from .base_objects import BlockTreeNode, BlockTreeNodeOptions, QVariableObj
-from .disasm_objects import QFunctionHeader
-from .vex_objects import QIROpObj
+from angrmanagement.present.block_tree import (
+    BlockTreeNode,
+    BlockTreeNodeOptions,
+    QAilObj,
+    QFunctionHeader,
+    QIROpObj,
+    QVariableObj,
+)
 
 __all__ = [
     "BlockTreeNode",
