@@ -309,6 +309,21 @@ class TestViews(unittest.TestCase):
             assert second.caption == "Disassembly-2"
             assert second.presenter.function.am_obj.name == "main"
             assert second.presenter.infodock.selected_insns == {0x400739}
+            # not synchronized yet: a jump in the first view leaves the second alone
+            kb: Any = app.workspace.main_instance.kb
+            accepted = kb.functions["accepted"]
+            view.presenter.jump_to(accepted.addr)
+            await settle(pilot)
+            assert second.presenter.function.am_obj.name == "main"
+            # the second view's "Synchronize with" lists the first; checking it makes the cursors follow each other
+            sync_menu = second.presenter.synchronize_with_menu()
+            entry = next(e for e in sync_menu.items() if getattr(e, "text", "") == "Disassembly")
+            entry.trigger()
+            assert second.presenter.sync_state is view.presenter.sync_state
+            auth = kb.functions["authenticate"]
+            view.presenter.jump_to(auth.addr)
+            await settle(pilot)
+            assert second.presenter.function.am_obj is auth
             app.workspace.show_linear_disassembly_view()
             await settle(pilot)
             shown: Any = app.workspace.view_manager.current_view_in_category("disassembly")
