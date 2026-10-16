@@ -52,6 +52,22 @@ class UIServices(Protocol):
         """
         raise NotImplementedError
 
+    def prompt_text_async(self, title: str, label: str, default: str, callback: Callable[[str | None], None]) -> None:
+        """Ask like :meth:`prompt_text` without waiting; ``callback`` gets the answer later, on the UI thread."""
+        raise NotImplementedError
+
+    def pick_open_files_async(
+        self, caption: str, directory: str, name_filter: str, multiple: bool, callback: Callable[[list[str]], None]
+    ) -> None:
+        """Ask like :meth:`pick_open_files` without waiting; ``callback`` gets the files later, on the UI thread."""
+        raise NotImplementedError
+
+    def pick_save_file_async(
+        self, caption: str, directory: str, name_filter: str, callback: Callable[[str | None], None]
+    ) -> None:
+        """Ask like :meth:`pick_save_file` without waiting; ``callback`` gets the path later, on the UI thread."""
+        raise NotImplementedError
+
     def analysis_options(self, workspace, configuration: AnalysesConfiguration) -> AnalysesConfiguration | None:
         """
         Let the user choose which analyses to run and with what options, editing ``configuration`` in place.
@@ -146,6 +162,19 @@ class HeadlessServices:
         self, title: str, text: str, buttons: Sequence[str], default: str, callback: Callable[[str], None]
     ) -> None:
         callback(self.question(title, text, buttons, default))
+
+    def prompt_text_async(self, title: str, label: str, default: str, callback: Callable[[str | None], None]) -> None:
+        callback(self.prompt_text(title, label, default))
+
+    def pick_open_files_async(
+        self, caption: str, directory: str, name_filter: str, multiple: bool, callback: Callable[[list[str]], None]
+    ) -> None:
+        callback(self.pick_open_files(caption, directory, name_filter, multiple))
+
+    def pick_save_file_async(
+        self, caption: str, directory: str, name_filter: str, callback: Callable[[str | None], None]
+    ) -> None:
+        callback(self.pick_save_file(caption, directory, name_filter))
 
     def analysis_options(  # pylint:disable=unused-argument
         self, workspace, configuration: AnalysesConfiguration

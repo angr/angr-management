@@ -5,9 +5,7 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from angrmanagement.logic import GlobalInfo
-
-from .base import InstancePresenter
+from .base import InstancePresenter, ask_text
 from .keymap import table_keymap
 from .menus import Menu, MenuEntry
 from .tables import Column, ListTableModel
@@ -125,9 +123,12 @@ class BookmarksPresenter(InstancePresenter):
 
     def rename(self, bookmark: Bookmark) -> None:
         """Ask for a new label; the Qt view edits the cell in place instead."""
-        label = GlobalInfo.ui_services.prompt_text("Rename bookmark", f"Label for {bookmark.addr:#x}:", bookmark.label)
-        if label is not None:
-            self.instance.annotations.set_bookmark_label(bookmark, label)
+
+        def then(label: str | None) -> None:
+            if label is not None:
+                self.instance.annotations.set_bookmark_label(bookmark, label)
+
+        ask_text("Rename bookmark", f"Label for {bookmark.addr:#x}:", bookmark.label, then)
 
     def delete(self, bookmarks: Sequence[Bookmark]) -> None:
         for bookmark in list(bookmarks):

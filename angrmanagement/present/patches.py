@@ -5,9 +5,7 @@ from __future__ import annotations
 import binascii
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from angrmanagement.logic import GlobalInfo
-
-from .base import InstancePresenter, container, project_of
+from .base import InstancePresenter, ask_question, container, project_of
 from .keymap import table_keymap
 from .menus import Menu, MenuEntry
 from .tables import Column, ListTableModel
@@ -133,15 +131,18 @@ class PatchesPresenter(InstancePresenter):
         """Ask, then remove ``patches``."""
         if not patches:
             return
-        answer = GlobalInfo.ui_services.question(
-            "Revert patches", "Are you sure you want to revert selected patches?", ["Yes", "Cancel"], "Cancel"
+
+        def then(answer: str) -> None:
+            if answer != "Yes":
+                return
+            patch_mgr = container(self.instance.patches)
+            for patch in patches:
+                patch_mgr.remove_patch(patch.addr)
+            patch_mgr.am_event(removed=patches)
+
+        ask_question(
+            "Revert patches", "Are you sure you want to revert selected patches?", ["Yes", "Cancel"], "Cancel", then
         )
-        if answer != "Yes":
-            return
-        patch_mgr = container(self.instance.patches)
-        for patch in patches:
-            patch_mgr.remove_patch(patch.addr)
-        patch_mgr.am_event(removed=patches)
 
     def patches_menu(self, patches: set[Patch]) -> Menu:
         menu = Menu("")

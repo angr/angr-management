@@ -5,9 +5,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar
 
 from angrmanagement.data.jobs.bindiff_matching import BindiffMatchingJob
+from angrmanagement.data.signatures import BINDIFF_FILES_QUESTION, SIGNATURE_FILES_QUESTION
 from angrmanagement.logic import GlobalInfo
 
-from .base import InstancePresenter
+from .base import InstancePresenter, ask_open_files
 from .keymap import table_keymap
 from .menus import Menu, MenuEntry, MenuSeparator
 from .tables import Column, ListTableModel
@@ -119,7 +120,8 @@ class SignaturesPresenter(InstancePresenter):
             self.signature_mgr.apply_signatures(all_sigs, dry_run=True)
 
     def load_signatures(self) -> None:
-        self.signature_mgr.load_signatures()
+        """Ask for signature files, then load them."""
+        ask_open_files(*SIGNATURE_FILES_QUESTION, then=self.signature_mgr.load_signatures)
 
     def show_matches(self, sig: Signature, matches: dict[int, str]) -> None:  # pylint:disable=no-self-use
         """List the functions ``sig`` matched; a frontend with a matches dialog overrides this."""
@@ -137,10 +139,12 @@ class SignaturesPresenter(InstancePresenter):
     def find_matches_via_bindiff(self) -> None:
         """Ask for binaries, then match their functions against this one with BinDiff in a job."""
 
-        filenames = self.signature_mgr.select_bindiff_base_files()
-        if filenames:
-            job = BindiffMatchingJob(self.instance, filenames, on_results=self._on_bindiff_matches_finished)
-            self.workspace.job_manager.add_job(job)
+        def then(filenames: list[str]) -> None:
+            if filenames:
+                job = BindiffMatchingJob(self.instance, filenames, on_results=self._on_bindiff_matches_finished)
+                self.workspace.job_manager.add_job(job)
+
+        ask_open_files(*BINDIFF_FILES_QUESTION, then=then)
 
     def _on_bindiff_matches_finished(self, matches_per_file: dict[str, dict[int, str]]) -> None:
         for filename, matches in matches_per_file.items():

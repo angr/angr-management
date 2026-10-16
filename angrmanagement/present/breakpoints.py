@@ -7,13 +7,13 @@ from typing import TYPE_CHECKING, ClassVar
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
 from angrmanagement.logic import GlobalInfo
 
-from .base import InstancePresenter
+from .base import InstancePresenter, ask_text
 from .keymap import table_keymap
 from .menus import Menu, MenuEntry, MenuSeparator
 from .tables import Column, ListTableModel
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
     from angrmanagement.data.breakpoint import BreakpointManager
     from angrmanagement.data.instance import Instance
@@ -115,31 +115,48 @@ class BreakpointsPresenter(InstancePresenter):
     def keymap(self) -> Keymap:
         return table_keymap()
 
-    def ask_breakpoint(self, bp: Breakpoint) -> bool:  # pylint:disable=no-self-use
+    @staticmethod
+    def ask_breakpoint(bp: Breakpoint, then: Callable[[bool], None]) -> None:
         """
-        Let the user edit ``bp`` in place; whether they confirmed. A frontend with a breakpoint dialog overrides this.
+        Let the user edit ``bp`` in place, then call ``then`` with whether they confirmed. The Qt view uses its
+        breakpoint dialog instead.
         """
         type_name = BREAKPOINT_TYPE_NAMES.get(bp.type, "Execute").lower()
-        text = GlobalInfo.ui_services.prompt_text(
-            "Breakpoint", "[execute|read|write] address [size], in hex:", f"{type_name} {bp.addr:#x} {bp.size:#x}"
+
+        def on_answer(text: str | None) -> None:
+            if text is None:
+                then(False)
+                return
+            parsed = parse_breakpoint(text)
+            if parsed is None:
+                GlobalInfo.ui_services.message("warning", "Breakpoint", f"Not a breakpoint: {text!r}")
+                then(False)
+                return
+            bp.type, bp.addr, bp.size = parsed
+            then(True)
+
+        ask_text(
+            "Breakpoint",
+            "[execute|read|write] address [size], in hex:",
+            f"{type_name} {bp.addr:#x} {bp.size:#x}",
+            on_answer,
         )
-        if text is None:
-            return False
-        parsed = parse_breakpoint(text)
-        if parsed is None:
-            GlobalInfo.ui_services.message("warning", "Breakpoint", f"Not a breakpoint: {text!r}")
-            return False
-        bp.type, bp.addr, bp.size = parsed
-        return True
 
     def new_breakpoint(self) -> None:
         bp = Breakpoint(BreakpointType.Execute, 0)
-        if self.ask_breakpoint(bp):
-            self.breakpoint_mgr.add_breakpoint(bp)
+
+        def then(confirmed: bool) -> None:
+            if confirmed:
+                self.breakpoint_mgr.add_breakpoint(bp)
+
+        self.ask_breakpoint(bp, then)
 
     def edit_breakpoint(self, breakpoint_: Breakpoint) -> None:
-        if self.ask_breakpoint(breakpoint_):
-            self.breakpoint_mgr.breakpoints.am_event()
+        def then(confirmed: bool) -> None:
+            if confirmed:
+                self.breakpoint_mgr.breakpoints.am_event()
+
+        self.ask_breakpoint(breakpoint_, then)
 
     def remove_breakpoints(self, breakpoints: Sequence[Breakpoint]) -> None:
         for b in list(breakpoints):

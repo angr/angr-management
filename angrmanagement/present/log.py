@@ -67,6 +67,10 @@ class LogTableModel(ListTableModel["LogRecord"]):
     ]
     Headers: ClassVar[list[str]] = [c.name for c in COLUMNS]
 
+    def __init__(self, presenter: LogPresenter | None = None) -> None:
+        super().__init__()
+        self.presenter = presenter
+
     @property
     def log(self) -> list[LogRecord]:
         return self.rows
@@ -93,6 +97,9 @@ class LogTableModel(ListTableModel["LogRecord"]):
     def add_record(self, record: LogRecord) -> None:
         self.append_rows([record])
 
+    def context_menu(self, rows: Sequence[int]) -> Menu | None:
+        return self.presenter.log_menu(rows) if self.presenter is not None else None
+
 
 class LogPresenter(InstancePresenter):
     """The log view: it follows the instance's log, on the UI thread, and copies records."""
@@ -100,7 +107,7 @@ class LogPresenter(InstancePresenter):
     def __init__(self, workspace, instance: Instance, default_docking_position: str = "bottom") -> None:
         super().__init__(workspace, "log", instance, default_docking_position)
         self.base_caption = "Log"
-        self.model = LogTableModel()
+        self.model = LogTableModel(self)
         self.model.set_rows(list(self._log))
         container(self.instance.log).am_subscribe(self._on_new_logrecord)
 

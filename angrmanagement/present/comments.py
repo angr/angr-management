@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from angrmanagement.data.annotations import CommentKind
 from angrmanagement.logic import GlobalInfo
 
-from .base import InstancePresenter, container
+from .base import InstancePresenter, ask_text, container
 from .keymap import table_keymap
 from .menus import Menu, MenuEntry, MenuSeparator
 from .tables import Column, ListTableModel
@@ -131,10 +131,13 @@ class CommentsPresenter(InstancePresenter):
     #
 
     def edit_comment(self, comment: Comment) -> None:
-        """Ask for a new text for ``comment``; a frontend with a richer editor overrides this."""
-        text = GlobalInfo.ui_services.prompt_text("Set comment", f"Comment at {comment.addr:#x}:", comment.text)
-        if text is not None:
-            self.workspace.set_comment(comment.addr, text)
+        """Ask for a new text for ``comment``; the Qt view uses its comment dialog instead."""
+
+        def then(text: str | None) -> None:
+            if text is not None:
+                self.workspace.set_comment(comment.addr, text)
+
+        ask_text("Set comment", f"Comment at {comment.addr:#x}:", comment.text, then)
 
     @staticmethod
     def copy_text(comment: Comment) -> None:

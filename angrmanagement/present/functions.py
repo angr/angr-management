@@ -11,9 +11,8 @@ from angr.utils.library import get_cpp_function_name
 
 from angrmanagement.config.color import Color
 from angrmanagement.data.annotations import CommentKind
-from angrmanagement.logic import GlobalInfo
 
-from .base import InstancePresenter, container
+from .base import InstancePresenter, ask_text, container
 from .keymap import table_keymap
 from .menus import Menu, MenuEntry
 from .tables import Column, ListTableModel
@@ -160,10 +159,10 @@ class FunctionTableModel(ListTableModel[FunctionTableEntry]):
     COMPLEXITY_COL = 7
 
     COLUMNS: ClassVar[list[Column]] = [
-        Column("Inline?", 4, checkable=True),
-        Column("Name", 25),
-        Column("Tags", 10),
-        Column("Address", 10),
+        Column("Inline?", 3, checkable=True),
+        Column("Name", 22),
+        Column("Tags", 6),
+        Column("Address", 8),
         Column("Binary", 10),
         Column("Size", 6, align="right"),
         Column("Blocks", 6, align="right"),
@@ -382,9 +381,12 @@ def edit_function_comment(workspace, func: Function) -> None:
     """Ask for the function's header comment."""
     workspace.main_instance.annotations.set_kind(func.addr, CommentKind.FUNCTION)
     current = workspace.main_instance.kb.comments.get(func.addr, "") if workspace.main_instance.kb else ""
-    text = GlobalInfo.ui_services.prompt_text("Function comment", f"Comment for {func.name}:", str(current or ""))
-    if text is not None:
-        workspace.set_comment(func.addr, text, kind=CommentKind.FUNCTION)
+
+    def then(text: str | None) -> None:
+        if text is not None:
+            workspace.set_comment(func.addr, text, kind=CommentKind.FUNCTION)
+
+    ask_text("Function comment", f"Comment for {func.name}:", str(current or ""), then)
 
 
 def function_context_menu(workspace, funcs: Sequence[Function], edit_comment=None) -> Menu | None:

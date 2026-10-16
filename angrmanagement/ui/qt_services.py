@@ -96,6 +96,19 @@ class QtServices:
         # modeless: a modal box here would block whoever waits on the job queue (e.g., a headless test) forever
         box.open()
 
+    def prompt_text_async(self, title: str, label: str, default: str, callback: Callable[[str | None], None]) -> None:
+        callback(self.prompt_text(title, label, default))
+
+    def pick_open_files_async(
+        self, caption: str, directory: str, name_filter: str, multiple: bool, callback: Callable[[list[str]], None]
+    ) -> None:
+        callback(self.pick_open_files(caption, directory, name_filter, multiple))
+
+    def pick_save_file_async(
+        self, caption: str, directory: str, name_filter: str, callback: Callable[[str | None], None]
+    ) -> None:
+        callback(self.pick_save_file(caption, directory, name_filter))
+
     def analysis_options(self, workspace, configuration: AnalysesConfiguration) -> AnalysesConfiguration | None:
         dlg = AnalysisOptionsDialog(configuration, workspace, GlobalInfo.main_window)
         dlg.setModal(True)

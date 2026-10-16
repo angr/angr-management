@@ -13,12 +13,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
 from angrmanagement.data.object_container import ObjectContainer
+from angrmanagement.logic import GlobalInfo
 
 from .keymap import Keymap
 from .menus import Menu, MenuEntry
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
     import angr
 
@@ -127,6 +128,23 @@ class FunctionPresenter(InstancePresenter):
     def function(self, function: angr.knowledge_plugins.Function | None) -> None:
         self._function.am_obj = function
         self._function.am_event()
+
+
+def ask_text(title: str, label: str, default: str, then: Callable[[str | None], Any]) -> None:
+    """Ask for a line of text and call ``then`` with the answer (None if cancelled), now or once the user answers."""
+    GlobalInfo.ui_services.prompt_text_async(title, label, default, then)
+
+
+def ask_question(title: str, text: str, buttons: Sequence[str], default: str, then: Callable[[str], Any]) -> None:
+    """Ask a question and call ``then`` with the button picked, now or once the user answers."""
+    GlobalInfo.ui_services.question_async(title, text, buttons, default, then)
+
+
+def ask_open_files(
+    caption: str, directory: str, name_filter: str, multiple: bool, then: Callable[[list[str]], Any]
+) -> None:
+    """Ask for files to open and call ``then`` with them (an empty list if cancelled)."""
+    GlobalInfo.ui_services.pick_open_files_async(caption, directory, name_filter, multiple, then)
 
 
 def container(obj: Any) -> ObjectContainer:
