@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.config import Conf
+from angrmanagement.present.theme import Theme
 
 if TYPE_CHECKING:
     from angrmanagement.ui.views.disassembly_view import DisassemblyView
@@ -243,6 +244,30 @@ class QAvoidAddrAnnotation(QExploreAnnotation):
     def delete(self) -> None:
         self.qsimgrs.remove_avoid_address(self.addr)
         self.disasm_view.refresh()
+
+
+class QMarkAnnotation(QInstructionAnnotation):
+    """
+    An instruction annotation for a plugin's neutral :class:`~angrmanagement.present.marks.Mark` (``block_marks`` or
+    ``decorate_insn``), so that a plugin written without Qt shows in the Qt frontend too. A click runs the mark's
+    action.
+    """
+
+    background_color = QColor(0xD8, 0xF0, 0xD8)
+    foreground_color = QColor(0, 60, 0)
+
+    def __init__(self, addr: int, mark, *args, **kwargs) -> None:
+        self.mark = mark
+        style = Theme.from_conf().style(mark.style_key) if mark.style_key else None
+        if style is not None and style.fg is not None:
+            self.foreground_color = style.fg.to_qcolor()
+        if style is not None and style.bg is not None:
+            self.background_color = style.bg.to_qcolor()
+        super().__init__(addr, mark.text, *args, **kwargs)
+
+    def mousePressEvent(self, event) -> None:  # pylint: disable=unused-argument
+        if self.mark.action is not None:
+            self.mark.action()
 
 
 class QBlockAnnotations(QGraphicsItem):

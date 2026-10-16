@@ -139,9 +139,17 @@ class QInstruction(QCachedGraphicsItem):
             self.instance,
             self.selected,
             getattr(self.disasm_view, "pattern_highlight_addrs", ()),
-            lambda addr, selected: self.disasm_view.workspace.plugins.color_insn(addr, selected, self.disasm_view),
+            self._plugin_color,
         )
         return qt_background(background)  # None here means transparent, reusing the block color
+
+    def _plugin_color(self, addr: int, selected: bool):
+        """A plugin's colour: color_insn as always, then plugins that implement only the neutral insn_style."""
+        plugins = self.disasm_view.workspace.plugins
+        color = plugins.color_insn(addr, selected, self.disasm_view)
+        if color is None:
+            color = plugins.insn_style(addr, selected, self.disasm_view, neutral_only=True)
+        return color
 
     @property
     def selected(self):

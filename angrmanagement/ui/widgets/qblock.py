@@ -338,9 +338,14 @@ class QGraphBlock(QBlock):
         super().mousePressEvent(event)
 
     def _calc_backcolor(self, should_omit_text):
-        background = block_background(
-            self.addr, should_omit_text, self.color_override, self.disasm_view.workspace.plugins.color_block
-        )
+        plugins = self.disasm_view.workspace.plugins
+
+        def plugin_color(addr: int):
+            # color_block as always, then plugins that implement only the neutral block_style
+            color = plugins.color_block(addr)
+            return color if color is not None else plugins.block_style(addr, neutral_only=True)
+
+        background = block_background(self.addr, should_omit_text, self.color_override, plugin_color)
         return qt_background(background)
 
     def _set_block_objects_visibility(self, visible: bool) -> None:

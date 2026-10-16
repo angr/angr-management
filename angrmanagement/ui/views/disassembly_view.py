@@ -50,7 +50,7 @@ from angrmanagement.ui.widgets import (
 from angrmanagement.ui.widgets.block_code_objects import QVariableObj
 from angrmanagement.ui.widgets.qfind_bar import QFindBar
 from angrmanagement.ui.widgets.qinline_comment_editor import QInlineCommentEditor
-from angrmanagement.ui.widgets.qinst_annotation import QBreakAnnotation, QHookAnnotation
+from angrmanagement.ui.widgets.qinst_annotation import QBreakAnnotation, QHookAnnotation, QMarkAnnotation
 from angrmanagement.utils import get_label_text, locate_function
 
 from .view import SynchronizedFunctionView
@@ -1012,9 +1012,16 @@ class DisassemblyView(SynchronizedFunctionView):
         if self.instance.project.am_none:
             # the project may be momentarily unset while a binary is being loaded or closed
             return QBlockAnnotations(addr_to_annotations, parent=qblock, disasm_view=self)
-        for annotations_ in self.workspace.plugins.build_qblock_annotations(qblock):
-            addr_to_annotations[annotations_.addr].append(annotations)
+        plugins = self.workspace.plugins
+        for annotations_ in plugins.build_qblock_annotations(qblock):
+            addr_to_annotations[annotations_.addr].append(annotations_)
+        # neutral marks from plugins written for both frontends
+        for mark in plugins.block_marks(qblock.addr, self):
+            if mark.addr is not None:
+                addr_to_annotations[mark.addr].append(QMarkAnnotation(mark.addr, mark))
         for addr in qblock.addr_to_insns:
+            for mark in plugins.decorate_insn(addr, self):
+                addr_to_annotations[addr].append(QMarkAnnotation(addr, mark))
             if addr in self.instance.project._sim_procedures:
                 hook_annotation = QHookAnnotation(addr)
                 addr_to_annotations[addr].append(hook_annotation)

@@ -293,12 +293,12 @@ class FunctionTableModel(ListTableModel[FunctionTableEntry]):
 
     def style_key(self, obj: FunctionTableEntry, col: int) -> str | None:
         key = function_style_key(obj)
-        if obj.from_signature and self.workspace.plugins.color_func(obj) is None:
+        if obj.from_signature and self.workspace.plugins.func_style(obj) is None:
             key += " function_table_signature_bg_color"
         return key
 
     def explicit_style(self, obj: FunctionTableEntry, col: int) -> StyleSpec | None:
-        color = neutral_color(self.workspace.plugins.color_func(obj))
+        color = neutral_color(self.workspace.plugins.func_style(obj))
         return StyleSpec(bg=color) if color is not None else None
 
     def is_checked(self, obj: FunctionTableEntry, col: int) -> bool:

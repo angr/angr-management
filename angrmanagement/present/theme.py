@@ -6,7 +6,7 @@ A :class:`Theme` holds the colour entries of one colour scheme (see angrmanageme
 ``"function_table_plt_color"``, or one of the names in :data:`EXTRA_STYLES`, such as ``"table.error"``; several keys
 separated by spaces combine, so ``"function_table_plt_color function_table_signature_bg_color"`` is green text on
 cyan. An entry whose name ends in ``_bg_color`` or ``_background_color`` gives the background, any other the
-foreground.
+foreground; ``bg:`` before a name makes it the background whatever it is called (``"bg:disasm_view_bookmark_color"``).
 """
 
 from __future__ import annotations
@@ -68,7 +68,23 @@ EXTRA_STYLES: dict[str, StyleSpec] = {
     "job.cancelled": StyleSpec(fg=Color(0xFF, 0x00, 0x00)),
     "bold": StyleSpec(bold=True),
     "italic": StyleSpec(italic=True),
+    # disassembly: the colours the Qt items draw with fixed Qt colours
+    "disasm.patched": StyleSpec(bg=Color(0x80, 0x80, 0x00)),
+    "disasm.phi.variable": StyleSpec(fg=Color(0x00, 0x80, 0x00)),
+    "disasm.phi.ident": StyleSpec(fg=Color(0x00, 0x00, 0xFF)),
+    "disasm.phi.punctuation": StyleSpec(fg=Color(0x00, 0x00, 0x00)),
+    "disasm.data.delimiter": StyleSpec(fg=Color(0x00, 0x00, 0x00)),
+    # instruction marks: the colours of the Qt instruction annotations
+    "disasm.mark.hook": StyleSpec(fg=Color(50, 50, 50), bg=Color(230, 230, 230)),
+    "disasm.mark.find": StyleSpec(fg=Color(30, 80, 30), bg=Color(200, 230, 100)),
+    "disasm.mark.avoid": StyleSpec(fg=Color(80, 30, 30), bg=Color(230, 200, 100)),
+    "disasm.mark.break": StyleSpec(fg=Color(220, 220, 220), bg=Color(200, 10, 10)),
+    "disasm.mark": StyleSpec(fg=Color(0, 60, 0), bg=Color(0xD8, 0xF0, 0xD8)),
+    "disasm.find.match": StyleSpec(underline=True),
 }
+
+#: The prefix that makes a style key name a background: ``"bg:disasm_view_bookmark_color"``.
+BACKGROUND_PREFIX = "bg:"
 
 
 def scheme_names() -> list[str]:
@@ -141,6 +157,11 @@ class Theme:
         if not key:
             return spec
         for part in key.split():
+            if part.startswith(BACKGROUND_PREFIX):
+                background = self._background_of(part[len(BACKGROUND_PREFIX) :])
+                if background is not None:
+                    spec = replace(spec, bg=background)
+                continue
             extra = EXTRA_STYLES.get(part)
             if extra is not None:
                 spec = spec.merged(extra)
@@ -150,6 +171,13 @@ class Theme:
                 continue
             spec = replace(spec, bg=color) if _is_background_key(part) else replace(spec, fg=color)
         return spec
+
+    def _background_of(self, key: str) -> Color | None:
+        """The colour of ``key`` used as a background: a colour entry's, or an extra style's background or colour."""
+        extra = EXTRA_STYLES.get(key)
+        if extra is not None:
+            return extra.bg if extra.bg is not None else extra.fg
+        return self.colors.get(key)
 
     def style_of(self, cell: Cell) -> StyleSpec:
         """The style of a table cell: its style key's, with the cell's own style on top."""

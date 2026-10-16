@@ -4,6 +4,7 @@ from __future__ import annotations
 import functools
 import logging
 import os
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from angrmanagement.config import Conf, save_config
@@ -17,6 +18,8 @@ from .load import load_plugin_descriptions_from_dir, load_plugins_from_file
 if TYPE_CHECKING:
     from PySide6.QtGui import QColor
 
+    from angrmanagement.config.color import Color
+    from angrmanagement.present.marks import Mark
     from angrmanagement.ui.widgets.qblock import QBlock
     from angrmanagement.ui.workspace import Workspace
 
@@ -163,10 +166,19 @@ class PluginManager:
                 widget.show()
                 plugin.__cached_status_bar_widgets.append(widget)
 
-    def _register_toolbar_actions(self, plugin_cls: type[BasePlugin], plugin: BasePlugin) -> None:
-        for idx, (icon, tooltip) in enumerate(plugin_cls.TOOLBAR_BUTTONS):
-            from angrmanagement.ui.toolbars.toolbar_action import ToolbarAction
+    def _toolbar_manager(self):
+        """The main window's toolbar manager, or None for a frontend without toolbars."""
+        return getattr(self.workspace.main_window, "toolbar_manager", None)
 
+    def _register_toolbar_actions(self, plugin_cls: type[BasePlugin], plugin: BasePlugin) -> None:
+        if not plugin_cls.TOOLBAR_BUTTONS:
+            return
+        toolbar_manager = self._toolbar_manager()
+        if toolbar_manager is None:
+            return
+        from angrmanagement.ui.toolbars.toolbar_action import ToolbarAction
+
+        for idx, (icon, tooltip) in enumerate(plugin_cls.TOOLBAR_BUTTONS):
             action = ToolbarAction(
                 icon,
                 f"plugin {plugin_cls} toolbar {idx}",
@@ -174,7 +186,7 @@ class PluginManager:
                 functools.partial(self._dispatch_single, plugin, BasePlugin.handle_click_toolbar, False, idx),
             )
             plugin.__cached_toolbar_actions.append(action)
-            self.workspace._main_window._file_toolbar.add(action)
+            toolbar_manager.add_plugin_action(action)
 
     def _register_menu_buttons(self, plugin_cls: type[BasePlugin], plugin: BasePlugin) -> None:
         from angrmanagement.present.menus import MenuEntry, MenuSeparator
@@ -239,8 +251,10 @@ class PluginManager:
 
         for widget in plugin.__cached_status_bar_widgets:
             self.workspace.main_window.statusBar().removeWidget(widget)
+        toolbar_manager = self._toolbar_manager() if plugin.__cached_toolbar_actions else None
         for action in plugin.__cached_toolbar_actions:
-            self.workspace._main_window._file_toolbar.remove(action)
+            if toolbar_manager is not None:
+                toolbar_manager.remove_plugin_action(action)
         for action in plugin.__cached_menu_actions:
             self.workspace._main_window._plugin_menu.remove(action)
 
@@ -314,6 +328,65 @@ class PluginManager:
             if res is not None:
                 return res
         return None
+
+    def _dispatch_neutral(self, func, legacy, sensitive, *args):
+        """
+        Call the neutral hook ``func`` of every plugin that implements it or the Qt-era hook ``legacy`` it falls back
+        on (BasePlugin's ``func`` calls ``legacy``), and yield the results.
+        """
+        for plugin in list(self.active_plugins.values()):
+            custom = getattr(plugin, func.__name__)
+            overrides = custom.__func__ is not func
+            if not overrides and legacy is not None:
+                overrides = getattr(plugin, legacy.__name__).__func__ is not legacy
+            if overrides:
+                try:
+                    res = custom(*args)
+                except Exception as e:  # pylint: disable=broad-except
+                    self._handle_error(plugin, func, sensitive, e)
+                else:
+                    yield res
+
+    def _first_color(self, results) -> Color | None:  # pylint:disable=no-self-use
+        for res in results:
+            if res is not None:
+                return res
+        return None
+
+    def insn_style(self, addr: int, selected, view, neutral_only: bool = False) -> Color | None:
+        """
+        The first plugin colour for the instruction at ``addr``, as a Color. With ``neutral_only``, ask only plugins
+        that implement ``insn_style`` itself: the Qt frontend asks those after ``color_insn``.
+        """
+        legacy = None if neutral_only else BasePlugin.color_insn
+        return self._first_color(self._dispatch_neutral(BasePlugin.insn_style, legacy, True, addr, selected, view))
+
+    def block_style(self, addr: int, neutral_only: bool = False) -> Color | None:
+        legacy = None if neutral_only else BasePlugin.color_block
+        return self._first_color(self._dispatch_neutral(BasePlugin.block_style, legacy, True, addr))
+
+    def func_style(self, func, neutral_only: bool = False) -> Color | None:
+        legacy = None if neutral_only else BasePlugin.color_func
+        return self._first_color(self._dispatch_neutral(BasePlugin.func_style, legacy, True, func))
+
+    def decorate_insn(self, addr: int, view) -> list[Mark]:
+        marks: list[Mark] = []
+        for res in self._dispatch(BasePlugin.decorate_insn, False, addr, view):
+            marks.extend(replace(mark, addr=addr) if mark.addr is None else mark for mark in res)
+        return marks
+
+    def block_marks(self, block_addr: int, view) -> list[Mark]:
+        marks: list[Mark] = []
+        for res in self._dispatch(BasePlugin.block_marks, False, block_addr, view):
+            marks.extend(res)
+        return marks
+
+    def handle_activate_insn(self, addr: int, button: str, view) -> bool:
+        return any(res for res in self._dispatch(BasePlugin.handle_activate_insn, False, addr, button, view))
+
+    def status_bar_texts(self) -> list[str]:
+        """The plugins' status bar texts, in plugin order, without the empty ones."""
+        return [res for res in self._dispatch(BasePlugin.status_bar_text, False) if res]
 
     def draw_insn(self, qinsn, painter) -> None:
         for _ in self._dispatch(BasePlugin.draw_insn, True, qinsn, painter):
