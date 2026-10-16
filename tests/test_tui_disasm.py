@@ -244,6 +244,16 @@ class TestGraph(unittest.TestCase):
             await settle(pilot)
             assert view.flow_graph.detail == 2
             assert "0040071d" not in canvas_text(view)
+            # the lowest level shows only the headers, on the zoomed-out background, as the zoomed-out Qt graph does
+            doc = view.flow_graph.doc
+            x, y = doc.layout[doc.entry]
+            assert "disasm_view_node_background_color" in view.graph_widget.canvas.styles[y + 1][x + 1]
+            await pilot.press("ctrl+minus")
+            await settle(pilot)
+            assert view.flow_graph.detail == 3
+            doc = view.flow_graph.doc
+            x, y = doc.layout[doc.entry]
+            assert "disasm_view_node_zoomed_out_background_color" in view.graph_widget.canvas.styles[y + 1][x + 1]
             await pilot.press("ctrl+0")
             await settle(pilot)
             assert view.flow_graph.detail == 0
@@ -346,6 +356,9 @@ class NeutralPlugin(BasePlugin):
     def decorate_insn(self, addr, view):
         return [Mark("hot", "disasm.mark", "after")] if addr == 0x400721 else []
 
+    def block_style(self, addr):
+        return Color(0x12, 0x34, 0x56) if addr == 0x40071D else None
+
     def status_bar_text(self):
         return "neutral: on"
 
@@ -363,6 +376,8 @@ class TestPlugins(unittest.TestCase):
                 block = doc.blocks[doc.entry]
                 line = block.lines[block.rows_of(0x400721)[0]]
                 assert all("bg:#abcdef" in span.style for span in line.spans)
+                x, y = doc.layout[doc.entry]
+                assert "bg:#123456" in view.graph_widget.canvas.styles[y + 1][x + 1]
                 app.status_bar.refresh_plugin_texts()
                 assert app.status_bar.plugin_text == "neutral: on"
             finally:

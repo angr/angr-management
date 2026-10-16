@@ -64,7 +64,7 @@ from .block_tree.disasm_nodes import (
     build_block_nodes,
 )
 from .disasm_menus import DisasmInsnContextMenu, DisasmLabelContextMenu, DisasmOptionsMenu, DisasmUnknownContextMenu
-from .disasm_style import insn_background
+from .disasm_style import BLOCK_STYLE, block_background, insn_background
 from .keymap import Binding, Keymap
 from .marks import Mark, sorted_marks
 from .menus import Menu, MenuEntry, MenuSeparator
@@ -990,6 +990,19 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
             return BACKGROUND_PREFIX + background
         color = to_color(background)
         return f"{BACKGROUND_PREFIX}#{color.rgb_hex}" if color is not None else ""
+
+    def block_background_style(self, addr: int, zoomed_out: bool = False) -> str:
+        """
+        The background style key of the graph block at ``addr``, by :func:`block_background`: a plugin's colour, the
+        zoomed-out colour when the block's text is not drawn, or the block colour.
+        """
+        plugins = getattr(self.workspace, "plugins", None)
+        plugin_color = plugins.block_style if plugins is not None else None
+        background = block_background(addr, zoomed_out, plugin_color=plugin_color)
+        if isinstance(background, str):
+            return BACKGROUND_PREFIX + background
+        color = to_color(background)
+        return f"{BACKGROUND_PREFIX}#{color.rgb_hex}" if color is not None else BACKGROUND_PREFIX + BLOCK_STYLE
 
     def node_lines(self, node: DisasmNode, display: Any = None, linear: bool = False, marks: bool = True) -> list[Line]:
         """

@@ -40,7 +40,6 @@ from angrmanagement.present.disasm_controls import GraphControl, LinearControl
 from angrmanagement.present.disasm_style import (
     BLOCK_BORDER_STYLE,
     BLOCK_SELECTED_BORDER_STYLE,
-    BLOCK_STYLE,
     edge_style,
 )
 from angrmanagement.present.find import FindBarState
@@ -304,9 +303,8 @@ def draw_block(canvas: CharCanvas, doc: GraphDoc, key: Any, control: GraphContro
     w, h = doc.sizes[key]
     selected = presenter.infodock.is_block_selected(block.addr)
     border = BLOCK_SELECTED_BORDER_STYLE if selected else BLOCK_BORDER_STYLE
-    plugins = getattr(presenter.workspace, "plugins", None)
-    color = plugins.block_style(block.addr) if plugins is not None else None
-    background = f"{BACKGROUND_PREFIX}#{color.rgb_hex}" if color is not None else BACKGROUND_PREFIX + BLOCK_STYLE
+    # the lowest level of detail shows only the headers, as the Qt graph zoomed out shows no text
+    background = presenter.block_background_style(block.addr, zoomed_out=control.detail >= 3)
     canvas.clear(x, y, w, h)
     canvas.fill(x, y, w, h, background, " ")
     canvas.box(x, y, w, h, style=f"{background} {border}")
