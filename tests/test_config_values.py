@@ -6,6 +6,7 @@ The configuration's frontend-neutral values: Color, FontSpec, FontWeight, FontSt
 
 from __future__ import annotations
 
+import enum
 import importlib.util
 import io
 import os
@@ -18,7 +19,11 @@ from unittest.mock import patch
 from angrmanagement import config as config_module
 from angrmanagement.config.color import Color
 from angrmanagement.config.config_entry import ConfigurationEntry
-from angrmanagement.config.config_manager import ConfigurationManager, data_serializers
+from angrmanagement.config.config_manager import (
+    ConfigurationManager,
+    data_serializers,
+    enum_parser_serializer_generator,
+)
 from angrmanagement.config.font import STYLE_NAMES, WEIGHT_NAMES, FontSpec, FontStyle, FontWeight
 
 needs_qt = unittest.skipIf(importlib.util.find_spec("PySide6") is None, "PySide6 is not installed")
@@ -321,6 +326,21 @@ class TestPluginEntries(unittest.TestCase):
         assert got == [Color(4, 5, 6), Color(7, 8, 9)]
         # the plugin's own declarations are templates and keep their defaults
         assert added[0].value == Color(9, 9, 9) and added[1].value == Color(4, 5, 6)
+
+
+class TestEnumSerializers(unittest.TestCase):
+    """The Enum serializer generator a plugin can use to register its own type."""
+
+    def test_enum_parser_serializer_generator(self):
+        class Shade(enum.Enum):
+            LIGHT = 1
+            DARK = 2
+
+        parse, serialize = enum_parser_serializer_generator(Shade, Shade.LIGHT)
+        assert parse("option", "DARK") is Shade.DARK
+        assert serialize("option", Shade.DARK) == "DARK"
+        with self.assertLogs("angrmanagement.config.config_manager", level="ERROR"):
+            assert parse("option", "MEDIUM") is Shade.LIGHT
 
 
 class TestConfigDirectory(unittest.TestCase):

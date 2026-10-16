@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import logging
 import os
+import re
 from typing import TYPE_CHECKING, Any, Protocol
 
 import tomlkit
@@ -19,9 +20,12 @@ from .config_entry import ConfigurationEntry as CE
 from .font import FontSpec, FontStyle, FontWeight
 
 if TYPE_CHECKING:
+    import enum
     from collections.abc import Callable
 
 _l = logging.getLogger(__name__)
+#: kept for code outside angr management; Color.from_hex is what parses colours now
+color_re = re.compile("[0-9a-fA-F]+")
 
 
 class FrontendAdapter(Protocol):
@@ -197,6 +201,38 @@ def font_style_serializer(config_option, value: FontStyle) -> str:
         )
         return FontStyle.NORMAL.qt_name
     return value.qt_name
+
+
+# not used for the built-in entries any more; a plugin may use it to register an Enum type in data_serializers
+def enum_parser_serializer_generator(
+    the_enum: enum.Enum, default
+) -> tuple[Callable[[str, str], enum.Enum], Callable[[str, enum.Enum], str]]:
+    def parser(config_option: str, value: str) -> enum.Enum:
+        try:
+            return the_enum[value]
+        except KeyError:
+            _l.error(
+                "Failed to parse value %r as %s for option %s. Default to %s.",
+                value,
+                type(the_enum),
+                config_option,
+                default,
+            )
+        return default
+
+    def serializer(config_option: str, value: enum.Enum) -> str:
+        if not isinstance(value, the_enum):
+            _l.error(
+                "Failed to serialize value %r as %s for option %s. Default to %s.",
+                value,
+                type(the_enum),
+                config_option,
+                default,
+            )
+            return default
+        return value.name
+
+    return parser, serializer
 
 
 def bool_parser(config_option, value) -> bool:
