@@ -219,9 +219,9 @@ class JobManager:
         try:
             job.finish()  # Job finished handler (GUI thread only)
         finally:
-            # a finish handler that raises must not leave the job listed, or join_all_jobs never returns
+            # a finish handler that raises must not leave the job listed, or join_all_jobs never returns, and the
+            # frontend is still told the job ended, so it can clear its progress display
             if job in self.jobs:
                 self.jobs.remove(job)
             self._current_job = None
-
-        self.job_finished.emit(job)
+            self.job_finished.emit(job)

@@ -50,6 +50,19 @@ class SucceedingJob(InstanceJob):
         self.ran.append(self.name)
 
 
+class FinishRaisingJob(InstanceJob):
+    """A job that runs, then raises in its finish handler on the GUI thread."""
+
+    def __init__(self, instance) -> None:
+        super().__init__("FinishRaising", instance)
+
+    def run(self, ctx: JobContext) -> None:
+        pass
+
+    def finish(self) -> None:
+        raise RuntimeError("this finish handler always fails")
+
+
 class TestJobExceptionReporting(AngrManagementTestCase):
     """Test that a failed job is reported to the user without stalling the job queue."""
 
@@ -99,6 +112,21 @@ class TestJobExceptionReporting(AngrManagementTestCase):
         )
 
         assert ran == ["Succeeding"]
+
+    def test_a_raising_finish_handler_still_ends_the_job(self) -> None:
+        # the frontend clears its progress display on job_finished, so it must be sent even when finish() raises
+        job_manager = self.main.workspace.job_manager
+        finished = []
+        job_manager.job_finished.connect(finished.append)
+        try:
+            job = FinishRaisingJob(self.main.workspace.main_instance)
+            with self.assertLogs("angrmanagement.logic.signal", level="ERROR"):
+                self._run(job)
+        finally:
+            job_manager.job_finished.disconnect(finished.append)
+
+        assert finished == [job]
+        assert job not in job_manager.jobs
 
 
 if __name__ == "__main__":
