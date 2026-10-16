@@ -68,7 +68,9 @@ class TestLoadBinaryValidation(unittest.TestCase):
     def test_an_invalid_address_leaves_no_partial_options(self) -> None:
         partial_ld = cle.Loader(BINARY_PATH, main_opts={"backend": "blob", "arch": "x86"})
         dialog = make_dialog(partial_ld)
-        dialog._base_addr_checkbox.setChecked(True)
+        base_addr_checkbox = dialog._base_addr_checkbox
+        assert base_addr_checkbox is not None
+        base_addr_checkbox.setChecked(True)
         dialog.option_widgets["base_addr"].setText("not hex")
 
         with patch("angrmanagement.ui.dialogs.load_binary.QMessageBox.critical") as critical:
