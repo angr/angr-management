@@ -17,8 +17,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from angrmanagement.data.jobs import CFGGenerationJob
 from angrmanagement.data.jobs.job import JobState
+from angrmanagement.present.jobs import cancel_job
 
 if TYPE_CHECKING:
     from angrmanagement.data.jobs.job import Job
@@ -104,11 +104,7 @@ class CancelButton(QPushButton):
 
     # On cancel button click, the function will check whether to cancel or skip the job
     def onClick(self, table: QJobs, job: Job):  # pylint:disable=unused-argument
-        if isinstance(job, CFGGenerationJob):
-            # a cancelled CFG job still publishes its partial results; treat the cancellation like a manual
-            # navigation so that the completion handler asks before navigating away
-            self.workspace.note_user_navigation()
-        self.workspace.job_manager.cancel_job(job)
+        cancel_job(self.workspace, job)
 
 
 class QJobs(QTableWidget):

@@ -1,88 +1,45 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QAbstractTableModel, QSize, Qt
-from PySide6.QtGui import QBrush, QFont
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView, QVBoxLayout
 
 from angrmanagement.config import Conf
-from angrmanagement.logic.debugger import DebuggerWatcher
+from angrmanagement.present.registers import RegistersPresenter, RegistersTableModel
+from angrmanagement.ui.widgets.qt_table import QtTableModelAdapter
 
 from .view import InstanceView
 
 if TYPE_CHECKING:
     import angr
-    import PySide6
-    from archinfo import Register
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
 
 
-class QRegisterTableModel(QAbstractTableModel):
+class QRegisterTableModel(QtTableModelAdapter):
     """
-    Register table model.
+    Register table model: a Qt model over a :class:`~angrmanagement.present.registers.RegistersTableModel`.
     """
 
-    Headers = ["Name", "Value"]
-    COL_REGISTER = 0
-    COL_VALUE = 1
+    Headers = RegistersTableModel.Headers
+    COL_REGISTER = RegistersTableModel.COL_REGISTER
+    COL_VALUE = RegistersTableModel.COL_VALUE
 
-    def __init__(self, log_widget: QRegisterTableWidget = None) -> None:
-        super().__init__()
+    table_model: RegistersTableModel
+
+    def __init__(self, log_widget: QRegisterTableWidget | None = None, table_model: RegistersTableModel | None = None):
+        super().__init__(table_model if table_model is not None else RegistersTableModel(), None, False)
         self._log_widget = log_widget
-        self.state: angr.SimState = None
-        self._last_state: angr.SimState = None
 
-    def _filtered_register_list(self):
-        return [reg for reg in self.state.arch.register_list if reg.general_purpose]
-
-    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
-        return 0 if self.state is None else len(self._filtered_register_list())
-
-    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
-        return len(self.Headers)
-
-    def headerData(self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...) -> Any:  # pylint:disable=unused-argument
-        if role != Qt.ItemDataRole.DisplayRole:
-            return None
-        if section < len(self.Headers):
-            return self.Headers[section]
-        return None
-
-    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
-        if not index.isValid():
-            return None
-        row = index.row()
-        reg = self._filtered_register_list()[row]
-        col = index.column()
-        if role == Qt.ItemDataRole.DisplayRole:
-            return self._get_column_text(reg, col)
-        elif role == Qt.ItemDataRole.ForegroundRole:
-            return QBrush(Qt.GlobalColor.red) if self._did_data_change(reg) else None
-        else:
-            return None
-
-    def _get_column_text(self, reg: Register, col: int) -> Any:
-        mapping = {
-            QRegisterTableModel.COL_REGISTER: lambda x: x.name,
-            QRegisterTableModel.COL_VALUE: lambda x: repr(self.state.regs.get(x.name)),
-        }
-        func = mapping.get(col)
-        if func is None:
-            return None
-        return func(reg)
-
-    def _did_data_change(self, reg: Register) -> bool:
-        if self._last_state is None:
-            return False
-        different = self.state.solver.eval(self.state.regs.get(reg.name) != self._last_state.regs.get(reg.name))
-        return different
+    @property
+    def state(self) -> angr.SimState | None:
+        return self.table_model.state
 
     def update_state(self, state) -> None:
-        self._last_state = self.state.copy() if self.state else None
-        self.state = None if state is None else state
+        self.table_model.update_state(state)
 
 
 class QRegisterTableWidget(QTableView):
@@ -93,6 +50,7 @@ class QRegisterTableWidget(QTableView):
     def __init__(self, register_view) -> None:
         super().__init__()
         self.register_view = register_view
+        self.presenter: RegistersPresenter = register_view.presenter
 
         hheader = self.horizontalHeader()
         hheader.setVisible(True)
@@ -105,7 +63,7 @@ class QRegisterTableWidget(QTableView):
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
-        self.model: QRegisterTableModel = QRegisterTableModel(self)
+        self.model: QRegisterTableModel = QRegisterTableModel(self, self.presenter.model)
         self.setModel(self.model)
 
         font = QFont(Conf.disasm_font)
@@ -113,31 +71,22 @@ class QRegisterTableWidget(QTableView):
 
         hheader.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
 
-        self._dbg_manager = register_view.instance.debugger_mgr
-        self._dbg_watcher = DebuggerWatcher(self._on_debugger_state_updated, self._dbg_manager.debugger)
-        self._on_debugger_state_updated()
-
-    #
-    # Events
-    #
-
-    def closeEvent(self, event) -> None:
-        self._dbg_watcher.shutdown()
-        super().closeEvent(event)
-
-    def _on_debugger_state_updated(self) -> None:
-        dbg = self._dbg_manager.debugger
-        self.model.update_state(None if dbg.am_none else dbg.simstate)
-        self.model.layoutChanged.emit()
-
 
 class RegistersView(InstanceView):
     """
     Register table view.
     """
 
+    presenter: RegistersPresenter
+
     def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        super().__init__("registers", workspace, default_docking_position, instance)
+        super().__init__(
+            "registers",
+            workspace,
+            default_docking_position,
+            instance,
+            RegistersPresenter(workspace, instance, default_docking_position),
+        )
 
         self.base_caption = "Registers"
         self._tbl_widget: QRegisterTableWidget | None = None
@@ -150,6 +99,10 @@ class RegistersView(InstanceView):
 
     def reload(self) -> None:
         pass
+
+    def closeEvent(self, event) -> None:
+        self.presenter.close()
+        super().closeEvent(event)
 
     @staticmethod
     def minimumSizeHint():
