@@ -21,6 +21,10 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+class JobCancelled(BaseException):
+    """Raised when a job is cancelled."""
+
+
 @lru_cache(maxsize=1)
 def _module_reloader() -> ModuleReloader:
     try:

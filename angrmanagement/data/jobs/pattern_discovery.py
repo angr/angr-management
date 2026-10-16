@@ -10,8 +10,7 @@ from angr.analyses.decompiler.known_patterns.generator import PatternGenerationE
 from angr.analyses.decompiler.pattern_match import STATEMENTS_ANY, AlignParams, Checkpoint, FuzzyPatternFinder
 from angr.analyses.decompiler.pattern_match.search import search, template_leaves, tokenize_for_templates, verify
 
-from angrmanagement.data.jobs.job import JobState
-from angrmanagement.logic.jobmanager import JobCancelled
+from angrmanagement.data.jobs.job import JobCancelled, JobState
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
 from .job import InstanceJob

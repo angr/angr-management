@@ -7,7 +7,8 @@ import threading
 import time
 from typing import TYPE_CHECKING
 
-from angrmanagement.data.jobs.job import Job, JobState
+# JobCancelled is defined beside Job so that a job module can import it while this module is importing the jobs
+from angrmanagement.data.jobs.job import Job, JobCancelled, JobState
 
 from . import GlobalInfo
 from .signal import Signal
@@ -19,10 +20,6 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
-
-
-class JobCancelled(BaseException):
-    """Raised when a job is cancelled."""
 
 
 class JobContext:

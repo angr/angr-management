@@ -92,6 +92,20 @@ class TestHeadlessImport(unittest.TestCase):
         # the walk must have found the job modules, or it proves little
         assert sum(name.startswith("angrmanagement.data.jobs.") for name in result["imported"]) >= 20
 
+    def test_job_manager_imports_first(self):
+        # a headless script may start from the job manager, before anything has imported the jobs
+        outcome = run_without_qt(
+            """
+import angrmanagement.logic.jobmanager as jobmanager
+
+from angrmanagement.data.jobs.pattern_discovery import JobCancelled
+
+RESULT = {"same": jobmanager.JobCancelled is JobCancelled}
+"""
+        )
+        assert outcome["result"]["same"]
+        assert outcome["qt_modules_loaded"] == []
+
 
 class TestTuiEntryPoint(unittest.TestCase):
     """am-tui reads its options, and says what is missing when Textual is."""
