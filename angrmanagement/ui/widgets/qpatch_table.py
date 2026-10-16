@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QContextMenuEvent, QCursor
-from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView, QTableWidgetItem
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView
 
 from angrmanagement.present.patches import PatchesPresenter, PatchesTableModel, PatchRow
 
@@ -17,16 +16,8 @@ if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
 
 
-class QPatchTableItem(PatchRow):
-    """
-    Item in the patch table describing a patch.
-    """
-
-    def widgets(self):
-        widgets = [QTableWidgetItem(text) for text in self.cells]
-        for w in widgets[:-1]:
-            w.setFlags(w.flags() & ~Qt.ItemFlag.ItemIsEditable)
-        return widgets
+#: A row of the patch table; the name the QTableWidget-based table used.
+QPatchTableItem = PatchRow
 
 
 class QPatchTable(QTableView):

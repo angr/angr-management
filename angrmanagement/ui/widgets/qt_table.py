@@ -75,10 +75,7 @@ class QtTableModelAdapter(QAbstractTableModel):
         return cell
 
     def style_of(self, cell: Cell) -> StyleSpec:
-        style = self.theme.style(cell.style_key) if cell.style_key else StyleSpec()
-        if cell.style is not None:
-            style = style.merged(cell.style)
-        return style
+        return self.theme.style_of(cell)
 
     #
     # QAbstractTableModel

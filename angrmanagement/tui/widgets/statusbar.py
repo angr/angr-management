@@ -147,11 +147,6 @@ class StatusBar(Horizontal):
         if not self._job_running:
             self.query_one("#status-message", Static).update("")
 
-    def set_caps_text(self, text: str) -> None:
-        self.caps_text = text
-        if self.is_mounted:
-            self.query_one("#status-caps", Static).update(Text(text))
-
     def on_click(self, event: events.Click) -> None:
         if event.widget is not None and event.widget.id == "status-interrupt" and self.on_interrupt is not None:
             event.stop()

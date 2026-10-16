@@ -20,6 +20,8 @@ from angrmanagement.config.color_schemes import BASE_SCHEME, COLOR_SCHEMES
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from .tables import Cell
+
 #: The name of the scheme made of whatever the configuration currently holds.
 CUSTOM_SCHEME_NAME = "Custom"
 
@@ -147,6 +149,13 @@ class Theme:
             if color is None:
                 continue
             spec = replace(spec, bg=color) if _is_background_key(part) else replace(spec, fg=color)
+        return spec
+
+    def style_of(self, cell: Cell) -> StyleSpec:
+        """The style of a table cell: its style key's, with the cell's own style on top."""
+        spec = self.style(cell.style_key)
+        if cell.style is not None:
+            spec = spec.merged(cell.style)
         return spec
 
     #

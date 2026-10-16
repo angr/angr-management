@@ -18,7 +18,7 @@ from textual.message import Message
 from textual.widgets import DataTable, Input, Static
 
 from angrmanagement.present.tables import APPENDED, DATA
-from angrmanagement.present.theme import StyleSpec, Theme
+from angrmanagement.present.theme import Theme
 from angrmanagement.tui.theme import rich_style
 
 if TYPE_CHECKING:
@@ -28,8 +28,6 @@ if TYPE_CHECKING:
     from textual.app import ComposeResult
 
     from angrmanagement.present.tables import Cell, Column, TableModel
-
-_JUSTIFY = {"left": "left", "right": "right", "center": "center"}
 
 
 def current_theme(widget) -> Theme:
@@ -99,7 +97,7 @@ class TableWidget(DataTable):
         label = column.name
         if idx == self._sort_column:
             label += " ▼" if self._sort_descending else " ▲"
-        justify: Any = _JUSTIFY.get(column.align, "left")
+        justify: Any = column.align
         return Text(label, justify=justify)
 
     @staticmethod
@@ -107,11 +105,8 @@ class TableWidget(DataTable):
         text = cell.text
         if column.checkable:
             text = "[x]" if cell.checked else "[ ]"
-        spec = theme.style(cell.style_key) if cell.style_key else StyleSpec()
-        if cell.style is not None:
-            spec = spec.merged(cell.style)
-        justify: Any = _JUSTIFY.get(column.align, "left")
-        return Text(text, style=rich_style(spec), justify=justify, no_wrap=True)
+        justify: Any = column.align
+        return Text(text, style=rich_style(theme.style_of(cell)), justify=justify, no_wrap=True)
 
     def cells_of_row(self, row: int, columns: list[Column] | None = None, theme: Theme | None = None) -> list[Text]:
         columns = columns if columns is not None else self.model.columns
@@ -165,9 +160,6 @@ class TableWidget(DataTable):
         if self.row_count == 0:
             return []
         return [self.cursor_row]
-
-    def text_of_row(self, row: int) -> list[str]:
-        return [self.model.cell(row, col).text for col in range(len(self.model.columns))]
 
     #
     # Events and actions

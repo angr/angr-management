@@ -62,7 +62,7 @@ class QSignatureTableWidget(QTableView):
         super().__init__()
         self.workspace = workspace
         self.signature_mgr = signature_mgr
-        self.presenter = presenter
+        self.presenter = presenter if presenter is not None else SignaturesPresenter(workspace, workspace.main_instance)
 
         hheader = self.horizontalHeader()
         hheader.setVisible(True)
@@ -74,9 +74,7 @@ class QSignatureTableWidget(QTableView):
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
-        self.model: QSignatureTableModel = QSignatureTableModel(
-            self.signature_mgr, presenter.model if presenter is not None else None
-        )
+        self.model: QSignatureTableModel = QSignatureTableModel(self.signature_mgr, self.presenter.model)
         self.setModel(self.model)
 
         for col in range(len(QSignatureTableModel.Headers)):
@@ -94,9 +92,8 @@ class QSignatureTableWidget(QTableView):
 
     def contextMenuEvent(self, event) -> None:
         sigs = self.model.table_model.objects(i.row() for i in self.selectedIndexes())
-        if self.presenter is not None:
-            menu = self.presenter.signatures_menu(sigs, show_matches=self._show_matches_dialog)
-            menu.qmenu(cached=False).exec_(event.globalPos())
+        menu = self.presenter.signatures_menu(sigs, show_matches=self._show_matches_dialog)
+        menu.qmenu(cached=False).exec_(event.globalPos())
 
     # pylint:disable=unused-argument
     def _on_cell_double_click(self, index) -> None:
@@ -104,18 +101,7 @@ class QSignatureTableWidget(QTableView):
         sig = self.model.table_model.row(index.row())
         if sig is None:
             return
-        if self.presenter is not None:
-            self.presenter.open_signature(sig, show_matches=self._show_matches_dialog)
-            return
-        matches = self.signature_mgr.get_matches(sig)
-        if matches:
-            self._show_matches_dialog(sig, matches)
-        else:
-            self.signature_mgr.apply_signatures([sig], dry_run=True)
-
-    def _apply_and_refresh(self, sigs) -> None:
-        self.signature_mgr.apply_signatures(sigs, dry_run=False)
-        self.workspace.on_flirt_signatures_applied()
+        self.presenter.open_signature(sig, show_matches=self._show_matches_dialog)
 
     def _show_matches_dialog(self, sig, matches) -> None:
         """Show dialog displaying matched functions for a signature."""

@@ -156,14 +156,6 @@ class SignatureManager:
         for sig in sigs:
             sig.apply_signature(self, dry_run, ignore_addresses)
 
-    def select_bindiff_base_files(self) -> list[str] | None:
-        """
-        Open a dialog to select binaries for bindiff analysis.
-        Returns the list of selected filenames, or None if cancelled.
-        """
-        filenames = GlobalInfo.ui_services.pick_open_files(*BINDIFF_FILES_QUESTION)
-        return filenames if filenames else None
-
     def load_signatures(self, filenames: list[str] | None = None) -> None:
         """Load FLIRT signature files: ``filenames``, or the ones the user picks when it is None."""
         if filenames is None:

@@ -395,7 +395,7 @@ class ListTableModel[T]:
         col = self._sort_column
         if col is None:
             return objs
-        return sorted(objs, key=lambda obj: _sortable(self.column_value(obj, col)), reverse=self._sort_descending)
+        return sorted(objs, key=lambda obj: _Sortable(self.column_value(obj, col)), reverse=self._sort_descending)
 
     def _notify(self, kind: str, change: Callable[[], None], first: int = 0, last: int = -1) -> None:
         self.about_to_change.emit(kind, first, last)
@@ -428,7 +428,3 @@ class _Sortable:
             return self.value < other.value
         except TypeError:
             return str(self.value) < str(other.value)
-
-
-def _sortable(value: Any) -> _Sortable:
-    return _Sortable(value)
