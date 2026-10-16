@@ -1,107 +1,56 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QAbstractTableModel, QSize, Qt
+from PySide6.QtCore import QSize
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QDialog,
     QHBoxLayout,
     QHeaderView,
-    QMenu,
     QPushButton,
     QTableView,
     QVBoxLayout,
 )
+
+from angrmanagement.present.signatures import SignaturesPresenter, SignaturesTableModel
+from angrmanagement.ui.widgets.qt_table import QtTableModelAdapter
 
 from .view import InstanceView
 
 _l = logging.getLogger(name=__name__)
 
 if TYPE_CHECKING:
-    import PySide6
-
     from angrmanagement.data.instance import Instance
-    from angrmanagement.data.signatures import Signature, SignatureManager
+    from angrmanagement.data.signatures import SignatureManager
     from angrmanagement.ui.workspace import Workspace
 
 
-class QSignatureTableModel(QAbstractTableModel):
+class QSignatureTableModel(QtTableModelAdapter):
     """
-    Signature table model.
+    Signature table model: a Qt model over a :class:`~angrmanagement.present.signatures.SignaturesTableModel`.
     """
 
-    Headers = [
-        "Type",
-        "Name",
-        "Architecture",
-        "Platform",
-        "Compiler",
-        "OS Name",
-        "Matches",
-    ]
-    COL_TYPE = 0
-    COL_NAME = 1
-    COL_ARCH = 2
-    COL_PLATFORM = 3
-    COL_COMPILER = 4
-    COL_OS_NAME = 5
-    COL_MATCHES = 6
+    Headers = SignaturesTableModel.Headers
+    COL_TYPE = SignaturesTableModel.COL_TYPE
+    COL_NAME = SignaturesTableModel.COL_NAME
+    COL_ARCH = SignaturesTableModel.COL_ARCH
+    COL_PLATFORM = SignaturesTableModel.COL_PLATFORM
+    COL_COMPILER = SignaturesTableModel.COL_COMPILER
+    COL_OS_NAME = SignaturesTableModel.COL_OS_NAME
+    COL_MATCHES = SignaturesTableModel.COL_MATCHES
 
-    def __init__(self, signature_mgr: SignatureManager) -> None:
-        super().__init__()
+    table_model: SignaturesTableModel
+
+    def __init__(self, signature_mgr: SignatureManager, table_model: SignaturesTableModel | None = None) -> None:
+        super().__init__(table_model if table_model is not None else SignaturesTableModel(signature_mgr), None, False)
         self.signature_mgr = signature_mgr
-        self.signature_mgr.signatures.am_subscribe(self._on_signatures_updated)
+        self._owns_table_model = table_model is None
 
-    def _on_signatures_updated(self, **kwargs) -> None:  # pylint:disable=unused-argument
-        self.beginResetModel()
-        self.endResetModel()
-
-    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
-        return len(self.signature_mgr.signatures)
-
-    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
-        return len(self.Headers)
-
-    # pylint:disable=unused-argument
-    def headerData(self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if role != Qt.ItemDataRole.DisplayRole:
-            return None
-        if section < len(self.Headers):
-            return self.Headers[section]
-        return None
-
-    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
-        if not index.isValid():
-            return None
-        row = index.row()
-        if row >= len(self.signature_mgr.signatures):
-            return None
-        col = index.column()
-        if role == Qt.ItemDataRole.DisplayRole:
-            return self._get_column_text(self.signature_mgr.signatures[row], col)
-        else:
-            return None
-
-    def _get_column_text(self, sig: Signature, column: int) -> str:
-        if column == self.COL_TYPE:
-            return sig.type_name
-        elif column == self.COL_NAME:
-            return sig.sig_name
-        elif column == self.COL_ARCH:
-            return sig.arch
-        elif column == self.COL_PLATFORM:
-            return sig.platform
-        elif column == self.COL_COMPILER:
-            return sig.compiler
-        elif column == self.COL_OS_NAME:
-            return sig.os_name
-        elif column == self.COL_MATCHES:
-            m = self.signature_mgr.get_match_count(sig)
-            return str(m) if m is not None else "N/A"
-        else:
-            raise AssertionError
+    def shutdown(self) -> None:
+        if self._owns_table_model:
+            self.table_model.shutdown()
 
 
 class QSignatureTableWidget(QTableView):
@@ -109,10 +58,11 @@ class QSignatureTableWidget(QTableView):
     Signature table widget.
     """
 
-    def __init__(self, signature_mgr, workspace: Workspace) -> None:
+    def __init__(self, signature_mgr, workspace: Workspace, presenter: SignaturesPresenter | None = None) -> None:
         super().__init__()
         self.workspace = workspace
         self.signature_mgr = signature_mgr
+        self.presenter = presenter
 
         hheader = self.horizontalHeader()
         hheader.setVisible(True)
@@ -124,7 +74,9 @@ class QSignatureTableWidget(QTableView):
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
-        self.model: QSignatureTableModel = QSignatureTableModel(self.signature_mgr)
+        self.model: QSignatureTableModel = QSignatureTableModel(
+            self.signature_mgr, presenter.model if presenter is not None else None
+        )
         self.setModel(self.model)
 
         for col in range(len(QSignatureTableModel.Headers)):
@@ -141,37 +93,24 @@ class QSignatureTableWidget(QTableView):
         super().closeEvent(event)
 
     def contextMenuEvent(self, event) -> None:
-        selected_rows = {i.row() for i in self.selectedIndexes()}
-        sigs = [self.signature_mgr.signatures[r] for r in selected_rows]
-        menu = QMenu("", self)
-        if len(sigs):
-            menu.addAction(
-                "&Try applying signature(s)", lambda: self.signature_mgr.apply_signatures(sigs, dry_run=True)
-            )
-            menu.addAction("&Apply signature(s)", lambda: self._apply_and_refresh(sigs))
-            # Add "View Matches" option if there's exactly one signature selected and it has matches
-            if len(sigs) == 1:
-                sig = sigs[0]
-                matches = self.signature_mgr.get_matches(sig)
-                if matches:
-                    menu.addAction("&View Matches...", lambda: self._show_matches_dialog(sig, matches))
-            menu.addSeparator()
-        menu.addAction("&Load signature files...", self.signature_mgr.load_signatures)
-        menu.exec_(event.globalPos())
+        sigs = self.model.table_model.objects(i.row() for i in self.selectedIndexes())
+        if self.presenter is not None:
+            menu = self.presenter.signatures_menu(sigs, show_matches=self._show_matches_dialog)
+            menu.qmenu(cached=False).exec_(event.globalPos())
 
     # pylint:disable=unused-argument
     def _on_cell_double_click(self, index) -> None:
         """Double-click: try applying signature if not yet applied, otherwise show matches dialog."""
-        row = index.row()
-        if row >= len(self.signature_mgr.signatures):
+        sig = self.model.table_model.row(index.row())
+        if sig is None:
             return
-        sig = self.signature_mgr.signatures[row]
+        if self.presenter is not None:
+            self.presenter.open_signature(sig, show_matches=self._show_matches_dialog)
+            return
         matches = self.signature_mgr.get_matches(sig)
         if matches:
-            # Already has matches, show the dialog
             self._show_matches_dialog(sig, matches)
         else:
-            # No matches yet, try applying the signature
             self.signature_mgr.apply_signatures([sig], dry_run=True)
 
     def _apply_and_refresh(self, sigs) -> None:
@@ -180,7 +119,9 @@ class QSignatureTableWidget(QTableView):
 
     def _show_matches_dialog(self, sig, matches) -> None:
         """Show dialog displaying matched functions for a signature."""
-        from angrmanagement.ui.dialogs.signature_matches import SignatureMatchesDialog
+        from angrmanagement.ui.dialogs.signature_matches import (  # pylint:disable=import-outside-toplevel
+            SignatureMatchesDialog,
+        )
 
         dialog = SignatureMatchesDialog(sig, matches, self.workspace.main_instance, self.signature_mgr, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -192,15 +133,27 @@ class SignaturesView(InstanceView):
     Signatures view that displays all loaded (FLIRT) signatures and their statuses.
     """
 
+    presenter: SignaturesPresenter
+
     def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        super().__init__("signatures", workspace, default_docking_position, instance)
+        super().__init__(
+            "signatures",
+            workspace,
+            default_docking_position,
+            instance,
+            SignaturesPresenter(workspace, instance, default_docking_position),
+        )
         self.base_caption = "Function Signatures"
         self._tbl_widget: QSignatureTableWidget | None = None
         self._init_widgets()
         self.reload()
 
     def reload(self) -> None:
-        self.instance.signature_mgr.sync_from_angr()
+        self.presenter.reload()
+
+    def closeEvent(self, event) -> None:
+        self.presenter.close()
+        super().closeEvent(event)
 
     # pylint:disable=no-self-use
     def minimumSizeHint(self):
@@ -227,27 +180,14 @@ class SignaturesView(InstanceView):
         # Main layout
         vlayout = QVBoxLayout()
         vlayout.addLayout(header_layout)
-        self._tbl_widget = QSignatureTableWidget(self.instance.signature_mgr, self.workspace)
+        self._tbl_widget = QSignatureTableWidget(self.instance.signature_mgr, self.workspace, self.presenter)
         vlayout.addWidget(self._tbl_widget)
         self.setLayout(vlayout)
 
     def _try_apply_all_signatures(self) -> None:
         """Try applying all signatures in the view."""
-        all_sigs = list(self.instance.signature_mgr.signatures)
-        if all_sigs:
-            self.instance.signature_mgr.apply_signatures(all_sigs, dry_run=True)
-
-    def _on_bindiff_matches_finished(self, matches_per_file: dict[str, dict[int, str]]) -> None:
-        for filename, matches in matches_per_file.items():
-            self.instance.signature_mgr.add_precomputed_signature("Bindif", filename, matches)
+        self.presenter.try_all_signatures()
 
     def _find_matches_via_bindiff(self) -> None:
         """Launch a background job to find matches via bindiff."""
-        from angrmanagement.data.jobs.bindiff_matching import BindiffMatchingJob
-
-        # Show the file dialog to select binaries
-        filenames = self.instance.signature_mgr.select_bindiff_base_files()
-        if filenames:
-            # Create and launch the background job
-            job = BindiffMatchingJob(self.instance, filenames, on_results=self._on_bindiff_matches_finished)
-            self.workspace.job_manager.add_job(job)
+        self.presenter.find_matches_via_bindiff()
