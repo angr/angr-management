@@ -15,16 +15,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from angrmanagement.data.instance import Instance, ObjectContainer
+from angrmanagement.data.annotations import CommentKind
 from angrmanagement.present.functions import (
     TAG_STRS,
     FunctionsPresenter,
     FunctionTableEntry,
     FunctionTableModel,
-    tags_display_string,
+    function_context_menu,
 )
+from angrmanagement.ui.dialogs.set_comment import SetComment
 from angrmanagement.ui.icons import icon
-from angrmanagement.ui.menus.function_context_menu import FunctionContextMenu
 from angrmanagement.ui.toolbars import FunctionTableToolbar
 from angrmanagement.ui.widgets.qfast_table_view import QFastTableView
 from angrmanagement.ui.widgets.qt_table import QtTableModelAdapter
@@ -33,8 +33,9 @@ if TYPE_CHECKING:
     import PySide6
     import PySide6.QtCore
     import PySide6.QtGui
-    from angr.knowledge_plugins.functions import FunctionManager
+    from angr.knowledge_plugins.functions import Function, FunctionManager
 
+    from angrmanagement.data.instance import Instance
     from angrmanagement.ui.views.functions_view import FunctionsView
     from angrmanagement.ui.workspace import Workspace
 
@@ -95,25 +96,11 @@ class QFunctionTableModel(QtTableModelAdapter):
 
     def filter(self, keyword, show_alignment: bool = True) -> None:
         if show_alignment != self.table_model.show_alignment:
-            self.table_model.show_alignment = show_alignment
             self.table_model.set_show_alignment(show_alignment)
         self.table_model.filter(keyword)
 
     def totalCount(self) -> int:
         return self.table_model.total_count
-
-    def _get_column_data(self, func: FunctionTableEntry, idx: int):
-        return self.table_model.column_value(func, idx)
-
-    def _get_column_text(self, func: FunctionTableEntry, idx: int):
-        return self.table_model.column_text(func, idx)
-
-    @classmethod
-    def _get_tags_display_string(cls, tags):
-        return tags_display_string(tags)
-
-    def _func_match_keyword(self, func: FunctionTableEntry, keyword: str, extra_columns: int = 0) -> bool:  # pylint:disable=unused-argument
-        return self.table_model.matches(func, keyword.lower())
 
 
 class QFunctionTableHeaderView(QHeaderView):
@@ -168,11 +155,13 @@ class QFunctionTableView(QFastTableView):
         self.workspace = workspace
         self.instance = instance
         self.presenter = presenter if presenter is not None else FunctionsPresenter(workspace, instance)
-        self._context_menu = FunctionContextMenu(workspace, self)
+        # the context menu last shown; the QMenu has no other owner while it is open
+        self._context_qmenu = None
 
         self._function_table: QFunctionTable = parent
-        self._selected_func = ObjectContainer(None, "Currently selected function")
-        self._selected_func.am_subscribe(selection_callback)
+        # choosing a function goes through the presenter, which also tells the workspace
+        if selection_callback is not None:
+            self.presenter.subscribe_func_select(selection_callback)
 
         header.setSectionsClickable(True)
         header.setDefaultAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -224,17 +213,14 @@ class QFunctionTableView(QFastTableView):
         self.presenter.set_function_manager(functions)
 
     def subscribe_func_select(self, callback) -> None:
-        self._selected_func.am_subscribe(callback)
+        self.presenter.subscribe_func_select(callback)
 
     def filter(self, keyword, show_alignment: bool = True) -> None:
         self.filter_text = keyword
         self._model.filter(keyword, show_alignment=show_alignment)
 
     def jump_to_result(self, index: int = 0) -> None:
-        func = self.presenter.model.function_at(index)
-        if func is not None:
-            self._selected_func.am_obj = func
-            self._selected_func.am_event(func=self._selected_func.am_obj)
+        self.presenter.jump_to_result(index)
 
     def load_functions(self) -> None:
         """
@@ -243,11 +229,7 @@ class QFunctionTableView(QFastTableView):
         self.presenter.model.load(self.presenter.function_manager)
 
     def _on_function_selected_row(self, row: int) -> None:
-        func = self.presenter.model.function_at(row)
-        if func is None:
-            return
-        self._selected_func.am_obj = func
-        self._selected_func.am_event(func=self._selected_func.am_obj)
+        self.presenter.model.activate(row)
 
     def _on_key_pressed(self, text: str) -> None:
         # show the filtering text box
@@ -255,7 +237,16 @@ class QFunctionTableView(QFastTableView):
 
     def _on_context_menu_requested(self, global_pos: PySide6.QtCore.QPoint) -> None:
         funcs = self.presenter.model.functions(self.selected_rows())
-        self._context_menu.set(funcs).qmenu().popup(global_pos)
+        menu = function_context_menu(self.workspace, funcs, edit_comment=self._edit_function_comment)
+        if menu is None:
+            return
+        menu.parent = self
+        self._context_qmenu = menu.qmenu(cached=False)
+        self._context_qmenu.popup(global_pos)
+
+    def _edit_function_comment(self, func: Function) -> None:
+        self.workspace.main_instance.annotations.set_kind(func.addr, CommentKind.FUNCTION)
+        SetComment(self.workspace, func.addr, parent=self).exec_()
 
 
 class QFunctionTableFilterBox(QLineEdit):

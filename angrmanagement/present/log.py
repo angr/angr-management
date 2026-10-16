@@ -15,7 +15,7 @@ from .menus import Menu, MenuEntry, MenuSeparator
 from .tables import Column, ListTableModel
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.data.log import LogRecord
@@ -108,6 +108,8 @@ class LogPresenter(InstancePresenter):
         super().__init__(workspace, "log", instance, default_docking_position)
         self.base_caption = "Log"
         self.model = LogTableModel(self)
+        #: what the copy actions put text on the clipboard with; the UI services' clipboard when None
+        self.clipboard_writer: Callable[[str], None] | None = None
         self.model.set_rows(list(self._log))
         container(self.instance.log).am_subscribe(self._on_new_logrecord)
 
@@ -132,8 +134,11 @@ class LogPresenter(InstancePresenter):
         lines = [record_line(r) if whole else str(r.content) for r in records]
         return os.linesep.join(lines)
 
-    def copy_to_clipboard(self, text: str) -> None:  # pylint:disable=no-self-use
-        GlobalInfo.ui_services.set_clipboard_text(text)
+    def copy_to_clipboard(self, text: str) -> None:
+        if self.clipboard_writer is not None:
+            self.clipboard_writer(text)
+        else:
+            GlobalInfo.ui_services.set_clipboard_text(text)
 
     def copy_selected(self, rows: Sequence[int]) -> None:
         self.copy_to_clipboard(self.copy(self.model.objects(rows), whole=True))

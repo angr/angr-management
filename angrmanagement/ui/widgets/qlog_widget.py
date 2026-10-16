@@ -10,9 +10,8 @@ from PySide6.QtGui import QClipboard, QCursor, QGuiApplication, QIcon, QKeySeque
 from PySide6.QtWidgets import QAbstractItemView, QTableView
 
 from angrmanagement.consts import IMG_LOCATION
-from angrmanagement.present.log import BENCHMARK_LEVEL, LogPresenter, LogTableModel, record_line
+from angrmanagement.present.log import BENCHMARK_LEVEL, LogPresenter, LogTableModel
 from angrmanagement.present.log import level_to_text as _level_to_text
-from angrmanagement.ui.menus.log_menu import LogMenu
 
 from .qt_table import QtTableModelAdapter
 
@@ -88,12 +87,6 @@ class QLogTableModel(QtTableModelAdapter):
         return super().data(index, role)
 
     @staticmethod
-    def _get_column_text(log: LogRecord, col: int) -> Any:
-        if col == LogTableModel.COL_ICON:
-            return None
-        return LogTableModel().column_text(log, col)
-
-    @staticmethod
     def _get_column_icon(log: LogRecord) -> QIcon | None:
         mapping = {
             BENCHMARK_LEVEL: QLogIcons.benchmark(),
@@ -122,9 +115,12 @@ class QLogWidget(QTableView):
         self.log_view = log_view
         self._owns_presenter = presenter is None
         self.presenter = presenter if presenter is not None else LogPresenter(log_view.workspace, log_view.instance)
+        # the copy actions also fill the X11 selection, as this table always did
+        self.presenter.clipboard_writer = self._copy_to_clipboard
         # True if we want the log panel to automatically scroll to bottom
         self._auto_scroll: bool = True
-        self._context_menu = LogMenu(self).qmenu()
+        # the context menu last shown; the QMenu has no other owner while it is open
+        self._context_menu = None
 
         hheader = self.horizontalHeader()
         vheader = self.verticalHeader()
@@ -159,19 +155,16 @@ class QLogWidget(QTableView):
         return [index.row() for index in self.selectionModel().selectedRows()]
 
     def copy_selected(self) -> None:
-        self._copy_to_clipboard(
-            os.linesep.join(record_line(r) for r in self.presenter.model.objects(self._selected_rows()))
-        )
+        self.presenter.copy_selected(self._selected_rows())
 
     def copy_selected_messages(self) -> None:
-        records = self.presenter.model.objects(self._selected_rows())
-        self._copy_to_clipboard(os.linesep.join(str(r.content) for r in records))
+        self.presenter.copy_selected_messages(self._selected_rows())
 
     def copy_all(self) -> None:
-        self._copy_to_clipboard(os.linesep.join(record_line(r) for r in self.presenter.model.log))
+        self.presenter.copy_all()
 
     def copy_all_messages(self) -> None:
-        self._copy_to_clipboard(os.linesep.join(str(r.content) for r in self.presenter.model.log))
+        self.presenter.copy_all_messages()
 
     #
     # Events
@@ -185,13 +178,10 @@ class QLogWidget(QTableView):
         super().closeEvent(event)
 
     def contextMenuEvent(self, _: PySide6.QtGui.QContextMenuEvent) -> None:
+        menu = self.presenter.log_menu(self._selected_rows())
+        menu.parent = self
+        self._context_menu = menu.qmenu(cached=False)
         self._context_menu.popup(QCursor.pos())
-
-    def _on_new_logrecord(self, log_record: LogRecord = None) -> None:
-        self.presenter._on_new_logrecord(log_record)  # pylint:disable=protected-access
-
-    def _on_new_logrecord_core(self, log_record: LogRecord = None) -> None:
-        self.presenter._on_new_logrecord_core(log_record)  # pylint:disable=protected-access
 
     def _before_row_insert(self, *_args) -> None:
         scrollbar = self.verticalScrollBar()

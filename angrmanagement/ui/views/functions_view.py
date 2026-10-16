@@ -74,9 +74,8 @@ class FunctionsView(InstanceView):
     #
 
     def _init_widgets(self) -> None:
-        self._function_table = QFunctionTable(
-            self, self.instance, selection_callback=self._on_function_selected, presenter=self.presenter
-        )
+        # the presenter tells the workspace when a function is chosen
+        self._function_table = QFunctionTable(self, self.instance, presenter=self.presenter)
 
         vlayout = QVBoxLayout()
         vlayout.addWidget(self._function_table)
