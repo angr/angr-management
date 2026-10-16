@@ -248,6 +248,16 @@ class TestFrontendAdapter(unittest.TestCase):
         self.conf.palette_window = Color(7, 8, 9)
         assert len(got) == 2
 
+    def test_entry_level_listeners_get_stored_values(self):
+        # the entry's own signal carries the neutral value; Conf.connect() is the frontend-typed path
+        self.conf.set_frontend_adapter(self.adapter)
+        stored, converted = [], []
+        self.conf.entry("palette_window").changed.connect(stored.append)
+        self.conf.connect("palette_window", converted.append, False)
+        self.conf.palette_window = ["frontend", Color(4, 5, 6)]
+        assert stored == [Color(4, 5, 6)]
+        assert converted == [["frontend", Color(4, 5, 6)]]
+
     def test_listeners_that_take_no_value_are_called_without_one(self):
         # a Qt slot taking fewer arguments than its signal was called with the rest dropped; so is this one
         self.conf.set_frontend_adapter(self.adapter)

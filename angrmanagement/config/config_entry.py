@@ -62,6 +62,9 @@ def _neutral_type_and_value(type_, value) -> tuple[Any, Any]:
 class ConfigurationEntry:
     """
     Describes a configuration entry in angr management.
+
+    ``value`` and ``changed`` carry the stored, frontend-neutral value; ``Conf.<name>`` and ``Conf.connect()`` convert
+    it for the running frontend.
     """
 
     __slots__ = ("name", "type_", "_value", "default_value")
@@ -96,7 +99,13 @@ class ConfigurationEntry:
 
     @property
     def changed(self) -> Signal:
-        """A signal emitted with the new value whenever the value changes."""
+        """
+        A signal emitted with the new value whenever the value changes.
+
+        It carries the stored, frontend-neutral value, as ``value`` does: a Color where a Qt-era entry held a QColor,
+        and a FontSpec where it held a QFont. ``Conf.connect()`` is the way to listen for the value converted for the
+        running frontend.
+        """
         return self._value.changed
 
     def subscribe(self, listener) -> None:
