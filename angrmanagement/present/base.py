@@ -129,6 +129,13 @@ class FunctionPresenter(InstancePresenter):
         self._function.am_event()
 
 
+def project_of(instance: Instance) -> angr.Project | None:
+    """The instance's project, or None when none is loaded."""
+    if instance.project.am_none:
+        return None
+    return cast("angr.Project", instance.project.am_obj)
+
+
 def is_function_view(view: Any) -> bool:
     """Whether ``view`` shows one function: its presenter is a :class:`FunctionPresenter`."""
     return isinstance(getattr(view, "presenter", None), FunctionPresenter)
