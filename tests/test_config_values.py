@@ -31,8 +31,10 @@ class TestColor(unittest.TestCase):
         assert Color.from_hex("abc") == Color(0xAA, 0xBB, 0xCC)
         assert Color.from_hex("#112233") == Color(0x11, 0x22, 0x33, 0xFF)
         assert Color.from_hex("80112233") == Color(0x11, 0x22, 0x33, 0x80)
-        # 12 digits: the high byte of each 16-bit channel
+        # 12 digits: each 16-bit channel divided by 257 and rounded, as QColor does
         assert Color.from_hex("#1234567890ab") == Color(0x12, 0x56, 0x90)
+        assert Color.from_hex("#ab00ab00ab00") == Color(0xAA, 0xAA, 0xAA)
+        assert Color.from_hex("00ff00ff00ff") == Color(1, 1, 1)
 
     def test_round_trip_through_the_serializer(self):
         parse, serialize = data_serializers[Color]
@@ -61,8 +63,6 @@ class TestColor(unittest.TestCase):
         assert color.hex == "40102030"
         assert color.rgb_hex == "102030"
         assert color.isValid()
-        assert Color.from_name("white") == Color(255, 255, 255)
-        assert Color.from_name("#000") == Color(0, 0, 0)
         assert len({Color(1, 2, 3), Color(1, 2, 3, 255), Color(1, 2, 4)}) == 2
 
     @needs_qt
@@ -74,7 +74,11 @@ class TestColor(unittest.TestCase):
         assert Color(1, 2, 3) != QColor(1, 2, 4)
         assert Color(1, 2, 3, 4).to_qcolor().getRgb() == (1, 2, 3, 4)
         assert Color.from_qcolor(QColor(5, 6, 7, 8)) == Color(5, 6, 7, 8)
-        for text in ("123", "112233", "44112233", "111122223333"):
+        for text in ("123", "112233", "44112233", "111122223333", "ab00ab00ab00", "00ff00ff00ff"):
+            assert Color.from_hex(text) == QColor("#" + text), text
+        rnd = random.Random(0)
+        for _ in range(2000):
+            text = f"{rnd.getrandbits(48):012x}"
             assert Color.from_hex(text) == QColor("#" + text), text
 
     @needs_qt

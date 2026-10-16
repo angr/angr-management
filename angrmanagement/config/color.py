@@ -21,23 +21,6 @@ if TYPE_CHECKING:
 _HEX_RE = re.compile(r"[0-9a-fA-F]+")
 _USHRT_MAX = 0xFFFF
 
-# the named colours angr management's own code passes to QColor
-_NAMED_COLORS = {
-    "black": (0x00, 0x00, 0x00),
-    "white": (0xFF, 0xFF, 0xFF),
-    "red": (0xFF, 0x00, 0x00),
-    "green": (0x00, 0x80, 0x00),
-    "blue": (0x00, 0x00, 0xFF),
-    "yellow": (0xFF, 0xFF, 0x00),
-    "cyan": (0x00, 0xFF, 0xFF),
-    "magenta": (0xFF, 0x00, 0xFF),
-    "gray": (0x80, 0x80, 0x80),
-    "grey": (0x80, 0x80, 0x80),
-    "darkgray": (0xA9, 0xA9, 0xA9),
-    "lightgray": (0xD3, 0xD3, 0xD3),
-    "orange": (0xFF, 0xA5, 0x00),
-}
-
 
 def _f32(value: float) -> float:
     """Round a double to the nearest single-precision float; QColor's HSV conversion computes in floats."""
@@ -127,7 +110,8 @@ class Color:
         """
         Parse ``RGB``, ``RRGGBB``, ``AARRGGBB`` or ``RRRRGGGGBBBB``, with or without a leading ``#``.
 
-        The 12-digit form keeps the high byte of each 16-bit channel, as QColor does.
+        The 12-digit form has 16-bit channels; each is reduced to 8 bits by dividing by 257 and rounding, as QColor
+        does.
 
         :raises ValueError: If the text is not one of those forms.
         """
@@ -142,22 +126,8 @@ class Color:
         if len(digits) == 8:
             return cls(int(digits[2:4], 16), int(digits[4:6], 16), int(digits[6:8], 16), int(digits[0:2], 16))
         if len(digits) == 12:
-            return cls(int(digits[0:2], 16), int(digits[4:6], 16), int(digits[8:10], 16))
+            return cls(*(_to_8bit(int(digits[i : i + 4], 16)) for i in (0, 4, 8)))
         raise ValueError(f"A hexadecimal colour has 3, 6, 8 or 12 digits: {text!r}")
-
-    @classmethod
-    def from_name(cls, name: str) -> Color:
-        """
-        A colour from a hex string or one of a few SVG colour names.
-
-        :raises ValueError: If the name is unknown.
-        """
-        if name.startswith("#"):
-            return cls.from_hex(name)
-        try:
-            return cls(*_NAMED_COLORS[name.lower()])
-        except KeyError:
-            raise ValueError(f"Unknown colour name: {name!r}") from None
 
     @classmethod
     def from_qcolor(cls, qcolor: QColor) -> Color:
