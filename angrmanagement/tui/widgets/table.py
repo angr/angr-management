@@ -78,6 +78,8 @@ class TableWidget(DataTable):
     def __init__(self, model: TableModel, *, id: str | None = None, classes: str | None = None) -> None:  # pylint:disable=redefined-builtin
         super().__init__(cursor_type="row", zebra_stripes=False, id=id, classes=classes)
         self.model = model
+        #: whether printable keys start filtering (a filter box is there to take them)
+        self.filter_keys = False
         self._sort_column: int | None = None
         self._sort_descending = False
         self._column_count = -1
@@ -188,11 +190,11 @@ class TableWidget(DataTable):
         self.post_message(self.SelectionChanged(self, event.cursor_row))
 
     def on_key(self, event: events.Key) -> None:
-        if event.key == "escape":
+        if event.key == "escape" and self.filter_keys:
             self.post_message(self.ClearFilterRequested(self))
             event.stop()
             return
-        if event.is_printable and event.character and event.character != " ":
+        if self.filter_keys and event.is_printable and event.character and event.character != " ":
             self.post_message(self.FilterRequested(self, event.character))
             event.stop()
 
@@ -272,6 +274,7 @@ class FilterableTable(Vertical):
         self.status = status
         self.show_filter = show_filter
         self.table = TableWidget(model)
+        self.table.filter_keys = show_filter
         # not select_on_focus: the key that started filtering must not be replaced by the next one
         self.filter_box = Input(placeholder=placeholder, classes="filter", compact=True, select_on_focus=False)
         self.status_label = Static("", classes="status")

@@ -64,7 +64,7 @@ class StatusBar(Horizontal):
         self._progress_message = ""
         self._progress_percentage = 0.0
         self._stopwatch_start = 0.0
-        self._running = False
+        self._job_running = False
         self._message_timer: Timer | None = None
         self._temporary_message = ""
 
@@ -92,18 +92,18 @@ class StatusBar(Horizontal):
 
     @property
     def status_text(self) -> str:
-        return self._progress_message if self._running else self._temporary_message
+        return self._progress_message if self._job_running else self._temporary_message
 
     def progress(self, status: str, percentage: float, reset_stopwatch: bool = False) -> None:
         self._progress_message = status
         self._progress_percentage = percentage
-        if reset_stopwatch or not self._running:
+        if reset_stopwatch or not self._job_running:
             self._stopwatch_start = time.time()
-        self._running = True
+        self._job_running = True
         self._refresh()
 
     def progress_done(self) -> None:
-        self._running = False
+        self._job_running = False
         self._progress_message = ""
         self.query_one("#status-message", Static).update(Text(self._temporary_message))
         self._show(False)
@@ -111,8 +111,8 @@ class StatusBar(Horizontal):
     def _refresh(self) -> None:
         if not self.is_mounted:
             return
-        self._show(self._running)
-        if not self._running:
+        self._show(self._job_running)
+        if not self._job_running:
             return
         self.query_one("#status-message", Static).update(Text(self._progress_message))
         self.query_one("#status-progress-text", Static).update(Text(f"{self._progress_percentage:.1f}%"))
@@ -125,7 +125,7 @@ class StatusBar(Horizontal):
             stopwatch.display = True
 
     def _tick(self) -> None:
-        if self._running:
+        if self._job_running:
             self._refresh()
 
     #
@@ -137,14 +137,14 @@ class StatusBar(Horizontal):
         self._temporary_message = text
         if self._message_timer is not None:
             self._message_timer.stop()
-        if not self._running:
+        if not self._job_running:
             self.query_one("#status-message", Static).update(Text(text))
         if timeout:
             self._message_timer = self.set_timer(timeout, self._clear_message)
 
     def _clear_message(self) -> None:
         self._temporary_message = ""
-        if not self._running:
+        if not self._job_running:
             self.query_one("#status-message", Static).update("")
 
     def set_caps_text(self, text: str) -> None:
