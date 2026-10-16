@@ -454,9 +454,13 @@ class BaseWorkspace:
 
         for view in self._views_in(categories):
             try:
-                view.refresh()
+                self._refresh_view(view)
             except Exception:  # pylint:disable=broad-except
                 _l.warning("Exception occurred during reloading view %s.", view, exc_info=True)
+
+    def _refresh_view(self, view) -> None:  # pylint:disable=no-self-use
+        """Refresh one view; a frontend whose widgets have their own ``refresh()`` calls something else."""
+        view.refresh()
 
     def _views_in(self, categories: list[str] | None) -> list[Any]:
         if categories is None:
