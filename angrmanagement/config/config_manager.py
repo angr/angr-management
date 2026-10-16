@@ -110,6 +110,10 @@ def tomltype2pytype(v, ty: type | None) -> Any:
     return str(v) if isinstance(v, tomlkit.items.String) else v.unwrap()
 
 
+# the default of the fonts that only a frontend can choose, until it does
+_FONT_UNSET = "UNSET"
+
+
 def color_parser(config_option, value) -> Color | None:
     try:
         if not isinstance(value, str):
@@ -129,6 +133,9 @@ def color_serializer(config_option, value: Color) -> str:
 
 
 def font_parser(config_option, value) -> FontSpec | None:
+    if value == _FONT_UNSET:
+        # an unfilled font that the terminal frontend saved before it stopped saving them: use the default quietly
+        return None
     try:
         if not isinstance(value, str):
             raise ValueError
@@ -260,9 +267,6 @@ data_serializers = {
     FontWeight: (font_weight_parser, font_weight_serializer),
     FontStyle: (font_style_parser, font_style_serializer),
 }
-
-
-_FONT_UNSET = "UNSET"
 
 
 # CE(name, type, default_value)

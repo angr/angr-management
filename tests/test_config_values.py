@@ -325,6 +325,20 @@ class TestFrontendAdapter(unittest.TestCase):
         loaded = ConfigurationManager.parse(io.StringIO(text))
         assert loaded.entry("ui_default_font").value == "UNSET"
 
+    def test_unset_fonts_in_an_older_file_load_quietly(self):
+        # the terminal frontend saved "UNSET" fonts before they were left out; such a file loads with no error
+        text = 'ui_default_font = "UNSET"\ntabular_view_font = "UNSET"\n'
+        with self.assertNoLogs("angrmanagement.config.config_manager", level="WARNING"):
+            loaded = ConfigurationManager.parse(io.StringIO(text))
+        assert loaded.entry("ui_default_font").value == "UNSET"
+        assert loaded.entry("tabular_view_font").value == "UNSET"
+        loaded.set_frontend_adapter(self.adapter)
+        loaded.init_font_config()
+        assert loaded.entry("ui_default_font").value == FontSpec("UI", 8)
+        # any other value that is not a font is still reported
+        with self.assertLogs("angrmanagement.config.config_manager", level="ERROR"):
+            ConfigurationManager.parse(io.StringIO('ui_default_font = "not a font"\n'))
+
     @needs_qt
     def test_plugin_entries_declared_with_qt_types_become_neutral(self):
         from PySide6.QtGui import QColor, QFont  # pylint: disable=import-outside-toplevel
