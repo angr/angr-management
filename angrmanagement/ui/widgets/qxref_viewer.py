@@ -18,8 +18,8 @@ class QXRefModel(QtTableModelAdapter):
     """
     Qt model over a :class:`~angrmanagement.present.xrefs.XRefsModel`.
 
-    It also takes the arguments it took before there was a neutral model, ``QXRefModel(addr, instance, view)``: it then
-    shows the view's ``xrefs_model``, or a new model of the references to ``addr``.
+    It also takes the arguments it took before there was a neutral model, ``QXRefModel(addr, instance, view)``,
+    positionally or by keyword: it then shows the view's ``xrefs_model``, or a new model of the references to ``addr``.
     """
 
     HEADER: list[tuple[str, int]] = []
@@ -27,8 +27,17 @@ class QXRefModel(QtTableModelAdapter):
     table_model: XRefsModel
 
     def __init__(
-        self, xrefs_model: XRefsModel | int | None = None, instance: Instance | None = None, view=None
+        self,
+        xrefs_model: XRefsModel | int | None = None,
+        instance: Instance | None = None,
+        view=None,
+        *,
+        addr: int | None = None,
     ) -> None:
+        if addr is not None:
+            if xrefs_model is not None:
+                raise TypeError("QXRefModel takes xrefs_model or addr, not both")
+            xrefs_model = addr
         if not isinstance(xrefs_model, XRefsModel):
             addr = xrefs_model
             model = getattr(view, "xrefs_model", None)

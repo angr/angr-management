@@ -43,6 +43,10 @@ class TestXRefModelArguments(ProjectOpenTestCase):
         # the new shape
         new = QXRefAddressModel(viewer.xrefs_model)
         assert new.table_model is viewer.xrefs_model and new.instance is self.instance and new.view is None
+        # the old arguments by keyword
+        by_keyword = QXRefAddressModel(addr=func.addr, instance=self.instance, view=viewer)
+        assert by_keyword.table_model is viewer.xrefs_model and by_keyword.addr == func.addr
+        assert by_keyword.view is viewer
 
 
 class TestCommentTableArguments(ProjectOpenTestCase):
