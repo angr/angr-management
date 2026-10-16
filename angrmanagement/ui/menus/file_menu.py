@@ -92,7 +92,7 @@ class FileMenu(Menu):
                 MenuEntry(
                     "&Preferences...",
                     main_window.preferences,
-                    shortcut="Ctrl+Comma",
+                    shortcut="Ctrl+,",
                     role="preferences",
                     icon="preferences" if platform.system() != "Darwin" else None,
                 ),
