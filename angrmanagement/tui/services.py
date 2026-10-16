@@ -88,29 +88,40 @@ class TuiServices:
         executor = GlobalInfo.executor
         return executor if isinstance(executor, TextualExecutor) else None
 
-    def _ask_sync(self, make_screen: Callable[[], Screen], default: Any, cancelled: Any = _DEFAULT) -> Any:
+    def _ask_sync(
+        self,
+        make_screen: Callable[[], Screen],
+        default: Any,
+        cancelled: Any = _DEFAULT,
+        then: Callable[[Any], Any] | None = None,
+    ) -> Any:
         """
         Show a screen and return its answer. From a worker thread the thread waits; on the UI thread a call that a
         waiting worker scheduled is answered when the screen is dismissed; any other call on the UI thread gets
         ``default`` at once.
 
+        A call that a waiting worker scheduled returns a :class:`Deferred`, not the answer, so a caller that needs to
+        do something with the answer passes ``then`` rather than looking at what comes back.
+
         :param default:     The answer when nobody can be asked.
         :param cancelled:   The answer when the user cancels the screen (it dismisses with None) or the app shuts
                             down while the screen is up; ``default`` unless given.
+        :param then:        Turns the answer (any of the three) into what the call returns.
         """
         if cancelled is _DEFAULT:
             cancelled = default
+        convert: Callable[[Any], Any] = then if then is not None else (lambda answer: answer)
         if not self.interactive or not self._running:
-            return default
+            return convert(default)
         executor = self._executor()
         if executor is None:
-            return default
+            return convert(default)
         if executor.closed:
-            return cancelled
+            return convert(cancelled)
         if not executor.is_ui_thread():
             answer = executor.schedule(self._ask_sync, (make_screen, default, cancelled))
             # None is what a call gets that the executor could not deliver because the app shut down
-            return cancelled if answer is None else answer
+            return convert(cancelled if answer is None else answer)
         if executor.serving_blocking_call:
             # only the call the worker scheduled may wait; questions it asks in turn get their default
             executor.serving_blocking_call = False
@@ -123,10 +134,16 @@ class TuiServices:
 
             assert self.app is not None
             self.app.push_screen(make_screen(), callback=done)
-            return Deferred(future, cancelled)
+            if then is None:
+                return Deferred(future, cancelled)
+
+            async def converted() -> Any:
+                return then(await future)
+
+            return Deferred(asyncio.ensure_future(converted()), then(cancelled))
         _l.warning("A question was asked on the UI thread and cannot wait; answering %r", default)
         self.toast(f"A question could not be shown here; answered {default!r}.", "warning")
-        return default
+        return convert(default)
 
     async def ask(self, screen: Screen, default: Any = None) -> Any:
         """Show ``screen`` and wait for its answer; for code on the UI loop."""
@@ -222,7 +239,11 @@ class TuiServices:
         self._ask_then(FilePickerScreen(caption, directory, name_filter, "save"), None, callback)
 
     def pick_open_files(self, caption: str, directory: str, name_filter: str, multiple: bool) -> list[str]:
-        return self._ask_sync(lambda: FilePickerScreen(caption, directory, name_filter, "open", multiple), []) or []
+        return self._ask_sync(
+            lambda: FilePickerScreen(caption, directory, name_filter, "open", multiple),
+            [],
+            then=lambda files: files or [],
+        )
 
     def pick_save_file(self, caption: str, directory: str, name_filter: str) -> str | None:
         return self._ask_sync(lambda: FilePickerScreen(caption, directory, name_filter, "save"), None)
@@ -273,35 +294,29 @@ class TuiServices:
         def make_screen() -> Screen:
             return ChecklistScreen("Load a binary", text, items, ok="Load")
 
+        def apply(answer: list[bool] | None) -> LoadOptions | None:
+            if answer is None:
+                return None
+            selection.auto_load_libs, selection.load_debug_info = answer
+            return build()
+
         # a cancel is None, and the load job stops, as it does when the Qt load dialog is cancelled
-        result = self._ask_sync(make_screen, [selection.auto_load_libs, selection.load_debug_info], cancelled=None)
-        if isinstance(result, Deferred):
-            # scheduled from the load job: finish building once the user answered
-            outer = result
-
-            async def finish() -> Any:
-                answer = await outer.future
-                if answer is None:
-                    return None
-                selection.auto_load_libs, selection.load_debug_info = answer
-                return build()
-
-            return Deferred(asyncio.ensure_future(finish()), None)
-        if result is None:
-            return None
-        selection.auto_load_libs, selection.load_debug_info = result
-        return build()
+        return self._ask_sync(
+            make_screen, [selection.auto_load_libs, selection.load_debug_info], cancelled=None, then=apply
+        )
 
     def encryption_key(self, filename: str, prompt: str = "", initial_text: str = "") -> bytes | None:
-        answer = self.prompt_text(
-            "Encryption key", prompt or f"The encryption key of {filename}, in hex:", initial_text
-        )
-        if not answer:
-            return None
-        try:
-            return bytes.fromhex(answer.strip())
-        except ValueError:
-            return answer.encode()
+        def to_key(answer: str | None) -> bytes | None:
+            if not answer:
+                return None
+            try:
+                return bytes.fromhex(answer.strip())
+            except ValueError:
+                return answer.encode()
+
+        label = prompt or f"The encryption key of {filename}, in hex:"
+        # the load job asks for the key from the worker thread, so the answer can come back as a Deferred
+        return self._ask_sync(lambda: PromptScreen("Encryption key", label, initial_text), None, then=to_key)
 
     def clipboard_text(self) -> str:
         return self._clipboard
@@ -324,15 +339,16 @@ class TuiServices:
             return False
 
     def analysis_options(self, workspace, configuration: AnalysesConfiguration) -> AnalysesConfiguration | None:  # pylint:disable=unused-argument
-        items = [(a.display_name or a.name, a.enabled) for a in configuration]
-        result = self._ask_sync(
-            lambda: analyses_screen(configuration), [enabled for _, enabled in items], cancelled=None
+        def apply(answer: list[bool] | None) -> AnalysesConfiguration | None:
+            if answer is None:
+                return None
+            for analysis, enabled in zip(configuration, answer, strict=False):
+                analysis.enabled = enabled
+            return configuration
+
+        return self._ask_sync(
+            lambda: analyses_screen(configuration), [a.enabled for a in configuration], cancelled=None, then=apply
         )
-        if result is None:
-            return None
-        for analysis, enabled in zip(configuration, result, strict=False):
-            analysis.enabled = enabled
-        return configuration
 
     async def ask_analysis_options(self, configuration: AnalysesConfiguration) -> AnalysesConfiguration | None:
         """Ask which analyses to run, on the UI loop."""

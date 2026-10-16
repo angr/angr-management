@@ -17,6 +17,7 @@ import threading
 import time
 import unittest
 from typing import TYPE_CHECKING, Any
+from unittest.mock import patch
 
 import pytest
 from textual.command import CommandPalette
@@ -29,7 +30,7 @@ from angrmanagement.logic.view_manager import default_position
 from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps, caps_from_environment
 from angrmanagement.tui.executor import Deferred, TextualExecutor
-from angrmanagement.tui.screens import ChecklistScreen, MessageScreen, QuestionScreen
+from angrmanagement.tui.screens import ChecklistScreen, MessageScreen, PromptScreen, QuestionScreen
 from angrmanagement.tui.screenshot import shoot, show_view
 from angrmanagement.tui.views import TUI_VIEW_CLASSES
 from angrmanagement.tui.widgets.menubar import MenuPopup
@@ -42,6 +43,9 @@ if TYPE_CHECKING:
 
 test_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "binaries", "tests")
 FAUXWARE = os.path.join(test_location, "x86_64", "fauxware")
+ELF_CART = os.path.join(test_location, "x86_64", "1after909.cart")
+#: the key 1after909.cart was packed with, as in tests/dialogs/test_load_binary_cart.py
+CART_KEY = b"\x02\xf53asdf\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 SIZE = (160, 50)
 
 
@@ -306,15 +310,27 @@ class TestViewKeys(TuiTestCase):
         run_app(scenario, binary=None)
 
 
-async def wait_for_checklist(pilot: Pilot, title: str, timeout: float = 120) -> ChecklistScreen:
+async def wait_for_screen(pilot: Pilot, kind: type[Any], title: str, timeout: float = 120) -> Any:
     # loading fauxware takes seconds, and much longer on a loaded machine
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         await pilot.pause(0.05)
         screen = pilot.app.screen
-        if isinstance(screen, ChecklistScreen) and screen.title_text == title:
+        if isinstance(screen, kind) and screen.title_text == title:
             return screen
+        if isinstance(screen, MessageScreen):
+            raise AssertionError(f"{screen.title_text}: {screen.text}")
     raise AssertionError(f"no {title!r} screen")
+
+
+async def wait_for_checklist(pilot: Pilot, title: str, timeout: float = 120) -> ChecklistScreen:
+    return await wait_for_screen(pilot, ChecklistScreen, title, timeout)
+
+
+async def press_ok(pilot: Pilot, screen: Any) -> None:
+    # a click can land before the screen is laid out on a busy machine; press the button itself
+    await settle(pilot)
+    screen.query_one("#ok", Button).press()
 
 
 class TestInteractiveLoad(TuiTestCase):
@@ -326,12 +342,11 @@ class TestInteractiveLoad(TuiTestCase):
             app.interactive = True
             app.load_file(FAUXWARE)
             # the load job waits in its thread while the options screen is up
-            await wait_for(pilot, "Load a binary")
+            screen = await wait_for(pilot, "Load a binary")
             assert app.workspace.main_instance.project.am_none
-            await pilot.click("#ok")
+            await press_ok(pilot, screen)
             # then the analyses are offered, as the Qt analysis options dialog is
-            await wait_for(pilot, "Run analysis")
-            await pilot.click("#ok")
+            await press_ok(pilot, await wait_for(pilot, "Run analysis"))
             await app.wait_for_jobs()
             await settle(pilot)
             kb = app.workspace.main_instance.kb
@@ -354,7 +369,6 @@ class TestInteractiveLoad(TuiTestCase):
                     if how == "escape":
                         await pilot.press("escape")
                     else:
-                        # a click can land before the screen is laid out on a busy machine; press the button itself
                         screen.query_one(how, Button).press()
                     await app.wait_for_jobs()
                     await settle(pilot)
@@ -370,14 +384,43 @@ class TestInteractiveLoad(TuiTestCase):
             started: list[str] = []
             app.workspace.job_manager.job_starting.connect(lambda job: started.append(job.name))
             app.load_file(FAUXWARE)
-            await wait_for_checklist(pilot, "Load a binary")
-            await pilot.click("#ok")
+            await press_ok(pilot, await wait_for_checklist(pilot, "Load a binary"))
             await wait_for_checklist(pilot, "Run analysis")
+            await settle(pilot)
             await pilot.press("escape")
             await app.wait_for_jobs()
             await settle(pilot)
             assert not app.workspace.main_instance.project.am_none
             assert len(started) == 1, started
+
+        run_app(scenario, binary=None)
+
+    def test_an_encrypted_binary_asks_for_its_key(self) -> None:
+        # the load job asks for the key from its thread, as the Qt SetEncryptionKeyDialog does, then loads with it
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            app.services.interactive = True
+            app.interactive = True
+            errors: list[str] = []
+            app.workspace.job_manager.job_exception.connect(lambda job, ex: errors.append(f"{job.name}: {ex!r}"))
+            # no key from a cart configuration file of whoever runs the tests
+            with patch("angrmanagement.data.jobs.loading.load_cart_config_key", return_value=None):
+                app.load_file(ELF_CART)
+                prompt = await wait_for_screen(pilot, PromptScreen, "Encryption key")
+            assert not errors, errors
+            assert app.workspace.main_instance.project.am_none
+            prompt.query_one("#answer").value = CART_KEY.hex()
+            await press_ok(pilot, prompt)
+            await press_ok(pilot, await wait_for_checklist(pilot, "Load a binary"))
+            await wait_for_checklist(pilot, "Run analysis")
+            await settle(pilot)
+            await pilot.press("escape")
+            await app.wait_for_jobs()
+            await settle(pilot)
+            assert not errors, errors
+            project = app.workspace.main_instance.project
+            assert not project.am_none
+            assert project.loader.main_object.__class__.__name__ == "ELF"
+            assert project.loader.original_main_object.__class__.__name__ == "CARTFile"
 
         run_app(scenario, binary=None)
 
