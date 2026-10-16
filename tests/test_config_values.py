@@ -423,7 +423,9 @@ class TestConfigDirectory(unittest.TestCase):
         qtcore.QCoreApplication.instance.return_value = None
         with patch.dict(sys.modules, {"PySide6.QtCore": qtcore}):
             assert config_module._running_qt_application_name() is None
-            qtcore.QCoreApplication.instance.return_value = MagicMock(**{"applicationName.return_value": "angr"})
+            app = MagicMock()
+            app.applicationName.return_value = "angr"
+            qtcore.QCoreApplication.instance.return_value = app
             assert config_module._running_qt_application_name() == "angr"
 
     def test_legacy_directory_wins_when_it_exists(self):
