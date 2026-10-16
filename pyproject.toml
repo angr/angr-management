@@ -71,6 +71,7 @@ testing = [
   "pytest-durations",
   "pytest-profiling",
   "pytest-split",
+  "pytest-textual-snapshot",
   "pytest-timeout",
   "pytest-xdist",
 ]

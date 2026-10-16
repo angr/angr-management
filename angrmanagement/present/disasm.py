@@ -615,6 +615,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         self.view_visibility_changed = Signal()
 
         self._events_registered = False
+        self._view_overrides = True
 
     #
     # The frontend
@@ -627,6 +628,9 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         """
         self.view = view
         self.infodock.disasm_view = node_target if node_target is not None else view
+        # a view that hands the nodes to the presenter does everything through it; only one that takes the nodes
+        # itself (the Qt view) overrides the presenter's prompts and menus with its own
+        self._view_overrides = node_target is None
         self.register_events()
 
     @property
@@ -641,7 +645,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
 
     def _view_method(self, name: str) -> Callable | None:
         """The view's own implementation of ``name``, if it has one (the Qt view's dialogs)."""
-        if self.view is None or self.view is self:
+        if self.view is None or self.view is self or not self._view_overrides:
             return None
         return getattr(self.view, name, None)
 
