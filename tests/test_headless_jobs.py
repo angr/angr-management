@@ -10,12 +10,18 @@ import logging
 import os
 import threading
 import unittest
+from typing import TYPE_CHECKING
 
 from headless import run_without_qt, test_location  # pylint: disable=import-error
 
+from angrmanagement.data.load_options import _confirm_symbol_download
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.signal import Signal
 from angrmanagement.logic.threads import DirectExecutor, gui_thread_schedule, gui_thread_schedule_async, is_gui_thread
+from angrmanagement.logic.ui_services import HeadlessServices
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 FAUXWARE = os.path.join(test_location, "x86_64", "fauxware")
 
@@ -231,6 +237,35 @@ class TestDirectExecutor(DirectExecutorTestCase):
         assert got == [1]
         self.executor.process_pending()
         assert got == [1, 2]
+
+    def test_symbol_download_is_confirmed_on_the_ui_thread(self):
+        # cle asks from the loading thread; the question must reach the user on the UI thread
+        asked = []
+
+        class Services(HeadlessServices):
+            """Answers every question with its default and records the thread it was asked on."""
+
+            def question(self, title: str, text: str, buttons: Sequence[str], default: str) -> str:
+                asked.append((title, text, tuple(buttons), threading.current_thread()))
+                return default
+
+        saved_services = GlobalInfo._ui_services
+        GlobalInfo.ui_services = Services()
+        try:
+            box = {}
+            thread = self.run_in_thread(lambda: box.setdefault("answer", _confirm_symbol_download("http://symbols")))
+            assert self.executor.pump_until(lambda: not thread.is_alive(), timeout=30)
+        finally:
+            GlobalInfo.ui_services = saved_services
+        assert box["answer"] is True
+        assert asked == [
+            (
+                "Confirm Symbol Download",
+                "Download debug symbols from:\nhttp://symbols",
+                ("Yes", "No"),
+                threading.current_thread(),
+            )
+        ]
 
     def test_process_pending_does_nothing_off_the_ui_thread(self):
         got = []

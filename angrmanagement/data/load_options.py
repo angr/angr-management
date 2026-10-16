@@ -18,6 +18,9 @@ from angr.calling_conventions import unify_arch_name
 from angr.simos import os_mapping
 from cle.backends.pe.symbolserver import SymbolPathParser
 
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.threads import gui_thread_schedule
+
 try:
     import pypcode
 except ImportError:
@@ -336,10 +339,7 @@ def default_selection(
 
 
 def _confirm_symbol_download(url: str) -> bool:
-    # cle calls this on the loading thread
-    from angrmanagement.logic import GlobalInfo  # pylint:disable=import-outside-toplevel
-    from angrmanagement.logic.threads import gui_thread_schedule  # pylint:disable=import-outside-toplevel
-
+    # cle calls this on the loading thread, so the question goes to the UI thread
     answer = gui_thread_schedule(
         GlobalInfo.ui_services.question,
         ("Confirm Symbol Download", f"Download debug symbols from:\n{url}", ("Yes", "No"), "Yes"),
