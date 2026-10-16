@@ -300,6 +300,29 @@ class TestFrontendAdapter(unittest.TestCase):
         assert entry.type_ is FontStyle and entry.value is FontStyle.ITALIC
 
 
+class TestPluginEntries(unittest.TestCase):
+    """Entries a plugin adds to ENTRIES after the configuration was loaded."""
+
+    def test_reinterpet_adds_entries_the_file_did_not_mention(self):
+        from angrmanagement.config import config_manager  # pylint: disable=import-outside-toplevel
+
+        conf = ConfigurationManager.parse(io.StringIO('plugin_saved_color = "ff010203"\n'))
+        added = [
+            ConfigurationEntry("plugin_saved_color", Color, Color(9, 9, 9)),
+            ConfigurationEntry("plugin_new_color", Color, Color(4, 5, 6)),
+        ]
+        with patch.object(config_manager, "ENTRIES", config_manager.ENTRIES + added):
+            conf.reinterpet()
+        assert conf.plugin_saved_color == Color(1, 2, 3)
+        assert conf.plugin_new_color == Color(4, 5, 6)
+        got = []
+        conf.connect("plugin_new_color", got.append, True)
+        conf.plugin_new_color = Color(7, 8, 9)
+        assert got == [Color(4, 5, 6), Color(7, 8, 9)]
+        # the plugin's own declarations are templates and keep their defaults
+        assert added[0].value == Color(9, 9, 9) and added[1].value == Color(4, 5, 6)
+
+
 class TestConfigDirectory(unittest.TestCase):
     """Where the configuration file lives."""
 

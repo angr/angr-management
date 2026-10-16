@@ -704,13 +704,16 @@ class ConfigurationManager:  # pylint: disable=assigning-non-slot
         for entry in ENTRIES:
             my_entry = self._entries.get(entry.name, None)
             if my_entry is None:
-                self._entries[entry.name] = my_entry
+                # an entry the loaded file did not mention starts at its default
+                self._entries[entry.name] = entry.copy()
                 continue
 
             if type(my_entry) is UninterpretedCE:
-                entry.value = self.deserialize(entry.type_, entry.name, my_entry.value)
-                if entry.value is not None:
-                    self._entries[entry.name] = entry
+                value = self.deserialize(entry.type_, entry.name, my_entry.value)
+                if value is not None:
+                    new_entry = entry.copy()
+                    new_entry.value = value
+                    self._entries[entry.name] = new_entry
 
     @classmethod
     def parse_file(cls, path: str, ignore_unknown_entries: bool = False):
