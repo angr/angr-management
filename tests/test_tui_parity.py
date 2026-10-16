@@ -12,9 +12,10 @@ from typing import Any
 
 from common import AngrManagementTestCase
 
-from angrmanagement.config import Conf
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.menus import Menu, MenuEntry, MenuSeparator
-from angrmanagement.present.shell import basic_command_table, build_main_menus
+from angrmanagement.present.shell import basic_command_table
+from angrmanagement.tui.app import AmApp
 from angrmanagement.ui.menus.view_menu import ToolbarMenu
 
 
@@ -32,17 +33,25 @@ def shape(menu: Menu) -> list[Any]:
             out.append((item.caption, shortcut))
         elif isinstance(item, MenuSeparator):
             out.append("-")
-    # separators that bracketed a dropped submenu collapse
+    return collapse(out)
+
+
+def collapse(shown: list[Any]) -> list[Any]:
+    """``shown`` with each run of separators made one, as separators that bracketed a dropped entry become."""
     collapsed: list[Any] = []
-    for entry in out:
+    for entry in shown:
         if entry == "-" and collapsed and collapsed[-1] == "-":
             continue
         collapsed.append(entry)
     return collapsed
 
 
+#: what the terminal's menus have and the Qt ones do not, as (menu, entry): the Qt Toolbars submenu stands there
+TERMINAL_ONLY = {("&View", ("&Bottom Area", "F12"))}
+
+
 class TestMenuParity(AngrManagementTestCase):
-    """The neutral menu bar the terminal shows is the Qt menu bar."""
+    """The menu bar of the terminal frontend is the Qt menu bar."""
 
     def test_same_menus(self):
         qt_menus = [
@@ -53,11 +62,19 @@ class TestMenuParity(AngrManagementTestCase):
             self.main._plugin_menu,
             self.main._help_menu,
         ]
-        # the Qt "Load recent" submenu was built from this same list when the window was made
-        neutral = build_main_menus(self.main, recent_files=Conf.recent_files)
-        assert [m.caption for m in neutral] == [m.caption for m in qt_menus]
-        for qt_menu, menu in zip(qt_menus, neutral, strict=True):
-            assert shape(menu) == shape(qt_menu), qt_menu.caption
+        # the terminal app's own menus, built as it starts; it is not run, only made and shut down
+        app = AmApp(interactive=False)
+        try:
+            terminal = list(app.menus)
+        finally:
+            app.shutdown()
+        assert GlobalInfo.main_window is self.main
+        assert [m.caption for m in terminal] == [m.caption for m in qt_menus]
+        for qt_menu, menu in zip(qt_menus, terminal, strict=True):
+            extra = [entry for caption, entry in TERMINAL_ONLY if caption == menu.caption]
+            got = shape(menu)
+            assert all(entry in got for entry in extra), (menu.caption, extra)
+            assert shape(qt_menu) == collapse([entry for entry in got if entry not in extra]), qt_menu.caption
 
     def test_same_commands(self):
         captions = sorted(cmd.caption for cmd in self.main.workspace.command_manager.get_commands())
