@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from functools import partial
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from angr.angrdb import AngrDB
 
@@ -180,7 +180,8 @@ class HeadlessWorkspace:
         self.job_manager = JobManager(self)
         self.job_manager.job_exception.connect(self._on_job_exception)
         self.view_manager = HeadlessViewManager()
-        self.plugins = PluginManager(self)
+        # PluginManager is typed for the Qt workspace; it only needs what this class provides until a plugin runs
+        self.plugins = PluginManager(self)  # pyright: ignore[reportArgumentType]
         self.analysis_manager = AnalysisManager(self)
         self.auto_analyze = auto_analyze
         # read by the MCP load_binary tool; there is no analysis options dialog to suppress here
@@ -212,8 +213,9 @@ class HeadlessWorkspace:
         pass
 
     def on_cfg_recovery_started(self, cfb) -> None:
-        self.main_instance.cfb.am_obj = cfb
-        self.main_instance.cfb.am_event()
+        container = cast("ObjectContainer", self.main_instance.cfb)
+        container.am_obj = cfb
+        container.am_event()
 
     def jump_to(self, addr: int, view=None, use_animation: bool = False) -> None:  # pylint:disable=unused-argument
         _l.debug("Headless workspace: not jumping to %#x", addr)
