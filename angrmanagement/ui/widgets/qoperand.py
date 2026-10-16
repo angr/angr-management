@@ -290,10 +290,10 @@ class QOperand(QCachedGraphicsItem):
         return QRectF(0, 0, self._width, self._height)
 
     def _pick_variable(self, variable_and_offsets):
-        return self.node._pick_variable(variable_and_offsets)  # pylint:disable=protected-access
+        return self.node.pick_variable(variable_and_offsets)
 
     def _variable_has_access(self, variable, ins_addr, access_type):
-        return self.node._variable_has_access(variable, ins_addr, access_type)  # pylint:disable=protected-access
+        return self.node.variable_has_access(variable, ins_addr, access_type)
 
     def _equals_for_highlighting_purposes(self, other):
         """

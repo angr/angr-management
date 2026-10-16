@@ -315,7 +315,7 @@ class OperandNode:
                 self.insn.addr, variable_sort
             )
             if variable_and_offsets:
-                variable, offset = self._pick_variable(variable_and_offsets)
+                variable, offset = self.pick_variable(variable_and_offsets)
 
                 if variable is not None:
                     self.variable = variable
@@ -434,7 +434,7 @@ class OperandNode:
 
         return list(branch_targets)[:n]
 
-    def _pick_variable(self, variable_and_offsets):
+    def pick_variable(self, variable_and_offsets):
         """
         Pick the corresponding variable for the current operand.
 
@@ -470,9 +470,7 @@ class OperandNode:
                 # this is the source operand
                 # which variable is read here?
                 for var, offset in variable_and_offsets:
-                    if arch.registers[reg_name][0] == var.reg and self._variable_has_access(
-                        var, self.insn.addr, "read"
-                    ):
+                    if arch.registers[reg_name][0] == var.reg and self.variable_has_access(var, self.insn.addr, "read"):
                         return var, offset
 
                 log.debug(
@@ -485,7 +483,7 @@ class OperandNode:
             # this is the destination operand
             # which variable is written here?
             for var, offset in variable_and_offsets:
-                if arch.registers[reg_name][0] == var.reg and self._variable_has_access(var, self.insn.addr, "write"):
+                if arch.registers[reg_name][0] == var.reg and self.variable_has_access(var, self.insn.addr, "write"):
                     return var, offset
 
             log.debug(
@@ -497,11 +495,11 @@ class OperandNode:
             return None, None
 
         # what's this type? why am I here?
-        log.error("_pick_variable: Unsupported operand type %s.", self.operand.__class__)
+        log.error("pick_variable: Unsupported operand type %s.", self.operand.__class__)
 
         return None, None
 
-    def _variable_has_access(self, variable, ins_addr, access_type):
+    def variable_has_access(self, variable, ins_addr, access_type):
         accesses_by_variable = self.variable_manager[self.func_addr]._variable_accesses  # pylint:disable=protected-access
         if variable not in accesses_by_variable:
             log.error("Variable %s does not have any accessing records.", variable)
