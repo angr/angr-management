@@ -37,7 +37,7 @@ from angrmanagement.present.base import is_function_view
 from angrmanagement.utils import locate_function
 from angrmanagement.utils.daemon_thread import start_daemon_thread
 
-from . import GlobalInfo
+from . import GlobalInfo, database
 from .analysis_manager import AnalysisManager
 from .commands import CommandManager
 from .debugger import DebuggerWatcher
@@ -797,9 +797,7 @@ class BaseWorkspace:
         views clear themselves in response to the container-reset events. Does nothing if no
         project is loaded.
         """
-        from .headless_workspace import close_project  # pylint:disable=import-outside-toplevel,cyclic-import
-
-        close_project(self.main_instance)
+        database.close_project(self.main_instance)
 
     def save_database(self, file_path: str) -> bool:
         """
@@ -807,9 +805,7 @@ class BaseWorkspace:
 
         :returns: True on success, False if no project is loaded.
         """
-        from .headless_workspace import save_database  # pylint:disable=import-outside-toplevel,cyclic-import
-
-        return save_database(self, file_path)
+        return database.save_database(self, file_path)
 
     def load_database(self, file_path: str, on_loaded=None):
         """
@@ -817,14 +813,12 @@ class BaseWorkspace:
         finishes, the project/CFG/CFB containers are populated and views are refreshed, then the
         optional ``on_loaded(file_path)`` callback is invoked.
         """
-        from .headless_workspace import load_database  # pylint:disable=import-outside-toplevel,cyclic-import
-
-        return load_database(self, file_path, lambda job, *args: self._on_database_loaded(job, on_loaded, *args))
+        return database.load_database(
+            self, file_path, lambda job, *args: self._on_database_loaded(job, on_loaded, *args)
+        )
 
     def _on_database_loaded(self, job, on_loaded, *args, **kwargs) -> None:  # pylint:disable=unused-argument
-        from .headless_workspace import apply_loaded_database  # pylint:disable=import-outside-toplevel,cyclic-import
-
-        if not apply_loaded_database(self, job):
+        if not database.apply_loaded_database(self, job):
             return
 
         if on_loaded is not None:
