@@ -30,7 +30,6 @@ from angrmanagement.data.signatures import init_flirt_signatures
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import BasicCommand
-from angrmanagement.logic.threads import ExecuteCodeEvent
 from angrmanagement.mcp import MCPServerManager, is_mcp_available
 from angrmanagement.mcp.manager import DEFAULT_HOST, DEFAULT_PATH
 from angrmanagement.ui.dialogs.archive_loader import ArchiveLoaderDialog
@@ -53,6 +52,7 @@ from .menus.file_menu import FileMenu
 from .menus.help_menu import HelpMenu
 from .menus.plugin_menu import PluginMenu
 from .menus.view_menu import ViewMenu
+from .qt_executor import QExecuteCodeEventReceiver, QtExecutor
 from .toolbar_manager import ToolbarManager
 from .toolbars import DebugToolbar, FeatureMapToolbar, FileToolbar
 from .workspace import Workspace
@@ -130,24 +130,6 @@ class ShiftShiftEventFilter(QObject):
         return False
 
 
-class QExecuteCodeEventReceiver(QObject):
-    """
-    A class that receives ExecuteCodeEvent and executes the code on the GUI thread.
-    """
-
-    def event(self, event, /):
-        if not isinstance(event, ExecuteCodeEvent):
-            return False
-        try:
-            event.result = event.execute()
-        except Exception as ex:  # pylint:disable=broad-except
-            event.exception = ex
-            if event.async_:
-                _l.exception("Exception occurred in an async job:")
-        event.event.set()
-        return True
-
-
 class MainWindow(QMainWindow):
     """
     The main window of angr management.
@@ -170,6 +152,8 @@ class MainWindow(QMainWindow):
 
         GlobalInfo.main_window = self
         GlobalInfo.event_receiver = QExecuteCodeEventReceiver()
+        if not isinstance(GlobalInfo.executor, QtExecutor):
+            GlobalInfo.executor = QtExecutor()
         self.shown_at_start = show
 
         # initialization

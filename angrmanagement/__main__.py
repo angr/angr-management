@@ -170,6 +170,11 @@ def start_management(
 
     splash.setProgress(0.1, "Loading configuration")
 
+    # the headless core reaches the GUI thread, the configuration's Qt values and the user through GlobalInfo
+    from .ui.qt_frontend import install_qt_frontend
+
+    install_qt_frontend()
+
     from .config import Conf
 
     # try to import the initial configuration for the install

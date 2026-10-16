@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QApplication
 from angrmanagement.config import Conf
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.main_window import MainWindow
+from angrmanagement.ui.qt_frontend import install_qt_frontend
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
@@ -27,6 +28,7 @@ def create_qapp():
     global app
     if app is None:
         app = QApplication([])
+        install_qt_frontend()
         Conf.init_font_config()
     return app
 
