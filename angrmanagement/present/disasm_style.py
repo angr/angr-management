@@ -67,8 +67,9 @@ def insn_background(
     if addr in pattern_addrs:
         return PATTERN_STYLE
 
-    if not instance.patches.am_none:
-        patches = instance.patches.get_all_patches(addr, size)
+    patch_manager: Any = instance.patches
+    if not patch_manager.am_none:
+        patches = patch_manager.get_all_patches(addr, size)
         if len(patches):
             return PATCHED_STYLE
 
