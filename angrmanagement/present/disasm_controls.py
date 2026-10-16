@@ -321,6 +321,10 @@ class LinearControl:
         self._insaddr_to_block: dict[int, LinearBlock] = {}
 
     @property
+    def infodock(self):
+        return self.presenter.infodock
+
+    @property
     def objects(self):
         """The display objects made so far, by address (QLinearDisassembly.objects)."""
         return self.source.objects

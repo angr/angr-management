@@ -270,6 +270,19 @@ class TestLinear(unittest.TestCase):
 
         run_app(scenario)
 
+    def test_breakpoint_in_the_listing(self):
+        async def scenario(app: AmApp, pilot: Pilot, view: Any) -> None:
+            view.presenter.display_linear_viewer()
+            await settle(pilot)
+            view.presenter.infodock.select_instruction(0x40071E)
+            view.linear_widget.focus()
+            await pilot.press("f2")
+            await settle(pilot)
+            assert view.presenter.instance.breakpoint_mgr.get_breakpoints_at(0x40071E)
+            assert any(text.startswith("break 0040071e") for text in linear_text(view))
+
+        run_app(scenario)
+
     def test_click_in_the_listing(self):
         async def scenario(app: AmApp, pilot: Pilot, view: Any) -> None:
             view.presenter.display_linear_viewer()
@@ -279,6 +292,27 @@ class TestLinear(unittest.TestCase):
             await pilot.click(view.linear_widget, offset=(view.linear_widget.LEFT_MARGIN + 2, row))
             await settle(pilot)
             assert view.presenter.infodock.selected_insns == {0x40071E}
+
+        run_app(scenario)
+
+
+class TestViews(unittest.TestCase):
+    def test_new_graph_view_and_linear_view_from_the_menu(self):
+        async def scenario(app: AmApp, pilot: Pilot, view: Any) -> None:
+            view.presenter.jump_to(0x400739)
+            await settle(pilot)
+            await pilot.press("ctrl+n")
+            await settle(pilot, 6)
+            views = app.workspace.view_manager.views_by_category["disassembly"]
+            assert len(views) == 2
+            second = views[1]
+            assert second.caption == "Disassembly-2"
+            assert second.presenter.function.am_obj.name == "main"
+            assert second.presenter.infodock.selected_insns == {0x400739}
+            app.workspace.show_linear_disassembly_view()
+            await settle(pilot)
+            shown: Any = app.workspace.view_manager.current_view_in_category("disassembly")
+            assert shown.presenter.is_linear
 
         run_app(scenario)
 
