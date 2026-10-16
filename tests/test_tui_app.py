@@ -501,6 +501,16 @@ class TestExit(TuiTestCase):
                 run_app(scenario, binary=None)
                 assert _ExitProbe.seen == ["parts left: 0"], _ExitProbe.seen
 
+    def test_job_signals_before_the_bar_is_mounted(self) -> None:
+        # the parts do not exist yet, so there is nothing to update and nothing raises
+        bar = StatusBar()
+        bar.progress("CFG generation", 10.0)
+        assert bar.status_text == "CFG generation"
+        bar.progress_done()
+        bar.show_message("done")
+        bar._clear_message()
+        assert bar.status_text == ""
+
 
 class TestConsole(TuiTestCase):
     def test_runs_code_in_the_workspace_namespace(self) -> None:

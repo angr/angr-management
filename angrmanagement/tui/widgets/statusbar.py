@@ -121,7 +121,7 @@ class StatusBar(Horizontal):
         self._show(False)
 
     def _refresh(self) -> None:
-        if not self.is_mounted or not self._live:
+        if not self._live:
             return
         self._show(self._job_running)
         if not self._job_running:
