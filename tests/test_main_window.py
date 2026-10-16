@@ -243,5 +243,23 @@ class TestMCPAutostart(AngrManagementTestCase):
             sock.close()
 
 
+class TestMainWindowEventReceiver(AngrManagementTestCase):
+    def test_one_receiver_and_the_old_import_path(self):
+        # the class used to be defined in main_window, so code outside angr management may import it from there
+        from angrmanagement.logic import GlobalInfo  # pylint: disable=import-outside-toplevel
+        from angrmanagement.ui import main_window  # pylint: disable=import-outside-toplevel
+        from angrmanagement.ui.qt_executor import QExecuteCodeEventReceiver  # pylint: disable=import-outside-toplevel
+
+        assert main_window.QExecuteCodeEventReceiver is QExecuteCodeEventReceiver
+        # a second main window keeps the receiver events may already be posted to
+        receiver = GlobalInfo.event_receiver
+        assert isinstance(receiver, QExecuteCodeEventReceiver)
+        second = main_window.MainWindow(show=False)
+        try:
+            assert GlobalInfo.event_receiver is receiver
+        finally:
+            second.close()
+
+
 if __name__ == "__main__":
     unittest.main()

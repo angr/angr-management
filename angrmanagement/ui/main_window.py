@@ -52,6 +52,7 @@ from .menus.file_menu import FileMenu
 from .menus.help_menu import HelpMenu
 from .menus.plugin_menu import PluginMenu
 from .menus.view_menu import ViewMenu
+from .qt_executor import QExecuteCodeEventReceiver  # noqa: F401  # pylint: disable=unused-import
 from .qt_frontend import install_qt_frontend
 from .toolbar_manager import ToolbarManager
 from .toolbars import DebugToolbar, FeatureMapToolbar, FileToolbar
