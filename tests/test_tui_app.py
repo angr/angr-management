@@ -1,0 +1,352 @@
+"""
+The terminal frontend, driven through Textual's pilot: the app starts headless on fauxware, every view of this
+frontend opens, the functions table filters and opens a function, the palettes run commands, the menus open and run
+entries, the console runs code, a worker thread can ask the user, and every view can be saved as a screenshot.
+"""
+
+# pylint: disable=protected-access,missing-class-docstring,no-self-use,unused-argument
+
+from __future__ import annotations
+
+import asyncio
+import json
+import os
+import tempfile
+import threading
+import unittest
+from typing import TYPE_CHECKING, Any
+
+from textual.command import CommandPalette
+
+from angrmanagement.config import Conf
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.view_manager import default_position
+from angrmanagement.tui.app import AmApp
+from angrmanagement.tui.caps import TerminalCaps, caps_from_environment
+from angrmanagement.tui.executor import TextualExecutor
+from angrmanagement.tui.screens import QuestionScreen
+from angrmanagement.tui.screenshot import shoot, show_view
+from angrmanagement.tui.views import TUI_VIEW_CLASSES
+from angrmanagement.tui.widgets.menubar import MenuPopup
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
+    from textual.pilot import Pilot
+
+test_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "binaries", "tests")
+FAUXWARE = os.path.join(test_location, "x86_64", "fauxware")
+SIZE = (160, 50)
+
+
+def run_app(scenario: Callable[[AmApp, Pilot], Awaitable[None]], tier: int = 2, binary: str | None = FAUXWARE) -> None:
+    """Run ``scenario(app, pilot)`` in a headless app, with fauxware opened unless ``binary`` is None."""
+
+    async def main() -> None:
+        app = AmApp(caps=TerminalCaps(truecolor=True, forced_tier=tier), interactive=False)
+        async with app.run_test(size=SIZE) as pilot:
+            await pilot.pause()
+            if binary is not None:
+                await app.open_binary(binary)
+                await pilot.pause()
+            await scenario(app, pilot)
+
+    asyncio.run(main())
+
+
+async def settle(pilot: Pilot, rounds: int = 3) -> None:
+    for _ in range(rounds):
+        await pilot.pause()
+
+
+class TuiTestCase(unittest.TestCase):
+    """Keeps the globals the app replaces as they were."""
+
+    def setUp(self) -> None:
+        self.saved = (GlobalInfo._executor, GlobalInfo._ui_services, GlobalInfo.main_window, Conf.frontend_adapter)
+        self.saved_layout = Conf.tui_layout
+
+    def tearDown(self) -> None:
+        executor, services, main_window, adapter = self.saved
+        assert GlobalInfo._executor is executor, "the app did not give the executor back"
+        assert GlobalInfo._ui_services is services, "the app did not give the UI services back"
+        assert GlobalInfo.main_window is main_window
+        assert Conf.frontend_adapter is adapter
+        Conf.tui_layout = self.saved_layout
+
+
+class TestStartup(TuiTestCase):
+    def test_starts_and_opens_every_view(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            vm = app.workspace.view_manager
+            # the default views, where the Qt workspace puts them
+            assert vm.area_of(vm.first_view_in_category("functions")) == "left"
+            for category in ("console", "log", "jobs", "mcp_history", "comments"):
+                assert vm.area_of(vm.first_view_in_category(category)) == "bottom", category
+            assert app.workspace.main_instance.kb is not None
+            for category in TUI_VIEW_CLASSES:
+                view: Any = await show_view(pilot, category)
+                assert view is not None and view.is_attached, category
+                assert vm.area_of(view) == default_position(category), category
+                assert vm.current_view_in_category(category) is view
+                pane_id = vm.pane_id_of(view)
+                assert vm.area(vm.area_of(view) or "center").active == pane_id, category
+
+        run_app(scenario)
+
+    def test_categories_without_a_view_do_nothing(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            app.action_show_view("disassembly")
+            await settle(pilot)
+            assert app.view_widget("disassembly") is None
+
+        run_app(scenario, binary=None)
+
+
+class TestFunctionsTable(TuiTestCase):
+    def test_filter_and_open(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = app.view_widget("functions")
+            assert view is not None
+            view.table_widget.focus()
+            await settle(pilot)
+            total = view.presenter.model.row_count
+            # a printable key in the table starts filtering
+            await pilot.press("a", "u", "t", "h")
+            await settle(pilot)
+            assert view.table.filter_box.value == "auth"
+            assert view.table_widget.row_count == 1 < total
+            assert "1/40 functions" in str(view.table.status_label.render())
+            # Enter in the filter box opens the first function and clears the filter
+            await pilot.press("enter")
+            await settle(pilot)
+            assert app.status_bar.status_text.startswith("authenticate at 0x")
+            assert view.table.filter_box.value == ""
+            assert view.table_widget.row_count == total
+            # Escape clears a filter typed in the table
+            view.table_widget.focus()
+            await pilot.press("m", "a", "i", "n")
+            await settle(pilot)
+            assert view.table_widget.row_count >= 1
+            await pilot.press("escape")
+            await settle(pilot)
+            assert view.table.filter_box.value == ""
+
+        run_app(scenario)
+
+    def test_sort_on_header_click(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = app.view_widget("functions")
+            assert view is not None
+            table = view.table_widget
+            model = view.presenter.model
+            table.post_message(
+                table.HeaderSelected(table, table.ordered_columns[3].key, 3, table.ordered_columns[3].label)
+            )
+            await settle(pilot)
+            addrs = [f.addr for f in model.rows]
+            assert addrs == sorted(addrs)
+            table.post_message(
+                table.HeaderSelected(table, table.ordered_columns[3].key, 3, table.ordered_columns[3].label)
+            )
+            await settle(pilot)
+            assert [f.addr for f in model.rows] == sorted(addrs, reverse=True)
+            assert "▼" in str(table.ordered_columns[3].label)
+
+        run_app(scenario)
+
+
+class TestPalettes(TuiTestCase):
+    def test_command_palette_runs_a_command(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            assert app.view_widget("strings") is None
+            await pilot.press("ctrl+shift+p")
+            await settle(pilot)
+            assert isinstance(app.screen, CommandPalette)
+            await pilot.press(*"View: Strings")
+            await settle(pilot, 6)
+            await pilot.press("enter")
+            await settle(pilot, 6)
+            assert app.view_widget("strings") is not None
+
+        run_app(scenario)
+
+    def test_tier_zero_uses_ctrl_p(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            await pilot.press("ctrl+p")
+            await settle(pilot)
+            assert isinstance(app.screen, CommandPalette)
+            await pilot.press("escape")
+            await settle(pilot)
+            keys = {binding.key for _, binding in app._bindings}
+            assert "ctrl+shift+p" not in keys
+            assert "alt+o" in keys  # Preferences, for Ctrl+,
+            assert app.chord_for("command_palette") == "Ctrl+P"
+
+        run_app(scenario, tier=0, binary=None)
+
+    def test_goto_palette_finds_a_function(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            app.action_goto_palette()
+            await settle(pilot)
+            await pilot.press(*"rejected")
+            await settle(pilot, 6)
+            await pilot.press("enter")
+            await settle(pilot, 6)
+            assert app.status_bar.status_text.startswith("rejected at 0x")
+
+        run_app(scenario)
+
+
+class TestMenus(TuiTestCase):
+    def test_every_menu_opens_with_its_entries(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            assert app.menu_names() == ["File", "View", "Analyze", "AI", "Plugins", "Help"]
+            for name in app.menu_names():
+                popup = await app.open_menu(name)
+                await settle(pilot)
+                assert app.screen is popup and isinstance(popup, MenuPopup)
+                entries = [item for item in popup.items if hasattr(item, "caption")]
+                assert popup.option_list.option_count >= len(entries)
+                await app.close_menu()
+                await settle(pilot)
+                assert not isinstance(app.screen, MenuPopup)
+
+        run_app(scenario, binary=None)
+
+    def test_f10_arrows_and_mnemonics(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            await pilot.press("f10")
+            await settle(pilot)
+            assert isinstance(app.screen, MenuPopup) and app.screen.menu.text == "File"
+            # the shortcut shown is the one bound here
+            assert app.shortcut_text("Ctrl+Shift+S") == "Ctrl+Shift+S"
+            await pilot.press("right")
+            await settle(pilot)
+            assert isinstance(app.screen, MenuPopup) and app.screen.menu.text == "View"
+            await pilot.press("s")  # &Strings
+            await settle(pilot, 5)
+            assert not isinstance(app.screen, MenuPopup)
+            assert app.view_widget("strings") is not None
+
+        run_app(scenario)
+
+    def test_menu_shortcuts_follow_the_tier(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            await settle(pilot)
+            assert app.shortcut_text("Ctrl+Shift+P") == "Ctrl+P"
+            assert app.shortcut_text("Ctrl+Tab") == "Ctrl+PgDown"
+            assert app.shortcut_text("Ctrl+O") == "Ctrl+O"
+
+        run_app(scenario, tier=0, binary=None)
+
+
+class TestConsole(TuiTestCase):
+    def test_runs_code_in_the_workspace_namespace(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = await show_view(pilot, "console")
+            assert view is not None and view.ipython_widget_available
+            view.input.focus()
+            await pilot.press(*"hex(project.entry)")
+            await pilot.press("enter")
+            await settle(pilot)
+            text = "\n".join(line.text for line in view.output.lines)
+            assert hex(app.workspace.main_instance.project.entry) in text
+            # history
+            await pilot.press("up")
+            assert view.input.value == "hex(project.entry)"
+
+        run_app(scenario)
+
+
+class TestServices(TuiTestCase):
+    def test_a_worker_thread_waits_for_the_answer(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            app.services.interactive = True
+            answers: list[str] = []
+            thread = threading.Thread(
+                target=lambda: answers.append(app.services.question("Q", "Go?", ["Yes", "No"], "No")), daemon=True
+            )
+            thread.start()
+            for _ in range(50):
+                await pilot.pause(0.02)
+                if isinstance(app.screen, QuestionScreen):
+                    break
+            assert isinstance(app.screen, QuestionScreen)
+            assert thread.is_alive(), "the thread did not wait"
+            await pilot.click("#button-0")
+            await settle(pilot)
+            thread.join(5)
+            assert answers == ["Yes"]
+
+        run_app(scenario, binary=None)
+
+    def test_executor_runs_calls_on_the_loop(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            executor = GlobalInfo.executor
+            assert isinstance(executor, TextualExecutor) and executor.is_ui_thread()
+            seen: list[bool] = []
+            result: list[int] = []
+
+            def work() -> None:
+                result.append(executor.schedule(lambda: seen.append(executor.is_ui_thread()) or 7))
+
+            thread = threading.Thread(target=work)
+            thread.start()
+            for _ in range(50):
+                await pilot.pause(0.02)
+                if result:
+                    break
+            thread.join(5)
+            assert seen == [True] and result == [7]
+
+        run_app(scenario, binary=None)
+
+
+class TestLayout(TuiTestCase):
+    def test_bottom_area_and_resizing(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            vm = app.workspace.view_manager
+            assert not vm.area("bottom").display  # hidden, as the Qt bottom docks are
+            assert app.query_one("#bottom-strip").display
+            await pilot.press("f12")
+            await settle(pilot)
+            assert vm.area("bottom").display
+            width = vm.layout["left"]
+            await pilot.press("ctrl+shift+right")
+            await settle(pilot)
+            assert vm.layout["left"] == width + 4
+            assert json.loads(Conf.tui_layout)["left"] == width + 4
+
+        run_app(scenario, binary=None)
+
+
+class TestScreenshots(TuiTestCase):
+    def test_every_view_is_saved(self) -> None:
+        with tempfile.TemporaryDirectory() as outdir:
+            written = asyncio.run(shoot(outdir, FAUXWARE, size=(140, 45)))
+            names = sorted(os.path.basename(path) for path in written)
+            assert names == sorted(["window.svg"] + [f"{category}.svg" for category in TUI_VIEW_CLASSES])
+            with open(os.path.join(outdir, "functions.svg"), encoding="utf-8") as f:
+                svg = f.read()
+            assert "authenticate" in svg and "Filter&#160;by&#160;name" in svg
+
+
+class TestCaps(unittest.TestCase):
+    def test_environment(self) -> None:
+        assert caps_from_environment({"KITTY_WINDOW_ID": "1"}).tier == 3
+        assert caps_from_environment({"COLORTERM": "truecolor"}).tier == 1
+        assert caps_from_environment({}).tier == 0
+        assert caps_from_environment({"TERM_PROGRAM": "WezTerm"}).kitty_keyboard
+        assert caps_from_environment({"AM_TUI_TIER": "2"}).tier == 2
+
+    def test_replies(self) -> None:
+        from angrmanagement.tui.caps import parse_replies  # pylint: disable=import-outside-toplevel
+
+        caps = parse_replies(TerminalCaps(), b"\x1bP>|foot(1.16)\x1b\\\x1b[?1u\x1b_Gi=31;OK\x1b\\\x1b[?62;4;22c")
+        assert caps.version == "foot(1.16)" and caps.kitty_keyboard and caps.kitty_graphics and caps.sixel
+        assert caps.tier == 3
+
+
+if __name__ == "__main__":
+    unittest.main()
