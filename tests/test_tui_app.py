@@ -321,6 +321,29 @@ class TestLayout(TuiTestCase):
         run_app(scenario, binary=None)
 
 
+class TestThemes(TuiTestCase):
+    def test_switching_the_scheme_recolours_the_tables(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = app.view_widget("functions")
+            assert app.theme == "am-light" and not app.am_theme.is_dark
+            row = next(i for i, f in enumerate(view.presenter.model.rows) if f.name == "main")
+            light = view.table_widget.get_row_at(row)[1].style.color
+            app.theme = "am-dark"
+            await settle(pilot)
+            assert app.am_theme.is_dark and app.scheme_name == "Dark"
+            dark = view.table_widget.get_row_at(row)[1].style.color
+            assert light != dark
+            assert {name for name in app.available_themes if name.startswith("am-")} >= {
+                "am-light",
+                "am-dark",
+                "am-dracula",
+                "am-catppuccin-mocha",
+                "am-custom",
+            }
+
+        run_app(scenario)
+
+
 class TestScreenshots(TuiTestCase):
     def test_every_view_is_saved(self) -> None:
         with tempfile.TemporaryDirectory() as outdir:
