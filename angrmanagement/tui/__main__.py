@@ -63,10 +63,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     from angrmanagement.tui.app import AmApp
+    from angrmanagement.tui.widgets.picture import graphics_tier, prepare_graphics
 
-    # the terminal is asked what it can do before Textual reads its input
+    # the terminal is asked what it can do before Textual reads its input, and so is textual-image's question
     caps = detect(probe=True)
-    app = AmApp(binary=args.binary, caps=caps, theme_name=args.theme)
+    if graphics_tier(caps):
+        prepare_graphics()
+    app = AmApp(binary=args.binary, caps=caps, theme_name=args.theme, welcome=args.binary is None)
     app.run(size=args.size)
     return app.return_code or 0
 

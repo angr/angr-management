@@ -38,7 +38,12 @@ from angrmanagement.tui.caps import TerminalCaps, caps_from_environment
 from angrmanagement.tui.executor import TextualExecutor
 from angrmanagement.tui.new_state import NewStateScreen
 from angrmanagement.tui.palette import AmCommandProvider, GotoProvider
+from angrmanagement.tui.screens.about import AboutScreen
+from angrmanagement.tui.screens.archive import ArchiveScreen
+from angrmanagement.tui.screens.plugins import PluginsScreen
 from angrmanagement.tui.screens.preferences import PreferencesScreen
+from angrmanagement.tui.screens.progress import ProgressScreen
+from angrmanagement.tui.screens.welcome import WelcomeScreen, run_welcome_choice
 from angrmanagement.tui.services import TuiServices
 from angrmanagement.tui.theme import all_textual_themes, textual_theme, theme_id
 from angrmanagement.tui.view_manager import DockArea
@@ -89,6 +94,8 @@ class AmApp(App):
     :param theme_name:      The colour scheme (Light, Dark, Dracula, Catppuccin Mocha or Custom); the configured one by
                             default.
     :param interactive:     Whether to ask the user; with False every question gets its default, as in a script.
+    :param welcome:         Whether to show the Welcome screen at start when no binary is given; am-tui does, as the
+                            Qt frontend shows its Welcome dialog when it starts without a file.
     """
 
     TITLE = "angr management"
@@ -141,6 +148,7 @@ class AmApp(App):
         caps: TerminalCaps | None = None,
         theme_name: str | None = None,
         interactive: bool = True,
+        welcome: bool = False,
     ) -> None:
         super().__init__()
         self.binary = binary
@@ -155,6 +163,9 @@ class AmApp(App):
         self.keymap.extend(TUI_BINDINGS)
         self._last_shift = 0.0
         self.mcp_server_manager: Any = None
+        #: the progress screen of the blocking job that runs, if one does
+        self.progress_screen: ProgressScreen | None = None
+        self.welcome = welcome
 
         # install the frontend before the workspace: its job manager and signals need the executor
         self._saved_globals = (
@@ -296,6 +307,8 @@ class AmApp(App):
         if self.binary:
             # a file named on the command line loads with the options the load screen would preselect
             self.load_file(self.binary, ask=False)
+        elif self.welcome:
+            self.show_welcome_dialog()
 
     def on_unmount(self) -> None:
         self.shutdown()
@@ -408,14 +421,24 @@ class AmApp(App):
     # Jobs and the status bar
     #
 
-    def _on_job_starting(self, job: Job) -> None:  # pylint:disable=unused-argument
+    def _on_job_starting(self, job: Job) -> None:
         self.status_bar.progress("Working...", 0.0, True)
+        if job.blocking and self.progress_screen is None:
+            # a blocking job holds the user up, as the Qt progress dialog does; the others show in the status bar
+            self.progress_screen = ProgressScreen("Working...", self.workspace.job_manager.interrupt_current_job)
+            self.push_screen(self.progress_screen)
 
     def _on_job_progress(self, job: Job, percentage: float, text: str = "") -> None:
-        self.status_bar.progress(f"{job.name}: {text}" if text else job.name, percentage)
+        text = f"{job.name}: {text}" if text else job.name
+        self.status_bar.progress(text, percentage)
+        if job.blocking and self.progress_screen is not None:
+            self.progress_screen.update_progress(text, percentage)
 
     def _on_job_finished(self, job: Job, *_args) -> None:  # pylint:disable=unused-argument
         self.status_bar.progress_done()
+        screen, self.progress_screen = self.progress_screen, None
+        if screen is not None and screen.is_attached:
+            screen.dismiss(None)
 
     async def wait_for_jobs(self, idle: float = 0.3, timeout: float = 600) -> bool:
         """Wait until no job has run for ``idle`` seconds; False if ``timeout`` passed first."""
@@ -487,13 +510,22 @@ class AmApp(App):
             return
         if not self._ensure_no_open_project():
             return
-        if is_archive(file_path):
-            self.services.message(
-                "warning", "Archives", "Opening a binary from an archive is not available in the terminal yet."
-            )
-            return
         instance.binary_path = file_path
         instance.original_binary_path = file_path
+        if is_archive(file_path):
+
+            def extracted(path: str | None) -> None:
+                if path is not None:
+                    instance.binary_path = path
+                    self._open_loaded_file(path, ask)
+
+            self.push_screen(ArchiveScreen(file_path), extracted)
+            return
+        self._open_loaded_file(file_path, ask)
+
+    def _open_loaded_file(self, file_path: str, ask: bool) -> None:
+        """Open a database or start loading a binary, once the file is on disk."""
+        instance = self.workspace.main_instance
         if file_path.endswith(".adb"):
             self.workspace.load_database(file_path, on_loaded=self._recent_file)
         else:
@@ -774,15 +806,18 @@ class AmApp(App):
         open_new_state(self.workspace, self.workspace.main_instance, create_simgr=True)
 
     def open_load_plugins_dialog(self) -> None:
-        self.services.message("info", "Plugins", "Managing plugins is not in the terminal yet.")
+        """Plugins > Manage Plugins: the Installed Plugins screen."""
+        self.push_screen(PluginsScreen(self.workspace.plugins))
 
     def open_doc_link(self) -> None:
         self.services.open_url(DOCUMENTATION_URL)
 
     def open_about_dialog(self) -> None:
-        from angrmanagement import __version__  # pylint:disable=import-outside-toplevel
+        self.push_screen(AboutScreen(self.caps))
 
-        self.services.message("info", "About angr management", f"angr management {__version__}\nhttps://angr.io/")
+    def show_welcome_dialog(self) -> None:
+        """The Welcome screen: the recent projects, open a file, the documentation and About."""
+        self.push_screen(WelcomeScreen(), lambda choice: run_welcome_choice(self, choice))
 
     def toggle_bottom_panel(self) -> None:
         self.workspace.view_manager.toggle_bottom()

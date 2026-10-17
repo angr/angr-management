@@ -22,6 +22,7 @@ from angrmanagement.present.stack import StackPresenter
 from angrmanagement.present.strings import StringsPresenter
 from angrmanagement.present.symexec import StatesPresenter
 from angrmanagement.present.traces import TracesPresenter
+from angrmanagement.tui.screens.signature_matches import SignatureMatchesScreen
 from angrmanagement.tui.widgets.table import FilterableTable
 
 from .base import TuiView
@@ -240,6 +241,18 @@ class SignaturesTuiView(TableTuiView):
 
     def on_mount(self) -> None:
         self.presenter.reload()
+
+    def show_signature_matches(self, sig: Any, matches: dict[int, str]) -> None:
+        """The Signature Matches screen; applying it tells the workspace, as the Qt dialog's Apply does."""
+
+        def done(result: str | None) -> None:
+            if result == "applied":
+                self.workspace.on_flirt_signatures_applied()
+
+        presenter = self.presenter
+        self.app.push_screen(
+            SignatureMatchesScreen(self.workspace, sig, matches, presenter.instance, presenter.signature_mgr), done
+        )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         actions: dict[str | None, Any] = {
