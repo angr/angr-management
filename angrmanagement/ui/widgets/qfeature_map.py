@@ -121,9 +121,6 @@ class FeatureMapItem(QGraphicsItem):
         """Stop following the CFB."""
         self._presenter.close()
 
-    def reload(self) -> None:
-        self._presenter.reload()
-
     def set_cursor_addrs(self, cursor_addrs) -> None:
         self._cursor_addrs = cursor_addrs
         self._create_cursor_items()
