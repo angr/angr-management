@@ -22,6 +22,7 @@ from angr.analyses.decompiler.structured_codegen import (
     UnaryOpNode,
     VariableNode,
 )
+from angr.knowledge_plugins.patterns import StoredPattern
 from angr.sim_type import SimTypeInt
 
 from angrmanagement.logic import GlobalInfo
@@ -42,6 +43,7 @@ from angrmanagement.present.code import (
     stmt_node_at_position,
 )
 from angrmanagement.present.code_highlight import highlight_runs, kind_style, resolve_runs
+from angrmanagement.present.code_patterns import PatternLibraryModel
 from angrmanagement.present.menus import MenuEntry, MenuSeparator
 
 test_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "binaries", "tests")
@@ -531,6 +533,45 @@ class TestOptionsAndPatterns(FauxwareCodeCase):
         assert self.presenter.has_pattern_highlight
         assert self.presenter.clear_pattern_highlight()
         assert not self.presenter.pattern_highlight_rows()
+
+    def test_patterns_pane_model(self):
+        doc = self.presenter.doc
+        first = self.line_of("read(0, &v5, 8);")
+        last = self.line_of("read(0, &v2, 1);")
+        start = doc.line_starts[first]
+        end = doc.line_starts[last] + doc.lines[last].width
+        pattern = self.presenter.make_pattern(start, end, "two_reads")
+        assert pattern is not None
+        kb = self.project.kb
+        kb.patterns.store(StoredPattern(pattern, enabled=False, origin_func=self.main.addr))
+        statuses: list[str] = []
+        model = PatternLibraryModel(self.presenter, on_status=statuses.append)
+        assert model.row_count == 1
+        name = pattern.name
+        assert [model.cell(0, col).text for col in range(5)] == [name, "off", "", "0", "0"]
+        assert model.cell(0, 5).text == "two_reads"
+        # a click on Enabled only marks the pattern; Apply turns it on and decompiles again
+        assert model.set_checked(0, model.ENABLED, True)
+        assert model.cell(0, model.ENABLED).text == "on (unapplied)" and not kb.patterns.get(name).enabled
+        assert model.apply_pending()
+        self.workspace.job_manager.join_all_jobs()
+        assert kb.patterns.get(name).enabled
+        assert "two_reads(" in self.text
+        model.reload()
+        assert int(model.cell(0, 4).text) >= 1
+        # the highlight box bands the call in the pseudocode
+        assert model.set_checked(0, model.HIGHLIGHT, True)
+        assert self.presenter.is_pattern_highlighted(name)
+        assert self.line_of("two_reads(") in self.presenter.pattern_highlight_rows()
+        menu = model.context_menu([0])
+        assert menu is not None
+        assert [entry.text for entry in menu.items() if isinstance(entry, MenuEntry)] == [
+            "Highlight patterns in pseudocode",
+            "Highlight patterns in disassembly",
+            "Edit pattern...",
+            "Apply Patterns & Redecompile",
+            "Clear highlights",
+        ]
 
     def test_hover_text_of_a_call(self):
         elem = self.element("authenticate", FunctionCallNode)

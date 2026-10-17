@@ -218,7 +218,7 @@ class PatternLibraryModel(ListTableModel[Any]):
                     enabled=bool(selected),
                 ),
                 MenuEntry("Edit pattern...", lambda: self.edit(selected[0]), enabled=len(selected) == 1),
-                MenuEntry("Apply Patterns & Redecompile", self.apply_pending, enabled=bool(self.pending)),
+                MenuEntry("Apply Patterns && Redecompile", self.apply_pending, enabled=bool(self.pending)),
                 MenuEntry("Clear highlights", self.presenter.clear_pattern_highlight),
             ],
         )
