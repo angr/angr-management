@@ -296,5 +296,33 @@ class TestLoadTraceFile(AngrManagementTestCase):
         critical.assert_not_called()
 
 
+class TestDebugToolbar(AngrManagementTestCase):
+    def test_buttons(self):
+        from angrmanagement.present.debug_bar import action_states  # pylint: disable=import-outside-toplevel
+        from angrmanagement.ui.toolbars import DebugToolbar  # pylint: disable=import-outside-toplevel
+
+        toolbar = self.main.toolbar_manager.active[DebugToolbar]
+        shown = [
+            "|" if a.isSeparator() else (a.text(), a.toolTip())
+            for a in toolbar.qtoolbar().actions()
+            if a.isSeparator() or a.text()
+        ]
+        # the captions and tooltips the Qt toolbar had before it read them from DEBUG_ACTIONS
+        assert shown == [
+            ("Continue-Backward", "Reverse-Continue"),
+            ("Step-Backward", "Reverse-Step"),
+            ("Continue", "Continue"),
+            ("Halt", "Halt"),
+            ("Step", "Step"),
+            ("Step Over", "Step Over"),
+            "|",
+            ("Launch", "New Debugger"),
+            ("Stop", "Stop Debugging"),
+        ]
+        toolbar._update_state()
+        for name, (enabled, _visible) in action_states(None).items():
+            assert toolbar._cached_actions[toolbar._acts_by_name[name]].isEnabled() == enabled, name
+
+
 if __name__ == "__main__":
     unittest.main()

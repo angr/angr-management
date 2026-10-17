@@ -8,7 +8,7 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QComboBox, QLabel, QMenu
 
 from angrmanagement.logic.debugger import Debugger, DebuggerListManager, DebuggerManager, DebuggerWatcher
-from angrmanagement.present.debug_bar import DebugBarPresenter, debugger_text
+from angrmanagement.present.debug_bar import DEBUG_ACTIONS, DebugBarPresenter, debugger_text
 
 from .toolbar import Toolbar, ToolbarAction, ToolbarSplitter
 
@@ -16,6 +16,18 @@ if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.main_window import MainWindow
     from angrmanagement.ui.workspace import Workspace
+
+#: The icon of each button of DEBUG_ACTIONS.
+_ICONS = {
+    "cont_backward": "fa5s.fast-backward",
+    "step_backward": "fa5s.step-backward",
+    "cont": "fa5s.play",
+    "halt": "fa5s.pause",
+    "step": "fa5s.step-forward",
+    "step_over": "fa5s.share",
+    "start": "fa5s.running",
+    "stop": "fa5s.stop-circle",
+}
 
 
 # pylint:disable=unused-argument,no-self-use
@@ -70,47 +82,26 @@ class DebugToolbar(Toolbar):
         #: what the buttons do and when they are enabled, shared with the terminal's debug bar
         self._presenter = DebugBarPresenter(self.workspace, self.instance)
 
-        self._cont_backward_act = ToolbarAction(
-            qta.icon("fa5s.fast-backward"),
-            "Continue-Backward",
-            "Reverse-Continue",
-            self._on_cont_backward,
-        )
-        self._step_backward_act = ToolbarAction(
-            qta.icon("fa5s.step-backward"),
-            "Step-Backward",
-            "Reverse-Step",
-            self._on_step_backward,
-        )
-        self._cont_act = ToolbarAction(qta.icon("fa5s.play"), "Continue", "Continue", self._on_cont)
-        self._halt_act = ToolbarAction(qta.icon("fa5s.pause"), "Halt", "Halt", self._on_halt)
-        self._step_act = ToolbarAction(qta.icon("fa5s.step-forward"), "Step", "Step", self._on_step)
-        self._step_over_act = ToolbarAction(qta.icon("fa5s.share"), "Step Over", "Step Over", self._on_step_over)
-
-        self._start_act = ToolbarAction(qta.icon("fa5s.running"), "Launch", "New Debugger", self._on_start)
-        self._stop_act = ToolbarAction(qta.icon("fa5s.stop-circle"), "Stop", "Stop Debugging", self._on_stop)
-
-        self._acts_by_name = {
-            "cont_backward": self._cont_backward_act,
-            "step_backward": self._step_backward_act,
-            "cont": self._cont_act,
-            "halt": self._halt_act,
-            "step": self._step_act,
-            "step_over": self._step_over_act,
-            "start": self._start_act,
-            "stop": self._stop_act,
+        handlers = {
+            "cont_backward": self._on_cont_backward,
+            "step_backward": self._on_step_backward,
+            "cont": self._on_cont,
+            "halt": self._on_halt,
+            "step": self._on_step,
+            "step_over": self._on_step_over,
+            "start": self._on_start,
+            "stop": self._on_stop,
         }
-        self.actions = [
-            self._cont_backward_act,
-            self._step_backward_act,
-            self._cont_act,
-            self._halt_act,
-            self._step_act,
-            self._step_over_act,
-            ToolbarSplitter(),
-            self._start_act,
-            self._stop_act,
-        ]
+        self._acts_by_name = {
+            a.name: ToolbarAction(qta.icon(_ICONS[a.name]), a.caption, a.tooltip, handlers[a.name])
+            for a in DEBUG_ACTIONS
+        }
+        self._start_act = self._acts_by_name["start"]
+        self.actions = []
+        for name, act in self._acts_by_name.items():
+            if name == "start":
+                self.actions.append(ToolbarSplitter())
+            self.actions.append(act)
         self.qtoolbar()
 
         assert self._cached is not None
