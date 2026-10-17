@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING
 
-from angr.analyses.decompiler.structured_codegen import FunctionCallNode, FunctionNode, LabelNode, VariableNode
-from angr.sim_type import SimType
-from angr.sim_variable import SimMemoryVariable
 from pyqodeng.core.api import SyntaxHighlighter
 from PySide6.QtGui import QBrush, QColor, QFont, QTextCharFormat
 
 from angrmanagement.config import Conf
+from angrmanagement.present.code_highlight import (
+    C_CPP_HIGHLIGHTING_RULES,
+    GO_HIGHLIGHTING_RULES,
+    RUST_HIGHLIGHTING_RULES,
+    highlight_runs,
+    node_kind,
+)
 
 if TYPE_CHECKING:
     from angrmanagement.ui.documents import QCodeDocument
@@ -79,23 +82,7 @@ def _format_node(obj):
     """
     Return the format for the given node.
     """
-    if isinstance(obj, SimType):
-        return FORMATS["type"]
-    if isinstance(obj, FunctionCallNode):
-        if obj.callee_func is not None and (
-            obj.callee_func.is_simprocedure or obj.callee_func.is_plt or obj.callee_func.is_syscall
-        ):
-            return FORMATS["library_function"]
-        return FORMATS["function"]
-    if isinstance(obj, FunctionNode):
-        return FORMATS["function"]
-    if isinstance(obj, LabelNode):
-        return FORMATS["label"]
-    if isinstance(obj, VariableNode):
-        if type(obj.variable) is SimMemoryVariable:
-            return FORMATS["global_variable"]
-        return FORMATS["variable"]
-    return FORMATS["normal"]
+    return FORMATS[node_kind(obj)]
 
 
 reset_formats()
@@ -103,208 +90,15 @@ reset_formats()
 
 class QCCodeHighlighter(SyntaxHighlighter):
     """
-    A syntax highlighter for QCCodeEdit. Uses a custom lexing scheme to detect C constructs (functions, keywords,
-    comments, and strings) and adds styling to them based on the current color scheme.
+    A syntax highlighter for QCCodeEdit. The runs of each line come from
+    :func:`angrmanagement.present.code_highlight.highlight_runs` (the position map's nodes, strings, comments and the
+    flavor's keywords); this class applies them as the current color scheme's formats.
     """
 
-    C_CPP_HIGHLIGHTING_RULES = [
-        # quotation
-        # (r"\"([^\\\"]|(\\.))*\"", 'quotation'),
-        # comment
-        # (r"//[^\n]*", 'comment'),
-        # (r"/\*[^\n]*\*/", 'comment'),
-        # function
-        (r"\bNULL\b", "function"),
-        # keywords
-        (r"\bauto\b", "keyword"),
-        (r"\bbreak\b", "keyword"),
-        (r"\bcase\b", "keyword"),
-        (r"\bcatch\b", "keyword"),
-        (r"\bclass\b", "keyword"),
-        (r"\bconst\b", "keyword"),
-        (r"\bcontinue\b", "keyword"),
-        (r"\bdefault\b", "keyword"),
-        (r"\bdelete\b", "keyword"),
-        (r"\bdo\b", "keyword"),
-        (r"\belse\b", "keyword"),
-        (r"\benum\b", "keyword"),
-        (r"\bexplicit\b", "keyword"),
-        (r"\bextern\b", "keyword"),
-        (
-            r"\bfalse\b",
-            "keyword",
-        ),  # TODO: false isn't really a keyword, and other highlighters style it different from keywords
-        (r"\bfor\b", "keyword"),
-        (r"\bfriend\b", "keyword"),
-        (r"\bgoto\b", "keyword"),
-        (r"\bif\b", "keyword"),
-        (r"\binline\b", "keyword"),
-        (r"\bnamespace\b", "keyword"),
-        (r"\bnew\b", "keyword"),
-        (r"\boperator\b", "keyword"),
-        (r"\bprivate\b", "keyword"),
-        (r"\bprotected\b", "keyword"),
-        (r"\bpublic\b", "keyword"),
-        (r"\bregister\b", "keyword"),
-        (r"\breturn\b", "keyword"),
-        (r"\bsizeof\b", "keyword"),
-        (r"\bstatic\b", "keyword"),
-        (r"\bstruct\b", "keyword"),
-        (r"\bswitch\b", "keyword"),
-        (r"\btemplate\b", "keyword"),
-        (r"\bthis\b", "keyword"),
-        (
-            r"\btrue\b",
-            "keyword",
-        ),  # TODO: true isn't really a keyword, and other highlighters style it different from keywords
-        (r"\btypedef\b", "keyword"),
-        (r"\btypename\b", "keyword"),
-        (r"\bunion\b", "keyword"),
-        (r"\bvirtual\b", "keyword"),
-        (r"\bvolatile\b", "keyword"),
-        (r"\bwhile\b", "keyword"),
-    ]
-
-    GO_HIGHLIGHTING_RULES = [
-        # Go keywords
-        (r"\bbreak\b", "keyword"),
-        (r"\bcase\b", "keyword"),
-        (r"\bchan\b", "keyword"),
-        (r"\bconst\b", "keyword"),
-        (r"\bcontinue\b", "keyword"),
-        (r"\bdefault\b", "keyword"),
-        (r"\bdefer\b", "keyword"),
-        (r"\belse\b", "keyword"),
-        (r"\bfallthrough\b", "keyword"),
-        (r"\bfor\b", "keyword"),
-        (r"\bfunc\b", "keyword"),
-        (r"\bgo\b", "keyword"),
-        (r"\bgoto\b", "keyword"),
-        (r"\bif\b", "keyword"),
-        (r"\bimport\b", "keyword"),
-        (r"\binterface\b", "keyword"),
-        (r"\bmap\b", "keyword"),
-        (r"\bpackage\b", "keyword"),
-        (r"\brange\b", "keyword"),
-        (r"\breturn\b", "keyword"),
-        (r"\bselect\b", "keyword"),
-        (r"\bstruct\b", "keyword"),
-        (r"\bswitch\b", "keyword"),
-        (r"\btype\b", "keyword"),
-        (r"\bvar\b", "keyword"),
-        (r"\bnil\b", "keyword"),
-        (r"\btrue\b", "keyword"),
-        (r"\bfalse\b", "keyword"),
-        (r"\biota\b", "keyword"),
-        # builtin functions and types
-        (r"\bappend\b", "function"),
-        (r"\bcap\b", "function"),
-        (r"\bclear\b", "function"),
-        (r"\bclose\b", "function"),
-        (r"\bcomplex\b", "function"),
-        (r"\bcopy\b", "function"),
-        (r"\bdelete\b", "function"),
-        (r"\bimag\b", "function"),
-        (r"\blen\b", "function"),
-        (r"\bmake\b", "function"),
-        (r"\bmax\b", "function"),
-        (r"\bmin\b", "function"),
-        (r"\bnew\b", "function"),
-        (r"\bpanic\b", "function"),
-        (r"\bprint\b", "function"),
-        (r"\bprintln\b", "function"),
-        (r"\breal\b", "function"),
-        (r"\brecover\b", "function"),
-        (r"\bany\b", "function"),
-        (r"\berror\b", "function"),
-        (r"\bbool\b", "function"),
-        (r"\bbyte\b", "function"),
-        (r"\brune\b", "function"),
-        (r"\bstring\b", "function"),
-        (r"\bint\b", "function"),
-        (r"\bint8\b", "function"),
-        (r"\bint16\b", "function"),
-        (r"\bint32\b", "function"),
-        (r"\bint64\b", "function"),
-        (r"\buint\b", "function"),
-        (r"\buint8\b", "function"),
-        (r"\buint16\b", "function"),
-        (r"\buint32\b", "function"),
-        (r"\buint64\b", "function"),
-        (r"\buintptr\b", "function"),
-        (r"\bfloat32\b", "function"),
-        (r"\bfloat64\b", "function"),
-        (r"\bcomplex64\b", "function"),
-        (r"\bcomplex128\b", "function"),
-    ]
-
-    RUST_HIGHLIGHTING_RULES = [
-        # Rust keywords
-        (r"\bas\b", "keyword"),
-        (r"\basync\b", "keyword"),
-        (r"\bawait\b", "keyword"),
-        (r"\bbreak\b", "keyword"),
-        (r"\bconst\b", "keyword"),
-        (r"\bcontinue\b", "keyword"),
-        (r"\bcrate\b", "keyword"),
-        (r"\bdyn\b", "keyword"),
-        (r"\belse\b", "keyword"),
-        (r"\benum\b", "keyword"),
-        (r"\bextern\b", "keyword"),
-        (r"\bfalse\b", "keyword"),
-        (r"\bfn\b", "keyword"),
-        (r"\bfor\b", "keyword"),
-        (r"\bif\b", "keyword"),
-        (r"\bimpl\b", "keyword"),
-        (r"\bin\b", "keyword"),
-        (r"\blet\b", "keyword"),
-        (r"\bloop\b", "keyword"),
-        (r"\bmatch\b", "keyword"),
-        (r"\bmod\b", "keyword"),
-        (r"\bmove\b", "keyword"),
-        (r"\bmut\b", "keyword"),
-        (r"\bpub\b", "keyword"),
-        (r"\bref\b", "keyword"),
-        (r"\breturn\b", "keyword"),
-        (r"\bself\b", "keyword"),
-        (r"\bSelf\b", "keyword"),
-        (r"\bstatic\b", "keyword"),
-        (r"\bstruct\b", "keyword"),
-        (r"\bsuper\b", "keyword"),
-        (r"\btrait\b", "keyword"),
-        (r"\btrue\b", "keyword"),
-        (r"\btype\b", "keyword"),
-        (r"\bunsafe\b", "keyword"),
-        (r"\buse\b", "keyword"),
-        (r"\bwhere\b", "keyword"),
-        (r"\bwhile\b", "keyword"),
-        # reserved keywords
-        (r"\babstract\b", "keyword"),
-        (r"\bbecome\b", "keyword"),
-        (r"\bbox\b", "keyword"),
-        (r"\bdo\b", "keyword"),
-        (r"\bfinal\b", "keyword"),
-        (r"\bgen\b", "keyword"),
-        (r"\bmacro\b", "keyword"),
-        (r"\boverride\b", "keyword"),
-        (r"\bpriv\b", "keyword"),
-        (r"\btry\b", "keyword"),
-        (r"\btypeof\b", "keyword"),
-        (r"\bunsized\b", "keyword"),
-        (r"\bvirtual\b", "keyword"),
-        (r"\byield\b", "keyword"),
-        # weak keywords
-        (r"\b'static\b", "keyword"),
-        (r"\bmarco_rules\b", "keyword"),
-        (r"\braw\b", "keyword"),
-        (r"\bsafe\b", "keyword"),
-        (r"\bunion\b", "keyword"),
-        # Rust common types and values that are not keywords, but we want to highlight as such
-        (r"\bNone\b", "keyword"),
-        (r"\bSome\b", "keyword"),
-        (r"\bOk\b", "keyword"),
-        (r"\bErr\b", "keyword"),
-    ]
+    # the keyword rules of each flavor (angrmanagement.present.code_highlight has them)
+    C_CPP_HIGHLIGHTING_RULES = C_CPP_HIGHLIGHTING_RULES
+    GO_HIGHLIGHTING_RULES = GO_HIGHLIGHTING_RULES
+    RUST_HIGHLIGHTING_RULES = RUST_HIGHLIGHTING_RULES
 
     def __init__(self, parent, color_scheme=None, flavor: str | None = None) -> None:
         super().__init__(parent, color_scheme=color_scheme)
@@ -319,85 +113,8 @@ class QCCodeHighlighter(SyntaxHighlighter):
         if block.previous() is None:
             self.comment_status = False
 
-        mark_in = 0
-
-        quote_status = False
-        quote_mark = None
-        escape_counter = 0
-        for col, _ in enumerate(text):
-            if quote_status:
-                assert not self.comment_status
-                if escape_counter:
-                    escape_counter -= 1
-                elif text[col] == "\\":
-                    escape_counter = 1
-                elif text[col] == quote_mark:
-                    quote_status = False
-                    mark_out = col + 1
-                    self.setFormat(mark_in, mark_out - mark_in, FORMATS["quotation"])
-                    text = text[:mark_in] + " " * (mark_out - mark_in) + text[mark_out:]
-            else:
-                if self.comment_status:
-                    if text[col : col + 2] == "*/":
-                        mark_out = col + 2
-                        self.comment_status = False
-                        self.setFormat(mark_in, mark_out - mark_in, FORMATS["comment"])
-                        text = text[:mark_in] + " " * (mark_out - mark_in) + text[mark_out:]
-                else:
-                    # regular mode is here
-                    if text[col] in ('"', "'"):
-                        mark_in = col
-                        quote_status = True
-                        quote_mark = text[col]
-                    elif text[col : col + 2] == "/*":
-                        mark_in = col
-                        self.comment_status = True
-                    elif text[col : col + 2] == "//":
-                        # do not set comment_status. just format the line and break.
-                        mark_in = col
-                        mark_out = len(text)
-                        self.setFormat(mark_in, mark_out - mark_in, FORMATS["comment"])
-                        text = text[:mark_in] + " " * (mark_out - mark_in) + text[mark_out:]
-                        break
-        if self.comment_status:
-            # do not unset. this is a multiline comment
-            mark_out = len(text)
-            self.setFormat(mark_in, mark_out - mark_in, FORMATS["comment"])
-            text = text[:mark_in] + " " * (mark_out - mark_in) + text[mark_out:]
-
-        # Go through AST and see about marking styles
-        start_pos = block.position()
-        current_idx = 0
-        while current_idx < len(text):
-            # if we know it's whitespace (b/c that can happen above due to comments), just skip it
-            if text[current_idx] == " ":
-                current_idx += 1
-                continue
-
-            current_pos = start_pos + current_idx
-            element = self.doc.posmap.get_element(current_pos)
-            if not element:
-                current_idx += 1
-                continue
-
-            fmt = _format_node(element.obj)
-
-            # Because of skipping spaces, we might end up inside an element, so don't use current_idx in the following
-            if fmt:
-                self.setFormat(element.start - start_pos, element.length, fmt)
-            current_idx = (element.start - start_pos) + element.length
-
-        if self.flavor == "rust":
-            rules = self.RUST_HIGHLIGHTING_RULES
-        elif self.flavor == "go":
-            rules = self.GO_HIGHLIGHTING_RULES
-        else:
-            rules = self.C_CPP_HIGHLIGHTING_RULES
-        for pattern, format_id in rules:
-            for mo in list(re.finditer(pattern, text)):
-                start = mo.start()
-                end = mo.end()
-                self.setFormat(start, end - start, FORMATS[format_id])
-                # if format_id in {'quotation', 'comment'}:
-                #    # remove the formatted parts so that we do not end up highlighting these parts again
-                #    text = text[:start] + " " * (end-start) + text[end:]
+        runs, self.comment_status = highlight_runs(
+            text, block.position(), self.doc.posmap, self.flavor, self.comment_status
+        )
+        for start, count, kind in runs:
+            self.setFormat(start, count, FORMATS[kind])
