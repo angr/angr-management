@@ -52,6 +52,8 @@ jobs:
         run: |
           sudo apt-get update;
           sudo apt-get install -y \
+            gdb \
+            gdbserver \
             libfuse2 \
             libegl1 \
             libxkbcommon-x11-0 \

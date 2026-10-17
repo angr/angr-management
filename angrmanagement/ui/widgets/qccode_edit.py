@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from angr.ailment.expression import BinaryOp, Load, Op, UnaryOp
 from angr.ailment.statement import Assignment, Store
@@ -28,6 +28,12 @@ from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QApplication, QInputDialog, QLineEdit, QMenu
 
+from angrmanagement.logic.debugger.variable_binding import (
+    VariableBindingError,
+    describe_variable,
+    instruction_at,
+    selection_at,
+)
 from angrmanagement.mcp.edit_hooks import WorkspaceEditHooks
 from angrmanagement.ui.dialogs.rename_node import RenameNode
 from angrmanagement.ui.dialogs.retype_node import RetypeNode
@@ -40,6 +46,7 @@ from angrmanagement.ui.widgets.qinline_comment_editor import QInlineCommentEdito
 from angrmanagement.ui.widgets.qnode_tip import QNodeTip
 
 if TYPE_CHECKING:
+    from angr import Project
     from angr.sim_type import SimTypeFunction
     from PySide6.QtGui import QTextDocument
 
@@ -174,6 +181,9 @@ class QCCodeEdit(api.CodeEdit):
             # variable in selection
             self._selected_node = under_cursor
             mnu.addActions(self.variable_actions)
+            runtime_menu = mnu.addMenu("Runtime")
+            for caption, mode in (("Monitor…", "monitor"), ("Clamp to value…", "clamp"), ("Set once…", "set")):
+                runtime_menu.addAction(caption, lambda _checked=False, m=mode: self._runtime_variable(m))
         if isinstance(under_cursor, FunctionNode):
             # decompiled function name in selection
             self._selected_node = under_cursor
@@ -686,6 +696,29 @@ class QCCodeEdit(api.CodeEdit):
             cache.ite_exprs = set()
         cache.ite_exprs.add((addr, ailexpr))
         self._code_view.decompile(regen_clinic=False)
+
+    def _runtime_variable(self, mode: str) -> None:
+        workspace = self.workspace
+        if workspace is None:
+            return
+        project = cast("Project | None", workspace.main_instance.project.am_obj)
+        if project is None:
+            return
+        codegen = self._code_view.codegen
+        node = selection_at(codegen, self.textCursor().position())
+        view = workspace.show_runtime_view()
+        try:
+            binding = describe_variable(
+                project,
+                self._code_view.function,
+                codegen,
+                node,
+                instruction_at(codegen, self.textCursor().position()),
+            )
+        except VariableBindingError as ex:
+            view.open_binding("", mode=mode, note=str(ex))
+            return
+        view.resolve_binding(lambda runtime: binding.resolve(runtime, set_once=mode == "set"), mode=mode)
 
     def swap_binop_operands(self) -> None:
         node = self._selected_node

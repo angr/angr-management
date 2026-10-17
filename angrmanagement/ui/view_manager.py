@@ -8,6 +8,7 @@ import PySide6QtAds as QtAds
 from bidict import bidict
 from PySide6.QtWidgets import QSizePolicy
 
+from angrmanagement.ui.views.runtime_view import RuntimeView
 from angrmanagement.ui.views.view import InstanceView
 
 if TYPE_CHECKING:
@@ -83,7 +84,10 @@ class ViewManager:
         dw = QtAds.CDockWidget(view.caption)
         dw.setFeature(QtAds.CDockWidget.DockWidgetDeleteOnClose, True)
         dw.closed.connect(functools.partial(self._on_dock_widget_closed, dw))
-        dw.setWidget(view)
+        if isinstance(view, RuntimeView):
+            dw.setWidget(view, QtAds.CDockWidget.eInsertMode.ForceNoScrollArea)
+        else:
+            dw.setWidget(view)
         if view.icon:
             dw.setIcon(view.icon)
 
