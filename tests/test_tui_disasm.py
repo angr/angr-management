@@ -133,6 +133,21 @@ class TestGraph(unittest.TestCase):
 
         run_app(scenario)
 
+    def test_scrollbars_show_a_scroll_made_while_they_were_hidden(self):
+        async def scenario(app: AmApp, pilot: Pilot, view: Any) -> None:
+            widget = view.graph_widget
+            assert widget.show_horizontal_scrollbar and widget.show_vertical_scrollbar
+            # a scroll before the scrollbars are laid out for a new virtual size, as when a graph first shows
+            widget.show_horizontal_scrollbar = widget.show_vertical_scrollbar = False
+            widget.scroll_to(widget.max_scroll_x // 2, widget.max_scroll_y // 2, animate=False, force=True)
+            widget.refresh(layout=True)
+            await settle(pilot)
+            assert widget.show_horizontal_scrollbar and widget.show_vertical_scrollbar
+            assert widget.horizontal_scrollbar.position == widget.scroll_x
+            assert widget.vertical_scrollbar.position == widget.scroll_y
+
+        run_app(scenario)
+
     def test_g_jumps_and_escape_goes_back(self):
         async def scenario(app: AmApp, pilot: Pilot, view: Any) -> None:
             view.graph_widget.focus()

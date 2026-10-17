@@ -491,6 +491,17 @@ class GraphWidget(ScrollView, can_focus=True):
             return
         self._scroll_target = None
 
+    def watch_scroll_x(self, old_value: float, new_value: float) -> None:
+        super().watch_scroll_x(old_value, new_value)
+        # Textual moves only a scrollbar that is shown, so a scrollbar shown after a scroll would show the old offset
+        if self.is_mounted and not self.show_horizontal_scrollbar:
+            self.horizontal_scrollbar.position = new_value
+
+    def watch_scroll_y(self, old_value: float, new_value: float) -> None:
+        super().watch_scroll_y(old_value, new_value)
+        if self.is_mounted and not self.show_vertical_scrollbar:
+            self.vertical_scrollbar.position = new_value
+
     def _entry_target(self, doc: GraphDoc, vw: int, vh: int) -> tuple[int, int]:
         # as QDisassemblyGraph._initial_position: the entry block's centre in the middle, its top a quarter down
         pad_x, pad_y = self.pad
