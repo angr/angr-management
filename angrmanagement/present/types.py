@@ -74,8 +74,11 @@ def parse_types(text: str, arch, predefined_types=None, editing_single: str | No
         )
         result = list(typedefs.items()) + list(defs.items())
         side_result = [(name, ty) for name, ty in side_typedefs.items() if name not in typedefs and name not in defs]
-    except _REFUSED as ex:
+    except PycParseErrorCls as ex:
         error = str(ex)
+    except ValueError as ex:
+        # a type defined twice: refused, since reading it as one type below would keep the first and drop the rest
+        return ParsedTypes(error=str(ex))
 
     # hack. idk why our pycparser config will accept `typedef int` as the same as `int`
     if result is None and not text.strip().startswith("typedef"):

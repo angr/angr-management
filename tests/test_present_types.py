@@ -62,6 +62,9 @@ class TestParsing(TypesCase):
         self.add("struct taken { int a; };")
         parsed = parse_types("struct taken { char b; };", self.arch, self.store)
         assert not parsed.ok and "Redefining" in parsed.error
+        # a type defined twice in the text is refused too, not read as its first declaration alone
+        parsed = parse_types("struct b { int a; }; struct b { int c; }; struct d { int e; };", self.arch, self.store)
+        assert not parsed.ok and "Redefining body of struct b" in parsed.error
         parsed = parse_types("struct foo { int a; ", self.arch, self.store)
         assert not parsed.ok and parsed.error and parsed.error != "No type"
         parsed = parse_types("", self.arch, self.store)
