@@ -558,7 +558,7 @@ class TestWorkspaceUses(unittest.TestCase):
                 super().__init__(workspace)
                 self.instrumented: list[Any] = []
 
-            def instrument_code_view(self, cview) -> None:
+            def instrument_code_view(self, cview: Any) -> None:
                 self.instrumented.append(cview)
                 cview._textedit.document()
 

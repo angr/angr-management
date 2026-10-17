@@ -13,7 +13,6 @@ from textual.widget import Widget
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from angr.knowledge_plugins.functions import Function
     from textual import events
 
 #: A header word and what a click on it does (None: it is a label).
@@ -22,8 +21,8 @@ HeaderItem = tuple[str, "Callable[[], Any] | None"]
 NAME_WIDTH = 55
 
 
-def function_label(func: Function | None) -> str:
-    """The function's name, cut at :data:`NAME_WIDTH` characters, and its address; empty for no function."""
+def function_label(func: Any) -> str:
+    """The name of ``func`` (a Function or None), cut at :data:`NAME_WIDTH` characters, and its address."""
     if func is None:
         return ""
     name = func.demangled_name
@@ -50,7 +49,7 @@ class HeaderBar(Widget):
 
     def items(self) -> tuple[list[HeaderItem], list[HeaderItem]]:
         """The left and right groups: (text, what a click does, or None for a label)."""
-        return [], []
+        raise NotImplementedError
 
     def render(self) -> Text:
         left, right = self.items()
