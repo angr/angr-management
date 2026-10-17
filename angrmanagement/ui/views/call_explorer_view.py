@@ -138,7 +138,6 @@ class CallExplorerView(InstanceView):
         """
         item = self._model.itemFromIndex(index)
         # Replay after the jump, jumping into the called function
-        # FIXME: Doesn't consider proper selected debugger, assumes bintrace
         replay_into(self.instance.debugger_mgr.debugger, item.event)
 
     def _on_item_expanded(self, index) -> None:

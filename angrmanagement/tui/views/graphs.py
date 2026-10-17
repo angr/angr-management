@@ -68,7 +68,7 @@ class GraphTuiView(TuiView):
     def tooltip_of(self, node: Any) -> str | None:  # pylint: disable=unused-argument,no-self-use
         return None
 
-    def context_menu(self, node: Any) -> Menu | None:  # pylint: disable=unused-argument
+    def context_menu(self, node: Any) -> Menu | None:
         menu = getattr(self.presenter, "context_menu", None)
         return menu(node) if menu is not None else None
 

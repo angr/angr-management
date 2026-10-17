@@ -77,6 +77,7 @@ class CallExplorerTuiView(TuiView):
 
     def __init__(self, workspace, default_docking_position: str, instance) -> None:
         super().__init__(workspace, default_docking_position, instance)
+        self._shown_roots: list[CallNode] | None = None
         self.label = Label("", id="function")
         self.calls = CallTree(self)
         self.presenter.on_changed = self.calls_changed
@@ -95,8 +96,6 @@ class CallExplorerTuiView(TuiView):
         if self.presenter.roots is not self._shown_roots:
             self._shown_roots = self.presenter.roots
             self.calls.rebuild()
-
-    _shown_roots: list[CallNode] | None = None
 
     def focus_view(self) -> None:
         self.calls.focus()

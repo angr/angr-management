@@ -9,7 +9,7 @@ the state inspector (registers, memory, constraints, file descriptors and VEX te
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any
 
 from rich.text import Text
 from textual.containers import Horizontal, Vertical, VerticalScroll
@@ -377,8 +377,6 @@ class SymexecTuiView(TuiView):
     }
     """
 
-    EXTRA_KEYS: ClassVar[dict[str, str]] = {}
-
     presenter: SymexecPresenter
 
     def __init__(self, workspace, default_docking_position: str, instance) -> None:
@@ -471,8 +469,11 @@ class SymexecTuiView(TuiView):
             self.presenter.simgrs.select_simgr_index(event.value)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        actions = {"explore": self.presenter.explore, "step": self.presenter.step}
-        actions["step-branch"] = self.presenter.step_until_branch
+        actions = {
+            "explore": self.presenter.explore,
+            "step": self.presenter.step,
+            "step-branch": self.presenter.step_until_branch,
+        }
         action = actions.get(event.button.id or "")
         if action is not None:
             event.stop()
