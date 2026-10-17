@@ -1070,4 +1070,12 @@ class CodeTuiView(TuiView):
         return [self.code.text_strip(row).text for row in range(len(doc.lines))]
 
 
-__all__ = ["CodeHeader", "CodeSidePanel", "CodeTuiView", "CodeWidget", "OptionsSheetWidget", "PatternsPane"]
+__all__ = [
+    "CodeHeader",
+    "CodeSidePanel",
+    "CodeTuiView",
+    "CodeWidget",
+    "OptionsScreen",
+    "OptionsSheetWidget",
+    "PatternsPane",
+]
