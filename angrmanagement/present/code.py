@@ -19,7 +19,7 @@ import contextlib
 import logging
 from collections import OrderedDict
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, Protocol
 
 import pycparser
 from angr import SIM_TYPE_COLLECTIONS
@@ -2290,7 +2290,36 @@ class CodePresenter(FunctionPresenter):
         self.workspace.llm_suggest_variable_types()
 
 
-class HeadlessCodeView:
+class _SelectionOwner(Protocol):
+    """What :class:`CodeSelectionMixin` needs of the class it is mixed into."""
+
+    cursor: int
+    sel_anchor: int | None
+
+    @property
+    def presenter(self) -> CodePresenter: ...
+
+    def selection_range(self) -> tuple[int, int]: ...
+
+
+class CodeSelectionMixin:
+    """
+    The cursor and the selection of a pseudocode view that keeps them itself, as text positions: ``cursor``, and
+    ``sel_anchor``, where the selection started (None while nothing is selected). The class it is mixed into gives
+    ``presenter``.
+    """
+
+    def selection_range(self: _SelectionOwner) -> tuple[int, int]:
+        if self.sel_anchor is None:
+            return self.cursor, self.cursor
+        return min(self.sel_anchor, self.cursor), max(self.sel_anchor, self.cursor)
+
+    def selected_text(self: _SelectionOwner) -> str:
+        start, end = self.selection_range()
+        return self.presenter.plain_text()[start:end]
+
+
+class HeadlessCodeView(CodeSelectionMixin):
     """
     A pseudocode view that draws nothing: a presenter, a cursor, a selection and a find bar. Tests and scripts drive
     the presenter through it; it shows each new codegen as the frontends do (its text regenerated, its CodeDoc
@@ -2374,15 +2403,6 @@ class HeadlessCodeView:
     def cursor_position(self) -> int:
         return self.cursor
 
-    def selection_range(self) -> tuple[int, int]:
-        if self.sel_anchor is None:
-            return self.cursor, self.cursor
-        return min(self.sel_anchor, self.cursor), max(self.sel_anchor, self.cursor)
-
-    def selected_text(self) -> str:
-        start, end = self.selection_range()
-        return self.presenter.plain_text()[start:end]
-
     def set_cursor_position(self, pos: int) -> None:
         self.cursor = pos
         self.sel_anchor = None
@@ -2399,6 +2419,7 @@ __all__ = [
     "MENU_GROUPS",
     "CodeDoc",
     "CodePresenter",
+    "CodeSelectionMixin",
     "HeadlessCodeView",
     "build_code_doc",
     "closest_node_pos",

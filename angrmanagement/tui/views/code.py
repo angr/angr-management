@@ -34,6 +34,7 @@ from angrmanagement.present.code import (
     PATTERN_LINE_STYLE,
     SELECTION_STYLE,
     CodePresenter,
+    CodeSelectionMixin,
     context_menu_keys,
     node_at_position,
     parse_type_text,
@@ -143,7 +144,7 @@ class CodeHeader(HeaderBar):
 #
 
 
-class CodeWidget(ScrollView, can_focus=True):
+class CodeWidget(CodeSelectionMixin, ScrollView, can_focus=True):
     """
     The decompiled text, one line per strip, with a gutter of line numbers. A cursor moves with the arrows, Home, End,
     Page Up and Page Down, and with a click; Shift and a drag select. A double click follows the node, a right click
@@ -196,15 +197,6 @@ class CodeWidget(ScrollView, can_focus=True):
     #
     # The cursor and the selection
     #
-
-    def selection_range(self) -> tuple[int, int]:
-        if self.sel_anchor is None:
-            return self.cursor, self.cursor
-        return min(self.sel_anchor, self.cursor), max(self.sel_anchor, self.cursor)
-
-    def selected_text(self) -> str:
-        start, end = self.selection_range()
-        return self.presenter.plain_text()[start:end]
 
     def set_cursor(self, pos: int, extend: bool = False, notify: bool = True) -> None:
         """Move the cursor to text position ``pos``; with ``extend`` the selection grows from where it was."""
