@@ -386,11 +386,21 @@ class GraphWidget(ScrollView, can_focus=True):
         self.pad = (0, 0)
         self.minimap_rows: list = []
         self.minimap_scale = (1.0, 1.0)
+        #: the scroll offset asked for and not reached yet; it is made after a refresh, when the scrollbars fit
+        self._scroll_target: tuple[int, int] | None = None
         control.on_change = self.rebuild
 
     @property
     def presenter(self) -> DisasmPresenter:
         return self.view.presenter
+
+    @property
+    def scroll_pending(self) -> bool:
+        """Whether a view the control asked for (the entry block, an instruction) is still to be scrolled to."""
+        control = self.control
+        return self._scroll_target is not None or (
+            control.doc is not None and (control.reset_pending or control.focus is not None)
+        )
 
     def rebuild(self) -> None:
         """Draw the graph again and apply the scroll position the control asked for."""
@@ -433,10 +443,14 @@ class GraphWidget(ScrollView, can_focus=True):
         """
         Scroll to what the control wants shown: first the entry block's initial view if the graph is new, then an
         instruction, which moves the view only if it is not already in it (centred if it must move).
+
+        Until the widget has a size the requests wait: :meth:`on_resize` applies them when it gets one.
         """
         control = self.control
         doc = control.doc
         if doc is None or (control.focus is None and not control.reset_pending):
+            return
+        if not (self.is_mounted and self.size.width and self.size.height):
             return
         vw, vh = self.size.width, self.size.height
         sx, sy = self.scroll_offset
@@ -448,9 +462,34 @@ class GraphWidget(ScrollView, can_focus=True):
             control.focus = None
             if control.focus_center or not (sx <= x < sx + vw and sy <= y < sy + vh):
                 sx, sy = x - vw // 2, y - vh // 2
-        sx, sy = max(sx, 0), max(sy, 0)
-        # after the next refresh, when the scroll range knows the new virtual size
-        self.call_after_refresh(self.scroll_to, sx, sy, animate=False, force=True)
+        max_x, max_y = self._scroll_range()
+        self._scroll_target = (min(max(sx, 0), max_x), min(max(sy, 0), max_y))
+        # after the next refresh, when the scrollbars fit the new virtual size
+        self.call_after_refresh(self._scroll_to_target)
+
+    def _scroll_range(self) -> tuple[int, int]:
+        """The largest scroll offsets once the scrollbars that the virtual size needs are shown."""
+        width, height = self.container_size
+        virtual = self.virtual_size
+        bar_v, bar_h = self.styles.scrollbar_size_vertical, self.styles.scrollbar_size_horizontal
+        show_v = virtual.height > height
+        show_h = virtual.width > width - (bar_v if show_v else 0)
+        show_v = show_v or virtual.height > height - (bar_h if show_h else 0)
+        return (
+            max(virtual.width - (width - (bar_v if show_v else 0)), 0),
+            max(virtual.height - (height - (bar_h if show_h else 0)), 0),
+        )
+
+    def _scroll_to_target(self, tries: int = 4) -> None:
+        target = self._scroll_target
+        if target is None:
+            return
+        self.scroll_to(*target, animate=False, force=True)
+        if tuple(self.scroll_offset) != target and tries > 0:
+            # the scrollbars were not laid out for the new virtual size yet, so the offset was clamped
+            self.call_after_refresh(self._scroll_to_target, tries - 1)
+            return
+        self._scroll_target = None
 
     def _entry_target(self, doc: GraphDoc, vw: int, vh: int) -> tuple[int, int]:
         # as QDisassemblyGraph._initial_position: the entry block's centre in the middle, its top a quarter down

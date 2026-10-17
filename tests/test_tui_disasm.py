@@ -46,6 +46,7 @@ def run_app(scenario: Callable[[AmApp, Pilot, Any], Awaitable[None]], tier: int 
             await settle(pilot)
             view = app.view_widget("disassembly")
             assert isinstance(view, DisassemblyTuiView)
+            await settle_graph(pilot, view.graph_widget)
             await scenario(app, pilot, view)
 
     asyncio.run(main())
@@ -54,6 +55,19 @@ def run_app(scenario: Callable[[AmApp, Pilot, Any], Awaitable[None]], tier: int 
 async def settle(pilot: Pilot, rounds: int = 4) -> None:
     for _ in range(rounds):
         await pilot.pause()
+
+
+async def settle_graph(pilot: Pilot, widget: Any, rounds: int = 100) -> None:
+    """
+    Pause until the graph has scrolled to the view its control asked for, then once more so that is painted. How many
+    pauses that takes depends on the machine's load, so a fixed number is not enough.
+    """
+    for _ in range(rounds):
+        if not widget.scroll_pending:
+            break
+        await pilot.pause()
+    assert not widget.scroll_pending, "the graph never scrolled to the view its control asked for"
+    await pilot.pause()
 
 
 def canvas_text(view: Any) -> str:
@@ -95,6 +109,26 @@ class TestGraph(unittest.TestCase):
             # the entry block's top sits a quarter of the way down, as in the Qt view
             widget = view.graph_widget
             top = view.flow_graph.doc.layout[view.flow_graph.doc.entry][1] + widget.pad[1] - widget.scroll_offset.y
+            assert top == widget.size.height // 4
+
+        run_app(scenario)
+
+    def test_initial_view_waits_until_the_graph_has_a_size(self):
+        async def scenario(app: AmApp, pilot: Pilot, view: Any) -> None:
+            widget = view.graph_widget
+            control = view.flow_graph
+            # while the graph has no size (hidden here; not laid out yet while a binary loads), it is drawn again,
+            # which asks for the entry block's view, and an instruction is selected, which redraws its block
+            widget.display = False
+            await settle(pilot)
+            assert widget.size.width == 0 and widget.size.height == 0
+            control.reload()
+            view.presenter.infodock.select_instruction(0x400721)
+            await settle(pilot)
+            widget.display = True
+            await settle_graph(pilot, widget)
+            doc = control.doc
+            top = doc.layout[doc.entry][1] + widget.pad[1] - widget.scroll_offset.y
             assert top == widget.size.height // 4
 
         run_app(scenario)
@@ -479,9 +513,16 @@ async def _open_main(pilot: Pilot, linear: bool) -> None:
     await settle(pilot)
     view = app.view_widget("disassembly")
     assert isinstance(view, DisassemblyTuiView)
+    await settle_graph(pilot, view.graph_widget)
     if linear:
         view.display_linear_viewer()
-    await settle(pilot, 6)
+        await settle(pilot, 6)
+        return
+    # the entry block's top a quarter of the way down, or the capture would not match the stored one
+    widget = view.graph_widget
+    doc = view.flow_graph.doc
+    assert doc is not None
+    assert doc.layout[doc.entry][1] + widget.pad[1] - widget.scroll_offset.y == widget.size.height // 4
 
 
 def test_snapshot_graph(snap_compare):
