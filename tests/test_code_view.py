@@ -76,6 +76,7 @@ class TestCodeView(ProjectOpenTestCase):
     def test_the_action_lists_hold_what_they_held_before_the_presenter(self):
         """Plugins read and extend QCCodeEdit's per-node lists; each still holds its group's actions, in order."""
         edit = self.code_view.textedit
+        assert edit is not None
         named = [action for action in edit.variable_actions if not action.isSeparator()]
         assert named[:5] == [
             edit.action_rename_node,
@@ -97,6 +98,7 @@ class TestCodeView(ProjectOpenTestCase):
     def test_an_action_a_plugin_adds_to_a_list_shows_in_the_menu(self):
         """An action appended to variable_actions or llm_actions shows once, where the Qt menu always put it."""
         edit = self.code_view.textedit
+        assert edit is not None
         mock_cvar = MagicMock(spec=CVariable)
         mock_cvar.variable = MagicMock(spec=SimStackVariable)
         mock_cvar.tags = {"ins_addr": 0x1000}
