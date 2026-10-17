@@ -270,6 +270,13 @@ class TestNewStateScreen(unittest.TestCase):
             assert [i.value for i in inputs] == ["Edit Me", ""]
             inputs[0].value = "/mnt"
             inputs[1].value = test_location
+            # a second row takes the focus, and Delete this Row removes it
+            pairs.query_one("#add", Button).press()
+            await settle(pilot)
+            assert len(pairs.query(".pair")) == 2
+            pairs.query_one("#delete", Button).press()
+            await settle(pilot)
+            assert len(pairs.query(".pair")) == 1
             pairs.query_one("#ok", Button).press()
             await wait_for(pilot, lambda: app.screen is screen)
             assert screen.spec.fs_mounts == [("/mnt", test_location)]
@@ -294,10 +301,17 @@ class TestNewStateScreen(unittest.TestCase):
             tree.move_cursor(tree.root.children[0])
             sockets.query_one("#accept", Button).press()
             await settle(pilot)
-            assert [str(node.label) for node in tree.root.children[0].children] == [
-                "Package: aGVsbG8=",
-                "Accept, AF_INET, SOCK_DGRAM, 1, 2",
-            ]
+            accepted = ["Package: aGVsbG8=", "Accept, AF_INET, SOCK_DGRAM, 1, 2"]
+            assert [str(node.label) for node in tree.root.children[0].children] == accepted
+            # Delete removes the selected row, and the socket can accept again
+            tree.move_cursor(tree.root.children[0].children[1])
+            sockets.query_one("#delete", Button).press()
+            await settle(pilot)
+            assert [str(node.label) for node in tree.root.children[0].children] == accepted[:1]
+            tree.move_cursor(tree.root.children[0])
+            sockets.query_one("#accept", Button).press()
+            await settle(pilot)
+            assert [str(node.label) for node in tree.root.children[0].children] == accepted
             sockets.query_one("#ok", Button).press()
             await wait_for(pilot, lambda: app.screen is screen)
             spec_sockets = screen.spec.sockets
