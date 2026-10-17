@@ -55,6 +55,7 @@ FormScreen .fields { height: auto; max-height: 40; }
     def __init__(self, form: Form) -> None:
         super().__init__()
         self.form = form
+        self.title_text = form.title
         self.values: dict[str, Any] = form.initial_values()
         #: the editor of each field's key
         self.editors: dict[str, Widget] = {}
@@ -128,6 +129,9 @@ FormScreen .fields { height: auto; max-height: 40; }
         return widget
 
     def on_mount(self) -> None:
+        if not self.query("#status"):
+            # the app tore the screen down while it mounted (it exits)
+            return
         self._refresh_status(self.form.checked(self.values))
         for f in self.form.fields:
             if not f.readonly and f.kind != "label":

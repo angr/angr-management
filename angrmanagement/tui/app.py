@@ -293,7 +293,8 @@ class AmApp(App):
         if first is not None:
             self.workspace.view_manager.focus_view(first)
         if self.binary:
-            self.load_file(self.binary)
+            # a file named on the command line loads with the options the load screen would preselect
+            self.load_file(self.binary, ask=False)
 
     def on_unmount(self) -> None:
         self.shutdown()
@@ -463,8 +464,12 @@ class AmApp(App):
 
         self.run_flow(flow())
 
-    def load_file(self, file_path: str) -> None:
-        """Open ``file_path``: a binary, an angr database or a trace."""
+    def load_file(self, file_path: str, ask: bool = True) -> None:
+        """
+        Open ``file_path``: a binary, an angr database or a trace.
+
+        :param ask: Whether to show the Load a new binary screen; with False a binary loads with what it preselects.
+        """
         instance = self.workspace.main_instance
         if isurl(file_path):
             self.run_flow(self._download_and_open(file_path))
@@ -492,7 +497,7 @@ class AmApp(App):
             self.workspace.load_database(file_path, on_loaded=self._recent_file)
         else:
             self._recent_file(file_path)
-            self.workspace.job_manager.add_job(LoadBinaryJob(instance, file_path))
+            self.workspace.job_manager.add_job(LoadBinaryJob(instance, file_path, ask=ask))
 
     async def _download_and_open(self, url: str) -> None:
         from angrmanagement.utils.io import download_url  # pylint:disable=import-outside-toplevel

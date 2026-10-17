@@ -31,7 +31,9 @@ from angrmanagement.logic.view_manager import default_position
 from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps, caps_from_environment
 from angrmanagement.tui.executor import Deferred, TextualExecutor
-from angrmanagement.tui.screens import ChecklistScreen, MessageScreen, PromptScreen, QuestionScreen
+from angrmanagement.tui.screens import ChecklistScreen, MessageScreen, QuestionScreen
+from angrmanagement.tui.screens.form import FormScreen
+from angrmanagement.tui.screens.load_binary import LoadBinaryScreen
 from angrmanagement.tui.screenshot import shoot, show_view
 from angrmanagement.tui.views import TUI_VIEW_CLASSES
 from angrmanagement.tui.widgets.menubar import MenuPopup
@@ -332,6 +334,10 @@ async def wait_for_checklist(pilot: Pilot, title: str, timeout: float = 120) -> 
     return await wait_for_screen(pilot, ChecklistScreen, title, timeout)
 
 
+async def wait_for_load_screen(pilot: Pilot, timeout: float = 120) -> LoadBinaryScreen:
+    return await wait_for_screen(pilot, LoadBinaryScreen, "Load a new binary", timeout)
+
+
 async def press_ok(pilot: Pilot, screen: Any) -> None:
     # a click can land before the screen is laid out on a busy machine; press the button itself
     await settle(pilot)
@@ -347,7 +353,7 @@ class TestInteractiveLoad(TuiTestCase):
             app.interactive = True
             app.load_file(FAUXWARE)
             # the load job waits in its thread while the options screen is up
-            screen = await wait_for(pilot, "Load a binary")
+            screen = await wait_for_load_screen(pilot)
             assert app.workspace.main_instance.project.am_none
             await press_ok(pilot, screen)
             # then the analyses are offered, as the Qt analysis options dialog is
@@ -369,7 +375,7 @@ class TestInteractiveLoad(TuiTestCase):
                     app.services.interactive = True
                     app.interactive = True
                     app.load_file(FAUXWARE)
-                    screen = await wait_for_checklist(pilot, "Load a binary")
+                    screen = await wait_for_load_screen(pilot)
                     await settle(pilot)
                     if how == "escape":
                         await pilot.press("escape")
@@ -378,7 +384,7 @@ class TestInteractiveLoad(TuiTestCase):
                     await app.wait_for_jobs()
                     await settle(pilot)
                     assert app.workspace.main_instance.project.am_none
-                    assert not isinstance(app.screen, ChecklistScreen)
+                    assert not isinstance(app.screen, LoadBinaryScreen)
 
                 run_app(scenario, binary=None)
 
@@ -389,7 +395,7 @@ class TestInteractiveLoad(TuiTestCase):
             started: list[str] = []
             app.workspace.job_manager.job_starting.connect(lambda job: started.append(job.name))
             app.load_file(FAUXWARE)
-            await press_ok(pilot, await wait_for_checklist(pilot, "Load a binary"))
+            await press_ok(pilot, await wait_for_load_screen(pilot))
             await wait_for_checklist(pilot, "Run analysis")
             await settle(pilot)
             await pilot.press("escape")
@@ -410,12 +416,12 @@ class TestInteractiveLoad(TuiTestCase):
             # no key from a cart configuration file of whoever runs the tests
             with patch("angrmanagement.data.jobs.loading.load_cart_config_key", return_value=None):
                 app.load_file(ELF_CART)
-                prompt = await wait_for_screen(pilot, PromptScreen, "Encryption key")
+                prompt = await wait_for_screen(pilot, FormScreen, "Set an encryption key")
             assert not errors, errors
             assert app.workspace.main_instance.project.am_none
-            prompt.query_one("#answer").value = CART_KEY.hex()
+            prompt.editors["key"].value = CART_KEY.hex()
             await press_ok(pilot, prompt)
-            await press_ok(pilot, await wait_for_checklist(pilot, "Load a binary"))
+            await press_ok(pilot, await wait_for_load_screen(pilot))
             await wait_for_checklist(pilot, "Run analysis")
             await settle(pilot)
             await pilot.press("escape")
@@ -438,7 +444,7 @@ class TestInteractiveLoad(TuiTestCase):
             app.services.interactive = True
             app.interactive = True
             app.load_file(FAUXWARE)
-            await wait_for_checklist(pilot, "Load a binary")
+            await wait_for_load_screen(pilot)
             worker.append(app.workspace.job_manager._worker_thread)
             app.exit()
 

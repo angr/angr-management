@@ -20,13 +20,20 @@ import logging
 import webbrowser
 from typing import TYPE_CHECKING, Any
 
-from angrmanagement.data.load_options import build_load_options, default_selection
+from angrmanagement.data.load_options import (
+    LoadOptions,
+    LoadSelection,
+    build_load_options,
+    confirm_symbol_download,
+    default_selection,
+)
 from angrmanagement.logic import GlobalInfo
-from angrmanagement.present.dialogs import function_actions, function_info_form
+from angrmanagement.present.dialogs import encryption_key_form, function_actions, function_info_form, key_of_form
 
 from .executor import Deferred, TextualExecutor
 from .screens import ChecklistScreen, FilePickerScreen, MessageScreen, PromptScreen, QuestionScreen
 from .screens.form import FormScreen
+from .screens.load_binary import LoadBinaryScreen
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -256,7 +263,7 @@ class TuiServices:
         suggested_original_backend: type[cle.Backend] | None = None,
         suggested_main_filename: str | None = None,
     ) -> Any:
-        """The default load options, after the user confirms them and the two library switches."""
+        """The Load a new binary screen over the partial load; the default options when nobody can be asked."""
         selection = default_selection(
             partial_ld,
             suggested_backend=suggested_backend,
@@ -264,55 +271,43 @@ class TuiServices:
             suggested_main_opts=suggested_main_opts,
             suggested_original_backend=suggested_original_backend,
         )
-        if selection is None:
-            self.message("critical", "Load binary", "No architecture matches this binary; it cannot be loaded here.")
-            return None
 
-        def build() -> LoadOptions:
+        def build(chosen: LoadSelection | None) -> LoadOptions | None:
+            if chosen is None:
+                return None
             return build_load_options(
                 partial_ld,
-                selection,
+                chosen,
                 suggested_main_opts=suggested_main_opts,
                 suggested_main_filename=suggested_main_filename,
+                confirm_symbol_download=confirm_symbol_download,
             )
 
         if not self.interactive or not self._running:
-            return build()
-        main = partial_ld.main_object
-        text = (
-            f"File:    {getattr(main, 'binary', '') or suggested_main_filename or ''}\n"
-            f"Backend: {selection.backend}\n"
-            f"Arch:    {getattr(selection.arch, 'name', selection.arch)}\n"
-            f"OS:      {selection.simos_name}"
-        )
-        items = [("Load libraries (auto_load_libs)", selection.auto_load_libs), ("Load debug info", True)]
+            if selection is None:
+                self.message(
+                    "critical", "Load binary", "No architecture matches this binary; it cannot be loaded here."
+                )
+            return build(selection)
 
         def make_screen() -> Screen:
-            return ChecklistScreen("Load a binary", text, items, ok="Load")
-
-        def apply(answer: list[bool] | None) -> LoadOptions | None:
-            if answer is None:
-                return None
-            selection.auto_load_libs, selection.load_debug_info = answer
-            return build()
+            return LoadBinaryScreen(
+                partial_ld,
+                suggested_backend=suggested_backend,
+                suggested_os_name=suggested_os_name,
+                suggested_main_opts=suggested_main_opts,
+                suggested_original_backend=suggested_original_backend,
+                suggested_main_filename=suggested_main_filename,
+            )
 
         # a cancel is None, and the load job stops, as it does when the Qt load dialog is cancelled
-        return self._ask_sync(
-            make_screen, [selection.auto_load_libs, selection.load_debug_info], cancelled=None, then=apply
-        )
+        return self._ask_sync(make_screen, selection, cancelled=None, then=build)
 
     def encryption_key(self, filename: str, prompt: str = "", initial_text: str = "") -> bytes | None:
-        def to_key(answer: str | None) -> bytes | None:
-            if not answer:
-                return None
-            try:
-                return bytes.fromhex(answer.strip())
-            except ValueError:
-                return answer.encode()
-
-        label = prompt or f"The encryption key of {filename}, in hex:"
+        """The Set an encryption key screen: the key in any of the formats the Qt dialog reads."""
+        text = prompt or f"Set the encryption key for {filename}."
         # the load job asks for the key from the worker thread, so the answer can come back as a Deferred
-        return self._ask_sync(lambda: PromptScreen("Encryption key", label, initial_text), None, then=to_key)
+        return self._ask_sync(lambda: FormScreen(encryption_key_form(text, initial_text)), None, then=key_of_form)
 
     def clipboard_text(self) -> str:
         return self._clipboard
