@@ -1,0 +1,543 @@
+"""
+The pseudocode presenter on fauxware, without a window: the render model, the position-map helpers, rename, retype
+and comment round trips seen in codegen.text, the context menu, keys and commands, find, flavors, jumps, the options
+sheet and the pattern highlight.
+"""
+
+# pylint: disable=missing-class-docstring,protected-access,no-self-use
+
+from __future__ import annotations
+
+import os
+import re
+import unittest
+from typing import Any
+from unittest.mock import patch
+
+import angr
+from angr.analyses.decompiler.structured_codegen import (
+    ConstantNode,
+    FunctionCallNode,
+    FunctionNode,
+    UnaryOpNode,
+    VariableNode,
+)
+from angr.sim_type import SimTypeInt
+
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.headless_workspace import HeadlessWorkspace
+from angrmanagement.logic.ui_services import HeadlessServices
+from angrmanagement.present import code as code_module
+from angrmanagement.present.code import (
+    CODE_COMMANDS,
+    CodePresenter,
+    HeadlessCodeView,
+    closest_node_pos,
+    node_at_position,
+    parse_type_text,
+    pseudocode_keymap,
+    register_code_commands,
+    related_text_chunks,
+    rename_node_directly,
+    stmt_node_at_position,
+)
+from angrmanagement.present.code_highlight import highlight_runs, kind_style, resolve_runs
+from angrmanagement.present.menus import MenuEntry, MenuSeparator
+
+test_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "binaries", "tests")
+FAUXWARE = os.path.join(test_location, "x86_64", "fauxware")
+AFTER909 = os.path.join(test_location, "x86_64", "1after909")
+
+
+def set_services(services: Any) -> None:
+    GlobalInfo.ui_services = services  # pyright: ignore[reportAttributeAccessIssue]
+
+
+class PromptServices(HeadlessServices):
+    """Headless services that answer every prompt with the next of the given texts."""
+
+    def __init__(self, *answers: str | None) -> None:
+        super().__init__()
+        self.answers = list(answers)
+        self.prompts: list[tuple[str, str]] = []
+        self.messages: list[str] = []
+
+    def prompt_text(self, title: str, label: str, default: str = "") -> str | None:
+        self.prompts.append((title, default))
+        return self.answers.pop(0) if self.answers else None
+
+    def message(self, level, title: str, text: str) -> None:
+        self.messages.append(text)
+
+
+def load_fauxware(path: str = FAUXWARE) -> tuple[angr.Project, Any, Any]:
+    project = angr.Project(path, auto_load_libs=False)
+    cfg = project.analyses.CFGFast(normalize=True, data_references=True, cross_references=True)
+    analyses: Any = project.analyses
+    analyses.CompleteCallingConventions(recover_variables=True)
+    cfb = analyses.CFB(kb=project.kb)
+    return project, cfg, cfb
+
+
+class FauxwareCodeCase(unittest.TestCase):
+    """A headless workspace with fauxware, and a pseudocode view that draws nothing showing main."""
+
+    def setUp(self):
+        self.project, self.cfg, self.cfb = load_fauxware()
+        self.saved_services = GlobalInfo._ui_services
+        set_services(HeadlessServices())
+        self.workspace, self.view = self.open_view(self.project, self.cfg, self.cfb)
+        self.presenter: Any = self.view.presenter
+        self.main = self.project.kb.functions["main"]
+        self.show(self.view, self.main)
+
+    def open_view(self, project, cfg, cfb) -> tuple[Any, Any]:
+        workspace: Any = HeadlessWorkspace(auto_analyze=False)
+        instance = workspace.main_instance
+        instance.project.am_obj = project
+        instance.project.am_event()
+        instance.cfg.am_obj = cfg.model
+        instance.cfg.am_event()
+        instance.cfb.am_obj = cfb
+        instance.cfb.am_event()
+        view = HeadlessCodeView(workspace, instance)
+        workspace.view_manager.add_view(view)
+        return workspace, view
+
+    @staticmethod
+    def show(view, func) -> None:
+        view.function.am_obj = func
+        view.function.am_event()
+        view.workspace.job_manager.join_all_jobs()
+
+    def tearDown(self):
+        self.view.close()
+        set_services(self.saved_services)
+        self.workspace.job_manager.quit()
+
+    @property
+    def text(self) -> str:
+        return self.presenter.codegen.text
+
+    def element(self, text: str, kind: type, nth: int = 0):
+        """The ``nth`` position-map element of a node of ``kind`` that renders as ``text``."""
+        found = [
+            elem
+            for _pos, elem in sorted(self.presenter.codegen.map_pos_to_node.items())
+            if isinstance(elem.obj, kind) and self.text[elem.start : elem.start + elem.length] == text
+        ]
+        return found[nth]
+
+    def line_of(self, needle: str) -> int:
+        return next(idx for idx, line in enumerate(self.text.split("\n")) if needle in line)
+
+
+class TestRender(FauxwareCodeCase):
+    def test_decompiles_main_and_draws_every_line(self):
+        assert not self.presenter.codegen.am_none
+        assert self.text.startswith("int main(")
+        doc = self.presenter.doc
+        assert doc is not None
+        assert [line.text for line in doc.lines] == self.text.split("\n")
+        # each line starts where the text says
+        for row, start in enumerate(doc.line_starts):
+            assert self.text[start:].startswith(doc.lines[row].text)
+            assert doc.row_column(start) == (row, 0)
+        assert doc.position(1, 0) == len(self.text.split("\n")[0]) + 1
+
+    def test_spans_carry_the_highlighter_styles_and_the_nodes(self):
+        doc = self.presenter.doc
+
+        def span_of(row: int, text: str):
+            return next(span for span in doc.lines[row].spans if span.text == text)
+
+        row = self.line_of('puts("Username: ")')
+        puts = span_of(row, "puts")
+        assert isinstance(puts.node, FunctionCallNode)
+        assert puts.style == kind_style("library_function")
+        assert span_of(row, '"Username: "').style == kind_style("quotation")
+        row = self.line_of("authenticate(")
+        assert span_of(row, "authenticate").style == kind_style("function")
+        assert span_of(self.line_of("return accepted"), "return").style == kind_style("keyword")
+        assert span_of(self.line_of("do not return"), "/* do not return */").style == kind_style("comment")
+        assert span_of(0, "int").style == kind_style("type")
+        assert isinstance(span_of(0, "main").node, FunctionNode)
+
+    def test_runs_are_the_writes_laid_over_as_qt_lays_them(self):
+        # a later write wins, one starting before the line is dropped, one past its end is cut
+        assert resolve_runs([(0, 4, "keyword"), (2, 1, "comment"), (-1, 3, "type"), (3, 9, "label")], 5) == [
+            (0, 2, "keyword"),
+            (2, 1, "comment"),
+            (3, 2, "label"),
+        ]
+        runs, in_comment = highlight_runs("a /* b", 0, None, "pseudocode", False)
+        assert runs == [(2, 4, "comment")] and in_comment
+        runs, in_comment = highlight_runs("c */ if", 0, None, "pseudocode", True)
+        assert runs == [(0, 4, "comment"), (5, 2, "keyword")] and not in_comment
+        # the flavor picks the keywords
+        assert highlight_runs("fn x", 0, None, "rust", False)[0] == [(0, 2, "keyword")]
+        assert not highlight_runs("fn x", 0, None, "pseudocode", False)[0]
+
+
+class TestPositions(FauxwareCodeCase):
+    def test_node_at_position_looks_one_back(self):
+        elem = self.element("v5", VariableNode)
+        codegen = self.presenter.codegen
+        assert node_at_position(codegen, elem.start) is elem.obj
+        # a cursor right after the name is still on it
+        assert node_at_position(codegen, elem.start + elem.length) is elem.obj
+
+    def test_related_chunks_are_every_mention(self):
+        elem = self.element("v5", VariableNode)
+        chunks = related_text_chunks(self.presenter.codegen, elem.obj)
+        assert chunks
+        assert all(self.text[start:end] == "v5" for start, end in chunks)
+        assert len(chunks) == len(re.findall(r"\bv5\b", self.text))
+
+    def test_statement_node_and_closest_position(self):
+        codegen = self.presenter.codegen
+        row = self.line_of('puts("Username: ")')
+        start = self.presenter.doc.line_starts[row]
+        # the indentation has no node; the statement of the line is found to the right
+        node = stmt_node_at_position(codegen, start)
+        assert node is not None and "ins_addr" in node.tags
+        assert closest_node_pos(codegen, node.tags["ins_addr"]) is not None
+
+    def test_cursor_highlights_the_mentions_and_moves_the_address(self):
+        elem = self.element("v5", VariableNode)
+        self.view.set_cursor_position(elem.start)
+        assert self.presenter.current_node.am_obj is elem.obj
+        assert len(self.presenter.chunks) == len(re.findall(r"\bv5\b", self.text))
+        assert self.presenter.addr.am_obj == self.presenter.src_to_inst(elem.start)
+
+
+class TestEdits(FauxwareCodeCase):
+    def test_rename_a_local_variable(self):
+        elem = self.element("v5", VariableNode)
+        set_services(PromptServices("username"))
+        self.view.set_cursor_position(elem.start)
+        self.presenter.select_node_at_cursor()
+        self.presenter.rename_node()
+        assert "username" in self.text and not re.search(r"\bv5\b", self.text)
+        assert elem.obj.unified_variable.name == "username"
+        # through the edit layer: the variable is no longer an automatic name
+        assert elem.obj.unified_variable.renamed
+
+    def test_rename_asks_with_the_current_name(self):
+        elem = self.element("v5", VariableNode)
+        services = PromptServices(None)
+        set_services(services)
+        self.presenter.rename_node(elem.obj)
+        assert services.prompts == [("Rename", "v5")]
+        assert "v5" in self.text
+
+    def test_an_invalid_name_is_refused(self):
+        elem = self.element("v5", VariableNode)
+        services = PromptServices("two words")
+        set_services(services)
+        self.presenter.rename_node(elem.obj)
+        assert services.messages and "v5" in self.text
+
+    def test_rename_the_function_and_a_callee(self):
+        self.presenter.apply_rename(self.element("main", FunctionNode).obj, "entry")
+        self.presenter.apply_rename(self.element("authenticate", FunctionCallNode).obj, "check_password")
+        self.presenter.codegen.am_event()
+        assert self.text.startswith("int entry(")
+        assert "check_password(&v5, v3)" in self.text
+        func: Any = self.project.kb.functions.function(addr=self.main.addr)
+        assert func.name == "entry"
+
+    def compare_renames(self, path: str, func_name: str, renames) -> None:
+        """
+        Rename through the presenter (the edit layer) in one project of ``path`` and directly, as the rename dialog
+        did before, in another; the texts must be the same after each rename.
+        """
+        views = []
+        try:
+            for _ in range(2):
+                project, cfg, cfb = load_fauxware(path)
+                workspace, view = self.open_view(project, cfg, cfb)
+                views.append((workspace, view))
+                self.show(view, project.kb.functions[func_name])
+            ours: Any = views[0][1].presenter
+            theirs: Any = views[1][1].presenter
+            assert ours.codegen.text == theirs.codegen.text
+            spies = [
+                patch.object(code_module, name, wraps=getattr(code_module, name))
+                for name in ("core_rename_variable", "core_rename_function", "rename_node_directly")
+            ]
+            rename_variable, rename_function, directly = (spy.start() for spy in spies)
+            for spy in spies:
+                self.addCleanup(spy.stop)
+            for text, kind, new in renames:
+
+                def node_of(presenter, text=text, kind=kind):
+                    codegen = presenter.codegen
+                    return next(
+                        elem.obj
+                        for _pos, elem in sorted(codegen.map_pos_to_node.items())
+                        if isinstance(elem.obj, kind) and codegen.text[elem.start : elem.start + elem.length] == text
+                    )
+
+                assert ours.apply_rename(node_of(ours), new)
+                ours.codegen.am_event()
+                workspace, view = views[1]
+                rename_node_directly(
+                    workspace, view.instance, theirs.codegen.am_obj, node_of(theirs), new, theirs.function
+                )
+                theirs.codegen.am_event()
+                assert new in ours.codegen.text, text
+                assert ours.codegen.text == theirs.codegen.text, text
+            # every rename went through the edit layer
+            assert rename_variable.call_count + rename_function.call_count == len(renames)
+            assert directly.call_count == 0
+        finally:
+            for workspace, view in views:
+                view.close()
+                workspace.job_manager.quit()
+
+    def test_edits_give_the_same_text_as_the_dialog_did(self):
+        self.compare_renames(
+            FAUXWARE,
+            "main",
+            [
+                ("v5", VariableNode, "username"),
+                ("a0", VariableNode, "argc"),
+                ("main", FunctionNode, "entry"),
+                ("authenticate", FunctionCallNode, "check_password"),
+            ],
+        )
+
+    def test_edits_give_the_same_text_for_a_global(self):
+        self.compare_renames(AFTER909, "doit", [("stdout", VariableNode, "std_notout")])
+
+    def test_retype_a_local_variable(self):
+        elem = self.element("v5", VariableNode)
+        variable = elem.obj.variable
+        set_services(PromptServices("long long"))
+        self.presenter.retype_node(elem.obj)
+        self.workspace.job_manager.join_all_jobs()
+        vm = self.project.kb.dec_variables[self.main.addr]
+        assert vm.get_variable_type(variable).c_repr() == "long long"
+        assert re.search(r"long long v5;", self.text)
+
+    def test_retype_text_parses_declarations_and_types(self):
+        valid, _reason, type_ = parse_type_text("unsigned int x")
+        assert valid and type_ is not None and type_.c_repr() == "unsigned int"
+        assert parse_type_text("char *")[0]
+        valid, reason, _ = parse_type_text("struct nosuchstruct")
+        assert not valid and "nosuchstruct" in reason
+
+    def test_statement_comment_goes_to_the_kb_and_shows(self):
+        row = self.line_of('puts("Password: ")')
+        self.view.set_cursor_position(self.presenter.doc.line_starts[row] + 4)
+        set_services(PromptServices("ask for the password"))
+        self.presenter.comment()
+        addr = self.presenter.closest_insaddr(None)
+        assert self.project.kb.comments[addr] == "ask for the password"
+        assert "ask for the password" in self.text.split("\n")[row]
+
+    def test_expression_comment(self):
+        elem = self.element("authenticate", FunctionCallNode)
+        self.view.set_cursor_position(elem.start)
+        set_services(PromptServices("returns 1 on success"))
+        self.presenter.comment_expr()
+        assert "returns 1 on success" in self.presenter.codegen.expr_comments.values()
+        assert "returns 1 on success" in self.text
+
+    def test_constant_formats(self):
+        elem = self.element("8", ConstantNode)
+        self.presenter.hex_constant(elem.obj)
+        assert "0x8" in self.text
+        self.presenter.hex_constant(elem.obj)
+        assert "0x8" not in self.text
+
+
+class TestMenusAndKeys(FauxwareCodeCase):
+    # what the Qt context menu showed at 37cbfea2 for each kind of node of main
+    COMMON = [
+        "Comment...|;",
+        "Create pattern from selection...|",
+        "---",
+        "Copy|Ctrl+C",
+        "Select all|Ctrl+A",
+        "---",
+        "AI: Refine All|",
+        "AI: Suggest Variable Names|",
+        "AI: Suggest Function Name|",
+        "AI: Suggest Variable Types|",
+    ]
+    EXPR = ["Create a ternary expression|", "Swap operands|", "Collapse expression|", "Expand expression|"]
+
+    @staticmethod
+    def entries(menu) -> list[str]:
+        out = []
+        for item in menu.items():
+            if isinstance(item, MenuSeparator):
+                out.append("---")
+            elif isinstance(item, MenuEntry):
+                out.append(f"{item.caption}|{item.shortcut or ''}")
+        return out
+
+    def test_menus_are_the_qt_menus(self):
+        cases = [
+            (("int", SimTypeInt), self.COMMON),
+            (("main", FunctionNode), ["Rename...|N", "Xrefs...|X", "Specify a new type|Y", *self.COMMON]),
+            (
+                ("a0", VariableNode),
+                [
+                    "Rename...|N",
+                    "Specify a new type|Y",
+                    "Toggle &struct/array|",
+                    "Expression -> ARM THUMB assembly...|",
+                    "Xrefs...|X",
+                    *self.EXPR,
+                    *self.COMMON,
+                ],
+            ),
+            (
+                ("0", ConstantNode),
+                [
+                    "Toggle hex|H",
+                    "Toggle negative|_",
+                    "Toggle char|R",
+                    "Toggle float|",
+                    "Toggle double|",
+                    *self.EXPR,
+                    *self.COMMON,
+                ],
+            ),
+            (("puts", FunctionCallNode), ["Rename...|N", "Xrefs...|X", *self.EXPR, *self.COMMON]),
+            (("&", UnaryOpNode), [*self.EXPR, *self.COMMON]),
+        ]
+        for (text, kind), expected in cases:
+            node = self.element(text, kind).obj
+            menu = self.presenter.context_menu(node=node)
+            assert self.entries(menu) == expected, text
+
+    def test_clear_highlights_entry_while_there_is_a_highlight(self):
+        self.presenter.highlight_pattern(self.main.addr, [frozenset({self.main.addr})])
+        menu = self.presenter.context_menu(node=None)
+        assert self.entries(menu)[-2:] == ["---", "Clear pattern highlights|"]
+
+    def test_menu_entries_run_on_the_node(self):
+        node = self.element("8", ConstantNode).obj
+        menu = self.presenter.context_menu(node=node)
+        entry = next(item for item in menu.items() if isinstance(item, MenuEntry) and item.text == "Toggle hex")
+        entry.trigger()
+        assert "0x8" in self.text
+
+    def test_every_key_runs_an_action(self):
+        keymap = pseudocode_keymap()
+        assert keymap.scope == "pseudocode"
+        for binding in keymap:
+            if binding.action != "context_menu":
+                assert callable(getattr(self.presenter, binding.action)), binding.action
+        chords = {binding.chord for binding in keymap}
+        # CodeView.keyPressEvent, QCCodeEdit's menu shortcuts and keyPressEvent, and the find shortcuts
+        for chord in ["Tab", "G", "Esc", "Space", "N", "X", "Y", "H", "_", "R", ";", "/", "?", ":", "Ctrl+F", "F3"]:
+            assert chord in chords, chord
+
+    def test_commands(self):
+        register_code_commands(self.workspace)
+        names = {cmd.name for cmd in self.workspace.command_manager.get_commands()}
+        for _caption, method in CODE_COMMANDS:
+            assert f"code_view_{method}" in names
+
+
+class TestNavigation(FauxwareCodeCase):
+    def test_double_click_on_a_call_decompiles_the_callee(self):
+        elem = self.element("authenticate", FunctionCallNode)
+        with patch.object(self.workspace, "decompile_function") as decompile_function:
+            self.view.set_cursor_position(elem.start)
+            self.presenter.activate()
+        decompile_function.assert_called_once()
+        assert decompile_function.call_args.args[0] is elem.obj.callee_func
+        assert self.presenter.jump_history.current == elem.obj.callee_func.addr
+
+    def test_jumping_into_another_function_shows_it_and_back(self):
+        auth = self.project.kb.functions["authenticate"]
+        self.presenter.jump_to(auth.addr)
+        self.workspace.job_manager.join_all_jobs()
+        assert self.presenter.function.am_obj is auth
+        assert "unsigned int authenticate(char *a0, char *a1)" in self.text
+        self.presenter.jump_back()
+        self.workspace.job_manager.join_all_jobs()
+        assert self.presenter.function.am_obj is self.main
+
+    def test_tab_goes_to_the_cursor_address_in_the_disassembly(self):
+        with patch.object(self.workspace, "jump_to") as jump_to:
+            self.presenter.addr.am_obj = 0
+            self.presenter.go_to_disassembly()
+        jump_to.assert_called_once_with(self.main.addr)
+
+    def test_flavors(self):
+        assert self.presenter.flavor == "pseudocode"
+        assert "pseudocode" in self.presenter.available_flavors
+        before = self.text
+        self.presenter.next_flavor()
+        # fauxware has one flavor: Space shows it again
+        assert self.presenter.flavor == "pseudocode" and self.text == before
+        menu = self.presenter.flavor_menu()
+        assert [entry.text for entry in menu.items()] == self.presenter.available_flavors
+
+
+class TestFind(FauxwareCodeCase):
+    def test_find_counts_and_steps(self):
+        self.presenter.show_find_bar()
+        self.view.find_bar.set_query("read")
+        matches = self.presenter.find_matches
+        assert len(matches) == self.text.count("read")
+        assert self.view.selection_range() == matches[0]
+        self.presenter.find_next()
+        assert self.view.selection_range() == matches[1]
+        self.presenter.find_previous()
+        self.presenter.find_previous()
+        assert self.view.selection_range() == matches[-1]
+        assert self.view.find_bar.status == f"{len(matches)} of {len(matches)}"
+        self.view.find_bar.close_bar()
+        assert not self.presenter.find_matches
+
+    def test_find_starts_from_the_selected_word(self):
+        elem = self.element("v5", VariableNode)
+        self.view.select_range(elem.start, elem.start + elem.length)
+        self.presenter.show_find_bar()
+        assert self.view.find_bar.query == "v5"
+
+
+class TestOptionsAndPatterns(FauxwareCodeCase):
+    def test_options_sheet(self):
+        sheet = self.presenter.options
+        assert sheet.passes and sheet.selected_passes
+        option = sheet.options[0]
+        assert dict(sheet.option_and_values)[option] == option.default_value
+        sheet.dirty = False
+        first_pass = sheet.passes[0]
+        sheet.set_value(first_pass, not sheet.values[first_pass])
+        assert sheet.dirty
+        assert (first_pass in sheet.selected_passes) == sheet.values[first_pass]
+        # back to the preset's values
+        default = sheet.values[first_pass]
+        sheet.reload(force=True)
+        assert sheet.values[first_pass] != default
+        groups = [name for name, _items in sheet.groups()]
+        assert groups[-2:] == ["Optimization Passes", "Peephole Optimizations"]
+
+    def test_pattern_highlight_bands_the_lines(self):
+        row = self.line_of('puts("Username: ")')
+        node = stmt_node_at_position(self.presenter.codegen, self.presenter.doc.line_starts[row] + 4)
+        self.presenter.highlight_pattern(self.main.addr, [frozenset({node.tags["ins_addr"]})])
+        assert row in self.presenter.pattern_highlight_rows()
+        assert self.presenter.has_pattern_highlight
+        assert self.presenter.clear_pattern_highlight()
+        assert not self.presenter.pattern_highlight_rows()
+
+    def test_hover_text_of_a_call(self):
+        elem = self.element("authenticate", FunctionCallNode)
+        text = CodePresenter.hover_text(elem.obj)
+        assert text is not None and "authenticate(" in text and "@ <rdi>" in text
+        assert CodePresenter.hover_text(self.element("v5", VariableNode).obj) is None
+
+
+if __name__ == "__main__":
+    unittest.main()

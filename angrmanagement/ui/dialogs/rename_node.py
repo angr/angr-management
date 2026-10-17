@@ -1,16 +1,11 @@
 from __future__ import annotations
 
-from collections import OrderedDict
 from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.structured_codegen import (
     CodegenNode,
-    FunctionCallNode,
-    FunctionNode,
-    StructFieldNode,
     VariableNode,
 )
-from angr.sim_type import NamedTypeMixin, SimType, SimTypePointer, TypeRef
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import (
     QDialog,
@@ -22,6 +17,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
 )
+
+from angrmanagement.present.code import CodePresenter, is_valid_node_name, rename_default, rename_node_directly
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.functions import Function
@@ -48,8 +45,7 @@ class NodeNameBox(QLineEdit):
 
     @staticmethod
     def _is_valid_node_name(name: str):
-        stripped = name.strip()
-        return stripped and " " not in stripped
+        return is_valid_node_name(name)
 
 
 class RenameNode(QDialog):
@@ -109,21 +105,9 @@ class RenameNode(QDialog):
         name_box = NodeNameBox(self._on_name_changed, self)
         if self._node is not None:
             # parse node type, either a Function header or a Variable.
-            if (
-                isinstance(self._node, VariableNode)
-                and self._node.unified_variable
-                and self._node.unified_variable.name
-            ):
-                name_box.setText(self._node.unified_variable.name)
-            elif isinstance(self._node, VariableNode) and not self._node.variable.region:
-                name_box.setText(self._node.variable.name)
-            elif isinstance(self._node, FunctionNode) and self._node.name:
-                name_box.setText(self._node.name)
-            elif isinstance(self._node, FunctionCallNode):
-                name_box.setText(self._node.callee_func.name)
-            elif isinstance(self._node, StructFieldNode):
-                name_box.setText(self._node.field)
-
+            name = rename_default(self._node)
+            if name:
+                name_box.setText(name)
             name_box.selectAll()
         self._name_box = name_box
 
@@ -182,101 +166,20 @@ class RenameNode(QDialog):
     def _on_ok_clicked(self) -> None:
         node_name = self._name_box.name
         if node_name is not None and self._code_view is not None and self._node is not None:
-            # need workspace for altering callbacks of changes
-            workspace = self._code_view.workspace
-            code_kb = self._code_view.codegen.kb
-            cfunc = self._code_view.codegen.cfunc
-
-            if cfunc is None:
+            if self._code_view.codegen.cfunc is None:
                 self.close()
                 return
-
-            if isinstance(self._node, VariableNode) and self._node.unified_variable is not None:
-                # Stack variable
-                if hasattr(self._node.variable, "offset") and self._node.variable.offset is not None:
-                    workspace.plugins.handle_stack_var_renamed(
-                        self._func,
-                        self._node.variable.offset,
-                        self._node.variable.name,
-                        node_name,
-                    )
-
-                # function argument
-                elif self._node.unified_variable.is_function_argument:
-                    workspace.plugins.handle_func_arg_renamed(
-                        code_kb.functions[cfunc.addr], 0, self._node.variable.name, node_name
-                    )
-                    arg_names = list(cfunc.functy.arg_names)
-                    for idx, arg in enumerate(cfunc.arg_list):
-                        if arg is self._node:
-                            arg_names[idx] = node_name
-                            break
-                    cfunc.functy.arg_names = tuple(arg_names)
-
-                self._node.unified_variable.name = node_name
-                self._node.unified_variable.renamed = True
-
-            # global variable
-            elif isinstance(self._node, VariableNode) and not self._node.variable.region:
-                workspace.plugins.handle_global_var_renamed(
-                    self._node.variable.addr, self._node.variable.name, node_name
+            presenter = getattr(self._code_view, "presenter", None)
+            if isinstance(presenter, CodePresenter):
+                presenter.apply_rename(self._node, node_name, self._func)
+            else:
+                rename_node_directly(
+                    self._code_view.workspace,
+                    self._code_view.instance,
+                    self._code_view.codegen,
+                    self._node,
+                    node_name,
+                    self._func,
                 )
-
-                self._code_view.instance.kb.labels[self._node.variable.addr] = node_name
-                self._node.variable.name = node_name
-                self._node.variable.renamed = True
-
-            # function name
-            elif isinstance(self._node, FunctionNode):
-                workspace.plugins.handle_function_renamed(code_kb.functions[cfunc.addr], self._node.name, node_name)
-
-                code_kb.functions.get_by_addr(self._node.addr).name = node_name
-                self._node.name = node_name
-                self._node.demangled_name = node_name
-                self._code_view.workspace.on_function_updated()
-
-            # function renaming (as a call)
-            elif isinstance(self._node, FunctionCallNode):
-                if self._node.callee_func is not None:
-                    workspace.plugins.handle_function_renamed(
-                        code_kb.functions[cfunc.addr], self._node.callee_func.name, node_name
-                    )
-
-                    self._node.callee_func.name = node_name
-                    self._code_view.workspace.on_function_updated()
-
-            # struct renaming
-            elif isinstance(self._node, StructFieldNode):
-                # TODO add a better callback
-                # TODO prevent name duplication. reuse logic from CTypeEditor?
-                # TODO if this is a temporary struct, make it permanent and add it to kb.types
-                fields = [
-                    (node_name if n == self._node.field else n, t) for n, t in self._node.struct_type.fields.items()
-                ]
-                self._node.struct_type.fields = OrderedDict(fields)
-
-                workspace.plugins.handle_struct_changed(self._node.field, node_name)
-
-                self._node.field = node_name
-
-            elif isinstance(self._node, SimType):
-                ty = self._node
-                ref = None
-                while True:
-                    if isinstance(ty, TypeRef):
-                        ref = ty
-                        ty = ty.type
-                    elif isinstance(ty, SimTypePointer):
-                        ref = None
-                        ty = ty.pts_to
-                    else:
-                        break
-                if isinstance(ty, NamedTypeMixin):
-                    ty.name = node_name
-                    if ref is not None:  # update the typeref as well
-                        ref._name = node_name
-                else:
-                    ty.label = node_name
-
             self._code_view.codegen.am_event()
             self.close()
