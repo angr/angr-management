@@ -285,6 +285,26 @@ class TestNavigation(unittest.TestCase):
 
         run_app(scenario)
 
+    def test_another_function_starts_at_its_top(self):
+        async def main() -> None:
+            app = AmApp(caps=TerminalCaps(truecolor=True, forced_tier=2), interactive=True)
+            # a terminal too short for main, so that the view scrolls
+            async with app.run_test(size=(120, 16)) as pilot:
+                await pilot.pause()
+                view = await open_main(pilot)
+                view.code.focus()
+                await pilot.press("ctrl+end")
+                await settle(pilot)
+                assert view.code.scroll_offset.y > 0
+                view.code.set_cursor(element(view, "authenticate", FunctionCallNode).start)
+                await pilot.press("enter")
+                await wait_for_code(pilot)
+                func: Any = view.presenter.function.am_obj
+                assert func.name == "authenticate"
+                assert view.code.scroll_offset.y == 0 and view.code.cursor == 0
+
+        asyncio.run(main())
+
     def test_tab_goes_back_to_the_disassembly(self):
         async def scenario(app: AmApp, pilot: Pilot, view: CodeTuiView) -> None:
             view.code.set_cursor(element(view, "authenticate", FunctionCallNode).start)

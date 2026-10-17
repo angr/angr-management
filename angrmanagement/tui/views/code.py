@@ -808,6 +808,9 @@ class CodeTuiView(TuiView):
                         break
         self.code.cursor, self.code.sel_anchor = cursor, None
         self.code.rebuild()
+        if not same_function:
+            # another function starts at its top, as the Qt editor's new text does
+            self.code.scroll_to(0, 0, animate=False, immediate=True)
         presenter.cursor_moved(cursor)
         self.header_changed()
         self.update_summary()
