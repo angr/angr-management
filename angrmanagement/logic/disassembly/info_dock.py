@@ -40,11 +40,16 @@ class InfoDock:
                         ``show_instruction(addr, insn_pos=, use_animation=)``, ``published_view_state`` and
                         ``notify_view_state_updated()``; the disassembly presenter, or a view that has them.
     :param disasm_view: The frontend's view, which display nodes call for context menus and jumps; the owner if
-                        not given.
+                        not given. ``InfoDock(disasm_view=view)``, the call before there was an owner, makes the view
+                        both.
     """
 
-    def __init__(self, owner, disasm_view=None) -> None:
+    def __init__(self, owner=None, disasm_view=None) -> None:
         super().__init__()
+        if owner is None:
+            owner = disasm_view
+        if owner is None:
+            raise TypeError("InfoDock needs an owner or a disasm_view")
         self.owner = owner
         self.disasm_view = disasm_view if disasm_view is not None else owner
 

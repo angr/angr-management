@@ -9,6 +9,7 @@ from PySide6.QtGui import QCursor, QKeySequence, QShortcut
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QMenu, QMessageBox, QVBoxLayout
 
 from angrmanagement.logic import GlobalInfo
+from angrmanagement.present import disasm as present_disasm
 from angrmanagement.present.disasm import DisasmPresenter, register_disasm_commands
 from angrmanagement.ui.dialogs.assemble_patch import AssemblePatchDialog
 from angrmanagement.ui.dialogs.dependson import DependsOn
@@ -51,6 +52,9 @@ if TYPE_CHECKING:
 
 
 _l = logging.getLogger(__name__)
+
+#: moved to the presenter, which throttles the listing's refreshes during CFG recovery; importable from here as before
+MIN_OBJECTS_ADDED_REFRESH_INTERVAL = present_disasm.MIN_OBJECTS_ADDED_REFRESH_INTERVAL
 
 
 def _forward(name: str, doc: str | None = None):

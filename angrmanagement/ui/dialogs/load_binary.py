@@ -1008,3 +1008,8 @@ class LoadBinary(QDialog):
         except LoadBinaryError:
             pass
         return None, None
+
+    @staticmethod
+    def binary_loading_failed(filename) -> None:
+        """Tell the user that ``filename`` did not load. LoadBinaryJob now says so through the UI services itself."""
+        GlobalInfo.ui_services.message("critical", "Failed to load binary", f"angr failed to load binary {filename}.")
