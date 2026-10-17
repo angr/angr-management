@@ -72,6 +72,8 @@ class GraphBox:
     addr: int = 0
     #: the style key of the box's frame and background
     style: str = ""
+    #: the style key of the frame alone, over ``style`` (a pattern leaf that failed verification is framed red)
+    border_style: str = ""
 
     @property
     def width(self) -> int:

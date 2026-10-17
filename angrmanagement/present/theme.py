@@ -93,6 +93,14 @@ EXTRA_STYLES: dict[str, StyleSpec] = {
     "datadep.tmp": StyleSpec(fg=Color(0x00, 0x00, 0x00), bg=Color(0xEF, 0x47, 0x6F)),
     "graph.edge.traced": StyleSpec(fg=Color(0xFF, 0x80, 0x00), bold=True),
     "graph.edge.ancestor": StyleSpec(fg=Color(0xA0, 0xA0, 0xA4)),
+    # pattern nodes, filled by how they take part in matching, as the Qt nodes; a leaf that failed verification is
+    # framed red
+    "pattern.required": StyleSpec(fg=Color(0x00, 0x00, 0x00), bg=Color(0xFA, 0xFA, 0xFA)),
+    "pattern.optional": StyleSpec(fg=Color(0x00, 0x00, 0x00), bg=Color(0xE8, 0xF4, 0xFF)),
+    "pattern.wildcard": StyleSpec(fg=Color(0x00, 0x00, 0x00), bg=Color(0xE0, 0xE0, 0xE0)),
+    "pattern.expr": StyleSpec(fg=Color(0x00, 0x00, 0x00), bg=Color(0xFF, 0xF8, 0xE1)),
+    "pattern.detail": StyleSpec(fg=Color(0x70, 0x70, 0x70)),
+    "pattern.failed.border": StyleSpec(fg=Color(0xC0, 0x30, 0x30), bold=True),
     # dependency blocks: the definition dark blue, the instruction black, a string grey (Qt's colours)
     "dependency.definition": StyleSpec(fg=Color(0x00, 0x00, 0x80)),
     "dependency.instruction": StyleSpec(fg=Color(0x00, 0x00, 0x00)),
