@@ -2,12 +2,8 @@ from __future__ import annotations
 
 import logging
 import time
-from threading import Lock
 from typing import TYPE_CHECKING
 
-import cle
-from angr.block import Block
-from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
 from PySide6.QtCore import QEvent, QMarginsF, QPoint, QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QPen, QPolygonF
 from PySide6.QtWidgets import (
@@ -19,38 +15,19 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QWidget,
 )
-from sortedcontainers import SortedDict
 
 from angrmanagement.config import Conf
 from angrmanagement.data.object_container import ObjectContainer
-from angrmanagement.data.tagged_interval_map import TaggedIntervalMap
 from angrmanagement.logic.threads import gui_thread_schedule_async
+from angrmanagement.present.feature_map import FeatureMapModel
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     from angr.analyses.cfg.cfb import MemoryRegion
 
     from angrmanagement.data.instance import Instance
 
 
 log = logging.getLogger(name=__name__)
-
-
-def _get_tags_for_item(item) -> int | None:
-    """
-    Generate bit mask based for the type of item provided, or None if it could not be mapped.
-    """
-    if isinstance(item, Block):
-        b = 0
-    elif isinstance(item, MemoryData):
-        b = {
-            MemoryDataSort.String: 2,
-            MemoryDataSort.UnicodeString: 2,
-        }.get(item.sort, 1)
-    else:
-        return None
-    return 1 << b
 
 
 def _get_feature_tag_colors() -> list[QColor]:
@@ -130,10 +107,8 @@ class FeatureMapItem(QGraphicsItem):
         self._refresh_pending: bool = False
         self._min_cfb_time_between_refresh: float = 1 / 30
 
-        self._addr_to_region: SortedDict = SortedDict()  # SortedDict[int, "MemoryRegion"]
-        self._region_to_position: Mapping[MemoryRegion, float] = {}
-        self._region_to_width: Mapping[MemoryRegion, float] = {}
-        self._position_to_region: SortedDict = SortedDict()  # SortedDict[int, "MemoryRegion"]
+        #: the feature maps and the layout of the regions, shared with the terminal's feature map
+        self.model = FeatureMapModel(instance)
 
         self._cursor_addrs: list[int] = []
         self._cursor_items: list[QGraphicsItem] = []
@@ -143,11 +118,6 @@ class FeatureMapItem(QGraphicsItem):
         self._feature_palette: FeatureMapPalette
         self._refresh_palette()
 
-        self._nbits_per_lod: list[int] = [13, 12, 8, 6, 4, 0]
-        self._cfb_feature_maps: list[TaggedIntervalMap]
-        self._cfb_feature_maps_lock: Lock = Lock()
-        self._clear_cfb_feature_maps()
-
         self._register_events()
         self.reload()
 
@@ -156,8 +126,8 @@ class FeatureMapItem(QGraphicsItem):
 
     def reload(self) -> None:
         self._clear_hover_region()
-        with self._cfb_feature_maps_lock:
-            self._build_cfb_feature_maps()
+        with self.model.lock:
+            self.model.build()
         self.refresh()
 
     def set_cursor_addrs(self, cursor_addrs) -> None:
@@ -200,16 +170,7 @@ class FeatureMapItem(QGraphicsItem):
 
     def _on_cfb_event(self, **kwargs) -> None:
         if "objects_added" in kwargs:  # Called by task thread
-            objs = kwargs.get("objects_added")
-            added = False
-            with self._cfb_feature_maps_lock:
-                for addr, item in objs:
-                    tags = _get_tags_for_item(item)
-                    if tags is None or item.size is None:
-                        continue
-                    for fm in self._cfb_feature_maps:
-                        fm.add(addr, item.size, tags)
-                    added = True
+            added = self.model.add_objects(kwargs.get("objects_added"))
 
             if (
                 added
@@ -221,155 +182,23 @@ class FeatureMapItem(QGraphicsItem):
         elif not kwargs:
             self.reload()
 
-    def _clear_cfb_feature_maps(self) -> None:
-        self._cfb_feature_maps = [TaggedIntervalMap(nbits) for nbits in self._nbits_per_lod]
-
-    def _build_cfb_feature_maps(self) -> None:
-        if self.instance.cfb.am_none:
-            return
-
-        self._clear_cfb_feature_maps()
-
-        num_items = 0
-        time_start = time.time()
-        try:
-            for addr, item in self.instance.cfb._blanket.items():  # FIXME: Don't access protected member of CFB
-                if not getattr(item, "size", None):
-                    continue
-                tags = _get_tags_for_item(item)
-                if tags is None:
-                    continue
-                self._cfb_feature_maps[-1].add(addr, item.size, tags)
-                num_items += 1
-        except (RuntimeError, KeyError, IndexError):
-            # the CFB may be mutated by the CFG recovery job thread while we iterate over it; keep what we have
-            # collected so far - a following objects_added event will repaint
-            pass
-        time_end = time.time()
-        log.debug(
-            "Reduced %d items in CFB to %d in %.4f s",
-            num_items,
-            len(self._cfb_feature_maps[-1]._map),
-            time_end - time_start,
-        )
-
-        for i in range(len(self._cfb_feature_maps) - 2, -1, -1):
-            time_start = time.time()
-            fm_in = self._cfb_feature_maps[i + 1]
-            fm_out = self._cfb_feature_maps[i]
-            for addr, size, tags in fm_in.irange():
-                if tags != 0:
-                    fm_out.add(addr, size, tags)
-            time_end = time.time()
-            log.debug(
-                "%d bit fm: Reduced %d items to %d in %.4f s",
-                fm_out.nbits,
-                len(fm_in._map),
-                len(fm_out._map),
-                time_end - time_start,
-            )
-
-    def _find_first_overlapping_region(self, mr: MemoryRegion) -> MemoryRegion | None:
-        """
-        Find the first region in self._addr_to_region that `mr` overlaps, if any.
-        """
-        start_idx = max(0, self._addr_to_region.bisect_left(mr.addr) - 1)
-        for e_addr in self._addr_to_region.islice(start_idx):
-            e_mr = self._addr_to_region[e_addr]
-            if (e_mr.addr + e_mr.size) <= mr.addr:
-                continue
-            if e_mr.addr < (mr.addr + mr.size):
-                return e_mr
-        return None
-
     def _layout_regions(self) -> None:
         """
         Calculate displayed memory region positions and sizes.
         """
-        self._addr_to_region.clear()
-        self._position_to_region.clear()
-        self._region_to_position.clear()
-        self._region_to_width.clear()
-
-        if self.instance.cfb.am_none:
-            return
-
-        # Add regions from largest to smallest
-        for new_mr in sorted(self.instance.cfb.regions, key=lambda mr: mr.size, reverse=True):
-            mr = self._find_first_overlapping_region(new_mr)
-            if mr is not None:
-                log.debug("Skipping CFB region %s, which overlaps %s", new_mr, mr)
-                continue
-            self._addr_to_region[new_mr.addr] = new_mr
-
-        # Determine total displayed byte count
-        rem_bytes = 0
-        region_to_size = {}
-        for mr in self._addr_to_region.values():
-            size = mr.size if self._should_show_region_to_scale(mr) else 80
-            region_to_size[mr] = size
-            rem_bytes += size
-
-        # Determine region widths in scene units
-        rem_width = self.width
-        for mr in self._addr_to_region.values():
-            width = max(round(region_to_size[mr] * rem_width / rem_bytes), 1)
-            self._region_to_width[mr] = width
-            rem_bytes -= region_to_size[mr]
-            rem_width -= width
-
-        # Determine region position in scene units
-        position = 0
-        for mr in self._addr_to_region.values():
-            self._region_to_position[mr] = position
-            self._position_to_region[position] = mr
-            position += self._region_to_width[mr]
-
-    @staticmethod
-    def _should_show_region_to_scale(mr: MemoryRegion) -> bool:
-        return not isinstance(mr.object, cle.ExternObject | cle.TLSObject | cle.KernelObject)
-
-    def _get_region_at_addr(self, addr: int) -> MemoryRegion | None:
-        start_idx = max(0, self._addr_to_region.bisect_left(addr) - 1)
-        for mr_addr in self._addr_to_region.islice(start_idx):
-            mr = self._addr_to_region[mr_addr]
-            if mr.addr + mr.size < addr:
-                continue
-            if mr.addr > addr:
-                break
-            return mr
-        return None
+        self.model.layout(self.width)
 
     def _get_position_at_addr(self, addr: int) -> float | None:
-        mr = self._get_region_at_addr(addr)
-        if mr is None or mr.size == 0:
-            return None
-        mr_pos = self._region_to_position[mr]
-        mr_width = self._region_to_width[mr]
-        offset = addr - mr.addr
-        assert offset >= 0
-        return mr_pos + mr_width * offset / mr.size
+        return self.model.position_at_addr(addr)
 
     def _floor_position_to_nearest_region(self, pos: float) -> MemoryRegion | None:
-        try:
-            pos = next(self._position_to_region.irange(maximum=pos, reverse=True))
-            return self._position_to_region[pos]
-        except StopIteration:
-            return None
+        return self.model.region_at_position(pos)
 
     def _get_addr_at_position(self, pos: float) -> int | None:
-        mr = self._floor_position_to_nearest_region(pos)
-        if mr is None:
-            return None
-        pos -= self._region_to_position[mr]
-        width = self._region_to_width[mr]
-        if width < 1:
-            return mr.addr
-        return mr.addr + int(pos / width * mr.size)
+        return self.model.addr_at_position(pos)
 
     def _get_region_display_rect(self, mr: MemoryRegion) -> QRectF:
-        x = self._region_to_position[mr]
-        width = self._region_to_width[mr]
+        x, width = self.model.region_span(mr)
         return QRectF(x, 0, width, self._height)
 
     def paint(self, painter, option, _) -> None:
@@ -377,7 +206,8 @@ class FeatureMapItem(QGraphicsItem):
         painter.setBrush(Qt.GlobalColor.green if log.level == logging.DEBUG else Conf.feature_map_unknown_color)
         painter.drawRect(option.exposedRect)
 
-        if not len(self._position_to_region):
+        position_to_region = self.model.position_to_region
+        if not len(position_to_region):
             return  # Nothing to draw
 
         pos_l = max(0, option.exposedRect.left())
@@ -405,9 +235,9 @@ class FeatureMapItem(QGraphicsItem):
         region_delim_xcoords = []
 
         # Iterate over visible regions
-        start_idx = max(0, self._position_to_region.bisect_left(pos_l) - 1)
-        for pos in self._position_to_region.islice(start_idx):
-            mr = self._position_to_region[pos]
+        start_idx = max(0, position_to_region.bisect_left(pos_l) - 1)
+        for pos in position_to_region.islice(start_idx):
+            mr = position_to_region[pos]
             if (mr.addr + mr.size) < min_visible_addr:
                 continue
             if mr.addr > max_visible_addr:
@@ -422,19 +252,13 @@ class FeatureMapItem(QGraphicsItem):
             region_delim_xcoords.append(mr_rect.left())
 
             # Pick appropriate level of detail for the region
-            lod = -1  # Max LOD
             bytes_per_pixel = int(mr.size / mr_rect.width())
-            for idx, bits_per_bin in enumerate(self._nbits_per_lod):
-                bytes_per_bin = 1 << bits_per_bin
-                if bytes_per_pixel * 3 >= bytes_per_bin:
-                    lod = idx
-                    break
+            lod = self.model.lod_for(mr)
 
             # Iterate over visible items in the region
             item_count_in_region = 0
 
-            with self._cfb_feature_maps_lock:
-                to_draw = list(self._cfb_feature_maps[lod].irange(min_obj_addr, max_obj_addr))
+            to_draw = self.model.items(lod, min_obj_addr, max_obj_addr)
 
             for addr, size, tags in to_draw:
                 if not size or not tags:

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from typing import Any
+
+from angrmanagement.present.feature_map import jump_to_feature_addr, view_state_cursors
 from angrmanagement.ui.widgets.qfeature_map import QFeatureMap
 
 from .toolbar import Toolbar
@@ -39,14 +42,10 @@ class FeatureMapToolbar(Toolbar):
         self._unsubscribe_events()
 
     def _on_feature_map_addr_selected(self) -> None:
-        target_view = self.window.workspace.view_manager.most_recently_focused_view
-        if hasattr(target_view, "jump_to"):
-            addr = self._feature_map.addr.am_obj
-            if addr is not None:
-                target_view.jump_to(addr)
+        addr: Any = self._feature_map.addr.am_obj
+        jump_to_feature_addr(self.window.workspace, addr)
 
     def _on_view_state_updated(self) -> None:
-        vs = self.window.workspace.main_instance.active_view_state
-        if vs.am_none:
-            return
-        self._feature_map.set_cursor_addrs(vs.cursors)
+        cursors = view_state_cursors(self.window.workspace.main_instance)
+        if cursors is not None:
+            self._feature_map.set_cursor_addrs(cursors)
