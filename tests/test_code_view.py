@@ -11,7 +11,7 @@ from angr.analyses.decompiler.structured_codegen.c import CVariable
 from angr.sim_variable import SimStackVariable
 from common import ProjectOpenTestCase
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QKeyEvent
+from PySide6.QtGui import QAction, QKeyEvent
 from PySide6.QtWidgets import QDialog
 
 from angrmanagement.present import code as code_module
@@ -64,6 +64,14 @@ class TestCodeView(ProjectOpenTestCase):
             finally:
                 view.close()
         sheet.assert_not_called()
+
+    def test_every_menu_key_of_the_presenter_names_an_action_of_the_editor(self):
+        """The presenter decides the context menu; the editor only owns the QAction each of its keys names."""
+        edit = self.code_view.textedit
+        for key, (caption, _shortcut, _method) in code_module.MENU_ACTIONS.items():
+            action = getattr(edit, key, None)
+            assert isinstance(action, QAction), key
+            assert action.text().replace("&", "").lower() == caption.replace("&", "").lower(), key
 
     def test_popup_jumpto_dialog(self):
         """Test that CodeView.popup_jumpto_dialog() opens JumpTo dialog."""

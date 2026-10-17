@@ -62,12 +62,6 @@ class QCCodeEdit(api.CodeEdit):
 
         self._node_tip = QNodeTip(self)
 
-        self.constant_actions = []
-        self.operator_actions = []
-        self.variable_actions = []
-        self.call_actions = []
-        self.default_actions = []
-        self.function_name_actions = []
         self.action_rename_node = None
         self.action_xref = None
         self._selected_node = None
@@ -418,12 +412,6 @@ class QCCodeEdit(api.CodeEdit):
     # Private methods
     #
 
-    @staticmethod
-    def _separator():
-        sep = QAction()
-        sep.setSeparator(True)
-        return sep
-
     def _llm_refine_all(self) -> None:
         self.presenter.llm_refine_all()
 
@@ -437,12 +425,6 @@ class QCCodeEdit(api.CodeEdit):
         self.presenter.llm_suggest_var_types()
 
     def _initialize_context_menus(self) -> None:
-        base_actions = [
-            self._separator(),
-            self.action_copy,
-            self.action_select_all,
-        ]
-
         self.action_rename_node = QAction("Rename...", self)
         self.action_rename_node.triggered.connect(self.rename_node)
         self.action_rename_node.setShortcut(QKeySequence("N"))
@@ -486,44 +468,8 @@ class QCCodeEdit(api.CodeEdit):
             lambda: self._code_view.clear_pattern_highlight()  # pylint:disable=unnecessary-lambda
         )
 
-        expr_actions = [
-            self.action_to_ite_expr,
-            self.action_swap_binop_operands,
-            self.action_collapse_expr,
-            self.action_expand_expr,
-        ]
-
         self.action_asmgen = QAction("Expression -> ARM THUMB assembly...")
         self.action_asmgen.triggered.connect(self.expr2armasm)
-
-        self.variable_actions = [
-            self.action_rename_node,
-            self.action_retype_node,
-            self.action_toggle_struct,
-            self.action_asmgen,
-            self.action_xref,
-        ]
-
-        self.function_name_actions = [self.action_rename_node, self.action_xref, self.action_retype_node]
-
-        self.constant_actions = [
-            self.action_hex,
-            self.action_neg,
-            self.action_char,
-            self.action_float,
-            self.action_double,
-        ]
-
-        self.call_actions = [self.action_rename_node, self.action_xref]
-
-        comment_actions = [self.action_comment, self.action_pattern]
-
-        self.constant_actions += comment_actions + base_actions + expr_actions
-        self.operator_actions += comment_actions + base_actions + expr_actions
-        self.variable_actions += comment_actions + base_actions + expr_actions
-        self.function_name_actions += comment_actions + base_actions
-        self.call_actions += comment_actions + base_actions + expr_actions
-        self.default_actions += comment_actions + base_actions
 
         # LLM actions
         self.action_llm_refine_all = QAction("AI: Refine All", self)
@@ -534,10 +480,3 @@ class QCCodeEdit(api.CodeEdit):
         self.action_llm_suggest_func_name.triggered.connect(self._llm_suggest_func_name)
         self.action_llm_suggest_var_types = QAction("AI: Suggest Variable Types", self)
         self.action_llm_suggest_var_types.triggered.connect(self._llm_suggest_var_types)
-        self.llm_actions = [
-            self._separator(),
-            self.action_llm_refine_all,
-            self.action_llm_suggest_var_names,
-            self.action_llm_suggest_func_name,
-            self.action_llm_suggest_var_types,
-        ]
