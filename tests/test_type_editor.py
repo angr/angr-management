@@ -99,7 +99,7 @@ class TestTypeEditor(ProjectOpenTestCase):
         # angr raises "Redefining body of struct b"; the editor refuses the text as it does a parse error
         editor.setText("struct b {int a;}; struct b {int c;};")
         assert not editor._ok_button.isEnabled()
-        assert editor.main_result == []
+        assert isinstance(editor.main_result, list) and not editor.main_result
 
 
 if __name__ == "__main__":
