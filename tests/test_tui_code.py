@@ -461,7 +461,9 @@ class TestSidePanels(unittest.TestCase):
             view.side_panel.options.query_one("#apply-options", Button).press()
             await wait_for_code(pilot)
             assert not sheet.dirty
-            view.toggle_panel("options")
+            # O hides the panel again
+            view.code.focus()
+            await pilot.press("o")
             await settle(pilot)
             assert not view.side_panel.display
 
@@ -473,7 +475,10 @@ class TestSidePanels(unittest.TestCase):
             async with app.run_test(size=(100, 40)) as pilot:
                 await pilot.pause()
                 view = await open_main(pilot)
-                view.toggle_panel("options")
+                # the header has no room for its Decompilation Options toggle here; O opens the options
+                assert "Decompilation Options" not in str(view.header.render())[: view.header.size.width]
+                view.code.focus()
+                await pilot.press("o")
                 await settle(pilot)
                 assert isinstance(app.screen, OptionsScreen) and not view.side_panel.display
                 sheet = view.presenter.options

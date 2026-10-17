@@ -697,8 +697,8 @@ class CodeTuiView(TuiView):
     }
     """
 
-    #: Keys the terminal adds: the flavor menu without the mouse.
-    EXTRA_KEYS: ClassVar[dict[str, str]] = {"f": "flavor_menu"}
+    #: Keys the terminal adds: the flavor menu and the options without the mouse (a narrow header cuts them off).
+    EXTRA_KEYS: ClassVar[dict[str, str]] = {"f": "flavor_menu", "o": "options_panel"}
 
     presenter: CodePresenter
 
@@ -980,6 +980,7 @@ class CodeTuiView(TuiView):
         special: dict[str, Callable[[], Any]] = {
             "context_menu": self.open_context_menu,
             "flavor_menu": lambda: self.open_menu(presenter.flavor_menu()),
+            "options_panel": lambda: self.toggle_panel("options"),
         }
         if action in special:
             special[action]()
