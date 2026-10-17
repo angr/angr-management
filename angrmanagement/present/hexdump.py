@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+from collections.abc import Callable
 from enum import Enum
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -51,7 +52,7 @@ from .keymap import Binding, Keymap
 from .menus import Menu, MenuEntry, MenuSeparator
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Sequence
 
     from angrmanagement.data.instance import Instance
 
@@ -61,6 +62,7 @@ RowCol = tuple[int, int]
 HexByteValue = int | str
 HexAddress = int
 HexDataBuffer = bytes | bytearray
+HexDataProvider = Callable[[HexAddress], HexByteValue]
 
 #: How many bytes a row shows.
 ROW_BYTES = 16
@@ -265,7 +267,7 @@ class HexGrid:
         self.start_addr: HexAddress = 0
         self.num_bytes: int = 0
         self.end_addr: HexAddress = 0  # Exclusive
-        self.read_func: Callable[[HexAddress], HexByteValue] | None = None
+        self.read_func: HexDataProvider | None = None
         self.write_func: Callable[[HexAddress, HexByteValue], bool] | None = None
         self.data: HexDataBuffer | None = None
         self.cursor: HexAddress = self.start_addr
@@ -408,7 +410,7 @@ class HexGrid:
     def set_data_callback(
         self,
         write_func: Callable[[HexAddress, HexByteValue], bool],
-        read_func: Callable[[HexAddress], HexByteValue],
+        read_func: HexDataProvider,
         start_addr: HexAddress,
         num_bytes: int,
     ) -> None:

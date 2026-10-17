@@ -38,6 +38,19 @@ from angrmanagement.ui.views.hex_view import (
 )
 
 
+class TestHexViewModuleNames(unittest.TestCase):
+    """The module's public names, which other modules import from it."""
+
+    def test_public_names_import(self):
+        from angrmanagement.present import hexdump  # pylint: disable=import-outside-toplevel
+        from angrmanagement.ui.views import hex_view  # pylint: disable=import-outside-toplevel
+
+        for name in hex_view.__all__:
+            assert hasattr(hex_view, name), name
+        assert "HexDataProvider" in hex_view.__all__
+        assert hex_view.HexDataProvider is hexdump.HexDataProvider
+
+
 class HexGraphicsObjectTestCase(unittest.TestCase):
     """Base for tests that only need a QApplication and a standalone HexGraphicsObject."""
 
