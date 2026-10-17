@@ -661,6 +661,11 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
             switched(control)
         self.view_visibility_changed.emit()
 
+    def _focus_control(self, control) -> None:
+        focus = getattr(self.view, "focus_control", None)
+        if focus is not None:
+            focus(control)
+
     def _status_function(self, func) -> None:
         hook = getattr(self.view, "set_status_function", None)
         if hook is not None:
@@ -2327,12 +2332,7 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
             self._in_find_refresh = False
 
     def find_bar_open(self) -> bool:
-        if self.find_bar is None:
-            return False
-        is_hidden = getattr(self.find_bar, "isHidden", None)
-        if is_hidden is not None:
-            return not is_hidden()
-        return bool(getattr(self.find_bar, "is_open", False))
+        return self.find_bar is not None and self.find_bar.is_open
 
     def _refresh_find_matches_for_view_switch(self) -> None:
         """
@@ -2438,9 +2438,8 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         self._find_matches = []
         self._find_data_matches = {}
         self._find_index = -1
-        focus = getattr(self._current_view, "setFocus", None) or getattr(self._current_view, "focus", None)
-        if focus is not None:
-            focus()
+        if self._current_view is not None:
+            self._focus_control(self._current_view)
 
     #
     # Plugins

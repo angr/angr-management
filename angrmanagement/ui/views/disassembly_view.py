@@ -377,7 +377,10 @@ class DisassemblyView(SynchronizedFunctionView):
         other.hide()
         control.show()
 
-    def control_switched(self, control) -> None:  # pylint:disable=no-self-use
+    def control_switched(self, control) -> None:
+        self.focus_control(control)
+
+    def focus_control(self, control) -> None:  # pylint:disable=no-self-use
         control.setFocus()
 
     def set_status_function(self, func) -> None:

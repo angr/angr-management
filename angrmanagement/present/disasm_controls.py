@@ -270,18 +270,11 @@ class GraphControl:
                 return key, None, x - bx - 2
         return None
 
-    # what the Qt view's controls have, so the presenter can call them on either
     def hide(self) -> None:
         self.visible = False
 
     def show(self) -> None:
         self.visible = True
-
-    def isHidden(self) -> bool:  # pylint:disable=invalid-name
-        return not self.visible
-
-    def setFocus(self) -> None:  # pylint:disable=invalid-name
-        pass
 
 
 class DetailOptions:
@@ -501,12 +494,6 @@ class LinearControl:
 
     def show(self) -> None:
         self.visible = True
-
-    def isHidden(self) -> bool:  # pylint:disable=invalid-name
-        return not self.visible
-
-    def setFocus(self) -> None:  # pylint:disable=invalid-name
-        pass
 
 
 class HeadlessDisasmView:

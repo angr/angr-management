@@ -3,7 +3,7 @@ The find bar as a model: the query, the options and the match counter, for front
 
 It answers what :class:`~angrmanagement.present.disasm.DisasmPresenter` asks of a find bar (the questions it asks the
 Qt ``QFindBar``): ``query``, ``mode``, ``compile_query``, ``set_error``, ``set_match_status``,
-``set_text_options_visible``, ``activate`` and whether it is open.
+``set_text_options_visible``, ``activate`` and ``is_open``.
 """
 
 from __future__ import annotations

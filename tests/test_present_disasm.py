@@ -195,7 +195,7 @@ class TestLevelsAndOptions(FauxwareDisasmCase):
         assert not self.presenter.is_linear
         self.presenter.toggle_disasm_view()
         assert self.presenter.is_linear
-        assert self.view.flow_graph.isHidden() and not self.view.linear_viewer.isHidden()
+        assert not self.view.flow_graph.visible and self.view.linear_viewer.visible
         self.presenter.toggle_disasm_view()
         assert not self.presenter.is_linear
 
@@ -342,6 +342,14 @@ class TestFind(FauxwareDisasmCase):
         assert self.presenter.find_matches == []
         # only the current match stays selected
         assert self.presenter.infodock.selected_insns == {current}
+
+    def test_find_bar_open_follows_the_bar(self):
+        self.presenter.display_function(self.main)
+        assert not self.presenter.find_bar_open()
+        self.presenter.show_find_bar()
+        assert self.presenter.find_bar_open()
+        self.view.find_bar.close_bar()
+        assert not self.presenter.find_bar_open()
 
     def test_find_bytes_and_bad_regex(self):
         self.presenter.display_function(self.main)
