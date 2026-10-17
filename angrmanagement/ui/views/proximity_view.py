@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import networkx
 from angr.analyses.proximity_graph import (
     BaseProxiNode,
     CallProxiNode,
@@ -13,6 +12,7 @@ from angr.analyses.proximity_graph import (
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout
 
+from angrmanagement.present.graphs import convert_graph
 from angrmanagement.ui.views.view import InstanceView
 from angrmanagement.ui.widgets.qproximity_graph import QProximityGraph
 from angrmanagement.ui.widgets.qproximitygraph_block import (
@@ -23,6 +23,7 @@ from angrmanagement.ui.widgets.qproximitygraph_block import (
 )
 
 if TYPE_CHECKING:
+    import networkx
     from angr.knowledge_plugins.functions import Function
 
     from angrmanagement.data.instance import Instance
@@ -178,18 +179,4 @@ class ProximityView(InstanceView):
         return new_node
 
     def _create_ui_graph(self) -> networkx.DiGraph:
-        g = networkx.DiGraph()
-
-        converted = {}
-        for proxi_node in self._proximity_graph.nodes():
-            node = self._convert_node(proxi_node, converted)
-            if node is not None:
-                g.add_node(node)
-
-        for n0, n1 in self._proximity_graph.edges():
-            n0_ = self._convert_node(n0, converted)
-            n1_ = self._convert_node(n1, converted)
-
-            g.add_edge(n0_, n1_)
-
-        return g
+        return convert_graph(self._proximity_graph, self._convert_node)

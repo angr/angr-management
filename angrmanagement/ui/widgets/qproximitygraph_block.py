@@ -16,6 +16,7 @@ from PySide6.QtGui import QPen
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
 from angrmanagement.config import Conf
+from angrmanagement.present.proximity import argument_text, function_node_name
 
 from .qgraph_object import QCachedGraphicsItem
 
@@ -165,10 +166,7 @@ class QProximityGraphFunctionBlock(QProximityGraphBlock):
         super().__init__(is_selected, proximity_view, node)
 
     def _init_widgets(self) -> None:
-        func_node = self._node.func
-        func = self._proximity_view.instance.kb.functions.get(func_node.addr)
-        func_name = func.name if func is not None else (func_node.func_name or hex(func_node.addr))
-        self._text = f"Function {func_name}"
+        self._text = f"Function {function_node_name(self._proximity_view.instance, self._node.func)}"
         self._text_item = QGraphicsSimpleTextItem(self._text, self)
         self._text_item.setFont(Conf.symexec_font)
         self._text_item.setBrush(self.FUNCTION_NODE_TEXT_COLOR)
@@ -286,15 +284,7 @@ class QProximityGraphCallBlock(QProximityGraphBlock):
         self._right_parenthesis_item.setPos(x, y)
 
     def _argument_text(self, arg) -> tuple[type, str]:  # pylint: disable=no-self-use
-        if isinstance(arg, StringProxiNode):
-            return StringProxiNode, '"' + arg.content.decode("utf-8").replace("\n", "\\n") + '"'
-        elif isinstance(arg, IntegerProxiNode):
-            return IntegerProxiNode, str(arg.value)
-        elif isinstance(arg, VariableProxiNode):
-            return VariableProxiNode, str(arg.name)
-        elif isinstance(arg, UnknownProxiNode):
-            return UnknownProxiNode, str(arg.dummy_value)
-        return object, "Unknown"
+        return argument_text(arg)
 
     def mouseDoubleClickEvent(self, event) -> None:
         if (
