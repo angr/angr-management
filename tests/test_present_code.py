@@ -23,7 +23,7 @@ from angr.analyses.decompiler.structured_codegen import (
     VariableNode,
 )
 from angr.knowledge_plugins.patterns import StoredPattern
-from angr.sim_type import SimTypeInt
+from angr.sim_type import SimTypeInt, SimTypeLongLong
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.headless_workspace import HeadlessWorkspace
@@ -249,6 +249,32 @@ class TestEdits(FauxwareCodeCase):
         func: Any = self.project.kb.functions.function(addr=self.main.addr)
         assert func.name == "entry"
 
+    def test_plugins_hear_the_callee_the_argument_index_and_retypes(self):
+        """
+        Through the edit layer the plugins are told what the MCP tools tell them: a renamed call names the callee
+        (the rename dialog named the function shown), a renamed argument its own index (the dialog said 0), and a
+        retype is announced (the dialog announced none).
+        """
+        plugins = self.workspace.plugins
+        authenticate = self.project.kb.functions["authenticate"]
+        with (
+            patch.object(plugins, "handle_function_renamed") as function_renamed,
+            patch.object(plugins, "handle_func_arg_renamed") as arg_renamed,
+            patch.object(plugins, "handle_stack_var_retyped") as stack_var_retyped,
+        ):
+            assert self.presenter.apply_rename(self.element("authenticate", FunctionCallNode).obj, "check_password")
+            function_renamed.assert_called_once_with(authenticate, "authenticate", "check_password")
+            assert self.presenter.apply_rename(self.element("a1", VariableNode).obj, "argv")
+            arg_renamed.assert_called_once()
+            func, index, old_name, new_name = arg_renamed.call_args.args
+            assert (func.addr, index, old_name, new_name) == (self.main.addr, 1, "a1", "argv")
+            v5 = self.element("v5", VariableNode).obj
+            self.presenter.apply_retype(v5, SimTypeLongLong())
+            self.workspace.job_manager.join_all_jobs()
+            stack_var_retyped.assert_called_once()
+            func, offset, _old_type, new_type = stack_var_retyped.call_args.args
+            assert (func.addr, offset, new_type.c_repr()) == (self.main.addr, v5.variable.offset, "long long")
+
     def compare_renames(self, path: str, func_name: str, renames) -> None:
         """
         Rename through the presenter (the edit layer) in one project of ``path`` and directly, as the rename dialog
@@ -416,6 +442,18 @@ class TestMenusAndKeys(FauxwareCodeCase):
             node = self.element(text, kind).obj
             menu = self.presenter.context_menu(node=node)
             assert self.entries(menu) == expected, text
+
+    def test_a_function_node_the_kb_does_not_know_still_gets_its_menu(self):
+        # the Qt menu raised KeyError here before the presenter built it; now the plugins' function entries are left out
+        node = self.element("main", FunctionNode).obj
+        plugins = self.workspace.plugins
+        with (
+            patch.object(node, "name", "not_a_function_of_the_kb"),
+            patch.object(plugins, "build_context_menu_functions") as function_entries,
+        ):
+            menu = self.presenter.context_menu(node=node)
+        function_entries.assert_not_called()
+        assert self.entries(menu) == ["Rename...|N", "Xrefs...|X", "Specify a new type|Y", *self.COMMON]
 
     def test_clear_highlights_entry_while_there_is_a_highlight(self):
         self.presenter.highlight_pattern(self.main.addr, [frozenset({self.main.addr})])
