@@ -28,6 +28,7 @@ from textual.widgets import (
     SelectionList,
     Static,
     TabbedContent,
+    TextArea,
     Tree,
 )
 
@@ -35,6 +36,7 @@ import angrmanagement
 from angrmanagement.config import Conf
 from angrmanagement.config.color import Color
 from angrmanagement.data.analysis_options import AnalysesConfiguration
+from angrmanagement.data.breakpoint import BreakpointType
 from angrmanagement.data.instance import Instance
 from angrmanagement.data.jobs import (
     OverviewConfiguration,
@@ -43,6 +45,7 @@ from angrmanagement.data.jobs import (
 )
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.analysis_options import RUST_DEPENDENT_ANALYSES
+from angrmanagement.present.dialogs import hook_templates
 from angrmanagement.present.preferences import PAGE_NAMES, color_entry_names, color_text, scheme_entry_values
 from angrmanagement.tui.app import AmApp, config_file_path
 from angrmanagement.tui.caps import TerminalCaps
@@ -51,6 +54,7 @@ from angrmanagement.tui.screens import MessageScreen, PromptScreen, QuestionScre
 from angrmanagement.tui.screens.about import AboutScreen
 from angrmanagement.tui.screens.analysis_options import AnalysisOptionsScreen
 from angrmanagement.tui.screens.archive import ArchiveScreen
+from angrmanagement.tui.screens.form import FormScreen
 from angrmanagement.tui.screens.plugins import PluginsScreen
 from angrmanagement.tui.screens.preferences import PreferencesScreen
 from angrmanagement.tui.screens.progress import ProgressScreen
@@ -68,7 +72,12 @@ FAUXWARE = os.path.join(test_location, "x86_64", "fauxware")
 SIZE = (160, 50)
 
 
-def run_app(scenario: Callable[[AmApp, Pilot], Awaitable[None]], binary: str | None = FAUXWARE, tier: int = 2) -> None:
+def run_app(
+    scenario: Callable[[AmApp, Pilot], Awaitable[None]],
+    binary: str | None = FAUXWARE,
+    tier: int = 2,
+    interactive: bool = False,
+) -> None:
     """Run ``scenario(app, pilot)`` in a headless app, with fauxware opened unless ``binary`` is None."""
 
     async def main() -> None:
@@ -78,6 +87,8 @@ def run_app(scenario: Callable[[AmApp, Pilot], Awaitable[None]], binary: str | N
             if binary is not None:
                 await app.open_binary(binary)
                 await pilot.pause()
+            # ask through the screens from here on
+            app.services.interactive = interactive
             await scenario(app, pilot)
 
     asyncio.run(main())
@@ -291,6 +302,149 @@ class TestPreferences(DialogCase):
             assert Conf.mcp_server_port == before
 
         run_app(scenario, binary=None)
+
+
+async def answer_form(pilot: Pilot, title: str, values: dict[str, Any], ok: bool = True) -> FormScreen:
+    """Wait for the form ``title``, type ``values`` into it, and press OK (if ``ok``)."""
+    screen = await wait_for_screen(pilot, FormScreen)
+    assert screen.title_text == title, screen.title_text
+    for key, value in values.items():
+        editor = screen.editors[key]
+        if isinstance(editor, (Input, TextArea, Checkbox)) and not isinstance(value, bool):
+            if isinstance(editor, TextArea):
+                editor.load_text(value)
+            else:
+                editor.value = value
+        else:
+            screen.set_value(key, value)
+            screen._changed(editor)
+    await settle(pilot)
+    if ok:
+        screen.query_one("#ok", Button).press()
+        await settle(pilot)
+    return screen
+
+
+def status_of(screen: FormScreen) -> str:
+    return str(screen.query_one("#status").render())
+
+
+class TestForms(DialogCase):
+    """The small Qt dialogs, shown as forms by the terminal's disassembly view and workspace."""
+
+    MAIN = 0x40071D
+    CALL_PUTS = 0x400739
+
+    def test_set_comment_takes_several_lines(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = app.view_widget("disassembly")
+            view.presenter.infodock.select_instruction(self.MAIN + 1)
+            view.presenter.popup_comment_dialog()
+            await answer_form(pilot, "Set Comment", {"comment": "first line\nsecond line\n"})
+            assert app.workspace.main_instance.kb.comments[self.MAIN + 1] == "first line\nsecond line"
+
+        run_app(scenario, interactive=True)
+
+    def test_rename_label_refuses_a_name_with_a_space(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = app.view_widget("disassembly")
+            kb = app.workspace.main_instance.kb
+            view.presenter.infodock.select_label(self.CALL_PUTS)
+            view.presenter.popup_rename_label_dialog()
+            screen = await answer_form(pilot, f"Rename Label at {self.CALL_PUTS:#08x}", {"name": "a b"}, ok=False)
+            assert status_of(screen) == "Invalid" and screen.query_one("#ok", Button).disabled
+            await answer_form(pilot, f"Rename Label at {self.CALL_PUTS:#08x}", {"name": "before_puts"})
+            assert kb.labels.get(self.CALL_PUTS) == "before_puts"
+
+        run_app(scenario, interactive=True)
+
+    def test_assemble_patch_shows_the_bytes_and_pads(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = app.view_widget("disassembly")
+            view.presenter.infodock.select_instruction(self.CALL_PUTS)
+            view.presenter.popup_patch_dialog()
+            title = f"Assemble Patch at {self.CALL_PUTS:#x}"
+            screen = await answer_form(pilot, title, {}, ok=False)
+            # the instruction there, and its bytes
+            assert screen.editors["asm"].value == "call 0x400510"
+            screen = await answer_form(pilot, title, {"asm": "nop"}, ok=False)
+            assert screen.values["bytes"] == "90 90 90 90 90"
+            screen = await answer_form(pilot, title, {"pad": False}, ok=False)
+            assert screen.values["bytes"] == "90"
+            assert status_of(screen) == "Warning: Patch is shorter than original instruction"
+            screen = await answer_form(pilot, title, {"asm": "not an instruction"}, ok=False)
+            assert status_of(screen).startswith("Error:") and screen.query_one("#ok", Button).disabled
+            await answer_form(pilot, title, {"asm": "nop", "pad": True})
+            patches = app.workspace.main_instance.project.kb.patches
+            assert patches.get_patch(self.CALL_PUTS).new_bytes == b"\x90" * 5
+
+        run_app(scenario, interactive=True)
+
+    def test_change_hook_appends_the_preset_to_the_console(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = app.view_widget("disassembly")
+            view.presenter.popup_hook_dialog(self.MAIN)
+            screen = await answer_form(pilot, "Change hook", {"preset": "assertion"}, ok=False)
+            assert screen.values["code"] == hook_templates(self.MAIN)["assertion"]
+            screen.query_one("#ok", Button).press()
+            await settle(pilot)
+            console: Any = app.workspace.view_manager.first_view_in_category("console")
+            assert console.input.value == hook_templates(self.MAIN)["assertion"]
+
+        run_app(scenario, interactive=True)
+
+    def test_function_documentation_of_a_call(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = app.view_widget("disassembly")
+            for _ in range(50):
+                if view.presenter.instruction_at(self.CALL_PUTS) is not None:
+                    break
+                await pilot.pause()
+            view.presenter.popup_func_doc_dialog(self.CALL_PUTS)
+            screen = await wait_for_screen(pilot, FormScreen)
+            assert screen.title_text == "Function Documentation"
+            texts = [str(widget.render()) for widget in screen.query(Static)]
+            assert "Function at address 0x400510: puts" in texts
+            assert any(text.startswith("Type: ") for text in texts)
+            url = screen.editors["url"]
+            assert "link" in str(url.render().spans[0].style)
+
+        run_app(scenario, interactive=True)
+
+    def test_edit_breakpoint_checks_the_address_and_size(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = await show_view(app, pilot, "breakpoints")
+            view.presenter.new_breakpoint()
+            title = "Edit Breakpoint"
+            screen = await answer_form(pilot, title, {"addr": "no_such_function"}, ok=False)
+            assert status_of(screen) == "Invalid"
+            # a function's name is an address, as in the Qt dialog's address box
+            await answer_form(pilot, title, {"type": BreakpointType.Write, "addr": "main", "size": "0x8"})
+            (bp,) = app.workspace.main_instance.breakpoint_mgr.breakpoints
+            assert (bp.type, bp.addr, bp.size) == (BreakpointType.Write, self.MAIN, 8)
+
+        run_app(scenario, interactive=True)
+
+    def test_function_information_and_its_actions(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            app.workspace.show_function_info("authenticate")
+            screen = await wait_for_screen(pilot, FormScreen)
+            assert screen.title_text == "Function authenticate"
+            labels = [f.label for f in screen.form.fields]
+            assert labels[:3] == ["Name", "Address", "Binary"] and "Variadic" in labels
+            assert [a.caption for a in screen.form.actions] == [
+                "&Decompile",
+                "Dis&assemble",
+                "Show &Xrefs",
+                "Show &Strings",
+            ]
+            screen.query_one("#action-1", Button).press()
+            await settle(pilot)
+            view: Any = app.view_widget("disassembly")
+            assert view.presenter.function.am_obj.name == "authenticate"
+            assert not isinstance(app.screen, FormScreen)
+
+        run_app(scenario, interactive=True)
 
 
 ZIP_PATH = os.path.join(test_location, "x86_64", "test_zip_archive.zip")

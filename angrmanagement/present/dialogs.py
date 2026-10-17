@@ -420,14 +420,27 @@ def hook_form(addr: int) -> Form:
 #
 
 
+def library_docs() -> Any:
+    """The library documentation, loaded from ``library_docs_root`` the first time it is needed in a frontend that did
+    not load it at start (the Qt main window does)."""
+    from angrmanagement.config import Conf  # pylint:disable=import-outside-toplevel
+    from angrmanagement.data.library_docs import LibraryDocs  # pylint:disable=import-outside-toplevel
+    from angrmanagement.logic import GlobalInfo  # pylint:disable=import-outside-toplevel
+
+    if GlobalInfo.library_docs is None:
+        docs = LibraryDocs()
+        if Conf.library_docs_root:
+            docs.load_func_docs(Conf.library_docs_root)
+        GlobalInfo.library_docs = docs
+    return GlobalInfo.library_docs
+
+
 def func_doc_target(insn: Any) -> tuple[int, str, tuple[str, str, str]] | None:
     """
     What the function documentation dialog shows for a call instruction (an InsnNode or a QInstruction): the
     target's address, the callee's name as the operand shows it, and (doc, url, type) from the library docs; None
     when the instruction is not a call with one target.
     """
-    from angrmanagement.logic import GlobalInfo  # pylint:disable=import-outside-toplevel
-
     if insn is None or getattr(insn.insn, "type", None) != "call" or insn.out_branch is None:
         return None
     targets = insn.out_branch.targets
@@ -436,7 +449,7 @@ def func_doc_target(insn: Any) -> tuple[int, str, tuple[str, str, str]] | None:
     target = next(iter(targets))
     operand = insn.get_operand(0)
     name = operand.text if operand is not None else ""
-    doc_tuple = GlobalInfo.library_docs.get_docstring_for_func_name(name)
+    doc_tuple = library_docs().get_docstring_for_func_name(name)
     if doc_tuple is None:
         doc_tuple = (f"Cannot find local documentation for function {name}.", "http://", "<>")
     return target, name, doc_tuple
