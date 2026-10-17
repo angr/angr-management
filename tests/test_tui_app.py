@@ -32,6 +32,7 @@ from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps, caps_from_environment
 from angrmanagement.tui.executor import Deferred, TextualExecutor
 from angrmanagement.tui.screens import ChecklistScreen, MessageScreen, QuestionScreen
+from angrmanagement.tui.screens.analysis_options import AnalysisOptionsScreen
 from angrmanagement.tui.screens.form import FormScreen
 from angrmanagement.tui.screens.load_binary import LoadBinaryScreen
 from angrmanagement.tui.screenshot import shoot, show_view
@@ -346,8 +347,6 @@ async def press_ok(pilot: Pilot, screen: Any) -> None:
 
 class TestInteractiveLoad(TuiTestCase):
     def test_load_asks_for_options_then_analyses(self) -> None:
-        wait_for = wait_for_checklist
-
         async def scenario(app: AmApp, pilot: Pilot) -> None:
             app.services.interactive = True
             app.interactive = True
@@ -357,7 +356,7 @@ class TestInteractiveLoad(TuiTestCase):
             assert app.workspace.main_instance.project.am_none
             await press_ok(pilot, screen)
             # then the analyses are offered, as the Qt analysis options dialog is
-            await press_ok(pilot, await wait_for(pilot, "Run analysis"))
+            await press_ok(pilot, await wait_for_screen(pilot, AnalysisOptionsScreen, "Run Analysis"))
             await app.wait_for_jobs()
             await settle(pilot)
             kb = app.workspace.main_instance.kb
@@ -396,7 +395,7 @@ class TestInteractiveLoad(TuiTestCase):
             app.workspace.job_manager.job_starting.connect(lambda job: started.append(job.name))
             app.load_file(FAUXWARE)
             await press_ok(pilot, await wait_for_load_screen(pilot))
-            await wait_for_checklist(pilot, "Run analysis")
+            await wait_for_screen(pilot, AnalysisOptionsScreen, "Run Analysis")
             await settle(pilot)
             await pilot.press("escape")
             await app.wait_for_jobs()
@@ -422,7 +421,7 @@ class TestInteractiveLoad(TuiTestCase):
             prompt.editors["key"].value = CART_KEY.hex()
             await press_ok(pilot, prompt)
             await press_ok(pilot, await wait_for_load_screen(pilot))
-            await wait_for_checklist(pilot, "Run analysis")
+            await wait_for_screen(pilot, AnalysisOptionsScreen, "Run Analysis")
             await settle(pilot)
             await pilot.press("escape")
             await app.wait_for_jobs()

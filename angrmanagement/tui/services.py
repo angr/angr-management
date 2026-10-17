@@ -31,7 +31,8 @@ from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.dialogs import encryption_key_form, function_actions, function_info_form, key_of_form
 
 from .executor import Deferred, TextualExecutor
-from .screens import ChecklistScreen, FilePickerScreen, MessageScreen, PromptScreen, QuestionScreen
+from .screens import FilePickerScreen, MessageScreen, PromptScreen, QuestionScreen
+from .screens.analysis_options import AnalysisOptionsScreen
 from .screens.form import FormScreen
 from .screens.load_binary import LoadBinaryScreen
 
@@ -330,25 +331,18 @@ class TuiServices:
             return False
 
     def analysis_options(self, workspace, configuration: AnalysesConfiguration) -> AnalysesConfiguration | None:  # pylint:disable=unused-argument
-        def apply(answer: list[bool] | None) -> AnalysesConfiguration | None:
-            if answer is None:
-                return None
-            for analysis, enabled in zip(configuration, answer, strict=False):
-                analysis.enabled = enabled
-            return configuration
-
+        """The Run Analysis screen; the options change in place, and a cancel runs nothing."""
         return self._ask_sync(
-            lambda: analyses_screen(configuration), [a.enabled for a in configuration], cancelled=None, then=apply
+            lambda: AnalysisOptionsScreen(configuration),
+            True,
+            cancelled=None,
+            then=lambda run: configuration if run else None,
         )
 
     async def ask_analysis_options(self, configuration: AnalysesConfiguration) -> AnalysesConfiguration | None:
         """Ask which analyses to run, on the UI loop."""
-        result = await self.ask(analyses_screen(configuration), [a.enabled for a in configuration])
-        if result is None:
-            return None
-        for analysis, enabled in zip(configuration, result, strict=False):
-            analysis.enabled = enabled
-        return configuration
+        run = await self.ask(AnalysisOptionsScreen(configuration), True)
+        return configuration if run else None
 
     def function_info(self, function: Function) -> None:
         """The Function dialog: the facts the Qt dialog lists, and its four actions."""
@@ -379,12 +373,3 @@ class TuiServices:
 
     async def ask_save_file(self, caption: str, directory: str, name_filter: str = "") -> str | None:
         return await self.ask(FilePickerScreen(caption, directory, name_filter, "save"), None)
-
-
-def analyses_screen(configuration: AnalysesConfiguration) -> ChecklistScreen:
-    return ChecklistScreen(
-        "Run analysis",
-        "The analyses to run, with their default options.",
-        [(a.display_name or a.name, a.enabled) for a in configuration],
-        ok="Run",
-    )
