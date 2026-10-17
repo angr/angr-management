@@ -39,6 +39,17 @@ def to_color(color: Any) -> Color | None:
     return None
 
 
+def qt_frontend() -> bool:
+    """
+    Whether the Qt frontend runs in this process (a QApplication exists). A plugin with Qt widgets of its own shows
+    them only then; in the terminal, the neutral hooks carry what it shows.
+    """
+    import sys  # pylint:disable=import-outside-toplevel
+
+    widgets = sys.modules.get("PySide6.QtWidgets")
+    return widgets is not None and widgets.QApplication.instance() is not None
+
+
 class BasePlugin:
     """
     Implements the base class for all angr management plugins.

@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from angrmanagement.data.analysis_options import AnalysesConfiguration
     from angrmanagement.data.load_options import LoadOptions
     from angrmanagement.present.forms import Form
+    from angrmanagement.present.menus import Menu
 
 _l = logging.getLogger(__name__)
 
@@ -74,6 +75,14 @@ class UIServices(Protocol):
         Show a form (angrmanagement.present.forms) without waiting; ``callback`` gets its values by key, or None if
         the user cancelled, later, on the UI thread.
         """
+        raise NotImplementedError
+
+    def pick_directory_async(self, caption: str, directory: str, callback: Callable[[str | None], None]) -> None:
+        """Ask like :meth:`pick_directory` without waiting; ``callback`` gets the directory later, on the UI thread."""
+        raise NotImplementedError
+
+    def popup_menu(self, menu: Menu) -> None:
+        """Show a context menu (angrmanagement.present.menus.Menu) where the user is; its entries run when picked."""
         raise NotImplementedError
 
     def analysis_options(self, workspace, configuration: AnalysesConfiguration) -> AnalysesConfiguration | None:
@@ -197,6 +206,13 @@ class HeadlessServices:
     ) -> None:
         # nobody can confirm the form, so nothing it would do happens
         callback(None)
+
+    def pick_directory_async(self, caption: str, directory: str, callback: Callable[[str | None], None]) -> None:
+        callback(self.pick_directory(caption, directory))
+
+    def popup_menu(self, menu: Menu) -> None:  # pylint:disable=unused-argument
+        # nobody can pick an entry
+        return
 
     def analysis_options(  # pylint:disable=unused-argument
         self, workspace, configuration: AnalysesConfiguration

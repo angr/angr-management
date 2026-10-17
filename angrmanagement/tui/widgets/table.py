@@ -135,7 +135,13 @@ class TableWidget(DataTable):
             columns = self.model.columns
             self.add_rows(self.cells_of_row(row, columns, theme) for row in range(first, last + 1))
             return
-        if kind == DATA and last < self.row_count and last - first < 64:
+        # a plugin's column (FUNC_COLUMNS) appears or goes when the plugin is turned on or off: build the table again
+        if (
+            kind == DATA
+            and last < self.row_count
+            and last - first < 64
+            and len(self.model.columns) == self._column_count
+        ):
             # a few rows: update their cells; many: building the rows again is cheaper
             theme = current_theme(self)
             columns = self.model.columns

@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from angrmanagement.data.analysis_options import AnalysesConfiguration
     from angrmanagement.logic.ui_services import MessageLevel
     from angrmanagement.present.forms import Form
+    from angrmanagement.present.menus import Menu
 
 # looked up on QMessageBox when called, so that a test can replace QMessageBox.warning and see the call
 _MESSAGE_BOXES = {
@@ -118,6 +119,16 @@ class QtServices:
         self, caption: str, directory: str, name_filter: str, callback: Callable[[str | None], None]
     ) -> None:
         callback(self.pick_save_file(caption, directory, name_filter))
+
+    def pick_directory_async(self, caption: str, directory: str, callback: Callable[[str | None], None]) -> None:
+        callback(self.pick_directory(caption, directory))
+
+    def popup_menu(self, menu: Menu) -> None:
+        from PySide6.QtGui import QCursor  # pylint:disable=import-outside-toplevel
+
+        from .menus.menu import to_qmenu  # pylint:disable=import-outside-toplevel
+
+        to_qmenu(menu, _window_parent()).exec_(QCursor.pos())
 
     def analysis_options(self, workspace, configuration: AnalysesConfiguration) -> AnalysesConfiguration | None:
         dlg = AnalysisOptionsDialog(configuration, workspace, GlobalInfo.main_window)

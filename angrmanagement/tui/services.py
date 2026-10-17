@@ -242,6 +242,21 @@ class TuiServices:
     ) -> None:
         self._ask_then(FilePickerScreen(caption, directory, name_filter, "save"), None, callback)
 
+    def pick_directory_async(self, caption: str, directory: str, callback: Callable[[str | None], None]) -> None:
+        self._ask_then(FilePickerScreen(caption, directory, "", "directory"), None, callback)
+
+    def popup_menu(self, menu: Any) -> None:
+        if not self._running:
+            return
+        app: Any = self.app
+        executor = self._executor()
+        if executor is not None and not executor.is_ui_thread():
+            executor.schedule_async(self.popup_menu, (menu,))
+            return
+        # where the mouse last was, or the middle of the screen
+        offset = getattr(app, "mouse_position", None) or (app.size.width // 3, app.size.height // 3)
+        app.open_context_menu(menu, tuple(offset))
+
     def pick_open_files(self, caption: str, directory: str, name_filter: str, multiple: bool) -> list[str]:
         return self._ask_sync(
             lambda: FilePickerScreen(caption, directory, name_filter, "open", multiple),

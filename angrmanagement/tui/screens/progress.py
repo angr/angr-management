@@ -36,16 +36,16 @@ class ProgressScreen(ModalScreen[None]):
     def compose(self) -> ComposeResult:
         with Vertical():
             yield Label(Text(self.text), id="progress-text")
-            yield ProgressBar(total=100, show_eta=False, id="bar")
+            yield ProgressBar(total=100, show_eta=False, id="progress-bar")
             with Horizontal(classes="buttons"):
                 yield Button("Cancel", id="cancel")
 
     def update_progress(self, text: str, percentage: float) -> None:
         self.text = text
-        for label in self.query("#progress-text"):
-            label.update(Text(text))  # type: ignore[attr-defined]
-        for bar in self.query("#bar"):
-            bar.update(progress=round(percentage))  # type: ignore[attr-defined]
+        for label in self.query("#progress-text").results(Label):
+            label.update(Text(text))
+        for bar in self.query(ProgressBar):
+            bar.update(progress=round(percentage))
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         event.stop()

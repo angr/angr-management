@@ -300,6 +300,8 @@ class AmApp(App):
 
         self.workspace.add_default_views()
         self.workspace.view_manager.update_areas()
+        # the plugins the configuration enables, as the Qt main window activates them when it starts
+        self.workspace.plugins.discover_and_initialize_plugins()
         self._on_project_changed()
         first = self.workspace.view_manager.first_view_in_category("functions")
         if first is not None:
@@ -423,7 +425,7 @@ class AmApp(App):
 
     def _on_job_starting(self, job: Job) -> None:
         self.status_bar.progress("Working...", 0.0, True)
-        if job.blocking and self.progress_screen is None:
+        if getattr(job, "blocking", False) and self.progress_screen is None:
             # a blocking job holds the user up, as the Qt progress dialog does; the others show in the status bar
             self.progress_screen = ProgressScreen("Working...", self.workspace.job_manager.interrupt_current_job)
             self.push_screen(self.progress_screen)
@@ -431,7 +433,7 @@ class AmApp(App):
     def _on_job_progress(self, job: Job, percentage: float, text: str = "") -> None:
         text = f"{job.name}: {text}" if text else job.name
         self.status_bar.progress(text, percentage)
-        if job.blocking and self.progress_screen is not None:
+        if getattr(job, "blocking", False) and self.progress_screen is not None:
             self.progress_screen.update_progress(text, percentage)
 
     def _on_job_finished(self, job: Job, *_args) -> None:  # pylint:disable=unused-argument
@@ -439,6 +441,13 @@ class AmApp(App):
         screen, self.progress_screen = self.progress_screen, None
         if screen is not None and screen.is_attached:
             screen.dismiss(None)
+
+    def progress(self, status: str, progress: float) -> None:
+        """Show a plugin's progress in the status bar, as the Qt main window's progress() does."""
+        self.status_bar.progress(status, progress)
+
+    def progress_done(self) -> None:
+        self.status_bar.progress_done()
 
     async def wait_for_jobs(self, idle: float = 0.3, timeout: float = 600) -> bool:
         """Wait until no job has run for ``idle`` seconds; False if ``timeout`` passed first."""
