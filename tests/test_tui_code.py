@@ -26,7 +26,7 @@ from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps
 from angrmanagement.tui.code_screens import CommentScreen, RenameScreen, RetypeScreen
 from angrmanagement.tui.screens import PromptScreen
-from angrmanagement.tui.views.code import CodeTuiView
+from angrmanagement.tui.views.code import CodeTuiView, OptionsScreen
 from angrmanagement.tui.widgets.menubar import MenuPopup
 from angrmanagement.tui.xrefs import XRefsScreen
 
@@ -466,6 +466,30 @@ class TestSidePanels(unittest.TestCase):
             assert not view.side_panel.display
 
         run_app(scenario)
+
+    def test_a_narrow_view_shows_the_options_in_a_modal_screen(self):
+        async def main() -> None:
+            app = AmApp(caps=TerminalCaps(truecolor=True, forced_tier=2), interactive=True)
+            async with app.run_test(size=(100, 40)) as pilot:
+                await pilot.pause()
+                view = await open_main(pilot)
+                view.toggle_panel("options")
+                await settle(pilot)
+                assert isinstance(app.screen, OptionsScreen) and not view.side_panel.display
+                sheet = view.presenter.options
+                widget = app.screen.sheet_widget
+                first = widget.options_tree.root.children[0].children[0]
+                before = sheet.values[first.data]
+                widget.edit(first, first.data)
+                assert sheet.values[first.data] != before
+                widget.query_one("#apply-options", Button).press()
+                await wait_for_code(pilot)
+                assert not sheet.dirty
+                await pilot.press("escape")
+                await settle(pilot)
+                assert not isinstance(app.screen, OptionsScreen)
+
+        asyncio.run(main())
 
     def test_patterns_and_summary_panes(self):
         async def scenario(app: AmApp, pilot: Pilot, view: CodeTuiView) -> None:

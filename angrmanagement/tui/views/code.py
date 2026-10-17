@@ -16,8 +16,10 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from rich.segment import Segment
 from rich.style import Style
 from rich.text import Text
+from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.geometry import Region, Size
+from textual.screen import ModalScreen
 from textual.scroll_view import ScrollView
 from textual.strip import Strip
 from textual.widgets import Button, Label, Static, TabbedContent, TabPane, Tree
@@ -41,7 +43,7 @@ from angrmanagement.present.code_patterns import PatternLibraryModel
 from angrmanagement.present.find import FindBarState
 from angrmanagement.present.menus import Menu, MenuEntry
 from angrmanagement.tui.code_screens import CommentScreen, RenameScreen, RetypeScreen
-from angrmanagement.tui.screens import PromptScreen
+from angrmanagement.tui.screens import PromptScreen, dialog_css
 from angrmanagement.tui.widgets.find_bar import FindBarWidget
 from angrmanagement.tui.widgets.header import HeaderBar, HeaderItem, function_label
 from angrmanagement.tui.widgets.styles import StyleCache
@@ -64,6 +66,10 @@ NODE_ACTIONS = {method: key for key, (_caption, _shortcut, method) in MENU_ACTIO
 WHEEL_LINES = 3
 #: The cursor cell.
 CURSOR_STYLE = Style(reverse=True)
+#: How wide the side panel is (its CSS width, which includes its border).
+SIDE_PANEL_WIDTH = 48
+#: The narrowest text the side panel may leave; a view narrower than both shows the options in a modal screen.
+MIN_TEXT_WIDTH = 60
 
 
 def line_number_width(doc: CodeDoc | None) -> int:
@@ -560,6 +566,37 @@ class OptionsSheetWidget(Vertical):
             self.view.presenter.apply_options()
 
 
+class OptionsScreen(ModalScreen[None]):
+    """The decompilation options in a modal screen, for a view too narrow to show them beside the text."""
+
+    DEFAULT_CSS = (
+        dialog_css("OptionsScreen") + "OptionsScreen OptionsSheetWidget { width: 60; height: 80vh; max-height: 30; }"
+    )
+    BINDINGS: ClassVar = [Binding("escape", "close", "Close")]
+
+    def __init__(self, view: CodeTuiView) -> None:
+        super().__init__()
+        self.sheet_widget = OptionsSheetWidget(view)
+
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            yield Label(Text("Decompilation Options"), classes="title")
+            yield self.sheet_widget
+            with Horizontal(classes="buttons"):
+                yield Button("Close", id="close")
+
+    def on_mount(self) -> None:
+        self.sheet_widget.options_tree.focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "close":
+            event.stop()
+            self.dismiss(None)
+
+    def action_close(self) -> None:
+        self.dismiss(None)
+
+
 class PatternTable(TableWidget):
     """The patterns table: Space marks a pattern to turn on or off, H highlights it, Enter edits it."""
 
@@ -871,7 +908,13 @@ class CodeTuiView(TuiView):
             show(text)
 
     def toggle_panel(self, name: str) -> None:
-        """Show the side panel's tab ``name``, or hide the panel if that tab is already shown."""
+        """
+        Show the side panel's tab ``name``, or hide the panel if that tab is already shown. A view too narrow for the
+        panel and the text shows the options in a modal screen instead.
+        """
+        if name == "options" and self.panel_shown != name and self.size.width < SIDE_PANEL_WIDTH + MIN_TEXT_WIDTH:
+            self.app.push_screen(OptionsScreen(self))
+            return
         if self.panel_shown == name:
             self.panel_shown = None
             self.side_panel.display = False
