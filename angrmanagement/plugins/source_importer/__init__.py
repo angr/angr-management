@@ -3,8 +3,7 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import QFileDialog
-
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.plugins import BasePlugin
 
 if TYPE_CHECKING:
@@ -44,11 +43,10 @@ class SourceImporterPlugin(BasePlugin):
     def handle_click_menu(self, idx: int) -> None:
         if idx != 0:
             return
-        result = QFileDialog.getExistingDirectory(
-            self.workspace.main_window,
-            "Select source root",
-            ".",
-            QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks,
-        )
-        if result is not None:
-            self.source_paths.append(result)
+
+        def picked(result: str | None) -> None:
+            # a cancelled Qt dialog gave "", which was added as a source root
+            if result:
+                self.source_paths.append(result)
+
+        GlobalInfo.ui_services.pick_directory_async("Select source root", ".", picked)

@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 import angr.ailment as ailment
 
 from angrmanagement.plugins import BasePlugin
-
-from .asm_output import AsmOutput
+from angrmanagement.plugins.base_plugin import qt_frontend
+from angrmanagement.present.forms import Form, FormField, ask_form
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
@@ -233,4 +233,17 @@ class AIL2ARM32(BasePlugin):
             raise Exception("Unsupported expression")
 
     def display_output(self, s: str) -> None:
-        AsmOutput(s, parent=self.workspace.main_window).exec_()
+        """Show the assembly: in the Qt AsmOutput dialog, or in the terminal's text screen."""
+        if qt_frontend():
+            from .asm_output import AsmOutput  # pylint:disable=import-outside-toplevel
+
+            AsmOutput(s, parent=self.workspace.main_window).exec_()
+            return
+        ask_form(
+            Form(
+                "Assembly code output",
+                [FormField("asm", "Assembly code", "code", s, readonly=True)],
+                ok_text="OK",
+            ),
+            lambda _values: None,
+        )

@@ -9,11 +9,11 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 
 import requests
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QMessageBox
 from sortedcontainers import SortedDict
 
 from angrmanagement.config import Conf
+from angrmanagement.config.color import Color
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.plugins.base_plugin import BasePlugin
 
 if TYPE_CHECKING:
@@ -30,7 +30,7 @@ class VaRec(BasePlugin):
 
         self.covered_blocks = SortedDict()
 
-        self.sink_color = Qt.GlobalColor.yellow
+        self.sink_color = Color(255, 255, 0)
 
     MENU_BUTTONS = [
         "&Infer variable names",
@@ -67,21 +67,20 @@ class VaRec(BasePlugin):
         return "".join(random.choice(string.ascii_lowercase) for _ in range(n))
 
     def infer_variable_names(self) -> None:
-        view = self.workspace._get_or_create_pseudocode_view()
+        # the workspace has no _get_or_create_pseudocode_view (it raised AttributeError at 37cbfea2)
+        view = self.workspace._get_or_create_view("pseudocode")
         if view.codegen.am_none:
-            QMessageBox.critical(
-                self.workspace._main_window,
+            GlobalInfo.ui_services.message(
+                "critical",
                 "Error in variable name prediction",
                 "Cannot predict variable names. No pseudocode exists in the pseudocode view.",
-                QMessageBox.StandardButton.Ok,
             )
             return
         if view.codegen.kb is None or view.function.addr not in view.codegen.kb.dec_variables:
-            QMessageBox.critical(
-                self.workspace._main_window,
+            GlobalInfo.ui_services.message(
+                "critical",
                 "Error in variable name prediction",
                 "Cannot predict variable names. The pseudocode view does not have associated variables.",
-                QMessageBox.StandardButton.Ok,
             )
             return
 
@@ -107,11 +106,10 @@ class VaRec(BasePlugin):
         except json.JSONDecodeError:
             self._restore_stage(view)
 
-            QMessageBox.critical(
-                self.workspace._main_window,
+            GlobalInfo.ui_services.message(
+                "critical",
                 "Error in variable name prediction",
                 "Failed to predict names for all variables involved.",
-                QMessageBox.StandardButton.Ok,
             )
 
             return
@@ -122,28 +120,25 @@ class VaRec(BasePlugin):
         # handle failure cases
         if "code" not in result or not result["code"]:
             self._restore_stage(view)
-            QMessageBox.critical(
-                self.workspace._main_window,
+            GlobalInfo.ui_services.message(
+                "critical",
                 "Error in variable name prediction",
                 "Unexpected output returned from the backend. 'code' is not found or empty.",
-                QMessageBox.StandardButton.Ok,
             )
             return
         if "predictions" not in result["code"][0] or not result["code"][0]["predictions"]:
-            QMessageBox.critical(
-                self.workspace._main_window,
+            GlobalInfo.ui_services.message(
+                "critical",
                 "Error in variable name prediction",
                 "Unexpected output returned from the backend. 'predictions' is not found or empty.",
-                QMessageBox.StandardButton.Ok,
             )
             self._restore_stage(view)
             return
         if len(result["code"][0]["predictions"]) == 1 and isinstance(result["code"][0]["predictions"][0], str):
-            QMessageBox.critical(
-                self.workspace._main_window,
+            GlobalInfo.ui_services.message(
+                "critical",
                 "Error in variable name prediction",
                 f"Prediction failed. Error: {result['code'][0]['predictions'][0]}",
-                QMessageBox.StandardButton.Ok,
             )
             self._restore_stage(view)
             return

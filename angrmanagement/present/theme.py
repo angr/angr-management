@@ -80,6 +80,9 @@ EXTRA_STYLES: dict[str, StyleSpec] = {
     "disasm.mark.avoid": StyleSpec(fg=Color(80, 30, 30), bg=Color(230, 200, 100)),
     "disasm.mark.break": StyleSpec(fg=Color(220, 220, 220), bg=Color(200, 10, 10)),
     "disasm.mark": StyleSpec(fg=Color(0, 60, 0), bg=Color(0xD8, 0xF0, 0xD8)),
+    # the execution statistics plugin's counts: QActiveCount and QPassthroughCount over white
+    "disasm.mark.active": StyleSpec(fg=Color(0, 60, 0), bg=Color(0xE2, 0xFF, 0xE2)),
+    "disasm.mark.passthrough": StyleSpec(fg=Color(60, 0, 0), bg=Color(0xFF, 0xE2, 0xE2)),
     "disasm.find.match": StyleSpec(underline=True),
     # graphs of boxes (path tree, proximity, dependencies, patterns): the fixed colours the Qt blocks paint with
     "graph.node": StyleSpec(fg=Color(0x00, 0x00, 0x00), bg=Color(0xFA, 0xFA, 0xFA)),
