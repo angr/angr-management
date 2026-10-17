@@ -1,6 +1,7 @@
 """
 The Qt feature map follows the CFB through the presenter it shares with the terminal's feature map: a new CFB
-rebuilds the maps, added objects redraw at most every MIN_REFRESH_INTERVAL, and hiding the toolbar stops it.
+rebuilds the maps, added objects redraw at most every MIN_REFRESH_INTERVAL, the cursors follow the focused view, and
+hiding the toolbar stops it.
 """
 
 # pylint: disable=protected-access
@@ -8,11 +9,13 @@ rebuilds the maps, added objects redraw at most every MIN_REFRESH_INTERVAL, and 
 from __future__ import annotations
 
 import unittest
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import patch
 
 from common import ProjectOpenTestCase
 
+from angrmanagement.ui.toolbars import FeatureMapToolbar
 from angrmanagement.ui.widgets.qfeature_map import QFeatureMap
 
 
@@ -59,6 +62,34 @@ class TestQFeatureMap(ProjectOpenTestCase):
         with patch.object(self.item.model, "build") as build:
             self.cfb.am_event()
         build.assert_not_called()
+
+    def test_cursors_follow_the_focused_view(self):
+        entry = self.instance.project.entry
+        view_state: Any = self.instance.active_view_state
+        view_state.am_obj = SimpleNamespace(cursors=[entry])
+        view_state.am_event()
+        assert self.item._cursor_addrs == [entry]
+        self.feature_map.shutdown()
+        self.shut_down = True
+        view_state.am_obj = SimpleNamespace(cursors=[entry + 1])
+        view_state.am_event()
+        assert self.item._cursor_addrs == [entry]
+
+
+class TestFeatureMapToolbar(ProjectOpenTestCase):
+    """The Feature Map toolbar of the main window."""
+
+    def test_only_the_item_follows_the_focused_view(self):
+        toolbar: Any = self.main.toolbar_manager.active[FeatureMapToolbar]
+        item = toolbar._feature_map.view._feature_map_item
+        view_state: Any = self.instance.active_view_state
+        owners = [getattr(listener, "__self__", None) for listener in view_state.am_subscribers]
+        assert toolbar not in owners
+        assert owners.count(item._presenter) == 1
+        entry = self.instance.project.entry
+        view_state.am_obj = SimpleNamespace(cursors=[entry])
+        view_state.am_event()
+        assert item._cursor_addrs == [entry]
 
 
 if __name__ == "__main__":

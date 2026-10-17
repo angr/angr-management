@@ -109,16 +109,17 @@ class FeatureMapItem(QGraphicsItem):
         self._feature_palette: FeatureMapPalette
         self._refresh_palette()
 
-        #: follows the CFB and keeps the maps and the layout of the regions, shared with the terminal's feature map;
-        #: the toolbar gives the cursors and does the jump
+        #: follows the CFB and the focused view, and keeps the maps, the layout of the regions and the cursors, shared
+        #: with the terminal's feature map; the toolbar does the jump
         self._presenter = FeatureMapPresenter(None, instance)
         self.model = self._presenter.model
         self._presenter.on_reloading = self._clear_hover_region
         self._presenter.on_changed = self._redraw
+        self._presenter.on_cursors_changed = self._take_cursors
         self.refresh()
 
     def shutdown(self) -> None:
-        """Stop following the CFB."""
+        """Stop following the CFB and the focused view."""
         self._presenter.close()
 
     def set_cursor_addrs(self, cursor_addrs) -> None:
@@ -128,6 +129,9 @@ class FeatureMapItem(QGraphicsItem):
 
     def refresh(self) -> None:
         self._presenter.refresh()
+
+    def _take_cursors(self) -> None:
+        self.set_cursor_addrs(self._presenter.cursors)
 
     def _redraw(self) -> None:
         self._layout_regions()
