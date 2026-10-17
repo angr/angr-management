@@ -18,6 +18,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 from angr.analyses.decompiler.structured_codegen import ConstantNode, FunctionCallNode, VariableNode
 from textual.widgets import Button
 
+from angrmanagement.plugins import BasePlugin
 from angrmanagement.present.code_highlight import kind_style
 from angrmanagement.present.menus import Menu, walk_entries
 from angrmanagement.present.xrefs import XRefMode
@@ -522,6 +523,36 @@ class TestWorkspaceUses(unittest.TestCase):
             assert job_class.call_args.args[1] is view.presenter.function.am_obj
             assert job_class.call_args.kwargs["mode"] == "variable_names"
             add_job.assert_called_once()
+
+        run_app(scenario)
+
+    def test_a_plugin_that_wants_the_qt_editor_is_still_activated(self):
+        class QtEditorPlugin(BasePlugin):
+            """Instruments a pseudocode view through the Qt view's editor, which the terminal view has not got."""
+
+            def __init__(self, workspace) -> None:
+                super().__init__(workspace)
+                self.instrumented: list[Any] = []
+
+            def instrument_code_view(self, cview) -> None:
+                self.instrumented.append(cview)
+                cview._textedit.document()
+
+        async def scenario(app: AmApp, pilot: Pilot, view: CodeTuiView) -> None:
+            plugins: Any = app.workspace.plugins
+            with (
+                patch.object(app.workspace, "log") as log,
+                patch.object(plugins, "_register_url_actions") as url_actions,
+                self.assertLogs("angrmanagement.plugins.plugin_manager", level="INFO") as logged,
+            ):
+                plugins.activate_plugin("qt_editor", QtEditorPlugin)
+            plugin = plugins.get_plugin_instance(QtEditorPlugin)
+            assert plugin is not None and plugin.instrumented == [view]
+            # the rest of the activation ran, and the error is logged as for a view opened after the plugin
+            url_actions.assert_called_once()
+            assert [record.getMessage() for record in logged.records] == ["Activated plugin QtEditorPlugin"]
+            assert any("instrument_code_view" in str(call.args[0]) for call in log.call_args_list)
+            plugins.deactivate_plugin(plugin)
 
         run_app(scenario)
 

@@ -129,10 +129,12 @@ class PluginManager:
             self._register_toolbar_actions(plugin_cls, plugin_obj)
             self._register_menu_buttons(plugin_cls, plugin_obj)
 
+            # a plugin that cannot instrument a view (one of the terminal's, say, which has no Qt widgets) is still
+            # activated, as it is for a view opened later; the error is logged
             for dview in self.workspace.view_manager.views_by_category["disassembly"]:
-                plugin_obj.instrument_disassembly_view(dview)
+                self._dispatch_single(plugin_obj, BasePlugin.instrument_disassembly_view, False, dview)
             for cview in self.workspace.view_manager.views_by_category["pseudocode"]:
-                plugin_obj.instrument_code_view(cview)
+                self._dispatch_single(plugin_obj, BasePlugin.instrument_code_view, False, cview)
 
             self._register_url_actions(plugin_cls, plugin_obj)
             self._register_configuration_entries(plugin_cls)
