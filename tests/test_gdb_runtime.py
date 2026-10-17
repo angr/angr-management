@@ -109,26 +109,26 @@ class TestTerminalKeeper(unittest.TestCase):
             self.assertTrue(select.select([keeper.stdout], [], [], 5)[0], "Keeper did not acknowledge startup")
             self.assertEqual(os.read(keeper.stdout.fileno(), 1), b"R")
 
-            def write_output():
+            def write_output(descriptor: int):
                 data = b"x" * (256 * 1024)
                 deadline = time.monotonic() + 3
                 while data:
                     remaining = deadline - time.monotonic()
                     self.assertGreater(remaining, 0, "Keeper stopped draining target output")
-                    self.assertTrue(select.select([], [slave], [], remaining)[1], "PTY output remained blocked")
+                    self.assertTrue(select.select([], [descriptor], [], remaining)[1], "PTY output remained blocked")
                     with suppress(BlockingIOError):
-                        data = data[os.write(slave, data) :]
+                        data = data[os.write(descriptor, data) :]
 
-            write_output()  # Positive control before the hangup.
+            write_output(slave)  # Positive control before the hangup.
             os.close(slave)
             slave = None
             stat = Path(f"/proc/{keeper.pid}/stat")
-            before = sum(int(value) for value in stat.read_text().split()[13:15])
+            before = sum(int(value) for value in stat.read_text(encoding="ascii").split()[13:15])
             time.sleep(0.5)
-            after = sum(int(value) for value in stat.read_text().split()[13:15])
+            after = sum(int(value) for value in stat.read_text(encoding="ascii").split()[13:15])
             self.assertLess(after - before, os.sysconf("SC_CLK_TCK") // 5 + 1, "Idle keeper is spinning")
             slave = os.open(path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
-            write_output()
+            write_output(slave)
             os.close(slave)
             slave = None
             target.terminate()
@@ -652,6 +652,13 @@ class TestLiveGDBRuntime(unittest.TestCase):
         self.assertEqual(self.runtime.state, "exited")
 
     def test_terminal_input_pause_running_gates_and_clean_stop(self):
+        output_ready = threading.Event()
+
+        def received(event, payload):
+            if event == "output" and payload["channel"] == "@":
+                output_ready.set()
+
+        self.addCleanup(self.runtime.subscribe(received))
         snapshot = self.runtime.launch(str(FIXTURES / "2048.pie"), stop_at_entry=False)
         self.assertIn(snapshot["state"], ("ready", "running"))
         deadline = time.monotonic() + 5
@@ -666,6 +673,8 @@ class TestLiveGDBRuntime(unittest.TestCase):
         self.runtime.send_input("qy")
         self.runtime.wait_for_stop()
         self.assertEqual(self.runtime.state, "exited")
+        # PTY output and GDB exit arrive on independent reader threads.
+        self.assertTrue(output_ready.wait(timeout=2), "Target output was not delivered")
         self.assertTrue(any(item["channel"] == "@" for item in self.runtime.snapshot()["output"]))
 
     def test_attach_detach_leaves_the_target_alive(self):

@@ -32,7 +32,7 @@ print(pid, flush=True)
 
 
 def children() -> list[int]:
-    return [int(pid) for pid in Path(f"/proc/self/task/{os.getpid()}/children").read_text().split()]
+    return [int(pid) for pid in Path(f"/proc/self/task/{os.getpid()}/children").read_text(encoding="ascii").split()]
 
 
 def main() -> None:

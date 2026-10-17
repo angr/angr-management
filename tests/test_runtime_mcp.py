@@ -13,13 +13,17 @@ from angr.analyses.decompiler.structured_codegen.c import (
     CVariable,
     CVariableField,
 )
-from angr.sim_type import SimTypeInt, SimTypePointer, TypeRef, parse_types
+from angr.sim_type import SimStruct, SimTypeInt, SimTypePointer, TypeRef, parse_types
 from angr.sim_variable import SimStackVariable
 from common import test_location
 from PySide6.QtCore import QThread
+from PySide6.QtWidgets import QMenu
 from test_mcp_server import MCPTestCase, ToolError
 
+from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.logic.threads import gui_thread_schedule
+from angrmanagement.ui.documents.qcodedocument import QCodeDocument
+from angrmanagement.ui.views.code_view import CodeView
 
 
 @unittest.skipUnless(
@@ -58,6 +62,7 @@ class TestRuntimeMCP(MCPTestCase):
             sp, pointer_storage, pointee = await integer("$sp"), await integer("&score"), await integer("score")
             self.assertNotEqual(pointer_storage, pointee)
             project = self.main.workspace.main_instance.project.am_obj
+            assert project is not None
             cache = project.kb.decompilations[(int(address, 0), "pseudocode")]
             codegen = cache.codegen
             delta = cache.clinic._spt.offset_before(pc, project.arch.sp_offset)
@@ -71,9 +76,11 @@ class TestRuntimeMCP(MCPTestCase):
                 return SimStackVariable(offset, size, name=name)
 
             score_type = parse_types("struct Score { unsigned int value; };")["struct Score"].with_arch(project.arch)
+            assert isinstance(score_type, SimStruct)
             bits_type = parse_types("struct Bits { unsigned int low:3; unsigned int high:5; };")[
                 "struct Bits"
             ].with_arch(project.arch)
+            assert isinstance(bits_type, SimStruct)
 
             def install_selection(kind):
                 # Supply test types over DWARF-located storage; render/select through the real GUI and MCP cache.
@@ -109,6 +116,9 @@ class TestRuntimeMCP(MCPTestCase):
                     codegen.map_ast_to_pos,
                 ) = codegen.render_text(access)
                 code_view = self.main.workspace.view_manager.first_view_in_category("pseudocode")
+                assert isinstance(code_view, CodeView)
+                assert code_view.textedit is not None
+                assert isinstance(code_view.codegen, ObjectContainer)
                 code_view.codegen.am_obj = codegen
                 code_view.codegen.am_event(already_regenerated=True)
                 positions = (
@@ -122,6 +132,7 @@ class TestRuntimeMCP(MCPTestCase):
                     actions = menu.actions()
                     runtime_action = next(action for action in actions if action.text() == "Runtime")
                     runtime_menu = runtime_action.menu()
+                    assert isinstance(runtime_menu, QMenu)
                     dialog = MagicMock()
                     with patch.object(self.main.workspace, "show_runtime_view", return_value=dialog):
                         runtime_menu.actions()[1].trigger()
@@ -135,7 +146,11 @@ class TestRuntimeMCP(MCPTestCase):
                         dialog.resolve_binding.assert_called_once()
                     menu.deleteLater()
                 if kind == "array":
-                    self.assertEqual(len(code_view.textedit.document().find_related_text_chunks(access)), 2)
+                    document = code_view.textedit.document()
+                    assert isinstance(document, QCodeDocument)
+                    chunks = document.find_related_text_chunks(access)
+                    assert chunks is not None
+                    self.assertEqual(len(chunks), 2)
                 return positions[-1]
 
             original = (

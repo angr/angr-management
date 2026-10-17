@@ -199,6 +199,7 @@ class TestRuntimeBindings(unittest.TestCase):
 
     def test_rendered_indexed_pointer_field_preserves_named_type(self):
         struct = parse_types("struct Player { int padding; int life; };")["struct Player"].with_arch(self.arch)
+        assert isinstance(struct, SimStruct)
         for pointer_type in (SimTypePointer(struct), TypeRef("Players", SimTypePointer(struct))):
             with self.subTest(pointer_type=pointer_type):
                 pointer = CVariable(
@@ -227,6 +228,7 @@ class TestRuntimeBindings(unittest.TestCase):
         struct = parse_types("struct Bits { unsigned int low:3; unsigned int high:5; unsigned char full; };")[
             "struct Bits"
         ].with_arch(self.arch)
+        assert isinstance(struct, SimStruct)
         variable = CVariable(SimMemoryVariable(0x404040, 2, name="flags"), variable_type=struct, codegen=self.codegen)
         for name in ("low", "high", "full"):
             with self.subTest(field=name):
@@ -272,6 +274,7 @@ class TestRuntimeBindings(unittest.TestCase):
         struct = parse_types("struct Bits { unsigned int padding:3; unsigned int value:8; };")["struct Bits"].with_arch(
             self.arch
         )
+        assert isinstance(struct, SimStruct)
         variable = CVariable(SimMemoryVariable(0x404020, 2, name="flags"), variable_type=struct, codegen=self.codegen)
         access = CVariableField(
             variable, CStructField(struct, struct.offsets["value"], "value", codegen=self.codegen), codegen=self.codegen

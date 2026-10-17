@@ -5,7 +5,7 @@ import threading
 import time
 import unittest
 from types import SimpleNamespace
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
 from common import create_qapp
@@ -19,6 +19,9 @@ from angrmanagement.ui.dialogs.runtime_breakpoint import RuntimeBreakpointDialog
 from angrmanagement.ui.dialogs.runtime_connection import RuntimeConnectionDialog
 from angrmanagement.ui.dialogs.runtime_rule import RuntimeRuleDialog
 from angrmanagement.ui.views.runtime_view import RuntimeHistoryChart, RuntimeView
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class _RuntimeDouble:
@@ -36,6 +39,7 @@ class _RuntimeDouble:
         self.enable_breakpoint = MagicMock()
         self.remove_breakpoint = MagicMock()
         self.static_to_runtime = MagicMock()
+        self.step_instruction: Callable[[], None] = MagicMock()
 
     def subscribe(self, callback):
         self.callbacks.append(callback)
@@ -301,7 +305,9 @@ class TestRuntimeView(unittest.TestCase):
                     while "after" not in self.view.target_label.text() and time.monotonic() < deadline:
                         QTest.qWait(10)
                     self.assertIn("after", self.view.target_label.text())
-                    self.assertEqual(self.view.registers_table.item(0, 1).text(), "0x1234")
+                    register_item = self.view.registers_table.item(0, 1)
+                    assert register_item is not None
+                    self.assertEqual(register_item.text(), "0x1234")
                     backend_refresh.assert_not_called()
                     self.assertFalse(self.view.step_button.isEnabled())
                 else:
@@ -312,9 +318,13 @@ class TestRuntimeView(unittest.TestCase):
                 release.set()
             self._drain()
             self.assertEqual(self.view.state_label.text(), "STOPPED")
-            self.assertEqual(self.view.registers_table.item(0, 1).text(), "0x1238")
-            self.assertEqual(self.view.frames_table.item(0, 1).text(), "after")
-            self.assertEqual(self.view.frames_table.item(0, 2).text(), "0x1238")
+            register_item = self.view.registers_table.item(0, 1)
+            function_item = self.view.frames_table.item(0, 1)
+            address_item = self.view.frames_table.item(0, 2)
+            assert register_item is not None and function_item is not None and address_item is not None
+            self.assertEqual(register_item.text(), "0x1238")
+            self.assertEqual(function_item.text(), "after")
+            self.assertEqual(address_item.text(), "0x1238")
             self.assertEqual(self.runtime.snapshot()["registers"][0]["value"], "0x1238")
             self.assertTrue(self.view.step_button.isEnabled())
             QTest.qWait(100)

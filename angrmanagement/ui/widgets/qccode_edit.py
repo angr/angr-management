@@ -50,6 +50,7 @@ if TYPE_CHECKING:
     from angr.sim_type import SimTypeFunction
     from PySide6.QtGui import QTextDocument
 
+    from angrmanagement.data.object_container import ObjectContainer
     from angrmanagement.ui.views.code_view import CodeView
 
 
@@ -183,7 +184,7 @@ class QCCodeEdit(api.CodeEdit):
             mnu.addActions(self.variable_actions)
         runtime_node = (
             selection_at(self._code_view.codegen, self.textCursor().position())
-            if self._code_view is not None and not self._code_view.codegen.am_none
+            if self._code_view is not None and not cast("ObjectContainer", self._code_view.codegen).am_none
             else None
         )
         if isinstance(runtime_node, VariableNode | IndexedVariableNode | VariableFieldNode):
