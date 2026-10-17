@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from angrmanagement.present.code import CodePresenter, is_valid_node_name, rename_default, rename_node_directly
+from angrmanagement.present.code import is_valid_node_name, rename_default
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.functions import Function
@@ -169,17 +169,6 @@ class RenameNode(QDialog):
             if self._code_view.codegen.cfunc is None:
                 self.close()
                 return
-            presenter = getattr(self._code_view, "presenter", None)
-            if isinstance(presenter, CodePresenter):
-                presenter.apply_rename(self._node, node_name, self._func)
-            else:
-                rename_node_directly(
-                    self._code_view.workspace,
-                    self._code_view.instance,
-                    self._code_view.codegen,
-                    self._node,
-                    node_name,
-                    self._func,
-                )
+            self._code_view.presenter.apply_rename(self._node, node_name, self._func)
             self._code_view.codegen.am_event()
             self.close()

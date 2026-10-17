@@ -70,7 +70,7 @@ BOLD_WEIGHT = 600
 
 
 def node_kind(obj: Any) -> str:
-    """The kind of the text of a node of the structured code (the Qt highlighter's ``_format_node``)."""
+    """The kind of the text of a node of the structured code: the key of the format the highlighters draw it in."""
     if isinstance(obj, SimType):
         return "type"
     if isinstance(obj, FunctionCallNode):

@@ -11,7 +11,6 @@ from angrmanagement.present.code_highlight import (
     GO_HIGHLIGHTING_RULES,
     RUST_HIGHLIGHTING_RULES,
     highlight_runs,
-    node_kind,
 )
 
 if TYPE_CHECKING:
@@ -76,13 +75,6 @@ def reset_formats() -> None:
         Conf.pseudocode_global_variable_weight,
         Conf.pseudocode_global_variable_style,
     )
-
-
-def _format_node(obj):
-    """
-    Return the format for the given node.
-    """
-    return FORMATS[node_kind(obj)]
 
 
 reset_formats()

@@ -25,8 +25,6 @@ from angrmanagement.present.code import (
     CodePresenter,
     register_code_commands,
 )
-from angrmanagement.present.code import floor_comment_addr as _floor_comment_addr
-from angrmanagement.present.code import snap_comment_addr as _snap_comment_addr
 from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.ui.documents import QCodeDocument
 from angrmanagement.ui.toolbars import NavToolbar
@@ -49,8 +47,6 @@ if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
 
 log = logging.getLogger(__name__)
-
-__all__ = ["CodeView", "_floor_comment_addr", "_snap_comment_addr"]
 
 
 def _forward(name: str, doc: str | None = None):
