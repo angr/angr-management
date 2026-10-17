@@ -3,15 +3,17 @@ from __future__ import annotations
 import os
 import platform
 import queue
+import select
 import shutil
 import subprocess
 import sys
 import threading
 import time
 import unittest
+from contextlib import suppress
 from pathlib import Path
 
-from angrmanagement.logic.debugger.gdb import GDBRuntime, RuntimeErrorBase
+from angrmanagement.logic.debugger.gdb import GDBRuntime, RuntimeErrorBase, _terminal_keeper
 from angrmanagement.logic.debugger.gdb.mappings import (
     LoadSegment,
     MemoryMapping,
@@ -75,6 +77,70 @@ class TestMIParsing(unittest.TestCase):
         self.assertEqual([item["number"] for item in record.results["bkpt"]], ["1", "2"])
         scripted = _record(r'1^done,bkpt={number="1",script={"silent","printf \"sample\\n\"","continue"}}')
         self.assertEqual(scripted.results["bkpt"]["script"], ["silent", 'printf "sample\\n"', "continue"])
+
+
+@unittest.skipUnless(hasattr(os, "pidfd_open"), "Terminal keeper requires Linux pidfds")
+class TestTerminalKeeper(unittest.TestCase):
+    """Exercise PTY hangup/reopen independently of any particular inferior."""
+
+    def test_slave_reopen_resumes_output_and_target_exit_wakes_idle_keeper(self):
+        master, slave = os.openpty()
+        pidfd = None
+        target = keeper = None
+        try:
+            path = os.ttyname(slave)
+            os.set_blocking(master, False)
+            os.set_blocking(slave, False)
+            target = subprocess.Popen(  # pylint:disable=consider-using-with
+                [sys.executable, "-P", "-c", "import sys; sys.stdin.buffer.read()"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            pidfd = os.pidfd_open(target.pid)
+            keeper = subprocess.Popen(  # pylint:disable=consider-using-with
+                [sys.executable, "-P", _terminal_keeper.__file__, str(master), str(pidfd)],
+                pass_fds=(master, pidfd),
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            assert keeper.stdout is not None
+            self.assertTrue(select.select([keeper.stdout], [], [], 5)[0], "Keeper did not acknowledge startup")
+            self.assertEqual(os.read(keeper.stdout.fileno(), 1), b"R")
+
+            def write_output():
+                data = b"x" * (256 * 1024)
+                deadline = time.monotonic() + 3
+                while data:
+                    remaining = deadline - time.monotonic()
+                    self.assertGreater(remaining, 0, "Keeper stopped draining target output")
+                    self.assertTrue(select.select([], [slave], [], remaining)[1], "PTY output remained blocked")
+                    with suppress(BlockingIOError):
+                        data = data[os.write(slave, data) :]
+
+            write_output()  # Positive control before the hangup.
+            os.close(slave)
+            slave = None
+            stat = Path(f"/proc/{keeper.pid}/stat")
+            before = sum(int(value) for value in stat.read_text().split()[13:15])
+            time.sleep(0.5)
+            after = sum(int(value) for value in stat.read_text().split()[13:15])
+            self.assertLess(after - before, os.sysconf("SC_CLK_TCK") // 5 + 1, "Idle keeper is spinning")
+            slave = os.open(path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+            write_output()
+            os.close(slave)
+            slave = None
+            target.terminate()
+            target.wait(timeout=5)
+            self.assertEqual(keeper.wait(timeout=2), 0)
+        finally:
+            for process in (target, keeper):
+                if process is not None:
+                    _terminate(process)
+            for descriptor in (master, slave, pidfd):
+                if descriptor is not None:
+                    os.close(descriptor)
 
 
 class TestRuntimeMappings(unittest.TestCase):
@@ -318,6 +384,78 @@ class TestLiveGDBRuntime(unittest.TestCase):
         self.assertIn('AM_RUNTIME_TEST = a b"c', self.runtime.execute_console("show environment AM_RUNTIME_TEST"))
         self.assertIn(str(FIXTURES), self.runtime.execute_console("pwd"))
 
+    def test_launch_argument_bytes_and_rejection_before_session_mutation(self):
+        arguments = ["\t", "\x01", "\a", "\x1b", "\x7f", r"\t", 'a"b', "a b", "é", "", "'quoted'"]
+        self.runtime.launch(str(FIXTURES / "2048.pie"), arguments)
+        self.runtime.add_breakpoint("main", temporary=True)
+        self.runtime.continue_execution()
+        self.runtime.wait_for_stop()
+        self.assertEqual(int(self.runtime.evaluate("argc")), len(arguments) + 1)
+        for index, argument in enumerate(arguments, 1):
+            with self.subTest(argument=argument):
+                address = int(self.runtime.evaluate(f"(unsigned long)argv[{index}]"), 0)
+                expected = argument.encode("utf-8") + b"\0"
+                self.assertEqual(self.runtime.read_memory(address, len(expected)), expected)
+        self.runtime.stop()
+        original = self.runtime.snapshot()
+        for argument in ("\n", "\r", "\0", "\ud800"):
+            with self.subTest(argument=repr(argument)), self.assertRaisesRegex(RuntimeErrorBase, "argument"):
+                self.runtime.launch(str(FIXTURES / "2048.pie"), [argument])
+            self.assertEqual(self.runtime.snapshot()["generation"], original["generation"])
+            self.assertEqual(self.runtime.state, "exited")
+
+    def test_watchpoint_continuation_conflicts_fail_closed(self):
+        _, stopping = self.launch_slide()
+        self.runtime.remove_breakpoint(stopping["number"])
+        score = int(self.runtime.evaluate("(unsigned long)score"), 0)
+        expression = f"*(unsigned int*)0x{score:x}"
+        alias = f"*(unsigned int *)(0x{score:x})"
+        rule = self.runtime.add_rule("Score", expression)
+        for location, kind in (
+            (alias, "write"),
+            (f"*(unsigned char*)0x{score + 1:x}", "write"),
+            ("*array", "write"),
+            ("slideArray", "execute"),
+        ):
+            with self.subTest(location=location), self.assertRaisesRegex(RuntimeErrorBase, "auto-continue"):
+                self.runtime.add_breakpoint(location, kind=kind)
+        with self.assertRaisesRegex(RuntimeErrorBase, "auto-continue"):
+            self.runtime.add_rule("Alias", alias)
+        with self.assertRaisesRegex(RuntimeErrorBase, "auto-continue"):
+            self.runtime.add_rule("Execution", "*score", trigger="slideArray")
+        # One physical command list can run multiple rules for the exact same trigger.
+        second = self.runtime.add_rule("Second", expression)
+        self.assertEqual(rule["breakpoint"], second["breakpoint"])
+        self.runtime.update_rule(rule["id"], enabled=False)
+        self.runtime.update_rule(second["id"], enabled=False)
+        watch = self.runtime.add_breakpoint(alias, kind="write")
+        with self.assertRaisesRegex(RuntimeErrorBase, "auto-continue"):
+            self.runtime.update_rule(rule["id"], enabled=True)
+        self.runtime.enable_breakpoint(watch["number"], False)
+        self.runtime.update_rule(rule["id"], enabled=True)
+        with self.assertRaisesRegex(RuntimeErrorBase, "auto-continue"):
+            self.runtime.enable_breakpoint(watch["number"])
+        self.runtime.update_rule(second["id"], enabled=True)
+        self.runtime.continue_execution()
+        self.runtime.wait_for_stop()
+        rules = self.runtime.snapshot()["rules"]
+        self.assertTrue(rules[0]["samples"])
+        self.assertEqual([s["value"] for s in rules[0]["samples"]], [s["value"] for s in rules[1]["samples"]])
+        self.assertEqual(self.runtime.state, "exited")
+
+        _, stopping = self.launch_slide()
+        self.runtime.remove_breakpoint(stopping["number"])
+        score = int(self.runtime.evaluate("(unsigned long)score"), 0)
+        expression = f"*(unsigned int*)0x{score:x}"
+        self.runtime.add_breakpoint(expression, kind="write")
+        with self.assertRaisesRegex(RuntimeErrorBase, "auto-continue"):
+            self.runtime.add_rule("Score alias", f"*(unsigned int *)(0x{score:x})")
+        with self.assertRaisesRegex(RuntimeErrorBase, "auto-continue"):
+            self.runtime.add_rule("Execution", "*score", trigger="slideArray")
+        self.runtime.continue_execution()
+        self.runtime.wait_for_stop()
+        self.assertEqual(self.runtime.snapshot()["stop_reason"], "watchpoint-trigger")
+
     def test_inspection_memory_registers_threads_frames_and_generation(self):
         snapshot, _ = self.launch_slide()
         score = int(self.runtime.evaluate("(unsigned long)score"), 0)
@@ -428,18 +566,18 @@ class TestLiveGDBRuntime(unittest.TestCase):
         self.runtime.wait_for_stop()
         self.assertIn("Cannot access memory", self.runtime.snapshot()["rules"][0]["error"])
 
-    def test_clamp_watchpoint_update_disable_remove_and_custom_hook(self):
+    def test_clamp_update_disable_remove_and_custom_hook(self):
         _, stopping_bp = self.launch_slide()
         score = int(self.runtime.evaluate("(unsigned long)score"), 0)
         expression = f"*(unsigned int*)0x{score:x}"
-        rule = self.runtime.add_rule("Freeze score", expression, "clamp", "2048", enabled=False)
+        rule = self.runtime.add_rule("Freeze score", expression, "clamp", "2048", trigger="2048.c:395", enabled=False)
         self.assertFalse(rule["enabled"])
+        self.runtime.remove_breakpoint(stopping_bp["number"])
         updated = self.runtime.update_rule(rule["id"], enabled=True, value="4096")
         self.assertIn("4096", updated["generated_script"])
-        self.runtime.remove_breakpoint(stopping_bp["number"])
         # A raw address has no lexical lifetime. Stop while score is still live,
         # then remove the clamp before this stack slot can be reused on return.
-        after = self.runtime.add_breakpoint("2048.c:395", condition="score == 4096")
+        after = self.runtime.add_breakpoint("2048.c:399", condition="score == 4096")
         self.runtime.continue_execution()
         self.runtime.wait_for_stop()
         self.assertEqual(self.runtime.evaluate(expression), "4096")
@@ -558,9 +696,24 @@ os.execv(sys.argv[1], [sys.argv[1]])
         self.assertEqual(snapshot["pid"], process.pid)
         self.assertEqual(snapshot["state"], "stopped")
         self.runtime.detach()
+        self.runtime.close()
         self.assertIsNone(process.poll())
         process.kill()
         process.wait(timeout=5)
+
+    @unittest.skipUnless(hasattr(os, "pidfd_open"), "Detached terminal ownership requires Linux pidfds")
+    def test_local_detach_survives_close_reconnect_and_application_exit(self):
+        helper = Path(__file__).with_name("gdb_detach_lifecycle.py")
+        for mode in ("close", "reconnect", "exit", "stop"):
+            with self.subTest(mode=mode):
+                result = subprocess.run(
+                    [sys.executable, "-P", str(helper), str(FIXTURES / "2048.pie"), mode],
+                    capture_output=True,
+                    text=True,
+                    timeout=40,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     @unittest.skipUnless(GDBSERVER, "gdbserver is needed for remote integration")
     def test_remote_control_without_guessing_host_relocation(self):

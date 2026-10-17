@@ -127,6 +127,7 @@ class RuntimeView(InstanceView):
         self._snapshot: dict[str, Any] = {}
         self._busy = False
         self._pending = 0
+        self._refresh_generation: int | None = None
         self._closed = False
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="runtime-ui")
         self._signals = _RuntimeSignals(self)
@@ -559,6 +560,7 @@ class RuntimeView(InstanceView):
         result, error, callback = completion
         self._pending -= 1
         self._busy = self._pending > 0
+        self._refresh_stopped()
         self.refresh()
         if error:
             self._show_error(error)
@@ -572,6 +574,8 @@ class RuntimeView(InstanceView):
 
     def _service_event(self, event: str, payload: dict) -> None:
         if not self._closed:
+            if event == "state" and payload.get("state") == "stopped":
+                payload = {**payload, "generation": self.runtime.snapshot().get("generation", 0)}
             self._signals.runtime_event.emit(event, payload)
 
     def _on_event(self, event: str, payload: dict) -> None:
@@ -581,8 +585,18 @@ class RuntimeView(InstanceView):
             self._show_error(str(payload.get("message", payload)))
         if not self._render_timer.isActive():
             self._render_timer.start()
-        if event == "state" and payload.get("state") == "stopped" and not self._busy:
-            self.submit("refresh")
+        if event == "state":
+            self._refresh_generation = payload.get("generation") if payload.get("state") == "stopped" else None
+            self._refresh_stopped()
+
+    def _refresh_stopped(self) -> None:
+        if self._busy or self._closed or self._refresh_generation is None:
+            return
+        generation = self._refresh_generation
+        self._refresh_generation = None
+        snapshot = self.runtime.snapshot()
+        if snapshot.get("state") == "stopped" and snapshot.get("generation", 0) == generation:
+            self._call(lambda: self.runtime.checked(self.runtime.refresh, generation), "refresh")
 
     def refresh(self) -> None:
         if self._closed:
@@ -1206,6 +1220,7 @@ class RuntimeView(InstanceView):
                 self._executor.shutdown(wait=True, cancel_futures=True)
             return
         self._closed = True
+        self._refresh_generation = None
         self._render_timer.stop()
         self._unsubscribe()
         self._executor.shutdown(wait=wait, cancel_futures=True)

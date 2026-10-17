@@ -4,11 +4,22 @@ import os
 import platform
 import shutil
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+from angr.analyses.decompiler.structured_codegen.c import (
+    CConstant,
+    CIndexedVariable,
+    CStructField,
+    CVariable,
+    CVariableField,
+)
+from angr.sim_type import SimTypeInt, SimTypePointer, TypeRef, parse_types
+from angr.sim_variable import SimStackVariable
 from common import test_location
 from PySide6.QtCore import QThread
-from test_mcp_server import MCPTestCase
+from test_mcp_server import MCPTestCase, ToolError
+
+from angrmanagement.logic.threads import gui_thread_schedule
 
 
 @unittest.skipUnless(
@@ -19,6 +30,160 @@ class TestRuntimeMCP(MCPTestCase):
     """Exercise runtime tools over HTTP with the real GUI session and GDB."""
 
     binary = os.path.join(test_location, "x86_64", "runtime_2048", "2048.pie")
+
+    def test_rendered_selections_use_live_storage_and_refuse_bitfields(self):
+        async def scenario(client):
+            async def call(tool_name, **arguments):
+                return (await client.call_tool(tool_name, arguments)).data
+
+            decomp = await call("decompile_function", name="slideArray", focus=True)
+            address = decomp["function_address"]
+            await call("runtime_launch", executable=self.binary, args=["test"])
+            await call("runtime_breakpoint", action="add", location="slideArray", temporary=True)
+            await call("runtime_control", action="continue")
+            await call("runtime_control", action="wait")
+            status = await call("runtime_status", refresh=True)
+            pc = int(
+                (await call("runtime_map_address", address=hex(status["frame"]["addr"]), direction="to_static"))[
+                    "address"
+                ],
+                0,
+            )
+
+            async def integer(expression):
+                return int(
+                    (await call("runtime_evaluate", expression=f"(unsigned long long)({expression})"))["value"], 0
+                )
+
+            sp, pointer_storage, pointee = await integer("$sp"), await integer("&score"), await integer("score")
+            self.assertNotEqual(pointer_storage, pointee)
+            project = self.main.workspace.main_instance.project.am_obj
+            cache = project.kb.decompilations[(int(address, 0), "pseudocode")]
+            codegen = cache.codegen
+            delta = cache.clinic._spt.offset_before(pc, project.arch.sp_offset)
+            self.assertIsInstance(delta, int)
+            mask = (1 << project.arch.bits) - 1
+
+            def stack_variable(storage, size, name):
+                offset = (storage - sp + delta) & mask
+                if offset & (1 << (project.arch.bits - 1)):
+                    offset -= mask + 1
+                return SimStackVariable(offset, size, name=name)
+
+            score_type = parse_types("struct Score { unsigned int value; };")["struct Score"].with_arch(project.arch)
+            bits_type = parse_types("struct Bits { unsigned int low:3; unsigned int high:5; };")[
+                "struct Bits"
+            ].with_arch(project.arch)
+
+            def install_selection(kind):
+                # Supply test types over DWARF-located storage; render/select through the real GUI and MCP cache.
+                if kind in ("plain", "alias", "array"):
+                    ty = SimTypePointer(SimTypeInt(signed=False) if kind == "array" else score_type)
+                    if kind == "alias":
+                        ty = TypeRef("ScorePointer", ty)
+                    variable = CVariable(
+                        stack_variable(pointer_storage, project.arch.bytes, "items"), variable_type=ty, codegen=codegen
+                    )
+                    index = CConstant(0, SimTypeInt(), codegen=codegen)
+                    access = CIndexedVariable(variable, index, tags={"ins_addr": pc}, codegen=codegen)
+                    if kind != "array":
+                        access = CVariableField(
+                            access,
+                            CStructField(score_type, 0, "value", codegen=codegen),
+                            tags={"ins_addr": pc},
+                            codegen=codegen,
+                        )
+                else:
+                    variable = CVariable(stack_variable(pointee, 1, "flags"), variable_type=bits_type, codegen=codegen)
+                    access = CVariableField(
+                        variable,
+                        CStructField(bits_type, bits_type.offsets[kind], kind, codegen=codegen),
+                        tags={"ins_addr": pc},
+                        codegen=codegen,
+                    )
+                (
+                    codegen.text,
+                    codegen.map_pos_to_node,
+                    codegen.map_pos_to_addr,
+                    codegen.map_addr_to_pos,
+                    codegen.map_ast_to_pos,
+                ) = codegen.render_text(access)
+                code_view = self.main.workspace.view_manager.first_view_in_category("pseudocode")
+                code_view.codegen.am_obj = codegen
+                code_view.codegen.am_event(already_regenerated=True)
+                positions = (
+                    [codegen.text.index(char) for char in "[0]"] if kind == "array" else [codegen.text.rindex(".") + 1]
+                )
+                for position in positions:
+                    cursor = code_view.textedit.textCursor()
+                    cursor.setPosition(position)
+                    code_view.textedit.setTextCursor(cursor)
+                    menu = code_view.textedit.get_context_menu()
+                    actions = menu.actions()
+                    runtime_action = next(action for action in actions if action.text() == "Runtime")
+                    runtime_menu = runtime_action.menu()
+                    dialog = MagicMock()
+                    with patch.object(self.main.workspace, "show_runtime_view", return_value=dialog):
+                        runtime_menu.actions()[1].trigger()
+                    if kind in ("low", "high"):
+                        dialog.resolve_binding.assert_not_called()
+                        dialog.open_binding.assert_called_once()
+                        self.assertEqual(dialog.open_binding.call_args.args, ("",))
+                        self.assertIn("Bitfields", dialog.open_binding.call_args.kwargs["note"])
+                    else:
+                        dialog.open_binding.assert_not_called()
+                        dialog.resolve_binding.assert_called_once()
+                    menu.deleteLater()
+                if kind == "array":
+                    self.assertEqual(len(code_view.textedit.document().find_related_text_chunks(access)), 2)
+                return positions[-1]
+
+            original = (
+                codegen.text,
+                codegen.map_pos_to_node,
+                codegen.map_pos_to_addr,
+                codegen.map_addr_to_pos,
+                codegen.map_ast_to_pos,
+            )
+            before = await call("runtime_memory", address=hex(pointee), size=4)
+            try:
+                for kind in ("plain", "alias", "array", "low", "high"):
+                    position = gui_thread_schedule(lambda k=kind: install_selection(k))
+                    rows = (await call("runtime_list_variables", function_address=address))["variables"]
+                    if kind in ("low", "high"):
+                        self.assertTrue(rows)
+                        self.assertFalse(any(row["available"] for row in rows))
+                        with self.assertRaisesRegex(ToolError, "Bitfields"):
+                            await call(
+                                "runtime_bind_variable",
+                                function_address=address,
+                                position=position,
+                                mode="clamp",
+                                value="255",
+                                preview=False,
+                            )
+                        self.assertFalse((await call("runtime_status"))["rules"])
+                    else:
+                        listed = next(row for row in rows if row["available"] and row["label"] == codegen.text)
+                        binding = await call(
+                            "runtime_bind_variable", function_address=address, position=listed["position"]
+                        )
+                        self.assertEqual(await integer(f"&({binding['expression']})"), pointee)
+                        self.assertEqual(await integer(binding["expression"]), await integer("*score"))
+                self.assertEqual(
+                    (await call("runtime_memory", address=hex(pointee), size=4))["data_hex"], before["data_hex"]
+                )
+            finally:
+                (
+                    codegen.text,
+                    codegen.map_pos_to_node,
+                    codegen.map_pos_to_addr,
+                    codegen.map_addr_to_pos,
+                    codegen.map_ast_to_pos,
+                ) = original
+                await call("runtime_control", action="stop")
+
+        self.run_client(scenario)
 
     def test_live_session_tools_share_gui_state(self):
         async def scenario(client):

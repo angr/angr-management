@@ -39,6 +39,18 @@ def _single_line(value: str, description: str) -> str:
     return value
 
 
+def _quote_argument(value: str) -> str:
+    if not isinstance(value, str) or any(char in value for char in "\r\n\x00"):
+        raise RuntimeErrorBase("Launch arguments must be strings without CR, LF, or NUL characters")
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise RuntimeErrorBase("Launch arguments must be valid UTF-8 text") from exc
+    # -exec-arguments retains C control escapes literally, unlike ordinary MI
+    # arguments. Quote only its delimiters and preserve the remaining bytes.
+    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
 def _command_word(word: str) -> str:
     # Explicit GDB aliases take precedence over command-name abbreviations.
     return {
@@ -407,6 +419,7 @@ class GDBRuntime:
         env: dict[str, str] | None = None,
         stop_at_entry: bool = True,
     ) -> dict:
+        arguments = " ".join(_quote_argument(arg) for arg in (args or []))
         with self._commands:
             self._start("launch", executable)
             try:
@@ -415,7 +428,7 @@ class GDBRuntime:
                 if cwd:
                     self._command(f"-environment-cd {quote(os.path.abspath(cwd))}")
                 if args:
-                    self._command("-exec-arguments " + " ".join(quote(arg) for arg in args))
+                    self._command("-exec-arguments " + arguments)
                 for key, value in (env or {}).items():
                     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key):
                         raise RuntimeErrorBase(f"Invalid environment variable name: {key}")
@@ -523,7 +536,20 @@ class GDBRuntime:
             if self.state == "running":
                 self.interrupt()
             self._require_stopped()
-            self._command("-target-detach")
+            keeper = None
+            if self._terminal is not None:
+                if self._pid is None:
+                    raise RuntimeErrorBase("Cannot preserve the target terminal without a local process ID")
+                keeper = self._terminal.prepare_detach(self._pid)
+            try:
+                self._command("-target-detach")
+            except BaseException:
+                if keeper is not None:
+                    InferiorTerminal.cancel_detach(keeper)
+                raise
+            if self._terminal is not None and keeper is not None:
+                self._terminal.finish_detach(keeper)
+                self._terminal = None
             self._set_state("ready")
             with self._lock:
                 self._pid = None
@@ -883,7 +909,10 @@ class GDBRuntime:
             bp_info["kind"] = kind
             bp_info.setdefault("enabled", "y")
             try:
-                self._assert_no_conflicts(bp_info, managed=_managed)
+                # Managed rules are checked after aliases have been grouped and
+                # their enabled state is known, while the inferior is stopped.
+                if not _managed:
+                    self._assert_no_conflicts(bp_info, managed=False)
             except RuntimeErrorBase:
                 self._command(f"-break-delete {bp_info['number']}")
                 raise
@@ -976,7 +1005,23 @@ class GDBRuntime:
         for existing in entries:
             if existing["number"] == candidate["number"] or existing.get("enabled", "y") != "y":
                 continue
-            if (existing["number"] in owned) == managed:
+            existing_managed = existing["number"] in owned
+            if not managed and not existing_managed:
+                continue
+            if any(
+                bp.get("kind") in ("write", "read", "access") or "watchpoint" in bp.get("type", "")
+                for bp in (candidate, existing)
+            ):
+                # Even disjoint data ranges can fire at one instruction, alongside
+                # an execution breakpoint. GDB can continue from the first list
+                # without running the others; textual/address aliases cannot prove safety.
+                raise RuntimeErrorBase(
+                    f"Breakpoint {existing['number']} cannot share an enabled session with this runtime rule: "
+                    "data watchpoints can fire together with other stops, and auto-continue could hide a stop "
+                    "or skip a rule. Disable the other breakpoint/rule, or use one identical trigger expression "
+                    "for all data rules."
+                )
+            if existing_managed == managed:
                 continue
             if self._same_site(candidate, existing):
                 raise RuntimeErrorBase(

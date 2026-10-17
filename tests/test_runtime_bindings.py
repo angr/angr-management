@@ -13,7 +13,7 @@ from angr.analyses.decompiler.structured_codegen.c import (
     CVariable,
     CVariableField,
 )
-from angr.sim_type import SimStruct, SimTypeFixedSizeArray, SimTypeInt, SimTypePointer
+from angr.sim_type import SimStruct, SimTypeFixedSizeArray, SimTypeInt, SimTypePointer, TypeRef, parse_types
 from angr.sim_variable import SimMemoryVariable, SimRegisterVariable, SimStackVariable
 from archinfo import ArchAMD64
 
@@ -22,6 +22,7 @@ from angrmanagement.logic.debugger.variable_binding import (
     VariableBindingError,
     describe_variable,
     instruction_at,
+    list_variable_bindings,
     scalar_type,
     selection_at,
     verify_module_identity,
@@ -62,6 +63,9 @@ class TestRuntimeBindings(unittest.TestCase):
             next_node_idx=count().__next__,
             display_vvar_ids=False,
             const_formats={},
+            stmt_comments={},
+            expr_comments={},
+            stl_accessor_calls=False,
         )
         self.function = SimpleNamespace(addr=0x401000)
 
@@ -71,6 +75,13 @@ class TestRuntimeBindings(unittest.TestCase):
 
     def variable(self, variable):
         return CVariable(variable, variable_type=SimTypeInt(), codegen=self.codegen)
+
+    def render(self, node):
+        mapping = PositionMapping()
+        self.codegen.text = node.c_repr(pos_to_node=mapping)
+        self.codegen.map_pos_to_node = mapping
+        self.codegen.map_pos_to_addr = None
+        return self.codegen.text
 
     def test_module_relative_global_and_member(self):
         node = self.variable(SimMemoryVariable(0x404020, 4, name="score"))
@@ -185,6 +196,90 @@ class TestRuntimeBindings(unittest.TestCase):
         verify_module_identity(runtime, "/game", b"\x01\x02")
         with self.assertRaisesRegex(VariableBindingError, "build ID"):
             verify_module_identity(runtime, "/game", b"\x03\x04")
+
+    def test_rendered_indexed_pointer_field_preserves_named_type(self):
+        struct = parse_types("struct Player { int padding; int life; };")["struct Player"].with_arch(self.arch)
+        for pointer_type in (SimTypePointer(struct), TypeRef("Players", SimTypePointer(struct))):
+            with self.subTest(pointer_type=pointer_type):
+                pointer = CVariable(
+                    SimMemoryVariable(0x404040, 8, name="players"),
+                    variable_type=pointer_type,
+                    codegen=self.codegen,
+                )
+                index = CIndexedVariable(
+                    pointer, CConstant(1, SimTypeInt(), codegen=self.codegen), codegen=self.codegen
+                )
+                access = CVariableField(
+                    index, CStructField(struct, 4, "life", codegen=self.codegen), codegen=self.codegen
+                )
+                text = self.render(access)
+                selected = selection_at(self.codegen, text.index("life"))
+                self.assertIs(selected, access)
+                binding = describe_variable(self.project, self.function, self.codegen, selected)
+                self.assertEqual((binding.offset, binding.size, binding.dereference), (12, 4, True))
+                rows = list_variable_bindings(self.project, self.function, self.codegen)
+                row = next(row for row in rows if row["label"] == "players[1].life")
+                self.assertTrue(row["available"])
+                self.assertTrue(row["dereference"])
+                self.assertIs(selection_at(self.codegen, row["position"]), access)
+
+    def test_rendered_bitfields_require_manual_expression(self):
+        struct = parse_types("struct Bits { unsigned int low:3; unsigned int high:5; unsigned char full; };")[
+            "struct Bits"
+        ].with_arch(self.arch)
+        variable = CVariable(SimMemoryVariable(0x404040, 2, name="flags"), variable_type=struct, codegen=self.codegen)
+        for name in ("low", "high", "full"):
+            with self.subTest(field=name):
+                access = CVariableField(
+                    variable,
+                    CStructField(struct, struct.offsets[name], name, codegen=self.codegen),
+                    codegen=self.codegen,
+                )
+                text = self.render(access)
+                selected = selection_at(self.codegen, text.index(name))
+                self.assertIs(selected, access)
+                rows = list_variable_bindings(self.project, self.function, self.codegen)
+                row = next(row for row in rows if row["position"] == text.index("."))
+                if name == "full":
+                    binding = describe_variable(self.project, self.function, self.codegen, selected)
+                    self.assertEqual((binding.offset, binding.size), (1, 1))
+                    self.assertTrue(row["available"])
+                else:
+                    with self.assertRaisesRegex(VariableBindingError, "[Bb]itfield.*GDB expression"):
+                        describe_variable(self.project, self.function, self.codegen, selected)
+                    self.assertFalse(row["available"])
+                    self.assertIn("GDB expression", row["reason"])
+
+    def test_rendered_array_element_is_selectable_and_listed(self):
+        array = CVariable(
+            SimMemoryVariable(0x404020, 16, name="items"),
+            variable_type=SimTypeFixedSizeArray(SimTypeInt(), 4),
+            codegen=self.codegen,
+        )
+        access = CIndexedVariable(array, CConstant(1, SimTypeInt(), codegen=self.codegen), codegen=self.codegen)
+        text = self.render(access)
+        for position in (text.index("["), text.index("1"), text.index("]")):
+            self.assertIs(selection_at(self.codegen, position), access)
+        rows = list_variable_bindings(self.project, self.function, self.codegen)
+        elements = [row for row in rows if row["label"] == "items[1]"]
+        self.assertTrue(elements)
+        for row in elements:
+            self.assertTrue(row["available"])
+            self.assertEqual((row["offset"], row["size"]), (4, 4))
+            self.assertIs(selection_at(self.codegen, row["position"]), access)
+
+    def test_byte_width_bitfield_is_not_a_byte_lvalue(self):
+        struct = parse_types("struct Bits { unsigned int padding:3; unsigned int value:8; };")["struct Bits"].with_arch(
+            self.arch
+        )
+        variable = CVariable(SimMemoryVariable(0x404020, 2, name="flags"), variable_type=struct, codegen=self.codegen)
+        access = CVariableField(
+            variable, CStructField(struct, struct.offsets["value"], "value", codegen=self.codegen), codegen=self.codegen
+        )
+        text = self.render(access)
+        selected = selection_at(self.codegen, text.index("value"))
+        with self.assertRaisesRegex(VariableBindingError, "Bitfields"):
+            describe_variable(self.project, self.function, self.codegen, selected)
 
 
 if __name__ == "__main__":

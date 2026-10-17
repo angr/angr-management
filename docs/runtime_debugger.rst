@@ -13,6 +13,8 @@ Install GDB separately and select its executable in the connection dialog.
 **Attach** connects to a local PID; **Remote** connects to a gdbserver endpoint.
 Attaching requires the host's usual debugger permissions. Local launch requires
 POSIX pseudo-terminal (PTY) support.
+Arguments are passed literally; carriage returns, newlines, NUL characters and
+strings that cannot be encoded as UTF-8 are rejected before starting a session.
 
 A launch stops at the first instruction by default, including for stripped
 executables. Set an execution breakpoint at ``main`` or another function and
@@ -24,6 +26,11 @@ process; **Stop** terminates it. Source stepping is available in **Threads /
 stack** when debug information is present. Double-click a thread or frame to
 select it. Double-click a register to edit it. The memory inspector reads runtime
 addresses or GDB address expressions and can write bytes to the live process.
+
+Detaching a locally launched program requires Linux pidfd support. Its terminal
+stays open after the debugger closes, so detaching does not terminate the program;
+subsequent output is discarded. Closing a launched session without detaching
+terminates its target. Closing an attached or remote session detaches instead.
 
 Inspection requires a stopped target. While it runs, the panel retains the last
 stopped values and updates hook samples and output. Program input is available
@@ -39,6 +46,9 @@ enter one manually, such as ``player.life``, ``*(unsigned int *)0x12340000``, or
 ``$rax``. Debug-symbol names work when GDB knows them; decompiler renames do not
 automatically create debugger symbols.
 
+For a constant array element such as ``items[2]``, right-click the index or
+either bracket to bind the element. Selecting ``items`` selects the base variable.
+
 Global storage uses the current module mapping. Scalar fields and constant
 array indices retain their offsets. Recovered stack locations use the stack
 map at the selected instruction and an execution breakpoint there; the address
@@ -46,7 +56,7 @@ is recomputed on each invocation. These hooks run before their instruction: a
 clamp writes at that point, and a later instruction can overwrite it. Choose a
 trigger where the value is consumed when changing a local's behavior.
 Recovered register names do not prove where an optimized variable is live.
-Register variables, optimized temporaries, ambiguous
+Bitfields, register variables, optimized temporaries, ambiguous
 stack locations and unsupported pointer expressions require a manual binding.
 
 **Monitor** records values and continues execution. **Clamp** writes the chosen
@@ -77,8 +87,14 @@ can change the process and debugger. For example, an execution trigger at
 Rules at the same execution address share a breakpoint: all enabled actions run
 before one automatic continue. Omit ``continue`` from custom commands to let
 them compose with other rules. An explicit resume command is accepted only for
-a rule running alone. A managed stopping breakpoint cannot share an enabled
-hook's location; disable one before installing the other.
+a rule running alone. A stopping execution breakpoint cannot share an enabled
+execution hook's address; disable one before installing the other.
+
+Rules with the same watch expression share one watchpoint. An automatic
+watchpoint group cannot coexist with separate enabled breakpoints or watchpoints.
+Stopping data watchpoints also cannot coexist with automatic execution hooks:
+one instruction can trigger both, and an automatic continue would hide the
+requested stop. Disable conflicting entries or use a shared execution trigger.
 
 Use the connection dialog or MCP lifecycle tools to launch, attach, reconnect
 or change the executable. The console rejects direct lifecycle commands so

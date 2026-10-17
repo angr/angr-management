@@ -190,7 +190,8 @@ class TestRuntimeView(unittest.TestCase):
         self.view.show()
 
     def tearDown(self):
-        self._drain()
+        if not self.view._closed:
+            self._drain()
         self.view.close()
         self.assertEqual(self.runtime.callbacks, [])
 
@@ -255,6 +256,120 @@ class TestRuntimeView(unittest.TestCase):
         second.set()
         self._drain()
         self.assertTrue(self.view.continue_button.isEnabled())
+
+    def _step_with_stopped_notification(self, before_completion):
+        self._stop()
+        self.runtime.data.update(
+            generation=4,
+            frame={"addr": 0x1234, "func": "before"},
+            frames=[{"level": 0, "addr": 0x1234, "func": "before"}],
+            registers=[{"name": "rip", "value": "0x1234"}],
+        )
+        self.view.refresh()
+        release, notified = threading.Event(), threading.Event()
+
+        def stopped():
+            self.runtime.data.update(state="stopped", frame={"addr": 0x1238, "func": "after"})
+            for callback in self.runtime.callbacks:
+                callback("state", {"state": "stopped"})
+                if before_completion:
+                    callback("state", {"state": "stopped"})
+            notified.set()
+
+        def step():
+            self.runtime.data["state"] = "running"
+            if before_completion:
+                stopped()
+                release.wait(3)
+
+        def refresh():
+            self.runtime.data.update(
+                frames=[{"level": 0, "addr": 0x1238, "func": "after"}],
+                registers=[{"name": "rip", "value": "0x1238"}],
+            )
+            for callback in self.runtime.callbacks:
+                callback("changed", {"kind": "library-loaded"})
+            return self.runtime.snapshot()
+
+        self.runtime.step_instruction = step
+        with patch.object(self.runtime, "refresh", side_effect=refresh) as backend_refresh:
+            try:
+                QTest.mouseClick(self.view.step_button, Qt.MouseButton.LeftButton)
+                if before_completion:
+                    self.assertTrue(notified.wait(1))
+                    deadline = time.monotonic() + 1
+                    while "after" not in self.view.target_label.text() and time.monotonic() < deadline:
+                        QTest.qWait(10)
+                    self.assertIn("after", self.view.target_label.text())
+                    self.assertEqual(self.view.registers_table.item(0, 1).text(), "0x1234")
+                    backend_refresh.assert_not_called()
+                    self.assertFalse(self.view.step_button.isEnabled())
+                else:
+                    self._drain()
+                    self.assertEqual(self.view.state_label.text(), "RUNNING")
+                    stopped()
+            finally:
+                release.set()
+            self._drain()
+            self.assertEqual(self.view.state_label.text(), "STOPPED")
+            self.assertEqual(self.view.registers_table.item(0, 1).text(), "0x1238")
+            self.assertEqual(self.view.frames_table.item(0, 1).text(), "after")
+            self.assertEqual(self.view.frames_table.item(0, 2).text(), "0x1238")
+            self.assertEqual(self.runtime.snapshot()["registers"][0]["value"], "0x1238")
+            self.assertTrue(self.view.step_button.isEnabled())
+            QTest.qWait(100)
+            backend_refresh.assert_called_once()
+            self.assertEqual(self.view._pending, 0)
+
+    def test_stopped_event_before_step_completion_refreshes_inspectors(self):
+        self._step_with_stopped_notification(before_completion=True)
+
+    def test_stopped_event_after_step_completion_refreshes_inspectors(self):
+        self._step_with_stopped_notification(before_completion=False)
+
+    def test_deferred_refresh_is_discarded_after_session_or_state_change(self):
+        for replacement in ({"generation": 5}, {"state": "running"}, {"state": "disconnected"}):
+            with self.subTest(replacement=replacement):
+                self._stop()
+                self.runtime.data["generation"] = 4
+                release = threading.Event()
+                self.runtime.step_instruction = lambda release=release: release.wait(3)
+                with patch.object(self.runtime, "refresh") as backend_refresh:
+                    try:
+                        QTest.mouseClick(self.view.step_button, Qt.MouseButton.LeftButton)
+                        self.runtime.callbacks[0]("state", {"state": "stopped"})
+                        self.runtime.data.update(replacement)
+                    finally:
+                        release.set()
+                    self._drain()
+                    backend_refresh.assert_not_called()
+
+    def test_shutdown_discards_deferred_refresh(self):
+        self._stop()
+        release = threading.Event()
+        self.runtime.step_instruction = lambda: release.wait(3)
+        with patch.object(self.runtime, "refresh") as backend_refresh:
+            try:
+                QTest.mouseClick(self.view.step_button, Qt.MouseButton.LeftButton)
+                self.runtime.callbacks[0]("state", {"state": "stopped"})
+                self.view.shutdown()
+            finally:
+                release.set()
+                self.view.shutdown(wait=True)
+            QTest.qWait(100)
+            backend_refresh.assert_not_called()
+
+    def test_queued_stop_from_previous_session_does_not_refresh_new_target(self):
+        self._stop()
+        self.runtime.data["generation"] = 4
+        notifier = threading.Thread(target=lambda: self.runtime.callbacks[0]("state", {"state": "stopped"}))
+        with patch.object(self.runtime, "refresh") as backend_refresh:
+            notifier.start()
+            notifier.join()
+            self.runtime.data["generation"] = 5
+            QTest.qWait(100)
+            self._drain()
+            backend_refresh.assert_not_called()
 
     def test_live_memory_expression_resolves_and_formats_actual_bytes(self):
         self._stop()

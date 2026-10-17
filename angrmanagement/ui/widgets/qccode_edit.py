@@ -181,6 +181,12 @@ class QCCodeEdit(api.CodeEdit):
             # variable in selection
             self._selected_node = under_cursor
             mnu.addActions(self.variable_actions)
+        runtime_node = (
+            selection_at(self._code_view.codegen, self.textCursor().position())
+            if self._code_view is not None and not self._code_view.codegen.am_none
+            else None
+        )
+        if isinstance(runtime_node, VariableNode | IndexedVariableNode | VariableFieldNode):
             runtime_menu = mnu.addMenu("Runtime")
             for caption, mode in (("Monitor…", "monitor"), ("Clamp to value…", "clamp"), ("Set once…", "set")):
                 runtime_menu.addAction(caption, lambda _checked=False, m=mode: self._runtime_variable(m))

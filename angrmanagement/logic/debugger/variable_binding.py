@@ -7,6 +7,7 @@ from os.path import realpath
 from typing import TYPE_CHECKING
 
 from angr.analyses.decompiler.structured_codegen.c import (
+    CConstant,
     CIndexedVariable,
     CStructField,
     CVariable,
@@ -18,6 +19,7 @@ from angr.sim_type import (
     SimTypeDouble,
     SimTypeFixedSizeArray,
     SimTypeFloat,
+    SimTypeNumOffset,
     SimTypePointer,
     SimUnion,
 )
@@ -46,6 +48,10 @@ def verify_module_identity(runtime: GDBRuntime, path: str, build_id: str | bytes
 def scalar_type(ty, size: int) -> str:
     """Use GDB builtins, which also work when the inferior has no debug types."""
     ty = unpack_typeref(ty) if ty is not None else None
+    if isinstance(ty, SimTypeNumOffset):
+        raise VariableBindingError(
+            "Bitfields need an explicit GDB expression that preserves their bit offset and width."
+        )
     if isinstance(ty, SimStruct | SimUnion | SimTypeArray | SimTypeFixedSizeArray):
         raise VariableBindingError("Select a scalar field or array element of this aggregate.")
     if isinstance(ty, SimTypeDouble):
@@ -65,9 +71,14 @@ def scalar_type(ty, size: int) -> str:
 
 
 def selection_at(codegen, position: int):
-    """Recover the owning field access when the cursor is over a field's name."""
+    """Recover the owning access for a field name or a constant array index."""
     mapping = codegen.map_pos_to_node
     node = mapping.get_node(position)
+    if isinstance(node, CConstant):
+        element = mapping.get_element(position)
+        previous = mapping.get_node(element.start - 1)
+        if isinstance(previous, CIndexedVariable) and previous.index is node:
+            return previous
     if isinstance(node, CStructField):
         previous = mapping.get_element(position - 1)
         if previous is not None and isinstance(previous.obj, CVariableField) and previous.obj.field is node:
@@ -187,7 +198,7 @@ def describe_variable(project: Project, function, _codegen, node, instruction: i
             if not isinstance(index, int) or not isinstance(element_bits, int) or element_bits % 8:
                 raise VariableBindingError("Select an element with a constant index, or enter a GDB expression.")
             offset += index * (element_bits // 8)
-            if isinstance(getattr(current.variable, "type", None), SimTypePointer):
+            if isinstance(unpack_typeref(getattr(current.variable, "type", None)), SimTypePointer):
                 dereference = True
         current = current.variable
     if not isinstance(current, CVariable):
