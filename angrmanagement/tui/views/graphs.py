@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from angrmanagement.present.dependencies import DependencyPresenter
 from angrmanagement.present.proximity import ProximityPresenter
 from angrmanagement.tui.widgets.graph import BoxGraphWidget
 
@@ -98,4 +99,40 @@ class ProximityTuiView(GraphTuiView):
         self.presenter.function = func
 
 
-__all__ = ["GraphTuiView", "ProximityTuiView"]
+class DependencyTuiView(GraphTuiView):
+    """
+    The dependency tree of a sink, from the dependency analysis (operation-mango's): the job sets the sink and the
+    closures on the view and reloads it, as on the Qt view. Without operation-mango the job says so and the view
+    stays empty, as in Qt.
+    """
+
+    PRESENTER_CLASS = DependencyPresenter
+
+    presenter: DependencyPresenter
+
+    @property
+    def sink_atom(self):
+        return self.presenter.sink_atom
+
+    @sink_atom.setter
+    def sink_atom(self, atom) -> None:
+        self.presenter.sink_atom = atom
+
+    @property
+    def sink_ins_addr(self) -> int | None:
+        return self.presenter.sink_ins_addr
+
+    @sink_ins_addr.setter
+    def sink_ins_addr(self, addr: int | None) -> None:
+        self.presenter.sink_ins_addr = addr
+
+    @property
+    def closures(self):
+        return self.presenter.closures
+
+    @closures.setter
+    def closures(self, closures) -> None:
+        self.presenter.closures = closures
+
+
+__all__ = ["DependencyTuiView", "GraphTuiView", "ProximityTuiView"]
