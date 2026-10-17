@@ -8,6 +8,7 @@ from .console import ConsoleTuiView
 from .disassembly import DisassemblyTuiView
 from .hex import HexTuiView
 from .search import SearchTuiView
+from .symexec import SymexecTuiView
 from .tables import (
     BookmarksTuiView,
     BreakpointsTuiView,
@@ -20,6 +21,7 @@ from .tables import (
     RegistersTuiView,
     SignaturesTuiView,
     StackTuiView,
+    StatesTuiView,
     StringsTuiView,
     TracesTuiView,
 )
@@ -42,6 +44,8 @@ TUI_VIEW_CLASSES: dict[str, type[TuiView]] = {
     "breakpoints": BreakpointsTuiView,
     "registers": RegistersTuiView,
     "stack": StackTuiView,
+    "symexec": SymexecTuiView,
+    "states": StatesTuiView,
     "console": ConsoleTuiView,
     "log": LogTuiView,
     "jobs": JobsTuiView,

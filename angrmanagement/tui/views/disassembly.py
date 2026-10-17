@@ -43,6 +43,7 @@ from angrmanagement.present.disasm_style import (
 from angrmanagement.present.find import FindBarState
 from angrmanagement.present.marks import Mark
 from angrmanagement.present.menus import Menu, MenuEntry
+from angrmanagement.present.symexec import open_new_state
 from angrmanagement.present.theme import BACKGROUND_PREFIX
 from angrmanagement.tui.canvas import DOWN, CharCanvas
 from angrmanagement.tui.widgets.find_bar import FindBarWidget
@@ -928,6 +929,12 @@ class DisassemblyTuiView(TuiView):
 
     def display_function(self, func, send_event: bool = True) -> None:
         self.presenter.display_function(func, send_event=send_event)
+
+    def popup_newstate_dialog(self) -> None:
+        """Execute symbolically: a new state at the selected instruction, and a simulation manager of it."""
+        addr = self._instruction_address_in_selection()
+        if addr is not None:
+            open_new_state(self.workspace, self.instance, addr, create_simgr=True)
 
     def display_disasm_graph(self, prefer: bool = True) -> None:
         self.presenter.display_disasm_graph(prefer)

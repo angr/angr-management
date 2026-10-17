@@ -20,6 +20,7 @@ from angrmanagement.present.registers import RegistersPresenter
 from angrmanagement.present.signatures import SignaturesPresenter
 from angrmanagement.present.stack import StackPresenter
 from angrmanagement.present.strings import StringsPresenter
+from angrmanagement.present.symexec import StatesPresenter
 from angrmanagement.present.traces import TracesPresenter
 from angrmanagement.tui.widgets.table import FilterableTable
 
@@ -374,3 +375,11 @@ class MCPHistoryTuiView(TableTuiView):
         if event.button.id == "clear":
             event.stop()
             self.presenter.clear()
+
+
+class StatesTuiView(TableTuiView):
+    """The instance's symbolic states; the context menu makes, duplicates, deletes and simulates them."""
+
+    PRESENTER_CLASS = StatesPresenter
+
+    presenter: StatesPresenter

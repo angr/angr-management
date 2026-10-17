@@ -31,10 +31,12 @@ from angrmanagement.present.keymap import KITTY_KEYBOARD_TIER, Binding, Chord, K
 from angrmanagement.present.menus import Menu as PresentMenu
 from angrmanagement.present.menus import MenuEntry, walk_entries
 from angrmanagement.present.shell import DOCUMENTATION_URL, FileMenu, build_main_menus
+from angrmanagement.present.symexec import open_new_state
 from angrmanagement.present.theme import CUSTOM_SCHEME_NAME, Theme
 from angrmanagement.present.xrefs import XRefsModel
 from angrmanagement.tui.caps import TerminalCaps, caps_from_environment
 from angrmanagement.tui.executor import TextualExecutor
+from angrmanagement.tui.new_state import NewStateScreen
 from angrmanagement.tui.palette import AmCommandProvider, GotoProvider
 from angrmanagement.tui.services import TuiServices
 from angrmanagement.tui.theme import all_textual_themes, theme_id
@@ -55,6 +57,7 @@ if TYPE_CHECKING:
 
     from angrmanagement.data.jobs.job import Job
     from angrmanagement.logic.commands import Command
+    from angrmanagement.present.symexec import StateSpec
 
 _l = logging.getLogger(__name__)
 
@@ -700,6 +703,13 @@ class AmApp(App):
             message = f"Copied to clipboard: {url}"
         self.services.set_clipboard_text(text)
         self.show_status(message)
+
+    def new_state_editor(self, spec: StateSpec, then: Callable[[StateSpec | None], Any]) -> None:
+        """The new state dialog: a modal screen over ``spec``; ``then`` gets it back, or None if cancelled."""
+        self.push_screen(NewStateScreen(self.workspace.main_instance, spec), then)
+
+    def open_newstate_dialog(self) -> None:
+        open_new_state(self.workspace, self.workspace.main_instance, create_simgr=True)
 
     def open_load_plugins_dialog(self) -> None:
         self.services.message("info", "Plugins", "Managing plugins is not in the terminal yet.")
