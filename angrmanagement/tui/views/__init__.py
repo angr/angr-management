@@ -23,6 +23,7 @@ from .tables import (
     StringsTuiView,
     TracesTuiView,
 )
+from .types import TypesTuiView
 
 #: The view class of each category the terminal frontend has.
 TUI_VIEW_CLASSES: dict[str, type[TuiView]] = {
@@ -33,6 +34,7 @@ TUI_VIEW_CLASSES: dict[str, type[TuiView]] = {
     "strings": StringsTuiView,
     "search": SearchTuiView,
     "patches": PatchesTuiView,
+    "types": TypesTuiView,
     "comments": CommentsTuiView,
     "bookmarks": BookmarksTuiView,
     "signatures": SignaturesTuiView,
