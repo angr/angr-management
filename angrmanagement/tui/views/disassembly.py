@@ -285,10 +285,10 @@ class FindBarWidget(Horizontal):
             event.stop()
             self.state.next_mode()
 
-    def view_presenter(self) -> DisasmPresenter:
-        view = self.parent
-        assert isinstance(view, DisassemblyTuiView)
-        return view.presenter
+    def view_presenter(self) -> Any:
+        """The presenter of the view the bar is in (a disassembly or a pseudocode view)."""
+        parent: Any = self.parent
+        return parent.presenter
 
 
 #

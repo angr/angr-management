@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .base import TuiView
+from .code import CodeTuiView
 from .console import ConsoleTuiView
 from .disassembly import DisassemblyTuiView
 from .search import SearchTuiView
@@ -25,6 +26,7 @@ from .tables import (
 #: The view class of each category the terminal frontend has.
 TUI_VIEW_CLASSES: dict[str, type[TuiView]] = {
     "disassembly": DisassemblyTuiView,
+    "pseudocode": CodeTuiView,
     "functions": FunctionsTuiView,
     "strings": StringsTuiView,
     "search": SearchTuiView,
