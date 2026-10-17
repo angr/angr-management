@@ -426,7 +426,9 @@ class TestFind(FauxwareHexCase):
     def test_hex_and_text_modes(self):
         presenter = self.presenter
         bar = presenter.find_bar
+        assert not presenter.find_bar_is_open()
         presenter.show_find_bar()
+        assert presenter.find_bar_is_open()
         assert bar.is_open and bar.mode == "Hex" and not bar.text_options_visible
         bar.set_query("7f 45 4c 46")
         assert presenter._find_matches and presenter._find_matches[0] == (self.loader.min_addr, 4)
@@ -444,6 +446,7 @@ class TestFind(FauxwareHexCase):
         bar.set_query("4g")
         assert bar.error
         bar.close_bar()
+        assert not presenter.find_bar_is_open()
         assert not presenter._find_matches and not presenter._find_highlights
 
 

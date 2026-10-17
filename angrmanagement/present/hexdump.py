@@ -834,6 +834,10 @@ class HexViewMixin(Synchronized):
     def _find_bar_opened(self) -> None:
         """The find bar opened."""
 
+    def find_bar_is_open(self) -> bool:
+        """Whether the find bar is shown."""
+        raise NotImplementedError
+
     def _focus_grid(self) -> None:
         """Give the focus back to the bytes (the find bar closed)."""
 
@@ -847,13 +851,6 @@ class HexViewMixin(Synchronized):
             self._reload_data()
             if self._find_bar is not None and self.find_bar_is_open():
                 self._update_find_matches()
-
-    def find_bar_is_open(self) -> bool:
-        bar = self._find_bar
-        is_open = getattr(bar, "is_open", None)
-        if is_open is not None:
-            return bool(is_open)
-        return not bar.isHidden()
 
     def _clear_highlights(self) -> None:
         """
@@ -1565,6 +1562,9 @@ class HexPresenter(HexViewMixin, SynchronizedPresenter):
     @property
     def find_bar(self) -> FindBarState:
         return self._find_bar
+
+    def find_bar_is_open(self) -> bool:
+        return self._find_bar.is_open
 
     @property
     def data_source(self) -> HexDataSource:

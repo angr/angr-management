@@ -2901,6 +2901,13 @@ class TestHexViewFindBar(AngrManagementTestCase):
         self.view.show_find_bar()
         assert not self.view._find_bar.isHidden()
 
+    def test_find_bar_is_open_follows_the_bar(self):
+        assert not self.view.find_bar_is_open()
+        self.view.show_find_bar()
+        assert self.view.find_bar_is_open()
+        self.view._find_bar.close_bar()
+        assert not self.view.find_bar_is_open()
+
     def test_hex_pattern_search(self):
         self.view.show_find_bar()
         self.view._find_bar._query_box.setText("7f 45 4c 46")

@@ -989,6 +989,9 @@ class HexView(SynchronizedInstanceView, HexViewMixin):
         """
         self._status_lbl.setText(self.status_text())
 
+    def find_bar_is_open(self) -> bool:
+        return self._find_bar is not None and not self._find_bar.isHidden()
+
     def _focus_grid(self) -> None:
         self.inner_widget.setFocus()
 
