@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING
 
 from pyqodeng.core import api, modes, panels
@@ -19,15 +18,11 @@ from angrmanagement.ui.widgets.qinline_comment_editor import QInlineCommentEdito
 from angrmanagement.ui.widgets.qnode_tip import QNodeTip
 
 if TYPE_CHECKING:
-    from angr.sim_type import SimTypeFunction
     from PySide6.QtGui import QTextDocument
 
     from angrmanagement.present.code import CodePresenter
     from angrmanagement.ui.views.code_view import CodeView
     from angrmanagement.ui.views.pattern_view import PatternView
-
-
-_l = logging.getLogger(__name__)
 
 
 class ColorSchemeIDA(api.ColorScheme):
@@ -344,11 +339,6 @@ class QCCodeEdit(api.CodeEdit):
         )
         dialog.exec_()
 
-    def _set_user_prototype(self, proto: SimTypeFunction) -> dict:
-        # mark the prototype as user-provided. the decompiler will re-derive any prototype that it inferred itself.
-        # returns the renames and manual types that the re-decompilation will drop
-        return self.presenter.set_user_prototype(proto)
-
     def retype_node(self, *args, node=None, node_type=None) -> None:  # pylint: disable=unused-argument
         if node is None:
             node = self._selected_node
@@ -382,9 +372,6 @@ class QCCodeEdit(api.CodeEdit):
     def _commit_inline_comment(self, addr: int, text: str) -> None:
         self._inline_comment_editor = None
         self.workspace.set_comment(addr, text)
-
-    def _comment_expr(self, addr: int) -> None:
-        self.presenter.comment_expr_at(addr)
 
     def toggle_struct(self) -> None:
         self.presenter.toggle_struct(self._selected_node)
