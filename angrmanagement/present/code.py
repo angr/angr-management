@@ -2303,6 +2303,11 @@ class HeadlessCodeView:
         return self.presenter.function
 
     @property
+    def _function(self) -> ObjectContainer:
+        """The name the workspace reads the pseudocode view's function by (as on the Qt and the terminal views)."""
+        return self.presenter.function
+
+    @property
     def codegen(self) -> ObjectContainer:
         return self.presenter.codegen
 

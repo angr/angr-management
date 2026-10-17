@@ -590,5 +590,26 @@ class TestOptionsAndPatterns(FauxwareCodeCase):
         assert CodePresenter.hover_text(self.element("v5", VariableNode).obj) is None
 
 
+class TestWorkspaceUses(FauxwareCodeCase):
+    """The workspace actions that read the pseudocode view's function as ``code_view._function``."""
+
+    def test_discover_patterns_reads_the_function_shown(self):
+        assert self.view._function is self.presenter.function
+        with patch.object(self.workspace, "_get_or_create_view", return_value=None) as get_view:
+            assert self.workspace.discover_patterns() is None
+        get_view.assert_called_once_with("pattern")
+
+    def test_ai_refine_runs_on_the_function_shown(self):
+        with (
+            patch.object(self.project, "_llm_client", object()),
+            patch("angrmanagement.logic.workspace.LLMRefineJob") as job,
+            patch.object(self.workspace.job_manager, "add_job") as add_job,
+        ):
+            self.workspace.llm_refine_all()
+        job.assert_called_once()
+        assert job.call_args.args[1] is self.main
+        add_job.assert_called_once_with(job.return_value)
+
+
 if __name__ == "__main__":
     unittest.main()
