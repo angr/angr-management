@@ -2002,15 +2002,33 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
 
     def instruction_at(self, addr: int) -> Any:
         """
-        The angr Instruction at ``addr`` in the graph or listing shown, or None. The plugins' instruction menu
-        entries are built from it.
+        The angr Instruction at ``addr``, or None. The plugins' instruction menu entries are built from it.
+
+        It is the one in the graph or listing shown when the control has a node for it. Otherwise (the listing has
+        scrolled the instruction's block away, or the control keeps no nodes) it is read from the Disassembly of the
+        function containing ``addr``, the one the control shown would draw it with, and only then from the graph's.
         """
         node_of = getattr(self._current_view, "insn_node", None)
         node = node_of(addr) if node_of is not None else None
         if node is not None:
             return node.insn
-        raw_result_map = getattr(self.disasm, "raw_result_map", None)
-        return raw_result_map["instructions"].get(addr) if raw_result_map is not None else None
+        for disasm in (self._function_disasm_at(addr), self.disasm):
+            raw_result_map = getattr(disasm, "raw_result_map", None)
+            insn = raw_result_map["instructions"].get(addr) if raw_result_map is not None else None
+            if insn is not None:
+                return insn
+        return None
+
+    def _function_disasm_at(self, addr: int) -> Any:
+        """The machine-code or lifter IR Disassembly of the function containing ``addr`` that the control shown uses,
+        or None (no function there, or the AIL level, which has no angr Instructions)."""
+        kb = self.kb
+        if kb is None or self._disassembly_level is DisassemblyLevel.AIL:
+            return None
+        func = kb.functions.floor_func(addr)
+        if func is None:
+            return None
+        return self.linear_disasm(func) if self.is_linear else self.graph_disasm(func)
 
     def insn_context_menu(self, insn_addr: int, insn: Any = None) -> Menu:
         """

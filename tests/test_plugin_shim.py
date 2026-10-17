@@ -75,6 +75,18 @@ class NeutralPlugin(BasePlugin):
         return "neutral: on"
 
 
+class MenuPlugin(BasePlugin):
+    """Records the Instruction each instruction menu is built for."""
+
+    def __init__(self, workspace) -> None:
+        super().__init__(workspace)
+        self.items: list = []
+
+    def build_context_menu_insn(self, item):
+        self.items.append(item)
+        return [("Menu entry", lambda: None)] if item is not None else []
+
+
 class TestShimInQt(AngrManagementTestCase):
     """Both plugins in the Qt frontend."""
 
@@ -93,6 +105,7 @@ class TestShimInQt(AngrManagementTestCase):
         plugins = self.main.workspace.plugins
         plugins.active_plugins.pop("legacy", None)
         plugins.active_plugins.pop("neutral", None)
+        plugins.active_plugins.pop("menu", None)
         super().tearDown()
 
     def test_neutral_hooks_route_to_the_qt_hooks(self):
@@ -132,6 +145,26 @@ class TestShimInQt(AngrManagementTestCase):
         assert menu is not None and "Legacy entry" in [e.text for _p, e in walk_entries(menu)]
         view.close()
         # no Qt parent: delete it through Qt, not whenever the cyclic collector runs, on whatever thread
+        view.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+
+    def test_linear_menu_outside_the_graphs_function(self):
+        # the Qt linear viewer keeps no instruction nodes, so the selection menu reads the instruction from the
+        # Disassembly of the function that contains it, not from the graph's, which shows main
+        menu_plugin = MenuPlugin(self.main.workspace)
+        self.main.workspace.plugins.active_plugins["menu"] = menu_plugin
+        auth = self.project.kb.functions["authenticate"]
+        auth_insn = sorted(a for b in auth.blocks for a in b.instruction_addrs)[2]
+        view = DisassemblyView(self.main.workspace, "center", self.main.workspace.main_instance)
+        view.display_disasm_graph()
+        view.display_function(self.func)
+        view.display_linear_viewer()
+        view.jump_to(auth_insn)
+        view.infodock.select_instruction(auth_insn, unique=True, use_animation=False)
+        menu = view.presenter.context_menu()
+        assert menu is not None and "Menu entry" in [e.text for _p, e in walk_entries(menu)]
+        assert menu_plugin.items[-1].addr == auth_insn
+        view.close()
         view.deleteLater()
         QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 

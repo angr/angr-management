@@ -31,6 +31,8 @@ if TYPE_CHECKING:
 test_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "binaries", "tests")
 FAUXWARE = os.path.join(test_location, "x86_64", "fauxware")
 SIZE = (200, 60)
+# an instruction of authenticate, which the tests never show in the graph
+AUTH_INSN = 0x400668
 
 
 def run_app(scenario: Callable[[AmApp, Pilot, Any], Awaitable[None]], tier: int = 2) -> None:
@@ -360,7 +362,7 @@ class NeutralPlugin(BasePlugin):
         return Color(0x12, 0x34, 0x56) if addr == 0x40071D else None
 
     def build_context_menu_insn(self, item):
-        return [("Plugin entry", lambda: None)] if item is not None and item.addr == 0x400721 else []
+        return [("Plugin entry", lambda: None)] if item is not None and item.addr in (0x400721, AUTH_INSN) else []
 
     def status_bar_text(self):
         return "neutral: on"
@@ -443,6 +445,20 @@ class TestPlugins(unittest.TestCase):
                 # and so does the linear listing's
                 view.display_linear_viewer()
                 await settle(pilot)
+                menu = view.presenter.context_menu()
+                assert menu is not None and "Plugin entry" in menu_texts(menu)
+                # an instruction of another function, still selected after the listing has scrolled its block away
+                linear = view.linear_viewer
+                linear.navigate_to_addr(AUTH_INSN)
+                view.infodock.select_instruction(AUTH_INSN, unique=True, use_animation=False)
+                await settle(pilot)
+                assert linear.insn_node(AUTH_INSN) is not None
+                menu = view.presenter.context_menu()
+                assert menu is not None and "Plugin entry" in menu_texts(menu)
+                linear.navigate_to_addr(0x400915)  # .rodata, far from authenticate
+                await settle(pilot)
+                assert linear.insn_node(AUTH_INSN) is None
+                assert view.presenter.instruction_at(AUTH_INSN).addr == AUTH_INSN
                 menu = view.presenter.context_menu()
                 assert menu is not None and "Plugin entry" in menu_texts(menu)
             finally:
