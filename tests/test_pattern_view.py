@@ -484,6 +484,9 @@ class TestPatternView(AngrManagementTestCase):
         assert view.editor.pattern.call_name == "my_idiom"
         assert view.editor.leaves()
         assert view.origin_func == func.addr
+        # the re-lifted pattern starts with no matches, and the table drops the old rows with them
+        assert not view.matches
+        assert view._matches_table.rowCount() == 0
 
     def test_dock_enabling_and_numbers(self):
         """The Patterns dock: its rows and numbers, deferred enabling, and sorting."""

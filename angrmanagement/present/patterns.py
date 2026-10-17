@@ -545,7 +545,9 @@ class PatternViewMixin:
         self.enabled = enabled
         self.require_verified = require_verified
         self.failed_leaves = set()
+        # the last search's rows went with the pattern they were found for
         self.matches = []
+        self._matches_changed()
         self.selected_path = None
         self.collapsed = self._default_collapsed()
         self._rebuild()
@@ -1150,18 +1152,6 @@ class PatternPresenter(PatternViewMixin, InstancePresenter):
     @property
     def keymap(self) -> Keymap:
         return pattern_keymap()
-
-    def load_pattern(
-        self,
-        pattern: KnownPattern,
-        origin_func: int | None = None,
-        min_similarity: float = 0.8,
-        enabled: bool = False,
-        require_verified: bool = True,
-    ) -> None:
-        super().load_pattern(pattern, origin_func, min_similarity, enabled, require_verified)
-        # the last search's rows went with the pattern they were found for
-        self._matches_changed()
 
     def _notify(self, name: str, *args) -> None:
         handler = getattr(self.view, name, None)
