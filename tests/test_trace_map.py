@@ -3,18 +3,16 @@ The trace map, without a toolkit and in the terminal, over a trace debugger whos
 from the debugger, positions and events, the segments drawn, a click replaying, and the empty map without a trace.
 """
 
-# pylint: disable=missing-class-docstring,protected-access,no-self-use,unused-argument,super-init-not-called
-# pylint: disable=non-parent-init-called
+# pylint: disable=missing-class-docstring,protected-access,no-self-use
 
 from __future__ import annotations
 
 import asyncio
 import unittest
-from types import SimpleNamespace
 from typing import Any
 
-from angrmanagement.logic.debugger import Debugger
-from angrmanagement.logic.debugger.bintrace import BintraceDebugger
+from scripted_trace import ScriptedTrace
+
 from angrmanagement.logic.headless_workspace import HeadlessWorkspace
 from angrmanagement.present.trace_map import (
     TraceMapModel,
@@ -27,32 +25,8 @@ from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps
 from angrmanagement.tui.views.trace_map import TraceMapTuiView
 
-#: what the debug bar asks a trace debugger: it can go nowhere
-STOPPED = {
-    "can_step_backward": False,
-    "can_step_forward": False,
-    "can_continue_backward": False,
-    "can_continue_forward": False,
-}
-
-
-class ScriptedTrace(BintraceDebugger):
-    """A trace of 1000 events, replayed to event 250, with checkpoints at 100 and 600."""
-
-    def __init__(self, workspace) -> None:
-        Debugger.__init__(self, workspace)
-        self.replayed: list[int] = []
-        trace = SimpleNamespace(
-            get_num_events=lambda: 1000,
-            checkpoints=[SimpleNamespace(event_count=100), SimpleNamespace(event_count=600)],
-        )
-        self._trace = SimpleNamespace(trace=trace)  # pyright: ignore[reportAttributeAccessIssue]
-        self._trace_dbg = SimpleNamespace(state=SimpleNamespace(event_count=250), **STOPPED)
-
-    def replay_to_nth_event(self, n: int) -> None:
-        self.replayed.append(n)
-        self._trace_dbg.state.event_count = n
-        self.state_changed.am_event()
+#: the terminal size of every view's snapshot
+SIZE = (200, 60)
 
 
 class TestModel(unittest.TestCase):
@@ -148,7 +122,7 @@ async def _scripted_for_snapshot(pilot) -> None:
 
 def test_snapshot_trace_map(snap_compare):
     app = AmApp(caps=TerminalCaps(truecolor=True, forced_tier=2), theme_name="Light", interactive=False)
-    assert snap_compare(app, terminal_size=(120, 40), run_before=_scripted_for_snapshot)
+    assert snap_compare(app, terminal_size=SIZE, run_before=_scripted_for_snapshot)
 
 
 if __name__ == "__main__":

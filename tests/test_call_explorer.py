@@ -3,8 +3,7 @@ The call explorer, without a toolkit and in the terminal, over a trace debugger 
 function's calls, opening a call, replaying before and into a call, and the empty view without a trace debugger.
 """
 
-# pylint: disable=missing-class-docstring,protected-access,no-self-use,unused-argument,super-init-not-called
-# pylint: disable=non-parent-init-called
+# pylint: disable=missing-class-docstring,protected-access,no-self-use
 
 from __future__ import annotations
 
@@ -13,51 +12,16 @@ import unittest
 from types import SimpleNamespace
 from typing import Any
 
-from angrmanagement.logic.debugger import Debugger
-from angrmanagement.logic.debugger.bintrace import BintraceDebugger
+from scripted_trace import ScriptedTrace
+
 from angrmanagement.logic.headless_workspace import HeadlessWorkspace
 from angrmanagement.present.call_explorer import NO_FUNCTION, CallExplorerPresenter, call_name
 from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps
 from angrmanagement.tui.views.call_explorer import CallExplorerTuiView
 
-#: what the debug bar asks a trace debugger: it can go nowhere
-STOPPED = {
-    "can_step_backward": False,
-    "can_step_forward": False,
-    "can_continue_backward": False,
-    "can_continue_forward": False,
-}
-
-
-class ScriptedTrace(BintraceDebugger):
-    """A trace debugger over a script: main calls puts (which calls write) and 0x401000."""
-
-    def __init__(self, workspace) -> None:  # pylint: disable=super-init-not-called
-        Debugger.__init__(self, workspace)
-        self.main = SimpleNamespace(name="main", addr=0x400000)
-        self.puts = SimpleNamespace(name="puts", addr=0x400100)
-        self.write = SimpleNamespace(name="write", addr=0x400200)
-        self.replayed: list[Any] = []
-        self._btrace = SimpleNamespace(
-            get_prev_exec_event=lambda event, vcpu: ("before", event),
-            get_next_exec_event=lambda event, vcpu: ("after", event),
-        )
-        self._trace_dbg = SimpleNamespace(vcpu=0, **STOPPED)
-
-    # the real one returns (function, event) too, whatever its annotation says
-    def get_current_function(self):  # pyright: ignore[reportIncompatibleMethodOverride]
-        return (self.main, "event-main")
-
-    def get_called_functions(self, event=None):  # type: ignore[override]
-        calls = {
-            None: [(self.puts, "call-puts"), (0x401000, "call-401000")],
-            "call-puts": [(self.write, "call-write")],
-        }
-        return calls.get(event, [])
-
-    def replay_to_event(self, until) -> None:
-        self.replayed.append(until)
+#: the terminal size of every view's snapshot
+SIZE = (200, 60)
 
 
 class TestPresenter(unittest.TestCase):
@@ -155,7 +119,7 @@ async def _scripted_for_snapshot(pilot) -> None:
 
 def test_snapshot_call_explorer(snap_compare):
     app = AmApp(caps=TerminalCaps(truecolor=True, forced_tier=2), theme_name="Light", interactive=False)
-    assert snap_compare(app, terminal_size=(120, 40), run_before=_scripted_for_snapshot)
+    assert snap_compare(app, terminal_size=SIZE, run_before=_scripted_for_snapshot)
 
 
 if __name__ == "__main__":
