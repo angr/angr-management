@@ -325,6 +325,62 @@ class TestTraceViewer(PluginCase):
         run_app(scenario)
 
 
+#: small and dynamically linked, so its analyses take seconds (the static langdetect_gcc_dwarf takes minutes)
+DWARF = os.path.join(test_location, "x86_64", "langdetect_gcc_dwarf_dyn")
+#: what the debug information's source file held, which is not on this machine (it names where the binary was built)
+HELLO_SOURCE = (
+    "\n".join(f"/* line {i} */" for i in range(1, 6)) + '\nint main() { puts("hello"); // greet\n  return 0;\n}\n'
+)
+
+
+class TestSourceViewer(PluginCase):
+    def test_the_source_tabs_markers_and_comment(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            plugin = await enable(app, pilot, "source_viewer")
+            view: Any = plugin.source_viewer
+            await wait_for(pilot, lambda: bool(view.files))
+            # the file is not here; the view reads it again with the text it held
+            view.presenter.read_source = lambda _path: HELLO_SOURCE
+            view.load_from_project()
+            await settle(pilot)
+            assert view in app.workspace.view_manager.views
+            presenter = view.presenter
+            assert presenter.source_map.file_list == {"/workspace/angr/hello_gcc.c"}
+            widget = view.files["/workspace/angr/hello_gcc.c"]
+            valid = presenter.source_map.valid_lines(widget.filename)
+            assert 6 in valid
+            # the marker menu on a line with code, as the Qt marker panel's
+            app.workspace.show_view("symexec")
+            await settle(pilot)
+            widget.cursor_line = 6
+            widget.action_marker_menu()
+            popup = await wait_for_screen(pilot, MenuPopup)
+            assert [getattr(item, "text", None) for item in popup.items][:2] == ["Add Find", "Add Avoid"]
+            entry = popup.items[0]
+            popup.close_all()
+            entry.trigger()
+            await settle(pilot)
+            assert presenter.markers == {(widget.filename, 6): "find"}
+            symexec: Any = app.view_widget("symexec")
+            addrs = presenter.source_map.line_to_addr[(widget.filename, 6)]
+            assert set(addrs) <= set(symexec.presenter.simgrs.find_addrs)
+            app.workspace.raise_view(view)
+            await wait_for(pilot, lambda: widget.size.width > 0)
+            widget.scroll_to(y=0, animate=False)
+            await settle(pilot)
+            assert " F " in str(widget.render_line(5).text)
+            # / edits the line's comment
+            widget.action_comment()
+            prompt = await wait_for_screen(pilot, PromptScreen)
+            assert prompt.default == " greet"
+            prompt.query_one("#answer", Input).value = " say hello"
+            prompt.query_one("#ok", Button).press()
+            await settle(pilot)
+            assert widget.lines[5].endswith("// say hello")
+
+        run_app(scenario, binary=DWARF)
+
+
 class TestCodePlugins(PluginCase):
     async def _main_in_pseudocode(self, app: AmApp, pilot: Pilot) -> Any:
         app.workspace.decompile_function(app.workspace.main_instance.kb.functions["main"])

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from pyqodeng.core.api import CodeEdit
@@ -10,12 +9,16 @@ from pyqodeng.core.panels import LineNumberPanel, Marker, MarkerPanel
 from pyqodeng.core.widgets import SplittableCodeEditTabWidget
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QCursor, QPainter, QPen
-from PySide6.QtWidgets import QInputDialog, QLineEdit, QMenu, QPlainTextEdit, QStyle, QVBoxLayout
+from PySide6.QtWidgets import QMenu, QPlainTextEdit, QStyle, QVBoxLayout
 
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.plugins import BasePlugin
+from angrmanagement.plugins.base_plugin import qt_frontend
 from angrmanagement.ui.views.view import InstanceView
 from angrmanagement.ui.widgets.qccode_edit import ColorSchemeIDA
 from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
+
+from .model import SourceMap, add_point, remove_point
 
 if TYPE_CHECKING:
     from cle import Loader
@@ -168,8 +171,8 @@ class SourceCodeViewer(CodeEdit):
         else:
             text, comment = text
             no_comment = False
-        new_comment, ok = QInputDialog.getText(None, "Comment", "Comment", QLineEdit.EchoMode.Normal, comment)
-        if not ok:
+        new_comment = GlobalInfo.ui_services.prompt_text("Comment", "Comment", comment)
+        if new_comment is None:
             return
         cursor.movePosition(cursor.EndOfLine, cursor.MoveAnchor)
         for _ in range(len(comment)):
@@ -201,15 +204,12 @@ class SourceCodeViewerTabWidget(SplittableCodeEditTabWidget):
             self.load(addr_to_line)
 
     def load(self, addr_to_line: SortedDict) -> None:
-        self.addr_to_line = addr_to_line  # {(filename, line.state.line), ...}
-        self.line_to_addr = defaultdict(list)
-        self.file_list = set()
-        for addr, lines in self.addr_to_line.items():
-            if not lines:
-                continue
-            filename, line = next(iter(lines))  # take the first line and ignore the rest
-            self.file_list.add(filename)
-            self.line_to_addr[(filename, line)].append(addr)
+        # the lines and their addresses, as the terminal's source viewer reads them
+        source_map = SourceMap(addr_to_line)
+        self.addr_to_line = source_map.addr_to_line  # {(filename, line.state.line), ...}
+        self.line_to_addr = source_map.line_to_addr
+        self.file_list = source_map.file_list
+
         for fn in self.file_list:
             editor: SourceCodeViewer = self.open_document(fn)
             editor.viewer = self.viewer
@@ -258,28 +258,16 @@ class SourceViewer(InstanceView):
         if hasattr(loader.main_object, "addr_to_line") and loader.main_object.addr_to_line is not None:
             self.main.load(loader.main_object.addr_to_line)
 
-    def add_point(self, fn, line, typ):
-        symexec_view = self.symexec_view
-        if not symexec_view:
-            return ""
-        address_list = self.main.line_to_addr[(fn, line)]
+    def _source_map(self) -> SourceMap:
+        source_map = SourceMap()
+        source_map.line_to_addr = self.main.line_to_addr
+        return source_map
 
-        for addr in address_list:
-            if typ == "find":
-                symexec_view.find_addr_in_exec(addr)
-            else:
-                symexec_view.avoid_addr_in_exec(addr)
-        return "\n".join([(f"0x{i:x}") for i in address_list])
+    def add_point(self, fn, line, typ):
+        return add_point(self.workspace, self._source_map(), fn, line, typ)
 
     def remove_point(self, fn, line) -> None:
-        symexec_view = self.symexec_view
-        if not symexec_view:
-            return
-
-        address_list = self.main.line_to_addr[(fn, line)]
-        for addr in address_list:
-            symexec_view.remove_find_addr_in_exec(addr)
-            symexec_view.remove_avoid_addr_in_exec(addr)
+        remove_point(self.workspace, self._source_map(), fn, line)
 
 
 class SourceViewerPlugin(BasePlugin):
@@ -289,6 +277,15 @@ class SourceViewerPlugin(BasePlugin):
 
     def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
-        self.source_viewer = SourceViewer(workspace)
-        workspace.default_tabs += [self.source_viewer]
+        if qt_frontend():
+            self.source_viewer = SourceViewer(workspace)
+            workspace.default_tabs += [self.source_viewer]
+        else:
+            # the terminal's view of the same sources (tui_view.py)
+            from .tui_view import SourceTuiView  # pylint:disable=import-outside-toplevel
+
+            self.source_viewer = SourceTuiView(workspace, "center", workspace.main_instance)
         workspace.add_view(self.source_viewer)
+
+    def teardown(self) -> None:
+        self.workspace.remove_view(self.source_viewer)
