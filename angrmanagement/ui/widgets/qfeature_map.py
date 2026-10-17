@@ -604,9 +604,6 @@ class QFeatureMap(QWidget):
         self.setLayout(layout)
         self.addr = self.view._feature_map_item.addr
 
-    def set_cursor_addrs(self, cursor_addrs) -> None:
-        self.view._feature_map_item.set_cursor_addrs(cursor_addrs)
-
     def shutdown(self) -> None:
-        """Stop following the CFB."""
+        """Stop following the CFB and the focused view."""
         self.view._feature_map_item.shutdown()
