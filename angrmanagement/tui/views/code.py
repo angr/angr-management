@@ -475,8 +475,7 @@ class OptionsSheetWidget(Vertical):
 
     @staticmethod
     def label_of(item: Any, value: Any) -> str:
-        kind = value_kind(item) if hasattr(item, "value_type") or hasattr(item, "candidate_values") else "bool"
-        if kind == "bool":
+        if value_kind(item) == "bool":
             return f"[{'x' if value else ' '}] {item.NAME}"
         return f"{item.NAME}: {value}"
 
@@ -528,7 +527,7 @@ class OptionsSheetWidget(Vertical):
         """Change ``item``: flip a switch, take the next choice, or ask for a number."""
         sheet = self.sheet
         value = sheet.values.get(item)
-        kind = value_kind(item) if hasattr(item, "value_type") or hasattr(item, "candidate_values") else "bool"
+        kind = value_kind(item)
         if kind == "bool":
             sheet.set_value(item, not value)
         elif kind == "choice":
