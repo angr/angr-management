@@ -14,9 +14,10 @@ import unittest
 from typing import TYPE_CHECKING, Any
 
 import angr
-from textual.widgets import Button, Checkbox, Input, Select, SelectionList
+from textual.widgets import Button, Checkbox, Input, Select, SelectionList, Static, TabbedContent
 
 from angrmanagement.config import Conf
+from angrmanagement.config.color import Color
 from angrmanagement.data.analysis_options import AnalysesConfiguration
 from angrmanagement.data.instance import Instance
 from angrmanagement.data.jobs import (
@@ -26,10 +27,12 @@ from angrmanagement.data.jobs import (
 )
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.analysis_options import RUST_DEPENDENT_ANALYSES
-from angrmanagement.tui.app import AmApp
+from angrmanagement.present.preferences import PAGE_NAMES, color_entry_names, color_text, scheme_entry_values
+from angrmanagement.tui.app import AmApp, config_file_path
 from angrmanagement.tui.caps import TerminalCaps
 from angrmanagement.tui.screens import QuestionScreen
 from angrmanagement.tui.screens.analysis_options import AnalysisOptionsScreen
+from angrmanagement.tui.screens.preferences import PreferencesScreen
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -169,6 +172,90 @@ class TestRunAnalysis(DialogCase):
             assert results == [None]
 
         run_app(scenario)
+
+
+class TestPreferences(DialogCase):
+    ENTRIES = (
+        "theme_name",
+        "base_theme_name",
+        "disasm_view_operand_color",
+        "log_timestamp_format",
+        "mcp_server_port",
+        "llm_model",
+        "llm_auto_summarize",
+    )
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.saved_entries = {name: Conf.entry(name).value for name in self.ENTRIES}
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        for name, value in self.saved_entries.items():
+            setattr(Conf, name, value)
+        # setting an entry announces it through the executor, which the line above made if there was none
+        GlobalInfo._executor = self.saved[0]
+
+    def test_the_pages_and_saving_them(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            app.preferences()
+            screen = await wait_for_screen(pilot, PreferencesScreen)
+            tabs = screen.query_one(TabbedContent)
+            assert [str(tab.label) for tab in tabs.query("ContentTab")] == list(PAGE_NAMES)
+            # a sheet row for every colour entry of ENTRIES, as the Qt page has
+            assert len(screen.query(".color")) == len(color_entry_names())
+            # picking a scheme fills the sheet with its colours and makes it the base
+            tabs.active = "theme"
+            await settle(pilot)
+            screen.query_one("#theme_name", Select).value = "Dark"
+            await settle(pilot)
+            dark = scheme_entry_values("Dark")
+            box = screen.query_one("#color-disasm_view_operand_color", Input)
+            assert box.value == color_text(dark["disasm_view_operand_color"])
+            assert str(screen.query_one("#base_theme").render()) == "Dark"
+            # a colour typed in hex, with its swatch; a bad one is marked and not kept
+            box.value = "#123456"
+            await settle(pilot)
+            assert screen.color_values["disasm_view_operand_color"] == Color(0x12, 0x34, 0x56)
+            swatch = screen.query_one("#swatch-disasm_view_operand_color", Static)
+            assert swatch.styles.background.hex == "#123456"
+            box.value = "#12345"
+            await settle(pilot)
+            assert box.has_class("-invalid")
+            assert screen.color_values["disasm_view_operand_color"] == Color(0x12, 0x34, 0x56)
+            # the fonts are for the Qt frontend
+            assert "own font" in str(screen.query_one("#style").query(".note").last().render())
+            screen.query_one("#log_format", Input).value = "%H:%M"
+            screen.query_one("#llm_model", Input).value = " a-model "
+            screen.query_one("#llm_auto_summarize", Checkbox).value = True
+            screen.query_one("#mcp_server_port", Input).value = "70000"
+            screen.query_one("#save", Button).press()
+            await settle(pilot)
+            assert not isinstance(app.screen, PreferencesScreen)
+            assert (Conf.theme_name, Conf.base_theme_name) == ("Dark", "Dark")
+            assert Conf.entry("disasm_view_operand_color").value == Color(0x12, 0x34, 0x56)
+            assert Conf.log_timestamp_format == "%H:%M"
+            assert (Conf.llm_model, Conf.llm_auto_summarize) == ("a-model", True)
+            # out of range: the Qt spin box's highest port
+            assert Conf.mcp_server_port == 65535
+            # the scheme is applied, and the file written
+            assert app.theme == "am-dark"
+            with open(config_file_path(), encoding="utf-8") as f:
+                assert "a-model" in f.read()
+
+        run_app(scenario, binary=None)
+
+    def test_close_keeps_nothing(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            before = Conf.mcp_server_port
+            app.preferences()
+            screen = await wait_for_screen(pilot, PreferencesScreen)
+            screen.query_one("#mcp_server_port", Input).value = "4321"
+            await pilot.press("escape")
+            await settle(pilot)
+            assert Conf.mcp_server_port == before
+
+        run_app(scenario, binary=None)
 
 
 if __name__ == "__main__":

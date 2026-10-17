@@ -38,8 +38,9 @@ from angrmanagement.tui.caps import TerminalCaps, caps_from_environment
 from angrmanagement.tui.executor import TextualExecutor
 from angrmanagement.tui.new_state import NewStateScreen
 from angrmanagement.tui.palette import AmCommandProvider, GotoProvider
+from angrmanagement.tui.screens.preferences import PreferencesScreen
 from angrmanagement.tui.services import TuiServices
-from angrmanagement.tui.theme import all_textual_themes, theme_id
+from angrmanagement.tui.theme import all_textual_themes, textual_theme, theme_id
 from angrmanagement.tui.view_manager import DockArea
 from angrmanagement.tui.widgets.debug_bar import DebugBar
 from angrmanagement.tui.widgets.feature_map import FeatureMapStrip
@@ -275,8 +276,8 @@ class AmApp(App):
 
     def on_mount(self) -> None:
         self.executor.attach()
-        for _scheme, _theme, textual_theme in all_textual_themes():
-            self.register_theme(textual_theme)
+        for _scheme, _theme, registered in all_textual_themes():
+            self.register_theme(registered)
         self.theme = theme_id(self.scheme_name) if self._known_scheme(self.scheme_name) else theme_id("Light")
         self.theme_changed_signal.subscribe(self, self._on_theme_changed)
 
@@ -631,12 +632,25 @@ class AmApp(App):
         self.run_flow(flow())
 
     def preferences(self) -> None:
-        self.services.message(
-            "info",
-            "Preferences",
-            f"The preferences dialog is not in the terminal yet. The configuration file is {config_file_path()}.\n"
-            "The colour scheme can be changed from the command palette (Change theme).",
-        )
+        """The Preferences screen; saving it applies the colour scheme it saved."""
+
+        def saved(result: bool | None) -> None:
+            if result:
+                self.apply_configured_theme()
+
+        self.push_screen(PreferencesScreen(self.workspace), saved)
+
+    def apply_configured_theme(self) -> None:
+        """Switch to the scheme the configuration names; the custom one is built again from its colours."""
+        name = Conf.theme_name or "Light"
+        if name == CUSTOM_SCHEME_NAME:
+            self.register_theme(textual_theme(Theme.from_conf(), theme_id(CUSTOM_SCHEME_NAME)))
+        if not self._known_scheme(name):
+            return
+        if self.theme == theme_id(name):
+            # the same Textual theme name with new colours: switch away and back so everything is drawn again
+            self.theme = "textual-dark" if self.current_theme.dark else "textual-light"
+        self.theme = theme_id(name)
 
     def quit(self) -> None:
         self.exit()
