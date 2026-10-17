@@ -634,7 +634,6 @@ class DisassemblyTuiView(TuiView):
         self.linear_widget = LinearWidget(self, self.linear_viewer)
         self.linear_widget.display = False
         self._last_mouse: tuple[int, int] | None = None
-        self._key_actions: dict[str, str] | None = None
         presenter.level_changed.connect(lambda _level: self.header_changed())
         presenter.view_visibility_changed.connect(self.header_changed)
         presenter.attach(self, node_target=presenter)
@@ -748,19 +747,6 @@ class DisassemblyTuiView(TuiView):
     #
     # Keys and clicks
     #
-
-    def key_actions(self) -> dict[str, str]:
-        if self._key_actions is None:
-            caps = getattr(self.app, "caps", 2)
-            actions = {}
-            for binding in self.presenter.keymap.for_tier(caps):
-                key = binding.textual_key()
-                if key is not None:
-                    actions.setdefault(key, binding.action)
-            for key, action in self.EXTRA_KEYS.items():
-                actions.setdefault(key, action)
-            self._key_actions = actions
-        return self._key_actions
 
     def handle_disasm_key(self, key: str) -> bool:
         """Run the action bound to ``key``; whether one was."""

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from textual.containers import Vertical
 
@@ -22,6 +22,8 @@ class TuiView(Vertical):
     """
 
     PRESENTER_CLASS: Any = None
+    #: Keys the terminal adds to the presenter's keymap: key -> action.
+    EXTRA_KEYS: ClassVar[dict[str, str]] = {}
 
     DEFAULT_CSS = """
     TuiView {
@@ -38,6 +40,7 @@ class TuiView(Vertical):
         self.presenter: Any = self.make_presenter(workspace, instance, default_docking_position)
         self.presenter.view = self
         self.category = self.presenter.category
+        self._key_actions: dict[str, str] | None = None
 
     def make_presenter(self, workspace, instance: Instance, default_docking_position: str) -> Presenter:
         presenter_class = type(self).PRESENTER_CLASS
@@ -86,6 +89,20 @@ class TuiView(Vertical):
             if widget.can_focus and widget.display:
                 widget.focus()
                 return
+
+    def key_actions(self) -> dict[str, str]:
+        """The action of each key: the presenter's keymap at the terminal's tier, then :attr:`EXTRA_KEYS`."""
+        if self._key_actions is None:
+            caps = getattr(self.app, "caps", 2)
+            actions: dict[str, str] = {}
+            for binding in self.presenter.keymap.for_tier(caps):
+                key = binding.textual_key()
+                if key is not None:
+                    actions.setdefault(key, binding.action)
+            for key, action in self.EXTRA_KEYS.items():
+                actions.setdefault(key, action)
+            self._key_actions = actions
+        return self._key_actions
 
     def on_descendant_focus(self, _event: events.DescendantFocus) -> None:
         view_manager = getattr(self.workspace, "view_manager", None)

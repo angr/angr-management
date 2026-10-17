@@ -715,7 +715,6 @@ class CodeTuiView(TuiView):
         self.side_panel = CodeSidePanel(self)
         #: which side panel tab is shown, or None
         self.panel_shown: str | None = None
-        self._key_actions: dict[str, str] | None = None
         self._last_mouse: tuple[int, int] | None = None
         presenter.function.am_subscribe(self._on_new_function)
         presenter.codegen.am_subscribe(self._on_codegen_changes)
@@ -966,19 +965,6 @@ class CodeTuiView(TuiView):
     #
     # Keys
     #
-
-    def key_actions(self) -> dict[str, str]:
-        if self._key_actions is None:
-            caps = getattr(self.app, "caps", 2)
-            actions: dict[str, str] = {}
-            for binding in self.presenter.keymap.for_tier(caps):
-                key = binding.textual_key()
-                if key is not None:
-                    actions.setdefault(key, binding.action)
-            for key, action in self.EXTRA_KEYS.items():
-                actions.setdefault(key, action)
-            self._key_actions = actions
-        return self._key_actions
 
     def handle_code_key(self, key: str) -> bool:
         """Run the action bound to ``key``; whether one was."""
