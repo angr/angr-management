@@ -40,7 +40,7 @@ class TypesCase(unittest.TestCase):
     def setUp(self):
         self.project = angr.Project(FAUXWARE, auto_load_libs=False)
         self.arch = self.project.arch
-        self.store = self.project.kb.types
+        self.store: Any = self.project.kb.types
 
     def add(self, text: str) -> None:
         parsed = parse_types(text, self.arch, self.store)
@@ -136,7 +136,7 @@ class TestPresenter(unittest.TestCase):
         self.asked: list[tuple[str, bool, str | None]] = []
         self.reloads = 0
 
-        def editor(title, text, multiline, editing_single, predefined, then):
+        def editor(_title, text, multiline, editing_single, predefined, then):
             self.asked.append((text, multiline, editing_single))
             answer = self.answers.pop(0)
             then(None if answer is None else parse_types(answer, self.project.arch, predefined, editing_single))
@@ -155,7 +155,7 @@ class TestPresenter(unittest.TestCase):
         presenter = self.presenter
         presenter.reload()
         assert presenter.caption_text() == "Persistent (global) variable types"
-        assert presenter.typedefs == [] and presenter.lines() == []
+        assert not presenter.typedefs and not presenter.lines()
         self.answers = ["struct p { int a; int b; }; typedef int myint;"]
         presenter.add_types()
         assert self.asked[-1] == ("", True, None)

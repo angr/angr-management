@@ -98,7 +98,7 @@ class TestTypes(unittest.TestCase):
             assert texts[0] == "00000010  typedef struct pair {"
             assert texts[1].startswith("00000000  ") and texts[1].endswith("int a;")
             assert texts[2].startswith("00000008  ") and texts[2].endswith("long long b;")
-            kb = app.workspace.main_instance.kb
+            kb: Any = app.workspace.main_instance.kb
             assert {"pair", "struct pair"} <= set(kb.types.iter_own_keys())
 
         run_app(scenario)
@@ -114,7 +114,8 @@ class TestTypes(unittest.TestCase):
             await settle(pilot)
             await pilot.press("enter")
             await settle(pilot)
-            pair: Any = app.workspace.main_instance.kb.types["pair"]
+            kb: Any = app.workspace.main_instance.kb
+            pair: Any = kb.types["pair"]
             assert list(pair.type.fields) == ["a", "c"]
             assert view.types_widget.lines[2][2].endswith("short c;")
 
@@ -128,7 +129,8 @@ class TestTypes(unittest.TestCase):
             await pilot.press("escape")
             await settle(pilot)
             assert view.types_widget.lines == []
-            main = app.workspace.main_instance.kb.functions["main"]
+            kb: Any = app.workspace.main_instance.kb
+            main = kb.functions["main"]
             view.presenter.function = main
             await settle(pilot)
             assert str(view.caption_label.render()) == f"Temporary (local) variable types for function {main.addr:#x}"

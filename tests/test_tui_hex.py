@@ -65,6 +65,10 @@ def run_app(scenario: Callable[[AmApp, Pilot, HexTuiView], Awaitable[None]], tie
     asyncio.run(main())
 
 
+def kb_of(app: AmApp) -> Any:
+    return app.workspace.main_instance.kb
+
+
 def row_text(view: HexTuiView, row: int) -> str:
     strip = view.hex.row_strip(row, view.hex.size.width - 1)
     return "".join(segment.text for segment in strip).rstrip()
@@ -98,7 +102,7 @@ class TestRows(unittest.TestCase):
 
     def test_regions_tint_the_bytes(self):
         async def scenario(app: AmApp, pilot: Pilot, view: HexTuiView) -> None:
-            main = app.workspace.main_instance.kb.functions["main"]
+            main = kb_of(app).functions["main"]
             view.presenter.jump_to(main.addr)
             await settle(pilot)
             grid = view.presenter.grid
@@ -136,7 +140,7 @@ class TestKeys(unittest.TestCase):
     def test_typing_patches_and_ctrl_space_switches_column(self):
         async def scenario(app: AmApp, pilot: Pilot, view: HexTuiView) -> None:
             grid = view.presenter.grid
-            project = app.workspace.main_instance.project.am_obj
+            project: Any = app.workspace.main_instance.project.am_obj
             await pilot.press("down", "9", "0")
             await settle(pilot)
             assert grid.read(BASE + 0x10) == 0x90 and grid.cursor == BASE + 0x11
@@ -160,7 +164,7 @@ class TestKeys(unittest.TestCase):
             assert isinstance(app.screen, PromptScreen)
             await pilot.press(*"main", "enter")
             await settle(pilot)
-            main = app.workspace.main_instance.kb.functions["main"]
+            main = kb_of(app).functions["main"]
             assert view.presenter.grid.cursor == main.addr
             assert f"Address: {main.addr:08x}" in str(view.header.render())
 
@@ -174,7 +178,7 @@ class TestKeys(unittest.TestCase):
             await pilot.press(*"4c 46")
             await settle(pilot)
             assert view.presenter.grid.cursor == BASE + 2
-            assert view.find_widget.status_label.render().plain.startswith("1 of ")
+            assert str(view.find_widget.status_label.render()).startswith("1 of ")
             await pilot.press("escape")
             await settle(pilot)
             assert not view.find_widget.display and app.focused is view.hex
