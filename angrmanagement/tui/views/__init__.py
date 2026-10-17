@@ -9,6 +9,7 @@ from .console import ConsoleTuiView
 from .disassembly import DisassemblyTuiView
 from .graphs import DataDepTuiView, DependencyTuiView, ProximityTuiView
 from .hex import HexTuiView
+from .pattern import PatternTuiView
 from .search import SearchTuiView
 from .symexec import SymexecTuiView
 from .tables import (
@@ -54,6 +55,7 @@ TUI_VIEW_CLASSES: dict[str, type[TuiView]] = {
     "proximity": ProximityTuiView,
     "dependencies": DependencyTuiView,
     "data_dependency": DataDepTuiView,
+    "pattern": PatternTuiView,
     "console": ConsoleTuiView,
     "log": LogTuiView,
     "jobs": JobsTuiView,

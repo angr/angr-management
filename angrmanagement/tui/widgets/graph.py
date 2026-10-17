@@ -44,7 +44,7 @@ def draw_picture(picture: GraphPicture, selected: Any = None, margin: int = 2) -
         background = box.style or (SELECTED_NODE_STYLE if is_selected else NODE_STYLE)
         if is_selected and box.style:
             background = f"{box.style} {SELECTED_NODE_STYLE}"
-        border = SELECTED_BORDER_STYLE if is_selected else BORDER_STYLE
+        border = box.border_style or (SELECTED_BORDER_STYLE if is_selected else BORDER_STYLE)
         w, h = box.width, box.height
         canvas.fill(x, y, w, h, background, " ")
         canvas.box(x, y, w, h, style=f"{background} {border}")
