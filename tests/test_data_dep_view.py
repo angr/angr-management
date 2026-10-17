@@ -51,6 +51,16 @@ class TestDataDepView(ProjectOpenTestCase):
             assert isinstance(self._dialog_instance, QDataDepGraphSearch)
             self._dialog_instance.close()
 
+    def test_search_with_a_value_that_is_not_hex_says_so(self):
+        """A value that is not hex shows the dialog's error; the dialog used to raise NameError."""
+        graph = MagicMock()
+        graph.nodes = [MagicMock(node=MagicMock(value=1, ins_addr=2))]
+        dialog = QDataDepGraphSearch(self.data_dep_view, graph)
+        dialog._value_line_edit.setText("zz")  # pylint: disable=protected-access
+        dialog._on_search_click()  # pylint: disable=protected-access
+        assert dialog._error_lbl.text() == "Input must be in hexadecimal format!"  # pylint: disable=protected-access
+        dialog.close()
+
 
 if __name__ == "__main__":
     unittest.main()

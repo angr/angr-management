@@ -87,6 +87,12 @@ EXTRA_STYLES: dict[str, StyleSpec] = {
     "graph.node.border": StyleSpec(fg=Color(0xA0, 0xA0, 0xA0)),
     "graph.node.selected.border": StyleSpec(fg=Color(0x40, 0x40, 0x40), bold=True),
     "graph.edge": StyleSpec(fg=Color(0x50, 0x50, 0x50)),
+    # data dependency blocks, as the Qt blocks fill them, and the edges on the traced path
+    "datadep.node": StyleSpec(fg=Color(0x00, 0x00, 0x00), bg=Color(0xB5, 0xF8, 0xFE)),
+    "datadep.constant": StyleSpec(fg=Color(0x00, 0x00, 0x00), bg=Color(0x87, 0xFF, 0x65)),
+    "datadep.tmp": StyleSpec(fg=Color(0x00, 0x00, 0x00), bg=Color(0xEF, 0x47, 0x6F)),
+    "graph.edge.traced": StyleSpec(fg=Color(0xFF, 0x80, 0x00), bold=True),
+    "graph.edge.ancestor": StyleSpec(fg=Color(0xA0, 0xA0, 0xA4)),
     # dependency blocks: the definition dark blue, the instruction black, a string grey (Qt's colours)
     "dependency.definition": StyleSpec(fg=Color(0x00, 0x00, 0x80)),
     "dependency.instruction": StyleSpec(fg=Color(0x00, 0x00, 0x00)),
