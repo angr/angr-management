@@ -64,6 +64,11 @@ class TuiView(Vertical):
     def base_caption(self) -> str:
         return self.presenter.base_caption
 
+    @base_caption.setter
+    def base_caption(self, value: str) -> None:
+        # plugins name the views they make, as they set a Qt view's base_caption
+        self.presenter.base_caption = value
+
     @property
     def caption(self) -> str:
         return self.presenter.caption

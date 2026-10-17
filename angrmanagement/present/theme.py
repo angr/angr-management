@@ -85,6 +85,9 @@ EXTRA_STYLES: dict[str, StyleSpec] = {
     "disasm.mark.passthrough": StyleSpec(fg=Color(60, 0, 0), bg=Color(0xFF, 0xE2, 0xE2)),
     # the trace viewer plugin's count of the times the trace passed an instruction
     "disasm.mark.trace": StyleSpec(fg=Color(0x40, 0x20, 0x00), bg=Color(0xF0, 0xE7, 0xDA)),
+    # the precise diff plugin's lines: added and deleted, its decompilation colours over white
+    "diff.added": StyleSpec(bg=Color(0xC6, 0xF6, 0xC6)),
+    "diff.deleted": StyleSpec(bg=Color(0xF6, 0xC6, 0xC6)),
     "disasm.find.match": StyleSpec(underline=True),
     # graphs of boxes (path tree, proximity, dependencies, patterns): the fixed colours the Qt blocks paint with
     "graph.node": StyleSpec(fg=Color(0x00, 0x00, 0x00), bg=Color(0xFA, 0xFA, 0xFA)),

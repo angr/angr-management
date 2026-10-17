@@ -14,6 +14,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from angrmanagement.config.color import Color
+
 from .function_diff import BFSFunctionDiff, LinearFunctionDiff
 
 
@@ -127,17 +129,17 @@ class SettingsDialog(QDialog):
 
         change_label = QLabel("Diff Change Color", self)
         change_label.setToolTip("The color shown when two instructions differ in some sub-change (like ops)")
-        change_label.setStyleSheet(f"background-color: #{self.diff_plugin.chg_color.rgba() & 0xFFFFFF:x}")
+        change_label.setStyleSheet(f"background-color: #{self.diff_plugin.chg_color.to_qcolor().rgba() & 0xFFFFFF:x}")
         self._change_color = QLineEdit()
-        self._change_color.setText(hex(self.diff_plugin.chg_color.rgb()))
+        self._change_color.setText(hex(self.diff_plugin.chg_color.to_qcolor().rgb()))
         gui_layout.addWidget(change_label, 0, 0)
         gui_layout.addWidget(self._change_color, 0, 1)
 
         add_label = QLabel("Diff Add Color", self)
         add_label.setToolTip("The color shown when an instruction can't be matched so it's assumed to be new")
-        add_label.setStyleSheet(f"background-color: #{self.diff_plugin.add_color.rgba() & 0xFFFFFF:x}")
+        add_label.setStyleSheet(f"background-color: #{self.diff_plugin.add_color.to_qcolor().rgba() & 0xFFFFFF:x}")
         self._add_color = QLineEdit()
-        self._add_color.setText(hex(self.diff_plugin.add_color.rgb()))
+        self._add_color.setText(hex(self.diff_plugin.add_color.to_qcolor().rgb()))
         gui_layout.addWidget(add_label, 1, 0)
         gui_layout.addWidget(self._add_color, 1, 1)
 
@@ -145,9 +147,9 @@ class SettingsDialog(QDialog):
         del_label.setToolTip(
             "The color shown in the original binary where an instruction was removed (disabled for now)"
         )
-        del_label.setStyleSheet(f"background-color: #{self.diff_plugin.del_color.rgba() & 0xFFFFFF:x}")
+        del_label.setStyleSheet(f"background-color: #{self.diff_plugin.del_color.to_qcolor().rgba() & 0xFFFFFF:x}")
         self._del_color = QLineEdit()
-        self._del_color.setText(hex(self.diff_plugin.del_color.rgb()))
+        self._del_color.setText(hex(self.diff_plugin.del_color.to_qcolor().rgb()))
         gui_layout.addWidget(del_label, 2, 0)
         gui_layout.addWidget(self._del_color, 2, 1)
         gui_group.setLayout(gui_layout)
@@ -190,9 +192,9 @@ class SettingsDialog(QDialog):
 
         # colors
         try:
-            self.diff_plugin.add_color = QColor(int(self._add_color.text(), 16))
-            self.diff_plugin.chg_color = QColor(int(self._change_color.text(), 16))
-            self.diff_plugin.del_color = QColor(int(self._del_color.text(), 16))
+            self.diff_plugin.add_color = Color.from_qcolor(QColor(int(self._add_color.text(), 16)))
+            self.diff_plugin.chg_color = Color.from_qcolor(QColor(int(self._change_color.text(), 16)))
+            self.diff_plugin.del_color = Color.from_qcolor(QColor(int(self._del_color.text(), 16)))
         except ValueError:
             pass
 

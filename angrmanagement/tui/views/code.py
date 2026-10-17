@@ -257,6 +257,8 @@ class CodeWidget(CodeSelectionMixin, ScrollView, can_focus=True):
             for row in presenter.pattern_highlight_rows():
                 bands.setdefault(row, PATTERN_LINE_STYLE)
             ranges = [(start, end, CHUNK_STYLE) for start, end in presenter.chunks]
+            # what a plugin highlights (the precise diff's added and deleted lines), as a Qt plugin formats the text
+            ranges += self.view.extra_highlights
             ranges += [(start, end, FIND_STYLE) for start, end in presenter.find_matches]
             start, end = self.selection_range()
             ranges.append((start, end, SELECTION_STYLE))
@@ -710,6 +712,8 @@ class CodeTuiView(TuiView):
         self._last_mouse: tuple[int, int] | None = None
         #: the presenter asked for the focus before the view was in the screen
         self._focus_on_mount = False
+        #: text ranges a plugin highlights: (start, end, style key), as set_extra_highlights takes them
+        self.extra_highlights: list[tuple[int, int, str]] = []
         presenter.function.am_subscribe(self._on_new_function)
         presenter.codegen.am_subscribe(self._on_codegen_changes)
         presenter.addr.am_subscribe(self._on_new_addr)
@@ -1038,6 +1042,11 @@ class CodeTuiView(TuiView):
 
     def decompile(self, *args, **kwargs) -> None:
         self.presenter.decompile(*args, **kwargs)
+
+    def set_extra_highlights(self, ranges: list[tuple[int, int, str]]) -> None:
+        """Highlight text ranges for a plugin: (start, end, style key) in the text's positions."""
+        self.extra_highlights = list(ranges)
+        self.code.highlights_changed()
 
     def jump_to(self, addr: int, src_ins_addr=None, **_kwargs) -> bool:
         return self.presenter.jump_to(addr, src_ins_addr)

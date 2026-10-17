@@ -30,6 +30,7 @@ from angrmanagement.tui.executor import TextualExecutor
 from angrmanagement.tui.new_state import NewStateScreen
 from angrmanagement.tui.screens import FilePickerScreen, MessageScreen, PromptScreen
 from angrmanagement.tui.screens.form import FormScreen
+from angrmanagement.tui.screens.load_binary import LoadBinaryScreen
 from angrmanagement.tui.screens.plugins import PluginsScreen
 from angrmanagement.tui.widgets.menubar import MenuPopup
 
@@ -379,6 +380,71 @@ class TestSourceViewer(PluginCase):
             assert widget.lines[5].endswith("// say hello")
 
         run_app(scenario, binary=DWARF)
+
+
+BINDIFF_A = os.path.join(test_location, "x86_64", "bindiff_a")
+BINDIFF_B = os.path.join(test_location, "x86_64", "bindiff_b")
+
+
+class TestPreciseDiffing(PluginCase):
+    def test_settings_load_a_revised_binary_and_the_two_diff_views(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            plugin = await enable(app, pilot, "precise_diff")
+            # the settings dialog, as a form
+            await pick_menu_entry(app, pilot, "Plugins", "Precise Diffing settings...")
+            form = await wait_for_screen(pilot, FormScreen)
+            assert form.title_text == "Precise Diff Settings"
+            assert form.values["chg_color"] == "0xfff4ecc2"
+            form.editors["ignore_globals"].value = False
+            form.query_one("#ok", Button).press()
+            await settle(pilot)
+            assert plugin.ignore_globals is False
+            # the revised binary: picked, then loaded through the load screen, as in Qt
+            await pick_menu_entry(app, pilot, "Plugins", "Load binary for Precise Diffing...")
+            picker = await wait_for_screen(pilot, FilePickerScreen)
+            picker.query_one("#path", Input).value = BINDIFF_B
+            picker.query_one("#ok", Button).press()
+            load = await wait_for_screen(pilot, LoadBinaryScreen)
+            load.query_one("#ok", Button).press()
+            await wait_for(pilot, lambda: plugin.current_revised_code is not None, rounds=3000)
+            await app.wait_for_jobs()
+            await settle(pilot)
+            vm = app.workspace.view_manager
+            assert vm.first_view_in_category("diff") is plugin.current_revised_view
+            assert vm.first_view_in_category("pseudocode_diff") is plugin.current_revised_code
+            assert plugin.current_revised_view.instance is plugin.diff_instance
+            # the revised view shows the original's function, coloured by the diff
+            original: Any = vm.first_view_in_category("disassembly")
+            revised: Any = plugin.current_revised_view
+            assert revised.current_function.am_obj.name == original.current_function.am_obj.name
+            # the functions that differ are coloured in the functions table
+            assert plugin._differing_funcs
+            differing = sorted(plugin._differing_funcs, key=lambda f: f.addr)[0]
+            assert app.workspace.plugins.func_style(differing) == plugin.chg_color
+            # showing one in the original view shows its revision beside it, coloured by the diff
+            original.display_function(differing)
+            await wait_for(pilot, lambda: revised.current_function.am_obj.name == differing.name)
+            func = revised.current_function.am_obj
+            addrs = [a for b in func.blocks for a in b.instruction_addrs]
+            styles = {app.workspace.plugins.insn_style(a, False, revised) for a in addrs}
+            assert styles - {None}, "no instruction is coloured as changed, added or deleted"
+            # the original view is not coloured
+            assert app.workspace.plugins.insn_style(differing.addr, False, original) is None
+            # the two pseudocode views: the lines that differ are highlighted, added in the revision, deleted in the
+            # original, as the Qt plugin formats them
+            app.workspace.decompile_function(differing)
+            await app.wait_for_jobs()
+            revised.decompile_current_function()
+            await app.wait_for_jobs()
+            code: Any = vm.first_view_in_category("pseudocode")
+            diff_code: Any = plugin.current_revised_code
+            await wait_for(pilot, lambda: not diff_code.codegen.am_none and not code.codegen.am_none, rounds=3000)
+            plugin.color_pseudocode_diff()
+            highlights = code.extra_highlights + diff_code.extra_highlights
+            assert {style for _start, _end, style in highlights} <= {"diff.added", "diff.deleted"}
+            assert highlights, "the two decompilations are the same"
+
+        run_app(scenario, binary=BINDIFF_A)
 
 
 class TestCodePlugins(PluginCase):
