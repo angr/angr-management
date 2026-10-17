@@ -17,12 +17,10 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from rich.segment import Segment
 from rich.text import Text
-from textual.containers import Horizontal
 from textual.geometry import Region, Size
 from textual.scroll_view import ScrollView
 from textual.strip import Strip
 from textual.widget import Widget
-from textual.widgets import Checkbox, Input, Label
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.block_tree.base import BlockTreeNode
@@ -45,9 +43,11 @@ from angrmanagement.present.disasm_style import (
 from angrmanagement.present.find import FindBarState
 from angrmanagement.present.marks import Mark
 from angrmanagement.present.menus import Menu, MenuEntry
-from angrmanagement.present.theme import BACKGROUND_PREFIX, Theme
+from angrmanagement.present.theme import BACKGROUND_PREFIX
 from angrmanagement.tui.canvas import DOWN, CharCanvas
-from angrmanagement.tui.theme import rich_style
+from angrmanagement.tui.widgets.find_bar import FindBarWidget
+from angrmanagement.tui.widgets.header import HeaderBar, HeaderItem, function_label
+from angrmanagement.tui.widgets.styles import StyleCache
 
 from .base import TuiView
 
@@ -67,30 +67,6 @@ CANVAS_STYLE = BACKGROUND_PREFIX + "disasm_view_background_color"
 WHEEL_LINES = 3
 
 
-def current_theme(widget: Widget) -> Theme:
-    theme = getattr(widget.app, "am_theme", None)
-    return theme if isinstance(theme, Theme) else Theme.from_conf()
-
-
-class StyleCache:
-    """Rich styles of style keys through the app's theme, cached until the theme changes."""
-
-    def __init__(self, widget: Widget) -> None:
-        self.widget = widget
-        self._theme: Theme | None = None
-        self._styles: dict[str, Style] = {}
-
-    def __call__(self, key: str) -> Style:
-        theme = current_theme(self.widget)
-        if theme is not self._theme:
-            self._theme = theme
-            self._styles = {}
-        style = self._styles.get(key)
-        if style is None:
-            style = self._styles[key] = rich_style(theme.style(key))
-        return style
-
-
 def line_strip(line: Line, style_of: Callable[[str], Style], x0: int, width: int, base: str = "") -> Strip:
     """A line of spans as a Strip from column ``x0``, ``width`` cells wide."""
     segments = [Segment(span.text, style_of(f"{base} {span.style}".strip())) for span in line.spans]
@@ -108,28 +84,14 @@ def _span_node(line: Line | None, column: int) -> Any:
 # The header
 #
 
-#: A header word and what a click on it does (None: it is a label).
-HeaderItem = tuple[str, "Callable[[], Any] | None"]
 
-
-class DisasmHeader(Widget):
+class DisasmHeader(HeaderBar):
     """
     One line: ◀ Back, ▶ Forward, the function, and Save image..., the mode, the level and Options, as the Qt view's
     status bar has them. Each word is a button; the drop-down marks open menus.
     """
 
-    DEFAULT_CSS = """
-    DisasmHeader {
-        height: 1;
-        width: 1fr;
-        background: $panel;
-    }
-    """
-
-    def __init__(self, view: DisassemblyTuiView) -> None:
-        super().__init__()
-        self.view = view
-        self._buttons: list[tuple[int, int, Callable[[], Any]]] = []
+    view: DisassemblyTuiView
 
     @property
     def presenter(self) -> DisasmPresenter:
@@ -138,13 +100,7 @@ class DisasmHeader(Widget):
     def items(self) -> tuple[list[HeaderItem], list[HeaderItem]]:
         """The left and right groups: (text, what a click does)."""
         p = self.presenter
-        func = p.function.am_obj
-        name = ""
-        if func is not None:
-            name = func.demangled_name
-            if len(name) > 55:
-                name = name[:55] + "..."
-            name += f" ({func.addr:x})"
+        name = function_label(p.function.am_obj)
         mode = "Linear Disassembly" if p.is_linear else "Graph Disassembly"
         left: list[HeaderItem] = [
             ("◀ Back", p.jump_back),
@@ -160,135 +116,6 @@ class DisasmHeader(Widget):
             ("Options ▾", lambda: self.view.open_menu(p.options_menu())),
         ]
         return left, right
-
-    def render(self) -> Text:
-        left, right = self.items()
-        width = self.size.width
-        text = Text(no_wrap=True)
-        self._buttons = []
-
-        def add(items) -> None:
-            for idx, (label, action) in enumerate(items):
-                if idx:
-                    text.append("  " if label != "▾" else " ")
-                start = len(text)
-                text.append(label, style="bold" if action is not None else "")
-                if action is not None:
-                    self._buttons.append((start, len(text), action))
-
-        add(left)
-        right_width = sum(len(label) for label, _ in right) + 2 * (len(right) - 1)
-        text.append(" " * max(2, width - len(text) - right_width))
-        add(right)
-        return text
-
-    def on_click(self, event: events.Click) -> None:
-        for start, end, action in self._buttons:
-            if start <= event.x < end:
-                event.stop()
-                action()
-                return
-
-
-#
-# The find bar
-#
-
-
-class FindBarWidget(Horizontal):
-    """The find bar: the query, the mode, case and regex switches, and the match counter."""
-
-    DEFAULT_CSS = """
-    FindBarWidget {
-        height: 1;
-        display: none;
-        background: $panel;
-    }
-    FindBarWidget > Input {
-        width: 40;
-        height: 1;
-        border: none;
-        padding: 0 1;
-    }
-    FindBarWidget > Checkbox {
-        height: 1;
-        border: none;
-        padding: 0;
-        margin: 0 1;
-    }
-    FindBarWidget > Label {
-        padding: 0 1;
-    }
-    """
-
-    def __init__(self, state: FindBarState, on_close: Callable[[], Any]) -> None:
-        super().__init__()
-        self.state = state
-        self.on_close = on_close
-        self.query_input = Input(placeholder="Find...", compact=True)
-        self.mode_label = Label("", id="find-mode")
-        self.case_box = Checkbox("Case", compact=True)
-        self.regex_box = Checkbox("Regex", compact=True)
-        self.status_label = Label("", id="find-status")
-        state.changed.connect(self._update)
-
-    def compose(self) -> ComposeResult:
-        yield self.query_input
-        yield self.mode_label
-        yield self.case_box
-        yield self.regex_box
-        yield self.status_label
-
-    def _update(self) -> None:
-        if not self.is_attached:
-            return
-        self.display = self.state.is_open
-        self.mode_label.update(f"[{self.state.mode}]" if self.state.mode else "")
-        self.status_label.update(self.state.status)
-        self.case_box.display = self.state.text_options_visible
-        self.regex_box.display = self.state.text_options_visible
-        if self.query_input.value != self.state.query:
-            self.query_input.value = self.state.query
-
-    def open(self) -> None:
-        self._update()
-        self.query_input.focus()
-
-    def on_input_changed(self, event: Input.Changed) -> None:
-        event.stop()
-        if event.value != self.state.query:
-            self.state.set_query(event.value)
-
-    def on_checkbox_changed(self, event: Checkbox.Changed) -> None:
-        event.stop()
-        if event.checkbox is self.case_box:
-            self.state.set_case_sensitive(event.value)
-        elif event.checkbox is self.regex_box:
-            self.state.set_use_regex(event.value)
-
-    def on_click(self, event: events.Click) -> None:
-        if event.widget is self.mode_label:
-            self.state.next_mode()
-
-    def on_key(self, event: events.Key) -> None:
-        if event.key == "escape":
-            event.stop()
-            self.state.close_bar()
-            self.on_close()
-        elif event.key == "enter":
-            event.stop()
-            self.view_presenter().find_next()
-        elif event.key == "shift+enter":
-            event.stop()
-            self.view_presenter().find_previous()
-        elif event.key == "ctrl+t":
-            event.stop()
-            self.state.next_mode()
-
-    def view_presenter(self) -> Any:
-        """The presenter of the view the bar is in (a disassembly or a pseudocode view)."""
-        parent: Any = self.parent
-        return parent.presenter
 
 
 #
@@ -1150,4 +977,4 @@ class DisassemblyTuiView(TuiView):
         self.presenter.close()
 
 
-__all__ = ["DisasmHeader", "DisassemblyTuiView", "FindBarWidget", "GraphWidget", "LinearWidget", "draw_graph"]
+__all__ = ["DisasmHeader", "DisassemblyTuiView", "GraphWidget", "LinearWidget", "draw_graph"]

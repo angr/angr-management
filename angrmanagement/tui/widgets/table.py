@@ -18,8 +18,8 @@ from textual.message import Message
 from textual.widgets import DataTable, Input, Static
 
 from angrmanagement.present.tables import APPENDED, DATA
-from angrmanagement.present.theme import Theme
 from angrmanagement.tui.theme import rich_style
+from angrmanagement.tui.widgets.styles import current_theme
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -28,12 +28,7 @@ if TYPE_CHECKING:
     from textual.app import ComposeResult
 
     from angrmanagement.present.tables import Cell, Column, TableModel
-
-
-def current_theme(widget) -> Theme:
-    """The theme the app shows, or the configuration's colours."""
-    theme = getattr(widget.app, "am_theme", None)
-    return theme if isinstance(theme, Theme) else Theme.from_conf()
+    from angrmanagement.present.theme import Theme
 
 
 class TableWidget(DataTable):

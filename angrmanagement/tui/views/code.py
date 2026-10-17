@@ -20,7 +20,6 @@ from textual.containers import Horizontal, Vertical
 from textual.geometry import Region, Size
 from textual.scroll_view import ScrollView
 from textual.strip import Strip
-from textual.widget import Widget
 from textual.widgets import Button, Label, Static, TabbedContent, TabPane, Tree
 
 from angrmanagement.logic import GlobalInfo
@@ -43,10 +42,12 @@ from angrmanagement.present.find import FindBarState
 from angrmanagement.present.menus import Menu, MenuEntry
 from angrmanagement.tui.code_screens import CommentScreen, RenameScreen, RetypeScreen
 from angrmanagement.tui.screens import PromptScreen
+from angrmanagement.tui.widgets.find_bar import FindBarWidget
+from angrmanagement.tui.widgets.header import HeaderBar, HeaderItem, function_label
+from angrmanagement.tui.widgets.styles import StyleCache
 from angrmanagement.tui.widgets.table import TableWidget
 
 from .base import TuiView
-from .disassembly import FindBarWidget, StyleCache
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -57,8 +58,6 @@ if TYPE_CHECKING:
     from angrmanagement.present.code import CodeDoc
     from angrmanagement.present.spans import Line
 
-#: Where a click on a header word sends it: (start column, end column, what it does).
-HeaderButton = tuple[int, int, "Callable[[], Any]"]
 #: The node actions of the context menu: what the keys run only when the menu of the node under the cursor has it.
 NODE_ACTIONS = {method: key for key, (_caption, _shortcut, method) in MENU_ACTIONS.items()}
 #: How many lines a mouse wheel step scrolls.
@@ -104,41 +103,24 @@ def styled_cells(line: Line, overlays: Sequence[tuple[int, int, str]]) -> list[t
 #
 
 
-class CodeHeader(Widget):
+class CodeHeader(HeaderBar):
     """One line: ◀ Back, ▶ Forward, the function, and the Summary, Options and Patterns panes and the flavor."""
 
-    DEFAULT_CSS = """
-    CodeHeader {
-        height: 1;
-        width: 1fr;
-        background: $panel;
-    }
-    """
+    view: CodeTuiView
 
-    def __init__(self, view: CodeTuiView) -> None:
-        super().__init__()
-        self.view = view
-        self._buttons: list[HeaderButton] = []
-
-    def items(self) -> tuple[list[tuple[str, Any]], list[tuple[str, Any]]]:
+    def items(self) -> tuple[list[HeaderItem], list[HeaderItem]]:
         """The left and right groups: (text, what a click does, or None for a label)."""
         presenter = self.view.presenter
-        func = presenter.function.am_obj
-        name = ""
-        if func is not None:
-            name = func.demangled_name
-            if len(name) > 55:
-                name = name[:55] + "..."
-            name += f" ({func.addr:x})"
+        name = function_label(presenter.function.am_obj)
         panel = self.view.panel_shown
-        left = [
+        left: list[HeaderItem] = [
             ("◀ Back", presenter.jump_back),
             ("▾", lambda: self.view.open_menu(presenter.history_menu())),
             ("▶ Forward", presenter.jump_forward),
             ("▾", lambda: self.view.open_menu(presenter.history_menu())),
             (name, None),
         ]
-        right = [
+        right: list[HeaderItem] = [
             (("▸ " if panel != "summary" else "▾ ") + "Function Summary", lambda: self.view.toggle_panel("summary")),
             (
                 ("▸ " if panel != "options" else "▾ ") + "Decompilation Options",
@@ -148,34 +130,6 @@ class CodeHeader(Widget):
             (f"{presenter.flavor or 'pseudocode'} ▾", lambda: self.view.open_menu(presenter.flavor_menu())),
         ]
         return left, right
-
-    def render(self) -> Text:
-        left, right = self.items()
-        width = self.size.width
-        text = Text(no_wrap=True)
-        self._buttons = []
-
-        def add(items) -> None:
-            for idx, (label, action) in enumerate(items):
-                if idx:
-                    text.append("  " if label != "▾" else " ")
-                start = len(text)
-                text.append(label, style="bold" if action is not None else "")
-                if action is not None:
-                    self._buttons.append((start, len(text), action))
-
-        add(left)
-        right_width = sum(len(label) for label, _ in right) + 2 * (len(right) - 1)
-        text.append(" " * max(2, width - len(text) - right_width))
-        add(right)
-        return text
-
-    def on_click(self, event: events.Click) -> None:
-        for start, end, action in self._buttons:
-            if start <= event.x < end:
-                event.stop()
-                action()
-                return
 
 
 #
