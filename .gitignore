@@ -31,3 +31,6 @@ packaging/appimage/AppDir
 packaging/appimage/appimage-builder-cache
 packaging/appimage/AppDir
 *.AppImage
+
+# pytest-textual-snapshot writes this when a snapshot does not match
+snapshot_report.html
