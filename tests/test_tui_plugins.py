@@ -11,6 +11,7 @@ import asyncio
 import json
 import os
 import re
+import tempfile
 import unittest
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
@@ -27,7 +28,7 @@ from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps
 from angrmanagement.tui.executor import TextualExecutor
 from angrmanagement.tui.new_state import NewStateScreen
-from angrmanagement.tui.screens import FilePickerScreen, MessageScreen
+from angrmanagement.tui.screens import FilePickerScreen, MessageScreen, PromptScreen
 from angrmanagement.tui.screens.form import FormScreen
 from angrmanagement.tui.screens.plugins import PluginsScreen
 from angrmanagement.tui.widgets.menubar import MenuPopup
@@ -266,6 +267,60 @@ class TestStatusAndMarks(PluginCase):
             active[0].action()
             popup = await wait_for_screen(pilot, MenuPopup)
             assert [getattr(item, "caption", None) for item in popup.items] == ["Select", "Move To"]
+
+        run_app(scenario)
+
+
+class TestTraceViewer(PluginCase):
+    def test_a_trace_opened_from_the_menu_shows_in_the_strip_the_marks_and_the_functions(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            plugin = await enable(app, pilot, "trace_viewer")
+            disasm: Any = app.view_widget("disassembly")
+            strip = next(w for w in disasm.plugin_widgets if type(w).__name__ == "TraceStrip")
+            assert not strip.display
+            kb = app.workspace.main_instance.kb
+            main = kb.functions["main"]
+            blocks = sorted(main.block_addrs_set)
+            # a basic block trace of main, in the plugin's JSON form, at the binary's own base address
+            with tempfile.TemporaryDirectory() as tmp:
+                path = os.path.join(tmp, "main.json")
+                with open(path, "w", encoding="utf-8") as f:
+                    trace = {"bb_addrs": blocks, "syscalls": [], "id": "t1", "created_at": "", "input_id": "i1"}
+                    json.dump({**trace, "complete": True}, f)
+                await pick_menu_entry(app, pilot, "Plugins", "Open/Add trace...")
+                picker = await wait_for_screen(pilot, FilePickerScreen)
+                picker.query_one("#path", Input).value = path
+                picker.query_one("#ok", Button).press()
+                prompt = await wait_for_screen(pilot, PromptScreen)
+                assert prompt.title_text == "Input Trace Base Address"
+                prompt.query_one("#answer", Input).value = "0x400000"
+                prompt.query_one("#ok", Button).press()
+                await wait_for(pilot, lambda: not plugin.trace.am_none)
+            assert plugin.trace.count == len(blocks)
+            # the strip beside the graph, the marks on the instructions, and the coverage of the function
+            await wait_for(pilot, lambda: strip.display)
+            assert "Trace t1" in str(strip.render_line(0).text)
+            # as in Qt, the block colours and the marks are the heat map's: H switches it on
+            assert not app.workspace.plugins.decorate_insn(main.addr, disasm)
+            strip.action_heatmap()
+            await settle(pilot)
+            marks = app.workspace.plugins.decorate_insn(main.addr, disasm)
+            assert [m.text for m in marks if m.style_key == "disasm.mark.trace"] == ["1×"]
+            assert app.workspace.plugins.block_style(main.addr) is not None
+            assert app.workspace.plugins.func_style(main) is not None
+            functions: Any = app.view_widget("functions")
+            model = functions.presenter.model
+            col = [c.name for c in model.columns].index("Coverage")
+            row = next(i for i, func in enumerate(model.rows) if func.addr == main.addr)
+            assert model.cell(row, col).text.endswith("%")
+            # a click on the strip goes to that point of the trace
+            strip.go_to(len(blocks) - 1)
+            await settle(pilot)
+            assert disasm.infodock.selected_insns == set(
+                app.workspace.main_instance.project.factory.block(blocks[-1]).instruction_addrs
+            )
+            await pick_menu_entry(app, pilot, "Plugins", "Clear trace")
+            assert plugin.trace.am_none
 
         run_app(scenario)
 

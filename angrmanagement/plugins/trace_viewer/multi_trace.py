@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from PySide6.QtGui import QColor
+from angrmanagement.config.color import Color
 
 from .trace_statistics import TraceStatistics
 
@@ -12,14 +12,14 @@ if TYPE_CHECKING:
 
 
 class MultiTrace:
-    HIT_COLOR = QColor(0x00, 0x99, 0x00, 0x60)
-    MISS_COLOR = QColor(0xEE, 0xEE, 0xEE)
-    FUNCTION_NOT_VISITED_COLOR = QColor(0x99, 0x00, 0x00, 0x20)
+    HIT_COLOR = Color(0x00, 0x99, 0x00, 0x60)
+    MISS_COLOR = Color(0xEE, 0xEE, 0xEE)
+    FUNCTION_NOT_VISITED_COLOR = Color(0x99, 0x00, 0x00, 0x20)
     BUCKET_COLORS = [
-        QColor(0xEF, 0x65, 0x48, 0x20),
-        QColor(0xFC, 0x8D, 0x59, 0x60),
-        QColor(0xFD, 0xBB, 0x84, 0x60),
-        QColor(0xFD, 0xD4, 0x9E, 0x60),
+        Color(0xEF, 0x65, 0x48, 0x20),
+        Color(0xFC, 0x8D, 0x59, 0x60),
+        Color(0xFD, 0xBB, 0x84, 0x60),
+        Color(0xFD, 0xD4, 0x9E, 0x60),
     ]
 
     def __init__(self, workspace: Workspace) -> None:
@@ -111,12 +111,15 @@ class MultiTrace:
         for count in bucket_counts:
             addrs = buckets[count]
             density = 50 + math.floor(total / strata_size) * 20
-            color = QColor(0xFF, 0xFF, 0x30, density)
+            color = Color(0xFF, 0xFF, 0x30, min(255, density))
             for addr in addrs:
                 self.addr_color_map[addr] = color
             total += len(addrs)
 
     def _calc_function_info(self, func) -> None:
+        # the function tables give a proxy of the function (FunctionTableEntry), which has no blocks
+        if not hasattr(func, "block_addrs"):
+            func = self.workspace.main_instance.kb.functions.get_by_addr(func.addr)
         blocks = list(func.block_addrs)
         hit_count = 0
 

@@ -635,6 +635,8 @@ class DisassemblyTuiView(TuiView):
         self.linear_widget = LinearWidget(self, self.linear_viewer)
         self.linear_widget.display = False
         self._last_mouse: tuple[int, int] | None = None
+        #: widgets plugins put beside the graph (instrument_disassembly_view), docked on the right
+        self.plugin_widgets: list[Widget] = []
         presenter.level_changed.connect(lambda _level: self.header_changed())
         presenter.view_visibility_changed.connect(self.header_changed)
         presenter.attach(self, node_target=presenter)
@@ -646,8 +648,16 @@ class DisassemblyTuiView(TuiView):
     def compose(self) -> ComposeResult:
         yield self.header
         yield self.find_widget
+        yield from self.plugin_widgets
         yield self.graph_widget
         yield self.linear_widget
+
+    def add_plugin_widget(self, widget: Widget) -> None:
+        """Show a plugin's widget beside the graph and the listing, as the Qt view adds it to its layout."""
+        widget.styles.dock = "right"
+        self.plugin_widgets.append(widget)
+        if self.is_mounted:
+            self.mount(widget, before=self.graph_widget)
 
     #
     # What the presenter asks of its view

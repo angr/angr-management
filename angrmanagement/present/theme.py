@@ -83,6 +83,8 @@ EXTRA_STYLES: dict[str, StyleSpec] = {
     # the execution statistics plugin's counts: QActiveCount and QPassthroughCount over white
     "disasm.mark.active": StyleSpec(fg=Color(0, 60, 0), bg=Color(0xE2, 0xFF, 0xE2)),
     "disasm.mark.passthrough": StyleSpec(fg=Color(60, 0, 0), bg=Color(0xFF, 0xE2, 0xE2)),
+    # the trace viewer plugin's count of the times the trace passed an instruction
+    "disasm.mark.trace": StyleSpec(fg=Color(0x40, 0x20, 0x00), bg=Color(0xF0, 0xE7, 0xDA)),
     "disasm.find.match": StyleSpec(underline=True),
     # graphs of boxes (path tree, proximity, dependencies, patterns): the fixed colours the Qt blocks paint with
     "graph.node": StyleSpec(fg=Color(0x00, 0x00, 0x00), bg=Color(0xFA, 0xFA, 0xFA)),
