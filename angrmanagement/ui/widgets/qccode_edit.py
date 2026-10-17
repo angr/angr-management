@@ -3,26 +3,17 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from angr.analyses.decompiler.structured_codegen import (
-    FunctionCallNode,
-    FunctionNode,
-    StructFieldNode,
-    VariableNode,
-)
-from angr.sim_type import SimType
-from angr.sim_variable import SimTemporaryVariable
 from pyqodeng.core import api, modes, panels
 from pyqodeng.core.api.syntax_highlighter import COLOR_SCHEME_KEYS
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QAction, QKeySequence
-from PySide6.QtWidgets import QApplication, QInputDialog, QLineEdit, QMenu
+from PySide6.QtWidgets import QApplication, QMenu
 
 from angrmanagement.present.menus import Menu, MenuEntry, MenuSeparator
 from angrmanagement.ui.dialogs.rename_node import RenameNode
 from angrmanagement.ui.dialogs.retype_node import RetypeNode
 from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.documents.qcodedocument import QCodeDocument
-from angrmanagement.ui.views.pattern_view import PatternView
 from angrmanagement.ui.widgets.qccode_highlighter import FORMATS, QCCodeHighlighter
 from angrmanagement.ui.widgets.qinline_comment_editor import QInlineCommentEditor
 from angrmanagement.ui.widgets.qnode_tip import QNodeTip
@@ -33,6 +24,7 @@ if TYPE_CHECKING:
 
     from angrmanagement.present.code import CodePresenter
     from angrmanagement.ui.views.code_view import CodeView
+    from angrmanagement.ui.views.pattern_view import PatternView
 
 
 _l = logging.getLogger(__name__)
@@ -334,10 +326,7 @@ class QCCodeEdit(api.CodeEdit):
     # pylint: disable=unused-argument
     def rename_node(self, *args, node=None) -> None:  # pylint: disable=unused-argument
         n = node if node is not None else self._selected_node
-        if not isinstance(n, VariableNode | FunctionNode | FunctionCallNode | StructFieldNode | SimType):
-            return
-        if isinstance(n, VariableNode) and isinstance(n.variable, SimTemporaryVariable):
-            # unsupported right now..
+        if not self.presenter.can_rename(n):
             return
         dialog = RenameNode(code_view=self._code_view, node=n, func=self._code_view.function)
         dialog.exec_()
@@ -363,10 +352,7 @@ class QCCodeEdit(api.CodeEdit):
     def retype_node(self, *args, node=None, node_type=None) -> None:  # pylint: disable=unused-argument
         if node is None:
             node = self._selected_node
-        if not isinstance(node, VariableNode | FunctionNode | FunctionCallNode | StructFieldNode):
-            return
-        if isinstance(node, VariableNode) and isinstance(node.variable, SimTemporaryVariable):
-            # unsupported right now..
+        if not self.presenter.can_retype(node):
             return
         if node_type is None and hasattr(node, "type"):
             node_type = node.type
@@ -378,27 +364,8 @@ class QCCodeEdit(api.CodeEdit):
             self.presenter.apply_retype(node, new_node_type)
 
     def comment(self, expr: bool = False, node=None, inline: bool = True) -> None:
-        addr = self.get_closest_insaddr(node, expr=expr)
-        if addr is None:
-            return
-
-        if expr:
-            self._comment_expr(addr)
-            return
-
-        # statement comments go into kb.comments so they survive re-decompilation and show up in
-        # the disassembly too; the edit layer mirrors them into codegen.stmt_comments
-        kb = self._code_view.instance.kb
-        text = "" if kb is None else kb.comments.get(addr, "")
-        if inline and "\n" not in text:
-            self.begin_inline_comment(addr, text)
-            return
-
-        text, ok = QInputDialog.getText(
-            self._code_view, "Statement Comment", "", QLineEdit.EchoMode.Normal, text.replace("\n", " ")
-        )
-        if ok:
-            self._commit_inline_comment(addr, text)
+        """Comment the statement of the cursor's line, or the expression; the code view asks for the text."""
+        self.presenter.comment(expr=expr, node=node, inline=inline)
 
     def begin_inline_comment(self, addr: int, text: str) -> QInlineCommentEditor:
         """
@@ -417,16 +384,7 @@ class QCCodeEdit(api.CodeEdit):
         self.workspace.set_comment(addr, text)
 
     def _comment_expr(self, addr: int) -> None:
-        try:
-            cdict = self._code_view.codegen.expr_comments
-        except AttributeError:
-            return
-        text = cdict.get(addr, "")
-
-        text, ok = QInputDialog.getText(self._code_view, "Expression Comment", "", QLineEdit.EchoMode.Normal, text)
-
-        if ok:
-            self.presenter.set_expr_comment(addr, text)
+        self.presenter.comment_expr_at(addr)
 
     def toggle_struct(self) -> None:
         self.presenter.toggle_struct(self._selected_node)
@@ -458,26 +416,7 @@ class QCCodeEdit(api.CodeEdit):
         ``call_name`` is asked for when not given. Returns the view, or None when there
         is no selection, no decompilation, or nothing whole inside the selection.
         """
-        cursor = self.textCursor()
-        start, end = cursor.selectionStart(), cursor.selectionEnd()
-        if start >= end:
-            _l.warning("Select the statements the pattern should cover first.")
-            return None
-        graph = self.presenter.pattern_graph()
-        if graph is None:
-            return None
-        if call_name is None:
-            call_name, ok = QInputDialog.getText(self, "Pattern", "Name of the call the pattern becomes:")
-            if not ok or not call_name.strip():
-                return None
-        pattern = self.presenter.make_pattern(start, end, call_name, graph)
-        if pattern is None:
-            return None
-        function = self._code_view.function
-        view = self.workspace._get_or_create_view("pattern", PatternView, position="center")
-        view.load_pattern(pattern, origin_func=function.addr)
-        self.workspace.raise_view(view)
-        return view
+        return self.presenter.create_pattern(call_name)
 
     def convert_to_ite_expr(self) -> None:
         self.presenter.convert_to_ite_expr(self._selected_node)

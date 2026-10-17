@@ -10,6 +10,8 @@ from PySide6.QtWidgets import (
     QDockWidget,
     QFrame,
     QHBoxLayout,
+    QInputDialog,
+    QLineEdit,
     QMainWindow,
     QTableWidget,
     QTextEdit,
@@ -197,6 +199,24 @@ class CodeView(FunctionView):
 
     def focus_text(self) -> None:
         self._textedit.setFocus()
+
+    def ask_comment(self, addr: int, text: str, multiline: bool, then: Callable[[str | None], None]) -> None:
+        """A one-line comment is edited in the editor floating at the cursor; a longer one in a dialog."""
+        if not multiline:
+            self._textedit.begin_inline_comment(addr, text)
+            return
+        answer, ok = QInputDialog.getText(
+            self, "Statement Comment", "", QLineEdit.EchoMode.Normal, text.replace("\n", " ")
+        )
+        then(answer if ok else None)
+
+    def ask_expr_comment(self, _addr: int, text: str, then: Callable[[str | None], None]) -> None:
+        answer, ok = QInputDialog.getText(self, "Expression Comment", "", QLineEdit.EchoMode.Normal, text)
+        then(answer if ok else None)
+
+    def ask_pattern_name(self, then: Callable[[str | None], None]) -> None:
+        answer, ok = QInputDialog.getText(self._textedit, "Pattern", "Name of the call the pattern becomes:")
+        then(answer if ok else None)
 
     def on_flavors_changed(self) -> None:
         self._update_available_views(self.presenter.available_flavors)
@@ -430,9 +450,8 @@ class CodeView(FunctionView):
         """
         return self.presenter.function_at(addr)
 
-    def _on_new_node(self, **kwargs) -> None:  # pylint: disable=unused-argument
-        self.addr.am_obj = self._textedit.get_src_to_inst()
-        self.addr.am_event(already_moved=True)
+    def _on_new_node(self, **kwargs) -> None:
+        self.presenter.on_new_node(**kwargs)
 
     # pylint: disable=unused-argument
     def reload_patterns(self) -> None:
@@ -579,9 +598,7 @@ class CodeView(FunctionView):
             self.popup_jumpto_dialog()
             return True
         elif key == Qt.Key_Escape:
-            # the first Escape dismisses a pattern highlight; with none shown it navigates back
-            if not self.clear_pattern_highlight():
-                self.jump_back()
+            self.presenter.escape()
             return True
         elif key == Qt.Key_Space and not self.codegen.am_none:
             self.presenter.next_flavor()

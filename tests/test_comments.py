@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import angr
@@ -237,6 +238,29 @@ class TestPseudocodeComments(AngrManagementTestCase):
         assert addr not in self.instance.kb.comments
         self.code_view.codegen.am_event()
         assert "what this line does" not in self.code_view.codegen.text
+
+    def test_the_comment_actions_ask_through_the_qt_editors(self):
+        edit = self.code_view.textedit
+        addr = self._rendered_addr()
+        node = SimpleNamespace(tags={"ins_addr": addr})
+        # a one-line statement comment is edited at the cursor
+        with patch.object(edit, "begin_inline_comment") as inline:
+            edit.comment(node=node)
+        inline.assert_called_once_with(addr, "")
+        # the dialog: for a statement comment of several lines, and for an expression comment
+        with patch("PySide6.QtWidgets.QInputDialog.getText", return_value=("from the dialog", True)) as get_text:
+            edit.comment(node=node, inline=False)
+            assert get_text.call_args.args[:2] == (self.code_view, "Statement Comment")
+            assert self.instance.kb.comments[addr] == "from the dialog"
+            edit.comment(expr=True, node=node)
+            assert get_text.call_args.args[:2] == (self.code_view, "Expression Comment")
+            assert self.code_view.codegen.expr_comments[addr] == "from the dialog"
+        # the name of a pattern's call, cancelled
+        text = self.code_view.codegen.text
+        self.code_view.select_range(0, len(text))
+        with patch("PySide6.QtWidgets.QInputDialog.getText", return_value=("", False)) as get_text:
+            assert edit.create_pattern() is None
+        assert get_text.call_args.args == (edit, "Pattern", "Name of the call the pattern becomes:")
 
     def test_comment_survives_redecompilation(self):
         addr = self._rendered_addr()

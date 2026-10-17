@@ -713,7 +713,8 @@ class CodePresenter(FunctionPresenter):
     ``focus_text()``, ``on_flavors_changed()``, ``on_chunks_changed()``, ``on_pattern_highlight_changed()``,
     ``on_pattern_highlight_cleared()``, ``reload_patterns()``, ``on_find_matches_changed()``, ``find_bar_opened()``,
     ``find_bar_closed()``, ``close_view_requested()``, ``copy()``, ``select_all()``, and the asks ``ask_rename``,
-    ``ask_type``, ``ask_comment``. A view without them gets the presenter's defaults.
+    ``ask_type``, ``ask_comment``, ``ask_expr_comment`` and ``ask_pattern_name``. A view without them gets the
+    presenter's defaults.
     """
 
     # the knowledge base, the codegen and the nodes are angr's untyped objects
@@ -1789,12 +1790,18 @@ class CodePresenter(FunctionPresenter):
     # Retyping
     #
 
+    @staticmethod
+    def can_retype(node: Any) -> bool:
+        if not isinstance(node, VariableNode | FunctionNode | FunctionCallNode | StructFieldNode):
+            return False
+        return not (
+            isinstance(node, VariableNode) and isinstance(getattr(node, "variable", None), SimTemporaryVariable)
+        )
+
     def retype_node(self, node: Any = None, node_type: SimType | None = None) -> None:
         """Y: ask for a new type for ``node`` (the selected node) and apply it."""
         node = self._node(node)
-        if not isinstance(node, VariableNode | FunctionNode | FunctionCallNode | StructFieldNode):
-            return
-        if isinstance(node, VariableNode) and isinstance(getattr(node, "variable", None), SimTemporaryVariable):
+        if not self.can_retype(node):
             return
         typed: Any = node
         if node_type is None and hasattr(typed, "type"):
@@ -1957,7 +1964,8 @@ class CodePresenter(FunctionPresenter):
             if answer is not None:
                 self.set_expr_comment(addr, answer)
 
-        ask_text("Expression Comment", f"Expression comment at {addr:#x}:", text, then)
+        if not self._ask("ask_expr_comment", addr, text, then):
+            ask_text("Expression Comment", f"Expression comment at {addr:#x}:", text, then)
 
     def set_expr_comment(self, addr: int, text: str) -> None:
         """Set (or, with an empty text, remove) the expression comment at ``addr``, telling the plugins first."""
@@ -2104,15 +2112,20 @@ class CodePresenter(FunctionPresenter):
             log.warning("Cannot make a pattern out of this selection: %s", ex)
             return None
 
-    def create_pattern(self, call_name: str | None = None) -> None:
-        """Turn the selection into a pattern and open it in the pattern view."""
+    def create_pattern(self, call_name: str | None = None) -> Any:
+        """
+        Turn the selection into a pattern and open it in the pattern view. ``call_name``, the name of the call the
+        pattern becomes, is asked for when not given. Returns the pattern view when it is open by the time this
+        returns (the name was given, or the view asked for it and was answered at once), else None.
+        """
         start, end = self.selection_range()
         if start >= end:
             log.warning("Select the statements the pattern should cover first.")
-            return
+            return None
         graph = self.pattern_graph()
         if graph is None:
-            return
+            return None
+        shown: list[Any] = []
 
         def then(answer: str | None) -> None:
             if not answer or not answer.strip():
@@ -2130,11 +2143,13 @@ class CodePresenter(FunctionPresenter):
                 return
             view.load_pattern(pattern, origin_func=self._function.addr)
             self.workspace.raise_view(view)
+            shown.append(view)
 
         if call_name is not None:
             then(call_name)
-            return
-        ask_text("Pattern", "Name of the call the pattern becomes:", "", then)
+        elif not self._ask("ask_pattern_name", then):
+            ask_text("Pattern", "Name of the call the pattern becomes:", "", then)
+        return shown[0] if shown else None
 
     def expr2armasm(self, node: Any = None) -> None:
         """Show the ARM THUMB assembly of the loads of the statement's AIL block, through the AIL2ARM32 plugin."""
