@@ -1,9 +1,10 @@
 """
 The terminal symbolic execution views, driven through Textual's pilot on fauxware: a state at main made with the new
 state screen, one step, the stash tree, the path tree and the inspector, the states view's menu, the panel's lists and
-menus, the new state screen's form and sub-screens, and a snapshot at 200x60.
+menus, the new state screen's form and its environment, file system and socket sub-screens, and snapshots of the
+symbolic execution and states views at 200x60.
 
-What Qt shows after one step from a state at main (phase4/probe/qt_symexec_step.py, a Qt run of the same steps):
+What Qt shows after one step from a state at main (measured by a Qt run of the same steps):
 the stash tree's seven stashes with ``active (1)`` holding ``<SimState @ 0x40071e>``, one row in the states table,
 and one path tree block, ``0x40071e`` / ``Function: main+1``.
 """
@@ -14,16 +15,17 @@ from __future__ import annotations
 
 import asyncio
 import os
+import socket
 import unittest
 from typing import TYPE_CHECKING, Any
 
 import angr
-from textual.widgets import Button, Input, Select, Static
+from textual.widgets import Button, Input, Select, Static, Tree
 
 from angrmanagement.present.symexec import gui_data, open_new_state
 from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps
-from angrmanagement.tui.new_state import NewStateScreen, PairsScreen
+from angrmanagement.tui.new_state import NewStateScreen, PacketScreen, PairsScreen, SocketsScreen
 from angrmanagement.tui.views.symexec import SymexecTuiView
 from angrmanagement.tui.widgets.menubar import MenuPopup
 from angrmanagement.utils import namegen
@@ -252,6 +254,70 @@ class TestNewStateScreen(unittest.TestCase):
 
         run_app(scenario)
 
+    def test_filesystem_and_sockets(self):
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            open_new_state(app.workspace, app.workspace.main_instance, MAIN)
+            await wait_for(pilot, lambda: isinstance(app.screen, NewStateScreen))
+            screen = app.screen
+            assert isinstance(screen, NewStateScreen)
+            # a mount: the first column is the mount point, the second the host directory
+            screen.query_one("#fs", Button).press()
+            await wait_for(pilot, lambda: isinstance(app.screen, PairsScreen))
+            pairs = app.screen
+            pairs.query_one("#add", Button).press()
+            await settle(pilot)
+            inputs = list(pairs.query(Input))
+            assert [i.value for i in inputs] == ["Edit Me", ""]
+            inputs[0].value = "/mnt"
+            inputs[1].value = test_location
+            pairs.query_one("#ok", Button).press()
+            await wait_for(pilot, lambda: app.screen is screen)
+            assert screen.spec.fs_mounts == [("/mnt", test_location)]
+            assert str(screen.query_one("#fs", Button).label) == "1 Items"
+            # a socket that receives one packet and has one accepted socket
+            screen.query_one("#sockets", Button).press()
+            await wait_for(pilot, lambda: isinstance(app.screen, SocketsScreen))
+            sockets = app.screen
+            sockets.query_one("#family", Select).value = "AF_INET"
+            sockets.query_one("#type", Select).value = "SOCK_DGRAM"
+            sockets.query_one("#nonce", Input).value = "1"
+            sockets.query_one("#add-socket", Button).press()
+            await settle(pilot)
+            tree = sockets.query_one("#tree", Tree)
+            assert [str(node.label) for node in tree.root.children] == ["AF_INET, SOCK_DGRAM, 1"]
+            tree.move_cursor(tree.root.children[0])
+            sockets.query_one("#packet", Button).press()
+            await wait_for(pilot, lambda: isinstance(app.screen, PacketScreen))
+            app.screen.query_one("#answer", Input).value = "aGVsbG8="
+            await pilot.press("enter")
+            await wait_for(pilot, lambda: app.screen is sockets)
+            tree.move_cursor(tree.root.children[0])
+            sockets.query_one("#accept", Button).press()
+            await settle(pilot)
+            assert [str(node.label) for node in tree.root.children[0].children] == [
+                "Package: aGVsbG8=",
+                "Accept, AF_INET, SOCK_DGRAM, 1, 2",
+            ]
+            sockets.query_one("#ok", Button).press()
+            await wait_for(pilot, lambda: app.screen is screen)
+            spec_sockets = screen.spec.sockets
+            assert spec_sockets is not None
+            assert spec_sockets.get_data() == {
+                "Accept, AF_INET, SOCK_DGRAM, 1, 2": [],
+                "AF_INET, SOCK_DGRAM, 1": ["aGVsbG8="],
+            }
+            # the state has both
+            screen.query_one("#ok", Button).press()
+            await settle(pilot)
+            states = list(app.workspace.main_instance.states)
+            assert len(states) == 1
+            mount, _rest = states[0].fs.get_mountpoint("/mnt/x86_64")
+            assert isinstance(mount, angr.SimHostFilesystem)
+            ident = ("socket", socket.AF_INET, socket.SOCK_DGRAM, 0, 1)
+            assert set(states[0].posix.sockets) == {ident, ("accept", ident, 2)}
+
+        run_app(scenario)
+
     def test_cancel_makes_nothing(self):
         async def scenario(app: AmApp, pilot: Pilot) -> None:
             open_new_state(app.workspace, app.workspace.main_instance, MAIN, create_simgr=True)
@@ -294,6 +360,25 @@ def test_snapshot_symexec(snap_compare):
             await _stepped_for_snapshot(pilot)
         finally:
             namegen.NameGenerator.random_name = original  # type: ignore[method-assign]
+
+    assert snap_compare(app, terminal_size=SIZE, run_before=run_before)
+
+
+def test_snapshot_states(snap_compare):
+    app = AmApp(caps=TerminalCaps(truecolor=True, forced_tier=2), theme_name="Light", interactive=True)
+
+    async def run_before(pilot: Pilot) -> None:
+        original = namegen.NameGenerator.random_name
+        namegen.NameGenerator.random_name = staticmethod(lambda: "snapshot state")  # type: ignore[method-assign]
+        try:
+            await _stepped_for_snapshot(pilot)
+        finally:
+            namegen.NameGenerator.random_name = original  # type: ignore[method-assign]
+        app_: Any = pilot.app
+        assert await app_.run_action("show_view('states')")
+        await settle(pilot)
+        app_.view_widget("states").focus_view()
+        await settle(pilot)
 
     assert snap_compare(app, terminal_size=SIZE, run_before=run_before)
 
