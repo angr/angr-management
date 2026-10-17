@@ -19,7 +19,7 @@ from angrmanagement.present.marks import Mark
 from angrmanagement.present.menus import Menu, walk_entries
 from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps
-from angrmanagement.tui.screens import PromptScreen
+from angrmanagement.tui.screens.form import FormScreen
 from angrmanagement.tui.views.disassembly import DisassemblyTuiView
 from angrmanagement.tui.widgets.menubar import MenuPopup
 
@@ -154,8 +154,15 @@ class TestGraph(unittest.TestCase):
             await settle(pilot)
             await pilot.press("g")
             await settle(pilot)
-            assert isinstance(app.screen, PromptScreen)
-            await pilot.press(*"authenticate", "enter")
+            assert isinstance(app.screen, FormScreen)
+            # the box says whether what is typed is an address, as the Qt JumpTo dialog does
+            await pilot.press(*"no such")
+            await settle(pilot)
+            assert str(app.screen.query_one("#status").render()) == "Invalid"
+            await pilot.press(*["backspace"] * 7, *"authenticate")
+            await settle(pilot)
+            assert str(app.screen.query_one("#status").render()) == "Valid"
+            await pilot.press("enter")
             await settle(pilot)
             presenter = view.presenter
             assert presenter.function.am_obj.name == "authenticate"

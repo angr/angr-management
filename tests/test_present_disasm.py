@@ -50,6 +50,15 @@ class PromptServices(HeadlessServices):
         self.prompts.append(title)
         return self.answer
 
+    def ask_form_async(self, form: Any, callback: Any) -> None:
+        """Type the answer in the form's first field; OK only if the form's check accepts it."""
+        self.prompts.append(form.title)
+        if self.answer is None:
+            callback(None)
+            return
+        values = {**form.initial_values(), form.fields[0].key: self.answer}
+        callback(values if form.checked(values).ok else None)
+
 
 class FauxwareDisasmCase(unittest.TestCase):
     """A headless workspace with fauxware, its CFG and its CFB, and a disassembly view that draws nothing."""
@@ -140,7 +149,11 @@ class TestJumps(FauxwareDisasmCase):
         services = PromptServices("authenticate")
         set_services(services)
         self.presenter.popup_jumpto_dialog()
-        assert services.prompts == ["Jump to"]
+        assert services.prompts == ["Jump to address"]
+        assert self.presenter.function.am_obj is self.project.kb.functions["authenticate"]
+        # the box refuses what is not an address, as the Qt JumpTo dialog does
+        set_services(PromptServices("no such function"))
+        self.presenter.popup_jumpto_dialog()
         assert self.presenter.function.am_obj is self.project.kb.functions["authenticate"]
 
 

@@ -26,6 +26,7 @@ from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps
 from angrmanagement.tui.code_screens import CommentScreen, RenameScreen, RetypeScreen
 from angrmanagement.tui.screens import PromptScreen
+from angrmanagement.tui.screens.form import FormScreen
 from angrmanagement.tui.views.code import CodeTuiView, OptionsScreen
 from angrmanagement.tui.widgets.menubar import MenuPopup
 from angrmanagement.tui.xrefs import XRefsScreen
@@ -353,8 +354,8 @@ class TestNavigation(unittest.TestCase):
         async def scenario(app: AmApp, pilot: Pilot, view: CodeTuiView) -> None:
             view.code.focus()
             await pilot.press("g")
-            await wait_for_screen(pilot, PromptScreen)
-            assert isinstance(app.screen, PromptScreen)
+            await wait_for_screen(pilot, FormScreen)
+            assert isinstance(app.screen, FormScreen)
             await pilot.press(*"authenticate", "enter")
             await wait_for_code(pilot)
             func: Any = view.presenter.function.am_obj

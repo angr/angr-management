@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QApplication, QHBoxLayout, QMenu, QVBoxLayout
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.present import disasm as present_disasm
+from angrmanagement.present.dialogs import func_doc_target
 from angrmanagement.present.disasm import DisasmPresenter, register_disasm_commands
 from angrmanagement.ui.dialogs.assemble_patch import AssemblePatchDialog
 from angrmanagement.ui.dialogs.dependson import DependsOn
@@ -597,23 +598,11 @@ class DisassemblyView(SynchronizedFunctionView):
             return
         block = self._flow_graph._insaddr_to_block.get(instr_addr, None)
         if block:
-            instr = block.addr_to_insns[instr_addr]
-            if instr is None or instr.insn.type != "call":
+            found = func_doc_target(block.addr_to_insns[instr_addr])
+            if found is None:
                 return
-            out_targets = instr.out_branch.targets
-            if len(out_targets) != 1:
-                return
-
-            target = next(iter(out_targets))
-            operand = instr.get_operand(0)
-
-            doc_tuple = GlobalInfo.library_docs.get_docstring_for_func_name(operand.text)
-            if doc_tuple is None:
-                doc_string = f"Cannot find local documentation for function {operand.text}."
-                url = "http://"
-                ftype = "<>"
-                doc_tuple = (doc_string, url, ftype)
-            dialog = FuncDocDialog(self.instance, addr=target, name=operand.text, doc_tuple=doc_tuple, parent=self)
+            target, name, doc_tuple = found
+            dialog = FuncDocDialog(self.instance, addr=target, name=name, doc_tuple=doc_tuple, parent=self)
             dialog.show()
 
     def popup_dependson_dialog(self, addr: int | None = None, use_operand: bool = False, func: bool = False):

@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.logic import GlobalInfo
+from angrmanagement.present.dialogs import function_info_rows
 from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.views.strings_view import StringsView
 from angrmanagement.ui.widgets.qproperty_editor import (
@@ -41,37 +42,12 @@ class FunctionDialog(QDialog):
         self.setLayout(main_layout)
 
         root = GroupPropertyItem("root")
-        for label, text in [
-            ("Name", self.function.name),
-            ("Address", f"{self.function.addr:x}"),
-            ("Binary", f"{self.function.binary}"),
-            ("Offset", f"{self.function.offset:x}"),
-            (
-                "Calling Convention",
-                "<Unknown>" if self.function.calling_convention is None else f"{self.function.calling_convention}",
-            ),
-            ("Tags", ", ".join(self.function.tags)),
-            ("Cyclomatic Complexity", str(self.function.cyclomatic_complexity)),
-            (
-                "C Prototype",
-                (
-                    (self.function.prototype.c_repr(full=True).replace("()", self.function.name, 1) + ";")
-                    if self.function.prototype
-                    else ""
-                ),
-            ),
-        ]:
-            root.addChild(TextPropertyItem(label, text, readonly=True))  # FIXME: Support editing
-
-        for label, checked in [
-            ("Alignment", self.function.is_alignment),
-            ("PLT", self.function.is_plt),
-            ("SimProcedure", self.function.is_simprocedure),
-            ("Returning", self.function.returning),
-            ("Prototype Guessed", self.function.is_prototype_guessed),
-            ("Variadic", self.function.prototype is not None and self.function.prototype.variadic),
-        ]:
-            root.addChild(BoolPropertyItem(label, checked, readonly=True))  # FIXME: Support editing
+        # the rows the terminal's function screen shows too: text facts, then flags
+        for label, value in function_info_rows(self.function):
+            if isinstance(value, bool):
+                root.addChild(BoolPropertyItem(label, value, readonly=True))  # FIXME: Support editing
+            else:
+                root.addChild(TextPropertyItem(label, value, readonly=True))  # FIXME: Support editing
 
         r = 0
 

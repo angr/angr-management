@@ -111,11 +111,14 @@ class FormDialog(QDialog):
                 box_layout.addWidget(button)
             group.idToggled.connect(lambda _i, on, key=f.key: on and self._changed(key))
             editor = (box, group)
+        elif kind == "link":
+            editor = QLabel(f'<a href="{f.value}">{f.value}</a>', self)
+            editor.setOpenExternalLinks(True)
         else:
             editor = QLabel(str(f.value), self)
             editor.setWordWrap(True)
         widget = editor[0] if isinstance(editor, tuple) else editor
-        widget.setEnabled(not f.readonly or kind == "label")
+        widget.setEnabled(not f.readonly or kind in ("label", "link"))
         return editor
 
     def _value_of(self, key: str) -> Any:
@@ -147,6 +150,8 @@ class FormDialog(QDialog):
             if isinstance(editor, tuple):
                 if value in values:
                     editor[1].button(values.index(value)).setChecked(True)
+            elif isinstance(editor, QLabel) and f.kind == "link":
+                editor.setText(f'<a href="{value}">{value}</a>')
             elif isinstance(editor, (QLineEdit, QLabel)):
                 editor.setText(str(value))
             elif isinstance(editor, QSpinBox):

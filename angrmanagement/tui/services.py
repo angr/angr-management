@@ -22,9 +22,10 @@ from typing import TYPE_CHECKING, Any
 
 from angrmanagement.data.load_options import build_load_options, default_selection
 from angrmanagement.logic import GlobalInfo
+from angrmanagement.present.dialogs import function_actions, function_info_form
 
 from .executor import Deferred, TextualExecutor
-from .screens import ChecklistScreen, FilePickerScreen, InfoScreen, MessageScreen, PromptScreen, QuestionScreen
+from .screens import ChecklistScreen, FilePickerScreen, MessageScreen, PromptScreen, QuestionScreen
 from .screens.form import FormScreen
 
 if TYPE_CHECKING:
@@ -46,27 +47,6 @@ _SEVERITIES = {"info": "information", "warning": "warning", "critical": "error"}
 
 #: ``cancelled`` of :meth:`TuiServices._ask_sync` when a cancel gives the default answer
 _DEFAULT: Any = object()
-
-
-def function_info_rows(function: Function) -> list[tuple[str, str]]:
-    """What the function information screen lists."""
-    rows = [
-        ("Name", function.name),
-        ("Address", f"{function.addr:#x}"),
-        ("Size", str(function.size)),
-        ("Blocks", str(len(function.block_addrs_set))),
-        ("Binary", function.binary_name or ""),
-        ("Returning", str(function.returning)),
-        ("Calling convention", str(function.calling_convention)),
-        ("Prototype", str(function.prototype)),
-        ("PLT stub", str(function.is_plt)),
-        ("SimProcedure", str(function.is_simprocedure)),
-        ("Syscall", str(function.is_syscall)),
-        ("Alignment", str(function.is_alignment)),
-    ]
-    if function.tags:
-        rows.append(("Tags", ", ".join(function.tags)))
-    return rows
 
 
 class TuiServices:
@@ -376,9 +356,16 @@ class TuiServices:
         return configuration
 
     def function_info(self, function: Function) -> None:
-        if self._running:
-            assert self.app is not None
-            self.app.push_screen(InfoScreen(f"Function {function.name}", function_info_rows(function)))
+        """The Function dialog: the facts the Qt dialog lists, and its four actions."""
+        if not self._running:
+            return
+        app: Any = self.app
+        workspace = app.workspace
+
+        def show_xrefs() -> None:
+            app.show_xrefs(addr=function.addr, dst_addr=function.addr, xrefs_manager=workspace.main_instance.kb.xrefs)
+
+        app.push_screen(FormScreen(function_info_form(function, function_actions(workspace, function, show_xrefs))))
 
     #
     # Asking from the UI loop

@@ -18,7 +18,7 @@ from angrmanagement.present.hexdump import HexDataSource, PatchHighlightRegion
 from angrmanagement.present.menus import Menu, walk_entries
 from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps
-from angrmanagement.tui.screens import PromptScreen
+from angrmanagement.tui.screens.form import FormScreen
 from angrmanagement.tui.views.hex import HexLayout, HexTuiView, HexWidget
 from angrmanagement.tui.widgets.menubar import MenuPopup
 
@@ -152,7 +152,7 @@ class TestKeys(unittest.TestCase):
             # in the ASCII column G is a character, not the jump
             await pilot.press("g")
             await settle(pilot)
-            assert grid.read(BASE + 0x11) == ord("g") and not isinstance(app.screen, PromptScreen)
+            assert grid.read(BASE + 0x11) == ord("g") and not isinstance(app.screen, FormScreen)
             assert row_text(view, 1).endswith(".g>.......@.....")
 
         run_app(scenario)
@@ -161,7 +161,7 @@ class TestKeys(unittest.TestCase):
         async def scenario(app: AmApp, pilot: Pilot, view: HexTuiView) -> None:
             await pilot.press("g")
             await settle(pilot)
-            assert isinstance(app.screen, PromptScreen)
+            assert isinstance(app.screen, FormScreen)
             await pilot.press(*"main", "enter")
             await settle(pilot)
             main = kb_of(app).functions["main"]

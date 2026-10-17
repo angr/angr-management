@@ -65,6 +65,8 @@ from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import ViewCommand
 from angrmanagement.logic.disassembly import JumpHistory
 from angrmanagement.mcp.edit_hooks import WorkspaceEditHooks
+from angrmanagement.present.dialogs import address_of_text, jump_to_form
+from angrmanagement.present.forms import ask_form
 from angrmanagement.utils import locate_function
 
 from .base import FunctionPresenter, ask_text
@@ -1315,16 +1317,13 @@ class CodePresenter(FunctionPresenter):
     def popup_jumpto_dialog(self) -> None:
         """Ask for an address or a function name and go there (the Qt view shows its JumpTo dialog instead)."""
 
-        def then(answer: str | None) -> None:
-            if not answer:
-                return
-            addr = self.resolve_address(answer.strip())
-            if addr is None:
-                GlobalInfo.ui_services.message("warning", "Jump to", f"Cannot find {answer!r}.")
-                return
-            self.view_or_self("jump_to")(addr)
+        def then(values: dict[str, Any] | None) -> None:
+            addr = None if values is None else address_of_text(self.instance, values["address"])
+            if addr is not None:
+                self.view_or_self("jump_to")(addr)
 
-        ask_text("Jump to", "Address or function name:", "", then)
+        # the Qt JumpTo dialog's box: OK only while the text is an address, a function name or a label
+        ask_form(jump_to_form(self.instance), then)
 
     def disassembly_target_addr(self) -> int | None:
         """

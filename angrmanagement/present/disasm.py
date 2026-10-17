@@ -63,8 +63,21 @@ from .block_tree.disasm_nodes import (
     UnknownNode,
     build_block_nodes,
 )
+from .dialogs import (
+    PatchAssembler,
+    address_of_text,
+    depends_on_form,
+    func_doc_form,
+    func_doc_target,
+    hook_form,
+    jump_to_form,
+    label_name,
+    rename_label_form,
+    set_comment_form,
+)
 from .disasm_menus import DisasmInsnContextMenu, DisasmLabelContextMenu, DisasmOptionsMenu, DisasmUnknownContextMenu
 from .disasm_style import BLOCK_STYLE, block_background, insn_background
+from .forms import ask_form
 from .keymap import Binding, Keymap
 from .marks import Mark, sorted_marks
 from .menus import Menu, MenuEntry, MenuSeparator
@@ -1787,16 +1800,13 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
             own()
             return
 
-        def then(answer: str | None) -> None:
-            if not answer:
-                return
-            addr = self.resolve_address(answer.strip())
-            if addr is None:
-                GlobalInfo.ui_services.message("warning", "Jump to", f"Cannot find {answer!r}.")
-                return
-            self.jump_to(addr)
+        def then(values: dict[str, Any] | None) -> None:
+            addr = None if values is None else address_of_text(self.instance, values["address"])
+            if addr is not None:
+                self.jump_to(addr)
 
-        ask_text("Jump to", "Address or function name:", "", then)
+        # the Qt JumpTo dialog's box: OK only while the text is an address, a function name or a label
+        ask_form(jump_to_form(self.instance), then)
 
     def resolve_address(self, text: str) -> int | None:
         """An address from what the user typed: a number (hex with or without 0x), a function name or a label."""
@@ -1825,12 +1835,12 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         kb = self.kb
         text = "" if kb is None else kb.comments.get(addr, "")
 
-        def then(answer: str | None) -> None:
-            if answer is not None:
-                # "\n" typed in the prompt is a line break, as the multi-line dialog allows
-                self.workspace.set_comment(addr, answer.replace("\\n", "\n"))
+        def then(values: dict[str, Any] | None) -> None:
+            if values is not None:
+                # the Qt dialog's comment box strips what it holds
+                self.workspace.set_comment(addr, values["comment"].strip())
 
-        ask_text("Set comment", f"Comment at {addr:#x} (\\n for a new line):", text.replace("\n", "\\n"), then)
+        ask_form(set_comment_form(text), then)
 
     def popup_rename_label_dialog(self) -> None:
         own = self._view_method("popup_rename_label_dialog")
@@ -1849,12 +1859,12 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
             current = kb.labels.get(label_addr, "") if label_addr in kb.labels else get_label_text(label_addr, kb)
             current = current.rstrip(":")
 
-        def then(answer: str | None) -> None:
-            if answer is None:
-                return
-            self.rename_label(label_addr, answer.strip(), is_func=is_func, full_refresh=type_ == "operand")
+        def then(values: dict[str, Any] | None) -> None:
+            name = None if values is None else label_name(values["name"])
+            if name is not None:
+                self.rename_label(label_addr, name, is_func=is_func, full_refresh=type_ == "operand")
 
-        ask_text("Rename label", f"New name for {label_addr:#x} (empty for the default):", current, then)
+        ask_form(rename_label_form(label_addr, current), then)
 
     def rename_selected_object(self) -> None:
         """Rename the selected variable (a block tree variable node)."""
@@ -1942,12 +1952,15 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         addr = self.instruction_address_in_selection()
         if addr is None:
             return
+        assembler = PatchAssembler(self.instance, addr)
 
-        def then(answer: str | None) -> None:
-            if answer:
-                self.workspace.patch(addr, answer)
+        def then(values: dict[str, Any] | None) -> None:
+            if values is not None:
+                result = assembler.assemble(values["asm"], values["pad"])
+                if result.ok:
+                    assembler.apply(result.new_bytes)
 
-        ask_text("Patch", f"Assembly to put at {addr:#x}:", "", then)
+        ask_form(assembler.form(), then)
 
     def _not_in_terminal(self, what: str) -> None:  # pylint:disable=no-self-use
         GlobalInfo.ui_services.message("info", what, f"{what} is not in the terminal yet.")
@@ -1964,20 +1977,55 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         if own is not None:
             own(addr)
             return
-        self._not_in_terminal("Adding a hook")
+        if addr is None:
+            addr = self.instruction_address_in_selection()
+        if addr is None:
+            return
+
+        def then(values: dict[str, Any] | None) -> None:
+            if values is not None:
+                self.workspace.append_code_to_console(values["code"])
+
+        ask_form(hook_form(addr), then)
 
     def popup_func_doc_dialog(self, instr_addr) -> None:
         own = self._view_method("popup_func_doc_dialog")
         if own is not None:
             own(instr_addr)
             return
-        self._not_in_terminal("Function documentation")
+        node_of = getattr(self._current_view, "insn_node", None)
+        found = func_doc_target(node_of(instr_addr) if node_of is not None else None)
+        if found is not None:
+            target, name, doc_tuple = found
+            ask_form(func_doc_form(target, name, doc_tuple), lambda _values: None)
 
     def popup_dependson_dialog(self, addr: int | None = None, use_operand: bool = False, func: bool = False):
         own = self._view_method("popup_dependson_dialog")
         if own is not None:
             return own(addr=addr, use_operand=use_operand, func=func)
-        self._not_in_terminal("Depends on")
+        if use_operand:
+            r = self.get_selected_operand_info()
+            if r is None:
+                GlobalInfo.ui_services.message("critical", "No operand", "Please select an operand first.")
+                return None
+            _, addr, operand = r
+            # a branch to a function makes the function the one to depend on, as in the Qt view
+            target = getattr(operand, "branch_target", None)
+            if operand is not None and not func and target is not None and operand.is_target_func:
+                func, addr = True, target
+        if addr is None:
+            raise ValueError("No address is provided.")  # this is a programming error
+        the_func = None
+        if func and self.kb is not None:
+            with contextlib.suppress(KeyError):
+                the_func = self.kb.functions.get_by_addr(addr)
+
+        def then(values: dict[str, Any] | None) -> None:
+            run = getattr(self.workspace.main_window, "run_dependency_analysis", None)
+            if values is not None and run is not None:
+                run(func_addr=addr, func_arg_idx=int(values["arg"]))
+
+        ask_form(depends_on_form(the_func), then)
         return None
 
     def avoid_addr_in_exec(self, addr: int) -> None:

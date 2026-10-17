@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QLineEdit
 
+from angrmanagement.present.dialogs import address_of_text
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -36,20 +38,5 @@ class QAddressInput(QLineEdit):
         return r is not None
 
     def _convert_to_addr(self, input_):
-        # TODO: take care of labels
-        # TODO: take care of decimal integers
-
-        # is it a hex?
-        try:
-            addr = int(input_, 16)
-            return addr
-        except ValueError:
-            pass
-
-        # is it a function name?
-        functions = self.instance.project.kb.functions
-        func = functions.function(name=input_, create=False)
-        if func is not None:
-            return func.addr
-
-        return None
+        # a hexadecimal number or a function name, as the terminal's address boxes take them
+        return address_of_text(self.instance, input_)

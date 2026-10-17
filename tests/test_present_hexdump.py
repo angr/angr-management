@@ -58,6 +58,15 @@ class AnsweringServices(HeadlessServices):
         self.asked.append(title)
         return self.text
 
+    def ask_form_async(self, form: Any, callback: Any) -> None:
+        """Type ``text`` in the form's first field; OK only if the form's check accepts it."""
+        self.asked.append(form.title)
+        if self.text is None:
+            callback(None)
+            return
+        values = {**form.initial_values(), form.fields[0].key: self.text}
+        callback(values if form.checked(values).ok else None)
+
 
 def captions(menu: Menu) -> list[str]:
     return [entry.text for _path, entry in walk_entries(menu)]

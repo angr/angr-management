@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
-from angrmanagement.logic import GlobalInfo
 
-from .base import InstancePresenter, ask_text
+from .base import InstancePresenter
+from .dialogs import apply_breakpoint, breakpoint_form
+from .forms import ask_form
 from .keymap import table_keymap
 from .menus import Menu, MenuEntry, MenuSeparator
 from .tables import Column, ListTableModel
@@ -115,32 +116,20 @@ class BreakpointsPresenter(InstancePresenter):
     def keymap(self) -> Keymap:
         return table_keymap()
 
-    @staticmethod
-    def ask_breakpoint(bp: Breakpoint, then: Callable[[bool], None]) -> None:
+    def ask_breakpoint(self, bp: Breakpoint, then: Callable[[bool], None]) -> None:
         """
-        Let the user edit ``bp`` in place, then call ``then`` with whether they confirmed. The Qt view uses its
-        breakpoint dialog instead.
+        Let the user edit ``bp`` in place in the Edit Breakpoint form, then call ``then`` with whether they confirmed.
+        The Qt view uses its breakpoint dialog, which checks the address and size the same way.
         """
-        type_name = BREAKPOINT_TYPE_NAMES.get(bp.type, "Execute").lower()
 
-        def on_answer(text: str | None) -> None:
-            if text is None:
+        def on_answer(values: dict[str, Any] | None) -> None:
+            if values is None:
                 then(False)
                 return
-            parsed = parse_breakpoint(text)
-            if parsed is None:
-                GlobalInfo.ui_services.message("warning", "Breakpoint", f"Not a breakpoint: {text!r}")
-                then(False)
-                return
-            bp.type, bp.addr, bp.size = parsed
+            apply_breakpoint(bp, values, self.instance)
             then(True)
 
-        ask_text(
-            "Breakpoint",
-            "[execute|read|write] address [size], in hex:",
-            f"{type_name} {bp.addr:#x} {bp.size:#x}",
-            on_answer,
-        )
+        ask_form(breakpoint_form(bp, self.instance), on_answer)
 
     def new_breakpoint(self) -> None:
         bp = Breakpoint(BreakpointType.Execute, 0)

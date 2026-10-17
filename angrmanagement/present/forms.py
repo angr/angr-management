@@ -19,8 +19,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
 #: What a field can be: a line of text, a hidden line, several lines, several lines of code, a whole number, a check
-#: box, a drop-down list, a set of radio buttons, or text to read.
-FIELD_KINDS = ("text", "password", "multiline", "code", "int", "bool", "choice", "radio", "label")
+#: box, a drop-down list, a set of radio buttons, text to read, or a URL to open.
+FIELD_KINDS = ("text", "password", "multiline", "code", "int", "bool", "choice", "radio", "label", "link")
 
 
 @dataclass

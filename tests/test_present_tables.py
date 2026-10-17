@@ -73,6 +73,12 @@ class AnsweringServices(HeadlessServices):
         answer = self.answers.get("prompt")
         return None if answer is None else str(answer)
 
+    def ask_form_async(self, form: Any, callback: Any) -> None:
+        """Fill the form with ``answers["form"]``; OK only if the form's check accepts it."""
+        answer: Any = self.answers.get("form")
+        values = None if answer is None else {**form.initial_values(), **answer}
+        callback(values if values is not None and form.checked(values).ok else None)
+
 
 class FauxwareTestCase(unittest.TestCase):
     """A headless workspace with fauxware loaded and its CFG built once."""
@@ -366,7 +372,11 @@ class TestBreakpoints(FauxwareTestCase):
         assert model.row_count == 1
         assert [model.cell(0, c).text for c in range(4)] == ["Write", "0x601040", "0x4", "x"]
         assert captions(model.context_menu([0])) == ["Edit breakpoint", "Remove breakpoint", "New breakpoint"]
-        self.answer(prompt="read 0x601050 8")
+        # the Edit Breakpoint form, which refuses a size of 0 as the Qt dialog does
+        self.answer(form={"type": BreakpointType.Read, "addr": "0x601050", "size": "0"})
+        presenter.new_breakpoint()
+        assert model.row_count == 1
+        self.answer(form={"type": BreakpointType.Read, "addr": "0x601050", "size": "8"})
         presenter.new_breakpoint()
         assert model.row_count == 2
         added = model.row(1)

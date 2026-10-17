@@ -117,9 +117,12 @@ FormScreen .fields { height: auto; max-height: 40; }
                 *(RadioButton(caption, value=value == f.value) for caption, value in f.choices),
                 compact=True,
             )
+        elif kind == "link":
+            # an OSC 8 hyperlink the terminal opens
+            widget = Static(Text(str(f.value), style=f"link {f.value}" if f.value else ""), classes="field-text")
         else:
             widget = Static(Text(str(f.value)), classes="field-text")
-        widget.disabled = f.readonly and kind != "label"
+        widget.disabled = f.readonly and kind not in ("label", "link")
         if f.description:
             widget.tooltip = f.description
         return widget

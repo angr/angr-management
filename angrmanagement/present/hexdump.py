@@ -32,10 +32,11 @@ from angrmanagement.config import Conf
 from angrmanagement.config.color import Color
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
 from angrmanagement.data.search import SCOPE_ALL, BytePattern, Searcher, SearchError
-from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.commands import ViewCommand
 from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.logic.signal import Signal
+from angrmanagement.present.dialogs import address_of_text, jump_to_form
+from angrmanagement.present.forms import ask_form
 from angrmanagement.utils import is_printable
 
 from .base import (
@@ -45,7 +46,6 @@ from .base import (
     ask_text,
     container,
     project_of,
-    resolve_address,
 )
 from .find import FindBarState
 from .keymap import Binding, Keymap
@@ -1367,16 +1367,13 @@ class HexViewMixin(Synchronized):
     def popup_jumpto_dialog(self) -> None:
         """Ask for an address or a function name and go there."""
 
-        def then(answer: str | None) -> None:
-            if not answer:
-                return
-            addr = resolve_address(self.instance, answer.strip())
-            if addr is None:
-                GlobalInfo.ui_services.message("warning", "Jump to", f"Cannot find {answer!r}.")
-                return
-            self.jump_to(addr)
+        def then(values: dict[str, Any] | None) -> None:
+            addr = None if values is None else address_of_text(self.instance, values["address"])
+            if addr is not None:
+                self.jump_to(addr)
 
-        ask_text("Jump to", "Address or function name:", "", then)
+        # the Qt JumpTo dialog's box: OK only while the text is an address, a function name or a label
+        ask_form(jump_to_form(self.instance), then)
 
     #
     # Synchronization

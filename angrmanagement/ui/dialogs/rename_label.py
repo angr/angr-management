@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
+from angrmanagement.present.dialogs import label_name, rename_label_target
+
 
 class LabelNameBox(QLineEdit):
     """
@@ -15,13 +17,7 @@ class LabelNameBox(QLineEdit):
 
     @property
     def label(self):
-        text = self.text()
-        if not text or self._is_valid_label_name(text):
-            return text.strip()
-        return None
-
-    def _is_valid_label_name(self, input_):  # pylint: disable=no-self-use
-        return input_ and " " not in input_.strip()
+        return label_name(self.text())
 
 
 class RenameLabel(QDialog):
@@ -61,14 +57,7 @@ class RenameLabel(QDialog):
         name_label.setText("New name")
 
         name_box = LabelNameBox(self._on_name_changed, self)
-        text = ""
-        if self._disasm_view.disasm.kb.functions.contains_addr(self._label_addr):
-            self._label_type = "function"
-            text = self._disasm_view.disasm.kb.functions.get_by_addr(self._label_addr).name
-        else:
-            self._label_type = "label"
-            if self._label_addr in self._disasm_view.disasm.kb.labels:
-                text = self._disasm_view.disasm.kb.labels[self._label_addr]
+        self._label_type, text = rename_label_target(self._disasm_view.disasm.kb, self._label_addr)
 
         if text:
             name_box.setText(text)
