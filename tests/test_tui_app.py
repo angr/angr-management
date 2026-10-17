@@ -532,6 +532,18 @@ class TestConsole(TuiTestCase):
 
         run_app(scenario)
 
+    def test_the_kernel_keeps_its_history_out_of_the_users_profile(self) -> None:
+        # conftest gives each test process its own IPYTHONDIR; workers sharing one history.sqlite race to rename it
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = await show_view(pilot, "console")
+            assert view is not None and view.ipython_widget_available
+            hist_file = os.path.realpath(view.presenter.kernel_manager.kernel.shell.history_manager.hist_file)
+            ipython_dir = os.path.realpath(os.environ["IPYTHONDIR"])
+            assert hist_file.startswith(ipython_dir + os.sep)
+            assert not hist_file.startswith(os.path.realpath(os.path.expanduser("~/.ipython")) + os.sep)
+
+        run_app(scenario)
+
 
 class TestServices(TuiTestCase):
     def test_a_worker_thread_waits_for_the_answer(self) -> None:

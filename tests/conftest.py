@@ -27,6 +27,14 @@ if not os.environ.get("ANGR_MANAGEMENT_CONFIG_DIR"):
     os.environ["ANGR_MANAGEMENT_CONFIG_DIR"] = _config_dir
     atexit.register(shutil.rmtree, _config_dir, ignore_errors=True)
 
+# Keep IPython's profile away from the user's too, and give every process its own. The TUI's console starts an
+# in-process kernel, whose history manager opens history.sqlite in this directory; xdist workers that share one file
+# lock each other out, and IPython takes a locked file for a corrupt one and renames it, which fails in the worker that
+# renames second. So this is set in every process, the xdist workers included, whatever they inherit.
+_ipython_dir = tempfile.mkdtemp(prefix="angr-management-test-ipython-")
+os.environ["IPYTHONDIR"] = _ipython_dir
+atexit.register(shutil.rmtree, _ipython_dir, ignore_errors=True)
+
 
 @pytest.fixture(autouse=True)
 def qthread_coverage(monkeypatch):
