@@ -708,6 +708,8 @@ class CodeTuiView(TuiView):
         #: which side panel tab is shown, or None
         self.panel_shown: str | None = None
         self._last_mouse: tuple[int, int] | None = None
+        #: the presenter asked for the focus before the view was in the screen
+        self._focus_on_mount = False
         presenter.function.am_subscribe(self._on_new_function)
         presenter.codegen.am_subscribe(self._on_codegen_changes)
         presenter.addr.am_subscribe(self._on_new_addr)
@@ -818,6 +820,14 @@ class CodeTuiView(TuiView):
 
     def focus_text(self) -> None:
         if self.is_mounted:
+            self.code.focus()
+        else:
+            # the first decompilation shows the view and asks for the focus before the view is mounted
+            self._focus_on_mount = True
+
+    def on_mount(self) -> None:
+        if self._focus_on_mount:
+            self._focus_on_mount = False
             self.code.focus()
 
     focus_requested = focus_text

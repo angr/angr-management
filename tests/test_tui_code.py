@@ -116,6 +116,27 @@ def text_of(view: CodeTuiView) -> str:
 
 
 class TestShow(unittest.TestCase):
+    def test_the_focus_asked_for_before_the_view_is_mounted_is_given_on_mount(self):
+        # the first decompilation asks for the focus before the view is mounted; Tab then hides the disassembly, and
+        # on a loaded machine nothing was left with the focus
+        async def main() -> None:
+            app = AmApp(caps=TerminalCaps(truecolor=True, forced_tier=2), interactive=True)
+            async with app.run_test(size=SIZE) as pilot:
+                await pilot.pause()
+                # something else has the focus, as the disassembly has when Tab is pressed there
+                other = app.screen.focus_chain[0]
+                other.focus()
+                await settle(pilot)
+                assert app.focused is other
+                view = CodeTuiView(app.workspace, "center", app.workspace.main_instance)
+                view.focus_text()
+                assert not view.is_mounted
+                await app.screen.mount(view)
+                await settle(pilot)
+                assert app.focused is view.code
+
+        asyncio.run(main())
+
     def test_main_pseudocode(self):
         async def scenario(app: AmApp, pilot: Pilot, view: CodeTuiView) -> None:
             presenter: Any = view.presenter
