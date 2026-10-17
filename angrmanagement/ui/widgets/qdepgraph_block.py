@@ -2,24 +2,27 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from angr.knowledge_plugins.key_definitions.atoms import Atom, MemoryLocation, Register, SpOffset
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPen
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
 from angrmanagement.config import Conf
-from angrmanagement.utils import get_string_for_display, locate_function
+from angrmanagement.present.dependencies import atom_text, function_offset_text
+from angrmanagement.utils import get_string_for_display
 
 from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
     import PySide6.QtWidgets
+    from angr.knowledge_plugins.key_definitions.atoms import Atom
     from angr.knowledge_plugins.key_definitions.definition import Definition
 
     from angrmanagement.ui.views.dep_view import DependencyView
 
 
 class QDepGraphBlock(QCachedGraphicsItem):
+    """A node of the dependency tree: what is defined, and the instruction that defines it."""
+
     HORIZONTAL_PADDING = 20
     VERTICAL_PADDING = 20
     LINE_MARGIN = 3
@@ -60,19 +63,8 @@ class QDepGraphBlock(QCachedGraphicsItem):
 
     def _init_widgets(self) -> None:
         # definition
-        self._definition_str = ""
         atom = self.definition.atom if self.definition is not None else self.atom
-        addr_str = "unknown address" if self.addr is None else f"{self.addr:#x}"
-        if isinstance(atom, Register):
-            # convert it to a register name
-            arch = self._instance.project.arch
-            register_name = arch.translate_register_name(atom.reg_offset, size=atom.size)
-            self._definition_str = f"Register {register_name} @ {addr_str}"
-        elif isinstance(atom, MemoryLocation):
-            if isinstance(atom.addr, SpOffset):
-                self._definition_str = f"Stack sp{atom.addr.offset:+#x} @ {addr_str}"
-            elif isinstance(atom.addr, int):
-                self._definition_str = f"Memory {atom.addr:#x} @ {addr_str}"
+        self._definition_str = atom_text(self._instance, atom, self.addr)
 
         if not self._definition_str:
             # fallback
@@ -85,20 +77,7 @@ class QDepGraphBlock(QCachedGraphicsItem):
             self._instruction_str = "Unknown"
         else:
             # function string
-            the_func = locate_function(self._instance, self.addr)
-            if the_func is None:
-                # is it a SimProcedure?
-                if self._instance.project.is_hooked(self.addr):
-                    hooker = self._instance.project.hooked_by(self.addr)
-                    self._function_str = "SimProcedure " + hooker.__class__.__name__.split(".")[-1]
-                else:
-                    self._function_str = "Unknown"
-            else:
-                offset = self.addr - the_func.addr
-                if not the_func.name:
-                    self._function_str = f"{the_func.addr:#x}{offset:+x}"
-                else:
-                    self._function_str = f"{the_func.name}{offset:+x}"
+            self._function_str = function_offset_text(self._instance, self.addr)
             # instruction
             self._instruction_str = f"{self._function_str}:  {self._instance.get_instruction_text_at(self.addr)}"
             # text

@@ -87,6 +87,10 @@ EXTRA_STYLES: dict[str, StyleSpec] = {
     "graph.node.border": StyleSpec(fg=Color(0xA0, 0xA0, 0xA0)),
     "graph.node.selected.border": StyleSpec(fg=Color(0x40, 0x40, 0x40), bold=True),
     "graph.edge": StyleSpec(fg=Color(0x50, 0x50, 0x50)),
+    # dependency blocks: the definition dark blue, the instruction black, a string grey (Qt's colours)
+    "dependency.definition": StyleSpec(fg=Color(0x00, 0x00, 0x80)),
+    "dependency.instruction": StyleSpec(fg=Color(0x00, 0x00, 0x00)),
+    "dependency.text": StyleSpec(fg=Color(0xA0, 0xA0, 0xA4)),
     # symbolic states: a base state navy, an original one green, as the Qt states table
     "symexec.state.base": StyleSpec(fg=Color(0x00, 0x00, 0x80)),
     "symexec.state.original": StyleSpec(fg=Color(0x00, 0x80, 0x00)),
