@@ -158,11 +158,23 @@ class PluginManager:
         Conf.enabled_plugins = ",".join(self.active_plugins.keys())
         save_config()
 
+    def _status_bar(self):
+        """The main window's Qt status bar, or None for a frontend without one.
+
+        The hook :meth:`BasePlugin.status_bar_permanent_widgets` builds Qt widgets, which abort a process that has no
+        QApplication, so it is only called when there is a Qt status bar to put them in.
+        """
+        status_bar = getattr(self.workspace.main_window, "statusBar", None)
+        return status_bar() if callable(status_bar) else None
+
     def _register_status_bar_widgets(self, plugin: BasePlugin) -> None:
+        status_bar = self._status_bar()
+        if status_bar is None:
+            return
         gen = plugin.status_bar_permanent_widgets()
         if gen is not None:
             for widget in gen:
-                self.workspace.main_window.statusBar().addPermanentWidget(widget)
+                status_bar.addPermanentWidget(widget)
                 widget.show()
                 plugin.__cached_status_bar_widgets.append(widget)
 
@@ -249,8 +261,10 @@ class PluginManager:
         if plugin not in self.active_plugins.values():
             return
 
+        status_bar = self._status_bar() if plugin.__cached_status_bar_widgets else None
         for widget in plugin.__cached_status_bar_widgets:
-            self.workspace.main_window.statusBar().removeWidget(widget)
+            if status_bar is not None:
+                status_bar.removeWidget(widget)
         toolbar_manager = self._toolbar_manager() if plugin.__cached_toolbar_actions else None
         for action in plugin.__cached_toolbar_actions:
             if toolbar_manager is not None:

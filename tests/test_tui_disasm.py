@@ -366,6 +366,19 @@ class NeutralPlugin(BasePlugin):
         return "neutral: on"
 
 
+class QtStatusPlugin(BasePlugin):
+    """A Qt-era plugin with status-bar widgets: building them in a terminal process, which has no QApplication, would
+    abort it, so the terminal frontend must never call the hook."""
+
+    widget_calls = 0
+
+    def status_bar_permanent_widgets(self):
+        type(self).widget_calls += 1
+
+    def status_bar_text(self):
+        return "qt status: on"
+
+
 class TestPlugins(unittest.TestCase):
     def test_neutral_hooks_show_in_the_terminal(self):
         async def scenario(app: AmApp, pilot: Pilot, view: Any) -> None:
@@ -385,6 +398,23 @@ class TestPlugins(unittest.TestCase):
                 assert app.status_bar.plugin_text == "neutral: on"
             finally:
                 plugins.active_plugins.pop("neutral", None)
+
+        run_app(scenario)
+
+    def test_activating_a_plugin_with_qt_status_widgets(self):
+        async def scenario(app: AmApp, pilot: Pilot, view: Any) -> None:
+            plugins = app.workspace.plugins
+            QtStatusPlugin.widget_calls = 0
+            plugins.activate_plugin("qtstatus", QtStatusPlugin)
+            try:
+                assert isinstance(plugins.get_plugin_instance(QtStatusPlugin), QtStatusPlugin)
+                assert QtStatusPlugin.widget_calls == 0
+                app.status_bar.refresh_plugin_texts()
+                assert app.status_bar.plugin_text == "qt status: on"
+            finally:
+                plugins.deactivate_plugin(QtStatusPlugin)
+            assert plugins.get_plugin_instance(QtStatusPlugin) is None
+            assert QtStatusPlugin.widget_calls == 0
 
         run_app(scenario)
 
