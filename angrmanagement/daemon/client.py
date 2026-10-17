@@ -51,7 +51,8 @@ class ClientService(rpyc.Service):
     def exposed_commentat(self, addr: int, comment: str) -> None:
         if self.workspace is not None and addr is not None:
             gui_thread_schedule_async(GlobalInfo.main_window.bring_to_front)
-            gui_thread_schedule_async(self.workspace.set_comment(addr, comment))
+            # the comment is set on the UI thread (this called set_comment here and scheduled its result, None)
+            gui_thread_schedule_async(self.workspace.set_comment, args=(addr, comment))
 
     def exposed_custom_binary_aware_action(self, action, kwargs) -> None:  # pylint: disable=no-self-use
         kwargs_copy = dict(kwargs.items())  # copy it to local
@@ -89,3 +90,38 @@ class DaemonClientCls:
 
 
 DaemonClient = DaemonClientCls()
+
+
+def connect_to_daemon() -> None:
+    """
+    Connect this process to the angr management daemon, starting one if there is none, and register it as a client,
+    so that angr:// URLs reach the main window (``GlobalInfo.main_window``) of either frontend.
+    """
+    import time  # pylint:disable=import-outside-toplevel
+    import uuid  # pylint:disable=import-outside-toplevel
+
+    from rpyc import BgServingThread  # pylint:disable=import-outside-toplevel
+
+    from .server import daemon_conn, daemon_exists, run_daemon_process  # pylint:disable=import-outside-toplevel
+
+    if not daemon_exists():
+        print("[+] Starting a new daemon.")
+        run_daemon_process()
+        time.sleep(0.2)
+    else:
+        print("[+] Connecting to an existing angr management daemon.")
+
+    while True:
+        try:
+            GlobalInfo.daemon_conn = daemon_conn(service=ClientService)
+        except ConnectionRefusedError:
+            print("[-] Connection failed... try again.")
+            time.sleep(0.4)
+            continue
+        print("[+] Connected to daemon.")
+        break
+
+    _ = BgServingThread(GlobalInfo.daemon_conn)
+
+    GlobalInfo.client_id = str(uuid.uuid4())
+    GlobalInfo.daemon_conn.root.register_client(GlobalInfo.client_id)

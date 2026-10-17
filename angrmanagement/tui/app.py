@@ -12,6 +12,8 @@ import asyncio
 import contextlib
 import logging
 import os
+import shutil
+import subprocess
 import time
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -96,6 +98,9 @@ class AmApp(App):
     :param interactive:     Whether to ask the user; with False every question gets its default, as in a script.
     :param welcome:         Whether to show the Welcome screen at start when no binary is given; am-tui does, as the
                             Qt frontend shows its Welcome dialog when it starts without a file.
+    :param use_daemon:      Whether to connect to the angr management daemon, which brings angr:// URLs here; the
+                            configuration's ``use_daemon`` when None, as for the Qt main window.
+    :param use_mcp:         Whether to start the MCP server; the configuration's ``mcp_server_autostart`` when None.
     """
 
     TITLE = "angr management"
@@ -149,6 +154,8 @@ class AmApp(App):
         theme_name: str | None = None,
         interactive: bool = True,
         welcome: bool = False,
+        use_daemon: bool | None = None,
+        use_mcp: bool | None = None,
     ) -> None:
         super().__init__()
         self.binary = binary
@@ -166,6 +173,8 @@ class AmApp(App):
         #: the progress screen of the blocking job that runs, if one does
         self.progress_screen: ProgressScreen | None = None
         self.welcome = welcome
+        self.use_daemon = use_daemon
+        self.use_mcp = use_mcp
 
         # install the frontend before the workspace: its job manager and signals need the executor
         self._saved_globals = (
@@ -311,6 +320,53 @@ class AmApp(App):
             self.load_file(self.binary, ask=False)
         elif self.welcome:
             self.show_welcome_dialog()
+        self._run_daemon(self.use_daemon)
+        self._run_mcp(self.use_mcp)
+
+    #
+    # The daemon and the MCP server at start, as the Qt main window runs them
+    #
+
+    def _run_daemon(self, use_daemon: bool | None = None) -> None:
+        """Connect to the daemon (starting one) when asked or configured; Preferences calls this too."""
+        if use_daemon is None:
+            use_daemon = Conf.use_daemon
+        if not use_daemon or GlobalInfo.client_id:
+            return
+        from angrmanagement.daemon.client import connect_to_daemon  # pylint:disable=import-outside-toplevel
+
+        try:
+            connect_to_daemon()
+        except Exception as ex:  # pylint:disable=broad-exception-caught
+            _l.warning("Cannot connect to the angr management daemon: %s", ex)
+            self.show_status(f"Cannot connect to the daemon: {ex}", 10)
+
+    def _run_mcp(self, use_mcp: bool | None = None) -> None:
+        """Start the MCP server when asked or configured; a failure is reported in the status bar, not a screen."""
+        if use_mcp is None:
+            use_mcp = Conf.mcp_server_autostart
+        if use_mcp:
+            # after the screen is up, as the Qt window defers it until its event loop runs
+            self.call_after_refresh(self.start_mcp_server, False)
+
+    def bring_to_front(self) -> None:
+        """
+        Bring the terminal to the user's attention, for an angr:// URL or a trace that arrived: kitty's remote control
+        focuses its window when kitty runs us and allows it; any other terminal gets a bell.
+        """
+        window_id = os.environ.get("KITTY_WINDOW_ID")
+        if self.caps.kitty and window_id and shutil.which("kitty"):
+            try:
+                subprocess.run(
+                    ["kitty", "@", "focus-window", "--match", f"id:{window_id}"],
+                    check=True,
+                    capture_output=True,
+                    timeout=2,
+                )
+                return
+            except (OSError, subprocess.SubprocessError):
+                pass
+        self.bell()
 
     def on_unmount(self) -> None:
         self.shutdown()

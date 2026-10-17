@@ -31,6 +31,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--size", type=parse_size, help="the screen size, COLSxROWS (the terminal's by default)")
     parser.add_argument(
+        "--with-daemon",
+        action="store_true",
+        help="connect to the angr management daemon (starting one) so that angr:// URLs open here, as am does",
+    )
+    parser.add_argument("--mcp", action="store_true", help="start the MCP server, whatever the configuration says")
+    parser.add_argument(
         "--screenshot-dir",
         help="do not run interactively: open the binary, save an SVG screenshot of every view here, and exit",
     )
@@ -69,7 +75,14 @@ def main(argv: list[str] | None = None) -> int:
     caps = detect(probe=True)
     if graphics_tier(caps):
         prepare_graphics()
-    app = AmApp(binary=args.binary, caps=caps, theme_name=args.theme, welcome=args.binary is None)
+    app = AmApp(
+        binary=args.binary,
+        caps=caps,
+        theme_name=args.theme,
+        welcome=args.binary is None,
+        use_daemon=True if args.with_daemon else None,
+        use_mcp=True if args.mcp else None,
+    )
     app.run(size=args.size)
     return app.return_code or 0
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 import os
 import time
-import uuid
 from typing import TYPE_CHECKING
 
 import PySide6QtAds as QtAds
@@ -18,8 +17,7 @@ from PySide6.QtWidgets import (
 
 from angrmanagement.config import Conf, save_config
 from angrmanagement.consts import IMG_LOCATION
-from angrmanagement.daemon import daemon_conn, daemon_exists, run_daemon_process
-from angrmanagement.daemon.client import ClientService
+from angrmanagement.daemon.client import connect_to_daemon
 from angrmanagement.data.jobs import DependencyAnalysisJob
 from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.data.library_docs import LibraryDocs
@@ -410,30 +408,8 @@ class MainWindow(QMainWindow):
         if not use_daemon:
             return
 
-        # connect to daemon (if there is one)
-        if not daemon_exists():
-            print("[+] Starting a new daemon.")
-            run_daemon_process()
-            time.sleep(0.2)
-        else:
-            print("[+] Connecting to an existing angr management daemon.")
-
-        while True:
-            try:
-                GlobalInfo.daemon_conn = daemon_conn(service=ClientService)
-            except ConnectionRefusedError:
-                print("[-] Connection failed... try again.")
-                time.sleep(0.4)
-                continue
-            print("[+] Connected to daemon.")
-            break
-
-        from rpyc import BgServingThread  # pylint:disable=import-outside-toplevel
-
-        _ = BgServingThread(GlobalInfo.daemon_conn)
-
-        GlobalInfo.client_id = str(uuid.uuid4())
-        GlobalInfo.daemon_conn.root.register_client(GlobalInfo.client_id)
+        # connect to daemon (if there is one), as the terminal app does
+        connect_to_daemon()
 
     #
     # MCP server
