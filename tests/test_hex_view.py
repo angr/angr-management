@@ -2902,10 +2902,11 @@ class TestHexViewFindBar(AngrManagementTestCase):
         assert not self.view._find_bar.isHidden()
 
     def test_find_bar_is_open_follows_the_bar(self):
-        assert not self.view.find_bar_is_open()
+        bar = self.view._find_bar
+        assert bar is not None and not self.view.find_bar_is_open()
         self.view.show_find_bar()
         assert self.view.find_bar_is_open()
-        self.view._find_bar.close_bar()
+        bar.close_bar()
         assert not self.view.find_bar_is_open()
 
     def test_hex_pattern_search(self):

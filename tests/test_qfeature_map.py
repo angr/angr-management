@@ -8,6 +8,7 @@ rebuilds the maps, added objects redraw at most every MIN_REFRESH_INTERVAL, and 
 from __future__ import annotations
 
 import unittest
+from typing import Any
 from unittest.mock import patch
 
 from common import ProjectOpenTestCase
@@ -22,6 +23,8 @@ class TestQFeatureMap(ProjectOpenTestCase):
         super().setUp()
         self.feature_map = QFeatureMap(self.instance)
         self.item = self.feature_map.view._feature_map_item
+        #: the CFB's container, which tells its subscribers
+        self.cfb: Any = self.instance.cfb
         self.shut_down = False
 
     def tearDown(self) -> None:
@@ -34,7 +37,7 @@ class TestQFeatureMap(ProjectOpenTestCase):
         assert len(regions)
         self.item._hover_region = regions[regions.keys()[0]]
         with patch.object(self.item.model, "build", wraps=self.item.model.build) as build:
-            self.instance.cfb.am_event()
+            self.cfb.am_event()
         build.assert_called_once()
         assert self.item._hover_region is None
         assert len(self.item.model.position_to_region)
@@ -44,17 +47,17 @@ class TestQFeatureMap(ProjectOpenTestCase):
         self.item.refresh()
         stamp = presenter._last_refresh
         with patch.object(self.item.model, "add_objects", return_value=True):
-            self.instance.cfb.am_event(objects_added=[])
+            self.cfb.am_event(objects_added=[])
             assert presenter._last_refresh == stamp, "too soon after the last refresh"
             presenter._last_refresh = 0.0
-            self.instance.cfb.am_event(objects_added=[])
+            self.cfb.am_event(objects_added=[])
         assert presenter._last_refresh > stamp
 
     def test_shutdown_stops_following_the_cfb(self):
         self.feature_map.shutdown()
         self.shut_down = True
         with patch.object(self.item.model, "build") as build:
-            self.instance.cfb.am_event()
+            self.cfb.am_event()
         build.assert_not_called()
 
 

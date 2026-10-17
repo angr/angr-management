@@ -302,6 +302,7 @@ class TestDebugToolbar(AngrManagementTestCase):
         from angrmanagement.ui.toolbars import DebugToolbar  # pylint: disable=import-outside-toplevel
 
         toolbar = self.main.toolbar_manager.active[DebugToolbar]
+        assert isinstance(toolbar, DebugToolbar)
         shown = [
             "|" if a.isSeparator() else (a.text(), a.toolTip())
             for a in toolbar.qtoolbar().actions()
