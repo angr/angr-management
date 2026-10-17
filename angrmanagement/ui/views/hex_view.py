@@ -1,17 +1,17 @@
+"""
+The Qt hex view: the neutral hex editor of :mod:`angrmanagement.present.hexdump` drawn on a QGraphicsScene.
+
+:class:`HexGraphicsObject` is a :class:`~angrmanagement.present.hexdump.HexGrid` that paints itself and takes the mouse
+and the keys; :class:`HexView` is a :class:`~angrmanagement.present.hexdump.HexViewMixin` with the tool bar, the find
+bar and Qt's dialogs.
+"""
+
 from __future__ import annotations
 
-import functools
 import logging
-from collections.abc import Callable, Sequence
-from enum import Enum
 from typing import TYPE_CHECKING
 
-import angr
 import PySide6
-from angr import Block
-from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
-from angr.knowledge_plugins.patches import Patch
-from archinfo.arch_arm import is_arm_arch
 from PySide6.QtCore import QEvent, QMarginsF, QPointF, QRectF, QSizeF, Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QColor, QCursor, QFont, QKeySequence, QPainterPath, QPen, QShortcut, QWheelEvent
 from PySide6.QtWidgets import (
@@ -36,143 +36,83 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.config import Conf
-from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
-from angrmanagement.data.search import SCOPE_ALL, BytePattern, Searcher, SearchError
-from angrmanagement.logic.commands import ViewCommand
-from angrmanagement.logic.debugger import DebuggerWatcher
+from angrmanagement.present import hexdump
+from angrmanagement.present.hexdump import (
+    HexAddress,
+    HexByteValue,
+    HexDataBuffer,
+    HexDataSource,
+    HexGrid,
+    HexViewMixin,
+    RowCol,
+    register_hex_commands,
+)
 from angrmanagement.ui.dialogs.input_prompt import InputPromptDialog
 from angrmanagement.ui.dialogs.jumpto import JumpTo
+from angrmanagement.ui.menus.menu import to_qmenu
 from angrmanagement.ui.widgets.qfind_bar import QFindBar
 from angrmanagement.utils import is_printable
 
 from .view import SynchronizedInstanceView
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from angr.knowledge_plugins.patches import Patch
     from PySide6.QtGui import QPainter
     from PySide6.QtWidgets import QStyleOptionGraphicsItem, QWidget
 
+    from angrmanagement.data.breakpoint import Breakpoint
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
 
 log = logging.getLogger(__name__)
 
-RowCol = tuple[int, int]
-HexByteValue = int | str
-HexAddress = int
-HexDataBuffer = bytes | bytearray
-HexDataProvider = Callable[[HexAddress], HexByteValue]
+#: The cursor keys of HexGraphicsObject.keyPressEvent, by the names HexGrid.move_cursor takes.
+_MOVEMENT_KEYS = {
+    Qt.Key.Key_Up: "up",
+    Qt.Key.Key_Down: "down",
+    Qt.Key.Key_Right: "right",
+    Qt.Key.Key_Left: "left",
+    Qt.Key.Key_PageUp: "pageup",
+    Qt.Key.Key_PageDown: "pagedown",
+    Qt.Key.Key_Home: "home",
+    Qt.Key.Key_End: "end",
+}
 
 
-class HexDataSource(Enum):
-    """
-    Data source to be displayed in the hex view.
-    """
-
-    Loader = 0
-    Debugger = 1
-
-
-class HexHighlightRegion:
+class HexHighlightRegion(hexdump.HexHighlightRegion):
     """
     Defines a highlighted region.
     """
-
-    def __init__(self, color: QColor, addr: HexAddress, size: int, tooltip: str | None = None) -> None:
-        self.color: QColor = color
-        self.addr: HexAddress = addr
-        self.size: int = size
-        self.active: bool = False
-        self._tooltip: str | None = tooltip
-
-    def gen_context_menu_actions(self) -> QMenu | None:  # pylint: disable=no-self-use
-        """
-        Get submenu for this highlight region.
-        """
-        return None
-
-    def get_tooltip(self) -> str | None:
-        """
-        Return a tooltip for this region.
-        """
-        return self._tooltip
-
-
-class BreakpointHighlightRegion(HexHighlightRegion):
-    """
-    Defines a highlighted region indicating a patch.
-    """
-
-    def __init__(self, bp: Breakpoint, view: HexView) -> None:
-        super().__init__(Qt.GlobalColor.cyan, bp.addr, bp.size)
-        self.bp: Breakpoint = bp
-        self.view: HexView = view
 
     def gen_context_menu_actions(self) -> QMenu | None:
         """
         Get submenu for this highlight region.
         """
-        bp_type_str = {
-            BreakpointType.Execute: "Execute",
-            BreakpointType.Read: "Read",
-            BreakpointType.Write: "Write",
-        }.get(self.bp.type)
-        mnu = QMenu(f"Breakpoint 0x{self.bp.addr:x} {bp_type_str} ({self.bp.size} bytes)")
-        act = QAction("&Remove", mnu)
-        act.triggered.connect(self.remove)
-        mnu.addAction(act)
-        return mnu
-
-    def remove(self) -> None:
-        """
-        Remove this breakpoint.
-        """
-        self.view.instance.breakpoint_mgr.remove_breakpoint(self.bp)
-
-    def get_tooltip(self) -> str | None:
-        """
-        Return a tooltip for this region.
-        """
-        bp_type_str = {
-            BreakpointType.Execute: "Execute",
-            BreakpointType.Read: "Read",
-            BreakpointType.Write: "Write",
-        }.get(self.bp.type)
-        return f"Breakpoint 0x{self.bp.addr:x} {bp_type_str} ({self.bp.size} bytes)"
+        menu = self.context_menu()  # pylint: disable=assignment-from-none
+        return None if menu is None else to_qmenu(menu)
 
 
-class PatchHighlightRegion(HexHighlightRegion):
+class BreakpointHighlightRegion(hexdump.BreakpointHighlightRegion, HexHighlightRegion):
+    """
+    Defines a highlighted region indicating a breakpoint.
+    """
+
+    def __init__(self, bp: Breakpoint, view: HexView) -> None:
+        super().__init__(bp, view, Qt.GlobalColor.cyan)
+
+
+class PatchHighlightRegion(hexdump.PatchHighlightRegion, HexHighlightRegion):
     """
     Defines a highlighted region indicating a patch.
     """
 
     def __init__(self, patch: Patch, view: HexView) -> None:
-        super().__init__(Qt.GlobalColor.yellow, patch.addr, len(patch))
-        self.patch: Patch = patch
-        self.view: HexView = view
+        super().__init__(patch, view, Qt.GlobalColor.yellow)
 
-    def get_tooltip(self) -> str | None:
-        """
-        Return a tooltip for this region.
-        """
-        return f"Patch 0x{self.patch.addr:x} ({len(self.patch)} bytes)"
-
-    def gen_context_menu_actions(self) -> QMenu | None:
-        """
-        Get submenu for this highlight region.
-        """
-        mnu = QMenu(f"Patch 0x{self.patch.addr:x} ({len(self.patch)} bytes)")
-        act = QAction("&Split", mnu)
-        act.triggered.connect(self.split)
-        act.setEnabled(self.can_split())
-        mnu.addAction(act)
-        act = QAction("Set &Comment...", mnu)
-        act.triggered.connect(self.comment)
-        mnu.addAction(act)
-        mnu.addSeparator()
-        act = QAction("&Revert", mnu)
-        act.triggered.connect(self.revert_with_prompt)
-        mnu.addAction(act)
-        return mnu
+    def cursor(self) -> HexAddress:
+        return self.view.inner_widget.hex.cursor
 
     def revert_with_prompt(self) -> None:
         """
@@ -188,63 +128,16 @@ class PatchHighlightRegion(HexHighlightRegion):
             return
         self.revert()
 
-    def revert(self) -> None:
-        """
-        Revert this patch.
-        """
-        pm = self.view.instance.patches
-        pm.remove_patch(self.patch.addr)
-        pm.am_event()
-
-    def can_split(self) -> bool:
-        """
-        Determine if this patch can be split based on current cursor location.
-        """
-        cursor = self.view.inner_widget.hex.cursor
-        return self.patch.addr < cursor < (self.patch.addr + len(self.patch))
-
-    def split(self) -> None:
-        """
-        Split this patch at view's current cursor location.
-        """
-        cursor = self.view.inner_widget.hex.cursor
-        if self.can_split():
-            o = cursor - self.patch.addr
-            new_patch = Patch(cursor, self.patch.new_bytes[o:], self.patch.comment)
-            self.patch.new_bytes = self.patch.new_bytes[0:o]
-            pm = self.view.instance.patches
-            pm.add_patch_obj(new_patch)
-            pm.am_event()
-
-    def can_merge_with(self, other: PatchHighlightRegion) -> bool:
-        """
-        Determine if this patch can be merged with `other`. We only consider directly adjacent patches.
-        """
-        return other.patch.addr == (self.patch.addr + len(self.patch))
-
-    def merge_with(self, other: PatchHighlightRegion) -> None:
-        """
-        Merge `other` into this patch.
-        """
-        if self.can_merge_with(other):
-            self.patch.new_bytes += other.patch.new_bytes
-            pm = self.view.instance.patches
-            pm.remove_patch(other.patch.addr)
-            pm.am_event()
-
     def comment(self) -> None:
         """
         Set the comment for this patch.
         """
         dlg = InputPromptDialog("Set Patch Comment", "Patch comment:", self.patch.comment, parent=self.view)
         dlg.exec_()
-        if dlg.result:
-            self.patch.comment = dlg.result
-            pm = self.view.instance.patches
-            pm.am_event()
+        self.set_comment(dlg.result)
 
 
-class HexGraphicsObject(QGraphicsObject):
+class HexGraphicsObject(QGraphicsObject, HexGrid):
     """
     A graphics item providing a conventional hex-editor interface for a contiguous region of memory.
     """
@@ -253,22 +146,13 @@ class HexGraphicsObject(QGraphicsObject):
     viewport_changed = Signal()
 
     def __init__(self) -> None:
-        super().__init__()
+        QGraphicsObject.__init__(self)
+        HexGrid.__init__(self)
         self.setFlag(
             QGraphicsItem.GraphicsItemFlag.ItemUsesExtendedStyleOption, True
         )  # Give me more specific paint update rect info
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsFocusable, True)  # Give me focus/key events
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemClipsToShape, True)
-        self.display_offset_addr: HexAddress = 0
-        self.display_num_rows: int = 1
-        self.display_start_addr: HexAddress = 0
-        self.display_end_addr: HexAddress = 0
-        self.start_addr: HexAddress = 0
-        self.num_bytes: int = 0
-        self.end_addr: HexAddress = 0  # Exclusive
-        self.read_func: HexDataProvider | None = None
-        self.write_func: Callable[[HexAddress, HexByteValue], bool] = None
-        self.data: HexDataBuffer | None = None
         self.addr_offset: int = 0
         self.addr_width: int = 0
         self.ascii_column_offsets: Sequence[int] = []
@@ -284,24 +168,27 @@ class HexGraphicsObject(QGraphicsObject):
         self.row_height: int = 0
         self.row_padding: int = 0
         self.section_space: int = 0
-        self.cursor: HexAddress = self.start_addr
-        self.cursor_nibble: int | None = None
-        self.selection_start: HexAddress | None = None
-        self.mouse_pressed: bool = False
-        self.num_rows: int = 0
         self.font: QFont = QFont(Conf.disasm_font)
         self.font.setPointSizeF(12)
-        self.ascii_column_active: bool = False
-        self.cursor_blink_state: bool = True
-        self.highlighted_regions: Sequence[HexHighlightRegion] = []
 
         self.cursor_blink_timer: QTimer = QTimer(self)
         self.cursor_blink_timer.timeout.connect(self.toggle_cursor_blink)
-        self.show_cursor: bool = True
-        self._processing_cursor_update: bool = False
-        self.always_show_cursor: bool = False
 
         self._update_layout()
+
+    #
+    # HexGrid's hooks
+    #
+
+    def notify_cursor_changed(self) -> None:
+        self.cursor_changed.emit()
+
+    def notify_viewport_changed(self) -> None:
+        self.viewport_changed.emit()
+
+    def _cursor_set(self) -> None:
+        if self.hasFocus():
+            self.restart_cursor_blink_timer()
 
     def focusInEvent(self, event: PySide6.QtGui.QFocusEvent) -> None:  # pylint: disable=unused-argument
         """
@@ -329,105 +216,6 @@ class HexGraphicsObject(QGraphicsObject):
             self.show_cursor = self.always_show_cursor
             self.cursor_blink_state = self.always_show_cursor
             self.update()
-
-    def _set_display_common(self) -> None:
-        """
-        Handle common update of offset or row count changed.
-        """
-        self.display_end_addr = min(self.end_addr, self.display_start_addr + self.display_num_rows * 16)
-        self._update_layout()
-        self.viewport_changed.emit()
-
-    def set_display_num_rows(self, num_rows: int) -> None:
-        """
-        Set number of rows to display.
-        """
-        self.display_num_rows = max(num_rows, 1)
-        self._set_display_common()
-
-    def set_display_offset(self, offset: HexAddress) -> None:
-        """
-        Set displayed range offset.
-        """
-        self.display_offset_addr = max(0, min(offset & ~0xF, self.end_addr - self.start_addr - 0x10))
-        self.display_start_addr = self.start_addr + self.display_offset_addr
-        self._set_display_common()
-
-    def move_viewport_to(self, addr: HexAddress, preserve_relative_offset: bool = False) -> None:
-        """
-        Translate the visible range so `addr` is visible.
-        """
-        assert self.start_addr <= addr < self.end_addr
-
-        if preserve_relative_offset and (self.display_start_addr <= self.cursor < self.display_end_addr):
-            # Let the target addr be on the same relative row from top of screen
-            self.set_display_offset(addr - self.cursor + self.display_start_addr - self.start_addr)
-            return
-
-        if addr < self.display_start_addr:
-            # Let the target addr be on the first displayed row
-            self.set_display_offset(addr - self.start_addr)
-            return
-
-        # Let the target addr be on last fully displayed row
-        max_fully_visible_bytes = 0x10 * (self.display_num_rows - 1)
-        display_end = self.display_start_addr + max_fully_visible_bytes
-        if addr >= display_end:
-            offset = addr - max_fully_visible_bytes - self.start_addr + 0x10
-            self.set_display_offset(offset)
-
-    def _set_data_common(self) -> None:
-        """
-        Common handler for set_data_*
-        """
-        assert self.num_bytes >= 0
-        self.num_rows = int((self.num_bytes + (self.start_addr & 0xF) + 0xF) / 16)
-        self.end_addr = self.start_addr + self.num_bytes
-        self.clear_selection()
-        self.set_display_offset(0)
-        self.set_cursor(self.start_addr)
-        self._update_layout()
-
-    def _simple_read_callback(self, addr: HexAddress) -> HexByteValue:
-        """
-        Handler for simple data buffers.
-        """
-        return self.data[addr - self.start_addr]
-
-    # pylint:disable=unused-argument,no-self-use
-    def _simple_write_callback(self, addr: HexAddress, value: HexByteValue) -> bool:
-        """
-        Handler for simple data buffers.
-        """
-        return False
-
-    def set_data(self, data: HexDataBuffer, start_addr: HexAddress = 0, num_bytes: int | None = None) -> None:
-        """
-        Assign the buffer to be displayed with bytes.
-        """
-        self.data = data
-        self.start_addr = start_addr
-        self.num_bytes = num_bytes if num_bytes is not None else len(data)
-        self.read_func = self._simple_read_callback
-        self.write_func = self._simple_write_callback
-        self._set_data_common()
-
-    def set_data_callback(self, write_func, read_func: HexDataProvider, start_addr: HexAddress, num_bytes: int) -> None:
-        """
-        Assign the buffer to be displayed using a callback function.
-        """
-        self.data = None
-        self.start_addr = start_addr
-        self.num_bytes = num_bytes
-        self.write_func = write_func
-        self.read_func = read_func
-        self._set_data_common()
-
-    def clear(self) -> None:
-        """
-        Clear the current buffer.
-        """
-        self.set_data(b"")
 
     def point_to_row(self, p: QPointF) -> int | None:
         """
@@ -503,41 +291,6 @@ class HexGraphicsObject(QGraphicsObject):
         pt.setX(pt.x() - column_space / 2)
         return QRectF(pt, QSizeF(column_width + column_space, self.row_height))
 
-    def row_to_addr(self, row: int) -> int:
-        """
-        Get address for a given row.
-        """
-        return (self.display_start_addr & ~15) + row * 16
-
-    def row_col_to_addr(self, row: int, col: int) -> int:
-        """
-        Get address for a given row, column.
-        """
-        return (self.display_start_addr & ~15) + row * 16 + col
-
-    def addr_to_row_col(self, addr: int) -> RowCol:
-        """
-        Get (row, column) for a given address.
-        """
-        addr = addr - (self.display_start_addr & ~0xF)
-        row = addr >> 4
-        col = addr & 15
-        return row, col
-
-    def begin_selection(self) -> None:
-        """
-        Begin selection at current cursor.
-        """
-        self.selection_start = self.cursor
-        self.update()
-
-    def clear_selection(self) -> None:
-        """
-        Clear selection.
-        """
-        self.selection_start = None
-        self.update()
-
     def restart_cursor_blink_timer(self) -> None:
         """
         Restart the cursor blink timer.
@@ -545,69 +298,6 @@ class HexGraphicsObject(QGraphicsObject):
         self.cursor_blink_timer.stop()
         self.cursor_blink_state = True
         self.cursor_blink_timer.start(750)
-
-    def update_active_highlight_regions(self) -> None:
-        """
-        Update active property on highlight regions.
-        """
-        if self.selection_start is None:
-            minaddr = self.cursor
-            maxaddr = self.cursor
-        else:
-            minaddr = min(self.cursor, self.selection_start)
-            maxaddr = max(self.cursor, self.selection_start)
-
-        for region in self.highlighted_regions:
-            region_end = region.addr + region.size - 1
-            region.active = not (region.addr > maxaddr or minaddr > region_end)
-
-    def get_active_highlight_regions(self) -> Sequence[HexHighlightRegion]:
-        """
-        Get currently active highlight regions.
-        """
-        return [rgn for rgn in self.highlighted_regions if rgn.active]
-
-    def get_highlight_regions_at_addr(self, addr: HexAddress) -> Sequence[HexHighlightRegion]:
-        """
-        Return the highlight regions at specified address.
-        """
-        regions = []
-        for region in self.highlighted_regions:
-            if region.addr <= addr < (region.addr + region.size):
-                regions.append(region)
-        return regions
-
-    def get_highlight_regions_under_cursor(self) -> Sequence[HexHighlightRegion]:
-        """
-        Return the highlight regions under the cursor.
-        """
-        return self.get_highlight_regions_at_addr(self.cursor)
-
-    def set_cursor(
-        self, addr: int, ascii_column: bool | None = None, nibble: int | None = None, update_viewport: bool = True
-    ) -> None:
-        """
-        Move cursor to address `addr`.
-        """
-        if addr >= self.end_addr or addr < self.start_addr:
-            return
-        if self._processing_cursor_update:
-            return
-        self._processing_cursor_update = True
-        if ascii_column is not None:
-            self.ascii_column_active = ascii_column
-        if self.hasFocus():
-            self.restart_cursor_blink_timer()
-        cursor_changed = self.cursor != addr
-        if cursor_changed:
-            if update_viewport:
-                self.move_viewport_to(addr)
-            self.cursor = addr
-        self.cursor_nibble = nibble
-        self.cursor_changed.emit()
-        self.update_active_highlight_regions()
-        self.update()
-        self._processing_cursor_update = False
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         """
@@ -619,12 +309,7 @@ class HexGraphicsObject(QGraphicsObject):
                 return
             addr, ascii_column = addr
             self.mouse_pressed = True
-            if QApplication.keyboardModifiers() in (Qt.KeyboardModifier.ShiftModifier,):
-                if self.selection_start is None:
-                    self.begin_selection()
-            else:
-                self.clear_selection()
-            self.set_cursor(addr, ascii_column)
+            self.click(addr, ascii_column, QApplication.keyboardModifiers() in (Qt.KeyboardModifier.ShiftModifier,))
             event.accept()
 
     def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
@@ -632,12 +317,7 @@ class HexGraphicsObject(QGraphicsObject):
         Handle mouse double-click events (e.g. update selection)
         """
         if event.button() == Qt.MouseButton.LeftButton:
-            regions = sorted(self.get_highlight_regions_under_cursor(), key=lambda r: self.cursor - r.addr)
-            if len(regions) > 0:
-                region = regions[0]
-                self.set_cursor(region.addr + region.size - 1)
-                self.begin_selection()
-                self.set_cursor(region.addr)
+            self.select_region_under_cursor()
 
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         """
@@ -648,9 +328,7 @@ class HexGraphicsObject(QGraphicsObject):
             if addr is None:
                 return
             addr, ascii_column = addr
-            if self.selection_start is None:
-                self.begin_selection()
-            self.set_cursor(addr, ascii_column)
+            self.drag_to(addr, ascii_column)
 
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         """
@@ -659,85 +337,24 @@ class HexGraphicsObject(QGraphicsObject):
         if event.button() == Qt.MouseButton.LeftButton:
             self.mouse_pressed = False
 
-    def _set_byte_value(self, value: int) -> None:
-        """
-        Handle byte modification via user entry.
-        """
-        if not self.write_func(self.cursor, value):
-            return
-        self.set_cursor(self.cursor + 1)
-
-    def _set_nibble_value(self, value: int) -> None:
-        nibble = 1 if (self.cursor_nibble is None) else self.cursor_nibble
-        new_byte_value = self.read_func(self.cursor)
-        if not isinstance(new_byte_value, int):
-            new_byte_value = 0
-        else:
-            new_byte_value &= ~(0xF << (nibble * 4))
-        new_byte_value |= value << (nibble * 4)
-        if not self.write_func(self.cursor, new_byte_value):
-            return
-        next_nibble = 1 - nibble
-        self.set_cursor(self.cursor + next_nibble, nibble=next_nibble)
-
     def keyPressEvent(self, event: PySide6.QtGui.QKeyEvent) -> None:
         """
         Handle key press events (e.g. moving cursor around).
         """
-        movement_keys = {
-            Qt.Key.Key_Up: -16,
-            Qt.Key.Key_Down: 16,
-            Qt.Key.Key_Right: 1,
-            Qt.Key.Key_Left: -1,
-            Qt.Key.Key_PageUp: 0,
-            Qt.Key.Key_PageDown: 0,
-            Qt.Key.Key_Home: 0,
-            Qt.Key.Key_End: 0,
-        }
-        if event.key() in movement_keys:
-            if QApplication.keyboardModifiers() & Qt.KeyboardModifier.ShiftModifier:
-                if self.selection_start is None:
-                    self.begin_selection()
-            else:
-                self.clear_selection()
-
-            # FIXME: When holding Ctrl, only scroll the viewport
-            preserve_relative_offset = False
-            if event.key() == Qt.Key.Key_PageUp:
-                new_cursor = max(self.start_addr, self.cursor - (self.display_num_rows - 1) * 16)
-                preserve_relative_offset = True
-            elif event.key() == Qt.Key.Key_PageDown:
-                new_cursor = min(self.end_addr - 1, self.cursor + (self.display_num_rows - 1) * 16)
-                preserve_relative_offset = True
-            elif event.key() == Qt.Key.Key_Home:
-                new_cursor = max(self.start_addr, self.cursor & ~0xF)
-            elif event.key() == Qt.Key.Key_End:
-                new_cursor = min(self.end_addr - 1, (self.cursor & ~0xF) + 0xF)
-            else:
-                new_cursor = self.cursor + movement_keys[event.key()]
-            if self.start_addr <= new_cursor < self.end_addr:
-                self.move_viewport_to(new_cursor, preserve_relative_offset)
-                self.set_cursor(new_cursor, update_viewport=False)
+        movement = _MOVEMENT_KEYS.get(event.key())
+        if movement is not None:
+            extend = bool(QApplication.keyboardModifiers() & Qt.KeyboardModifier.ShiftModifier)
+            self.move_cursor(movement, extend)
             event.accept()
             return
         elif QApplication.keyboardModifiers() & Qt.KeyboardModifier.ControlModifier:
             if event.key() == Qt.Key.Key_Space:
-                self.set_cursor(self.cursor, ascii_column=not self.ascii_column_active)
+                self.toggle_column()
                 event.accept()
                 return
-        else:
-            t = event.text()
-            if len(t) == 1:
-                if self.ascii_column_active:
-                    if t.isascii() and t.isprintable():
-                        self._set_byte_value(ord(t))
-                        event.accept()
-                        return
-                else:
-                    if t in "0123456789abcdefABCDEF":
-                        self._set_nibble_value(int(t, 16))
-                        event.accept()
-                        return
+        elif self.type_text(event.text()):
+            event.accept()
+            return
         super().keyPressEvent(event)
 
     def _update_layout(self) -> None:
@@ -865,31 +482,11 @@ class HexGraphicsObject(QGraphicsObject):
         spath.closeSubpath()
         return spath
 
-    def get_selection(self) -> tuple[int, int] | None:
-        """
-        Get active selection, returning (minaddr, maxaddr) inclusive.
-        """
-        if self.selection_start is None:
-            return None
-        if self.start_addr <= self.cursor < self.end_addr:
-            minaddr = min(self.cursor, self.selection_start)
-            maxaddr = max(self.cursor, self.selection_start)
-            return (minaddr, maxaddr)
-        return None
-
     def toggle_cursor_blink(self) -> None:
         """
         Simply toggles cursor blink status.
         """
         self.cursor_blink_state = not self.cursor_blink_state
-        self.update()
-
-    def set_highlight_regions(self, regions: Sequence[HexHighlightRegion]) -> None:
-        """
-        Sets the list of highlighted regions.
-        """
-        self.highlighted_regions = regions
-        self.update_active_highlight_regions()
         self.update()
 
     def paint_highlighted_region(self, painter, region: HexHighlightRegion) -> None:
@@ -1068,10 +665,9 @@ class HexGraphicsObject(QGraphicsObject):
         if addr is None:
             return
         addr, _ = addr
-        regions = self.get_highlight_regions_at_addr(addr)
-        if len(regions):
-            t = "\n".join(t for t in [r.get_tooltip() for r in regions] if t)
-            self.setToolTip(t)
+        text = self.tooltip_at(addr)
+        if text:
+            self.setToolTip(text)
 
 
 class HexGraphicsSubView(QGraphicsView):
@@ -1328,255 +924,70 @@ class HexGraphicsView(QAbstractScrollArea):
         super().keyPressEvent(event)
 
 
-class HexView(SynchronizedInstanceView):
+class HexView(SynchronizedInstanceView, HexViewMixin):
     """
     View and edit memory/object code in classic hex editor format.
     """
+
+    REGION_CLASS = HexHighlightRegion
+    PATCH_REGION_CLASS = PatchHighlightRegion
+    BREAKPOINT_REGION_CLASS = BreakpointHighlightRegion
+    SYNCHRONIZED_REGION_COLOR = Qt.GlobalColor.green
+    CHANGED_REGION_COLOR = Qt.GlobalColor.red
 
     _widgets_initialized: bool = False
 
     def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
         super().__init__("hex", workspace, default_docking_position, instance)
         self.base_caption: str = "Hex"
-        self.smart_highlighting_enabled: bool = True
-        self._clipboard = None
-        self._cfb_highlights: Sequence[HexHighlightRegion] = []
-        self._sync_view_highlights: Sequence[HexHighlightRegion] = []
-        self._patch_highlights: Sequence[PatchHighlightRegion] = []
-        self._changed_data_highlights: Sequence[HexHighlightRegion] = []
-        self._breakpoint_highlights: Sequence[BreakpointHighlightRegion] = []
+        self._init_hex_state()
         self._find_bar: QFindBar | None = None
-        self._find_matches: list[tuple[int, int]] = []
-        self._find_index: int = -1
-        self._find_highlights: Sequence[HexHighlightRegion] = []
-        self._find_regions: list[tuple[int, bytes]] | None = None
-        self._find_capped: bool = False
-
         self._init_widgets()
-        self.instance.cfb.am_subscribe(self._on_cfb_event)
-        self.instance.patches.am_subscribe(self._update_highlight_regions_from_patches)
-        self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._update_highlight_regions_from_breakpoints)
-        self._data_cache = {}
-
-        self._reload_data()
-
-        self._dbg_manager = self.instance.debugger_mgr
-        self._dbg_watcher = DebuggerWatcher(self._on_debugger_state_updated, self._dbg_manager.debugger)
-        self._on_debugger_state_updated()
+        self._start_hex()
 
     @classmethod
     def register_commands(cls, workspace: Workspace) -> None:
-        workspace.command_manager.register_commands(
-            [
-                ViewCommand("hex_view_" + action.__name__, "Hex: " + caption, action, cls, workspace)
-                for caption, action in [
-                    ("Find", cls.show_find_bar),
-                    ("Find Next", cls.find_next),
-                    ("Find Previous", cls.find_previous),
-                ]
-            ]
-        )
-
-    def _on_cfb_event(self, **kwargs) -> None:
-        if not kwargs:
-            self._find_regions = None
-            self._reload_data()
-            if self._find_bar is not None and not self._find_bar.isHidden():
-                self._update_find_matches()
+        register_hex_commands(workspace)
 
     def closeEvent(self, event) -> None:
         self._dbg_watcher.shutdown()
         super().closeEvent(event)
 
-    def _clear_highlights(self) -> None:
-        """
-        Clear all highlight regions
-        """
-        self._cfb_highlights = []
-        self._sync_view_highlights = []
-        self._patch_highlights = []
-        self._changed_data_highlights = []
-        self._breakpoint_highlights = []
-        self._find_highlights = []
+    #
+    # HexViewMixin's hooks
+    #
 
-    def _reload_data(self):
-        """
-        Callback when hex backing data store should be updated.
-        """
-        self._clear_highlights()
-        start = self.inner_widget.get_display_start_addr()
-        cursor = self.inner_widget.hex.cursor
-        source = self._data_source_combo.currentData()
-        if source == HexDataSource.Loader:
-            if self.instance.cfb.am_none:
-                self.inner_widget.clear()
-                return
-            loader = self.instance.project.loader
-            self.inner_widget.set_region_callback(
-                self.project_memory_write_func,
-                self.project_memory_read_func,
-                loader.min_addr,
-                loader.max_addr - loader.min_addr + 1,
-            )
-            self._update_highlight_regions_from_patches()
-        elif source == HexDataSource.Debugger:
-            self._data_cache = {}
-            self.inner_widget.set_region_callback(
-                self.debugger_memory_write_func,
-                self.debugger_memory_read_func,
-                0,
-                0x10000000000000000,  # FIXME: Get actual ranges and add them
-            )
-        else:
-            raise NotImplementedError
+    @property
+    def grid(self) -> HexGraphicsObject:
+        return self.inner_widget.hex
 
+    def _grid_if_ready(self) -> HexGraphicsObject | None:
+        return self.inner_widget.hex if self._widgets_initialized else None
+
+    @property
+    def data_source(self) -> HexDataSource:
+        return self._data_source_combo.currentData()
+
+    def _set_region_callback(self, write, read, addr: int, size: int) -> None:
+        self.inner_widget.set_region_callback(write, read, addr, size)
+
+    def _clear_grid(self) -> None:
+        self.inner_widget.clear()
+
+    def _display_start_addr(self) -> HexAddress:
+        return self.inner_widget.get_display_start_addr()
+
+    def _set_display_start_addr(self, start: HexAddress) -> None:
         self.inner_widget.set_display_start_addr(start)
-        self.inner_widget.hex.set_cursor(cursor)
-        self._update_highlight_regions_from_synchronized_views()
-        self._update_cfb_highlight_regions()
-        self._set_highlighted_regions()
 
-    def _data_source_changed(self, index: int) -> None:  # pylint:disable=unused-argument
-        self._reload_data()
+    def update_status_text(self) -> None:
+        """
+        Update status text with current cursor info.
+        """
+        self._status_lbl.setText(self.status_text())
 
-    def _on_debugger_state_updated(self) -> None:
-        source = self._data_source_combo.currentData()
-        if source == HexDataSource.Debugger:
-            #
-            # Calculate differences in state memory and highlight
-            #
-            previous_data = self._data_cache
-            self._data_cache = {}
-            addr = self.inner_widget.hex.display_start_addr
-            regions = []
-            r = None
-            while addr < self.inner_widget.hex.display_end_addr:
-                if addr in previous_data:
-                    differs = self.debugger_memory_read_func(addr) != previous_data[addr]
-                else:
-                    differs = False
-                if differs:
-                    if r is None:
-                        r = HexHighlightRegion(Qt.GlobalColor.red, addr, 0)
-                        regions.append(r)
-                    r.size += 1
-                else:
-                    r = None
-                addr += 1
-            self._changed_data_highlights = regions
-            self.inner_widget.hex.update()
-            self._set_highlighted_regions()
-
-    def debugger_memory_read_func(self, addr: int) -> HexByteValue:
-        """
-        Callback to populate hex view with bytes from debugger state.
-        """
-        if addr not in self._data_cache:
-            dbg = self.instance.debugger_mgr.debugger
-            if dbg.am_none:
-                v = "?"
-            else:
-                state: angr.SimState | None = dbg.simstate
-                if state is None:
-                    v = "?"
-                else:
-                    try:
-                        r = state.memory.load(addr, 1)
-                        v = "S" if r.symbolic else state.solver.eval(r)
-                    except Exception:  # pylint:disable=broad-except
-                        log.exception("Failed to read @ %#x", addr)
-                        v = "?"
-            self._data_cache[addr] = v
-        return self._data_cache[addr]
-
-    def debugger_memory_write_func(self, addr: int, value: int) -> bool:  # pylint:disable=unused-argument,no-self-use
-        """
-        Callback to populate hex view with bytes.
-        """
-        # FIXME: For debuggers that support it, allow editing
-        return False
-
-    def project_memory_read_func(self, addr: int) -> HexByteValue:
-        """
-        Callback to populate hex view with bytes.
-        """
-        p = self.instance.project
-
-        patches = p.kb.patches.get_all_patches(addr, 1)
-        if len(patches) > 0:
-            patch = patches[0]
-            return patch.new_bytes[addr - patch.addr]
-
-        try:
-            return p.loader.memory[addr]
-        except KeyError:
-            return "?"
-
-    def auto_patch(self, addr: int, new_bytes: bytearray):
-        """
-        Automatically update or create patches to ensure new_bytes are patched at addr.
-        """
-        pm = self.instance.project.kb.patches
-        max_addr = addr + len(new_bytes) - 1
-
-        for p in pm.get_all_patches(addr, len(new_bytes)):
-            patch_max_addr = p.addr + len(p) - 1
-            if (p.addr <= addr) and (patch_max_addr >= max_addr):
-                # Existing patch contains new patch entirely. Update it.
-                p.new_bytes = p.new_bytes[: addr - p.addr] + new_bytes + p.new_bytes[max_addr - p.addr + 1 :]
-                return
-            elif (p.addr >= addr) and (patch_max_addr <= max_addr):
-                # Patch will be entirely overwritten, remove it.
-                pm.remove_patch(p.addr)
-            elif (p.addr >= addr) and (patch_max_addr > max_addr):
-                # Lower portion of patch will be overwritten, shrink patch up.
-                pm.remove_patch(p.addr)
-                new_p_addr = max_addr + 1
-                p.new_bytes = p.new_bytes[(new_p_addr - p.addr) :]
-                p.addr = new_p_addr
-                pm.add_patch_obj(p)
-            elif (p.addr < addr) and (patch_max_addr <= max_addr):
-                # Upper portion of patch will be overwritten, shrink patch down.
-                pm.remove_patch(p.addr)
-                p.new_bytes = p.new_bytes[0 : (addr - p.addr)]
-                pm.add_patch_obj(p)
-            else:
-                raise AssertionError
-
-        # Check to see if we should extend an adjacent patch
-        if addr > 0:
-            p = pm.get_all_patches(addr - 1, 1)
-            if len(p) > 0:
-                p = p[0]
-                p.new_bytes += new_bytes
-                return
-
-        pm.add_patch_obj(Patch(addr, new_bytes))
-
-    def project_memory_write_bytearray(self, addr: int, value: bytearray) -> bool:
-        """
-        Callback to write array of bytes as patch.
-        """
-        self.auto_patch(addr, bytearray(value))
-        pm = self.instance.project.kb.patches
-        pm_notifier = self.instance.patches
-        if pm_notifier.am_none:
-            pm_notifier.am_obj = pm
-        pm_notifier.am_event()
-        return True
-
-    def project_memory_write_func(self, addr: int, value: int) -> bool:
-        """
-        Callback to populate hex view with bytes.
-        """
-        return self.project_memory_write_bytearray(addr, bytearray([value]))
-
-    def set_smart_highlighting_enabled(self, enable: bool) -> None:
-        """
-        Control whether smart highlighting is enabled or not.
-        """
-        self.smart_highlighting_enabled = enable
-        self._update_cfb_highlight_regions()
+    def _focus_grid(self) -> None:
+        self.inner_widget.setFocus()
 
     def _init_widgets(self) -> None:
         """
@@ -1655,290 +1066,22 @@ class HexView(SynchronizedInstanceView):
         dlg.setDefaultButton(QMessageBox.StandardButton.Cancel)
         if dlg.exec_() != QMessageBox.StandardButton.Yes:
             return
-
-        selected_regions = self.inner_widget.hex.get_active_highlight_regions()
-        for r in selected_regions:
-            if isinstance(r, PatchHighlightRegion):
-                r.revert()
-
-    def _can_merge_any_selected_patches(self):
-        """
-        Determine if any of the selected patches can be merged.
-        """
-        return self._merge_selected_patches(True)
-
-    def _merge_selected_patches(self, trial_only: bool = False) -> bool:
-        """
-        Merge selected directly-adjacent patches.
-        """
-        selected_patches = [
-            r for r in self.inner_widget.hex.get_active_highlight_regions() if isinstance(r, PatchHighlightRegion)
-        ]
-        i = 0
-        did_patch = False
-        while i < (len(selected_patches) - 1):
-            patch = selected_patches[i]
-            for j, neighbor in enumerate(selected_patches[i + 1 :]):
-                if patch.can_merge_with(neighbor):
-                    if trial_only:
-                        return True
-                    patch.merge_with(neighbor)
-                    did_patch = True
-                else:
-                    i = i + j + 1
-                    break
-
-        return did_patch
-
-    def _get_num_selected_bytes(self) -> int:
-        """
-        Determine whether any bytes are selected.
-        """
-        sel = self.inner_widget.hex.get_selection()
-        if sel is None:
-            return 0
-        minaddr, maxaddr = sel
-        num_bytes_selected = maxaddr - minaddr + 1
-        return num_bytes_selected
-
-    def _copy_selected_bytes(self) -> None:
-        """
-        Copy selected bytes to view-only clipboard.
-        """
-        sel = self.inner_widget.hex.get_selection()
-        if sel is None:
-            self._clipboard = None
-            return
-
-        minaddr, maxaddr = sel
-        num_bytes_selected = maxaddr - minaddr + 1
-
-        self._clipboard = bytearray(num_bytes_selected)
-        for addr in range(minaddr, maxaddr + 1):
-            d = self.project_memory_read_func(addr)  # FIXME: Support multibyte read
-            if isinstance(d, int):
-                self._clipboard[addr - minaddr] = d
-
-    def _paste_copied_bytes_at_cursor(self) -> None:
-        """
-        Paste the view-only clipboard contents at cursor location.
-        """
-        if self._clipboard is None:
-            return
-        if self._data_source_combo.currentData() == HexDataSource.Loader:
-            self.project_memory_write_bytearray(self.inner_widget.hex.cursor, self._clipboard)
-        # FIXME: Support pasting data to current debugger state
-
-    def _set_breakpoint(self, bp_type: BreakpointType = BreakpointType.Execute) -> None:
-        """
-        Set breakpoint at current cursor.
-        """
-        sel = self.inner_widget.hex.get_selection()
-        if sel:
-            minaddr, maxaddr = sel
-            num_bytes_selected = maxaddr - minaddr + 1
-        else:
-            minaddr = self.inner_widget.hex.cursor
-            num_bytes_selected = 1
-        self.instance.breakpoint_mgr.add_breakpoint(Breakpoint(bp_type, minaddr, num_bytes_selected))
+        self._revert_selected_patches()
 
     def _get_breakpoint_submenu(self) -> QMenu:
         """
         Get context menu to add new breakpoints.
         """
-        mnu = QMenu("Set &breakpoint", self)
-        act = QAction("Break on &Execute", mnu)
-        act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Execute))
-        mnu.addAction(act)
-        act = QAction("Break on &Read", mnu)
-        act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Read))
-        mnu.addAction(act)
-        act = QAction("Break on &Write", mnu)
-        act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Write))
-        mnu.addAction(act)
-        return mnu
+        return to_qmenu(self.breakpoint_menu(), self)
 
     def contextMenuEvent(self, event: PySide6.QtGui.QContextMenuEvent) -> None:  # pylint: disable=unused-argument
         """
         Display view context menu.
         """
-        mnu = QMenu(self)
-        add_sep = False
-
-        # FIXME: This should also go into an Edit menu accessible from the main window
-        num_selected_bytes = self._get_num_selected_bytes()
-        if num_selected_bytes > 0:
-            plural = "s" if num_selected_bytes != 1 else ""
-            act = QAction(f"Copy {num_selected_bytes:d} byte{plural}", mnu)
-            act.triggered.connect(self._copy_selected_bytes)
-            mnu.addAction(act)
-            add_sep = True
-        if self._clipboard is not None and self._data_source_combo.currentData() == HexDataSource.Loader:
-            plural = "s" if len(self._clipboard) != 1 else ""
-            act = QAction(f"Paste {len(self._clipboard):d} byte{plural}", mnu)
-            act.triggered.connect(self._paste_copied_bytes_at_cursor)
-            mnu.addAction(act)
-            add_sep = True
-
-        if add_sep:
-            mnu.addSeparator()
-            add_sep = False
-
-        mnu.addMenu(self._get_breakpoint_submenu())
-        mnu.addSeparator()
-
-        # Get context menu for specific item under cursor
-        for rgn in self.inner_widget.hex.get_highlight_regions_under_cursor():
-            rgn_mnu = rgn.gen_context_menu_actions()
-            if rgn_mnu is not None:
-                mnu.addMenu(rgn_mnu)
-                add_sep = True
-
-        if add_sep:
-            mnu.addSeparator()
-            add_sep = False
-
-        # Get context menu for groups of items
-        selected_regions = self.inner_widget.hex.get_active_highlight_regions()
-        if any(isinstance(r, PatchHighlightRegion) for r in selected_regions):
-            act = QAction("Merge selected patches", mnu)
-            act.triggered.connect(self._merge_selected_patches)
-            act.setEnabled(self._can_merge_any_selected_patches())
-            mnu.addAction(act)
-            act = QAction("Revert selected patches", mnu)
-            act.triggered.connect(self.revert_selected_patches)
-            mnu.addAction(act)
-            add_sep = True
-
-        if add_sep:
-            mnu.addSeparator()
-
-        mnu.addMenu(self.get_synchronize_with_submenu())
+        menu = self.context_menu()
+        menu.parent = self
+        mnu = to_qmenu(menu, self)
         mnu.exec_(QCursor.pos())
-
-    #
-    # Find in view
-    #
-
-    FIND_HIGHLIGHT_LIMIT = 512
-
-    def show_find_bar(self) -> None:
-        """Open the incremental find bar."""
-        self._find_bar.activate()
-        self._update_find_matches()
-
-    def find_next(self) -> None:
-        self._step_find_match(1)
-
-    def find_previous(self) -> None:
-        self._step_find_match(-1)
-
-    def _iter_find_regions(self) -> list[tuple[int, bytes]]:
-        if self._find_regions is None:
-            if self.instance.project.am_none:
-                self._find_regions = []
-            else:
-                searcher = Searcher(self.instance.project.am_obj, kb=self.instance.kb)
-                self._find_regions = list(searcher.iter_regions(SCOPE_ALL))
-        return self._find_regions
-
-    def _compute_find_matches(self, query: str) -> list[tuple[int, int]]:
-        matches: list[tuple[int, int]] = []
-        limit = Conf.find_match_limit
-        if self._find_bar.mode == "Hex":
-            pattern = BytePattern.parse(query)
-            for start, data in self._iter_find_regions():
-                for addr in pattern.finditer(data, base=start):
-                    if len(matches) >= limit:
-                        self._find_capped = True
-                        return matches
-                    matches.append((addr, len(pattern)))
-        else:
-            regex = self._find_bar.compile_query()
-            if regex is None:
-                raise SearchError("Malformed query")
-            for start, data in self._iter_find_regions():
-                text = data.decode("latin-1")
-                for match in regex.finditer(text):
-                    if len(matches) >= limit:
-                        self._find_capped = True
-                        return matches
-                    matches.append((start + match.start(), max(match.end() - match.start(), 1)))
-        return matches
-
-    def _update_find_matches(self) -> None:
-        self._find_bar.set_text_options_visible(self._find_bar.mode != "Hex")
-        query = self._find_bar.query
-        self._find_index = -1
-        self._find_matches = []
-        self._find_capped = False
-        if not self.instance.project.am_none and query:
-            try:
-                self._find_matches = self._compute_find_matches(query)
-                self._find_bar.set_error(False)
-            except SearchError:
-                self._find_bar.set_error(True)
-        else:
-            self._find_bar.set_error(False)
-        self._update_find_highlights()
-        if self._find_matches:
-            self._step_find_match(1)
-        else:
-            self._find_bar.set_match_status(0, 0)
-
-    def _step_find_match(self, delta: int) -> None:
-        if not self._find_matches:
-            self._find_bar.set_match_status(0, 0)
-            return
-        self._find_index = (self._find_index + delta) % len(self._find_matches)
-        addr, _size = self._find_matches[self._find_index]
-        self.set_cursor(addr)
-        self._find_bar.set_match_status(self._find_index, len(self._find_matches), capped=self._find_capped)
-
-    def _update_find_highlights(self) -> None:
-        self._find_highlights = [
-            HexHighlightRegion(Conf.disasm_view_operand_highlight_color, addr, size, "Find match")
-            for addr, size in self._find_matches[: self.FIND_HIGHLIGHT_LIMIT]
-        ]
-        self._set_highlighted_regions()
-
-    def _on_find_bar_closed(self) -> None:
-        self._find_matches = []
-        self._find_index = -1
-        self._find_regions = None
-        self._update_find_highlights()
-        self.inner_widget.setFocus()
-
-    def set_cursor(self, addr: int) -> None:
-        """
-        Move cursor to specific address and clear any active selection.
-        """
-        self.inner_widget.hex.clear_selection()
-        self.inner_widget.hex.set_cursor(addr)
-
-    def on_cursor_changed(self) -> None:
-        """
-        Handle updates to cursor or viewport.
-        """
-        self.update_status_text()
-        self._update_cfb_highlight_regions()
-        self.set_synchronized_cursor_address(self.inner_widget.hex.cursor)
-        self.published_view_state.cursors = [self.inner_widget.hex.cursor]
-        self.notify_view_state_updated()
-
-    def update_status_text(self) -> None:
-        """
-        Update status text with current cursor info.
-        """
-        sel = self.inner_widget.hex.get_selection()
-        if sel:
-            minaddr, maxaddr = sel
-            bytes_selected = maxaddr - minaddr + 1
-            plural = "s" if bytes_selected != 1 else ""
-            s = f"Address: [{minaddr:08x}, {maxaddr:08x}], {bytes_selected} byte{plural} selected"
-        else:
-            s = f"Address: {self.inner_widget.hex.cursor:08x}"
-        self._status_lbl.setText(s)
 
     def keyPressEvent(self, event: PySide6.QtGui.QKeyEvent) -> None:
         """
@@ -1956,114 +1099,18 @@ class HexView(SynchronizedInstanceView):
         """
         JumpTo(self, parent=self).show()
 
-    def jump_to(self, addr: int) -> bool:
-        """
-        Jump to a specific address.
-        """
-        self.set_cursor(addr)
-        return True
 
-    def on_synchronized_view_group_changed(self) -> None:
-        """
-        Handle view being added to or removed from the view synchronization group.
-        """
-        if self._widgets_initialized:
-            self.inner_widget.hex.set_always_show_cursor(len(self.sync_state.views) > 1)
-
-    def on_synchronized_highlight_regions_changed(self) -> None:
-        """
-        Handle synchronized highlight region change event.
-        """
-        self._update_highlight_regions_from_synchronized_views()
-
-    def _update_cfb_highlight_regions(self) -> None:
-        """
-        Update cached list of highlight regions under cursor.
-        """
-        regions = []
-        cfb = self.instance.cfb
-        is_arm = is_arm_arch(self.instance.project.arch) if not self.instance.project.am_none else False
-        if self.smart_highlighting_enabled and not cfb.am_none:
-            try:
-                for item in cfb.floor_items(self.inner_widget.hex.display_start_addr):
-                    item_addr, item = item
-                    if item.size is None:
-                        continue
-                    if (item_addr + item.size) < self.inner_widget.hex.display_start_addr:
-                        continue
-                    if item_addr >= self.inner_widget.hex.display_end_addr:
-                        break
-                    if isinstance(item, MemoryData):
-                        is_string = item.sort in (MemoryDataSort.String, MemoryDataSort.UnicodeString)
-                        color = Conf.hex_view_string_color if is_string else Conf.hex_view_data_color
-                        regions.append(HexHighlightRegion(color, item.addr, item.size, str(item)))
-                    elif isinstance(item, Block):
-                        try:
-                            for insn in item.disassembly.insns:
-                                s = f"{insn} in {item}"
-                                insn_addr = insn.address & 0xFFFF_FFFE if is_arm else insn.address
-                                regions.append(
-                                    HexHighlightRegion(Conf.hex_view_instruction_color, insn_addr, insn.size, s)
-                                )
-                        except angr.errors.SimEngineError:
-                            pass  # We may get a node in CFB to a non-decodeable address
-            except (RuntimeError, KeyError, IndexError):
-                # the CFB may be mutated by the CFG recovery job thread while we iterate over it; keep what we have
-                # collected so far - a following event will refresh the regions
-                pass
-        self._cfb_highlights = regions
-        self._set_highlighted_regions()
-
-    def _update_highlight_regions_from_synchronized_views(self) -> None:
-        """
-        Update cached list of highlight regions from synchronized views.
-        """
-        regions = []
-        for v in self.sync_state.highlight_regions:
-            if v is not self:
-                for r in self.sync_state.highlight_regions[v]:
-                    regions.append(HexHighlightRegion(Qt.GlobalColor.green, r.addr, r.size))
-
-        self._sync_view_highlights = regions
-        self._set_highlighted_regions()
-
-    def _update_highlight_regions_from_patches(self, **_) -> None:
-        """
-        Updates cached list of highlight regions from patches.
-        """
-        if self.instance.project.am_none:
-            self._patch_highlights = []
-        else:
-            self._patch_highlights = [
-                PatchHighlightRegion(patch, self) for patch in self.instance.project.kb.patches.values()
-            ]
-        self._set_highlighted_regions()
-
-    def _update_highlight_regions_from_breakpoints(self, **kwargs) -> None:  # pylint:disable=unused-argument
-        """
-        Updates cached list of highlight regions from breakpoints.
-        """
-        if self.instance.project.am_none:
-            self._breakpoint_highlights = []
-        else:
-            self._breakpoint_highlights = [
-                BreakpointHighlightRegion(bp, self) for bp in self.instance.breakpoint_mgr.breakpoints
-            ]
-        self._set_highlighted_regions()
-
-    def _set_highlighted_regions(self) -> None:
-        """
-        Update highlighted regions, with data from CFB and synchronized views.
-        """
-        regions = []
-        regions.extend(self._cfb_highlights)
-        regions.extend(self._sync_view_highlights)
-        source = self._data_source_combo.currentData()
-        if source == HexDataSource.Loader:
-            regions.extend(self._patch_highlights)
-            # find matches come from loader memory, so they may not reflect debugger memory
-            regions.extend(self._find_highlights)
-        elif source == HexDataSource.Debugger:
-            regions.extend(self._changed_data_highlights)
-        regions.extend(self._breakpoint_highlights)
-        self.inner_widget.hex.set_highlight_regions(regions)
+__all__ = [
+    "BreakpointHighlightRegion",
+    "HexAddress",
+    "HexByteValue",
+    "HexDataBuffer",
+    "HexDataSource",
+    "HexGraphicsObject",
+    "HexGraphicsSubView",
+    "HexGraphicsView",
+    "HexHighlightRegion",
+    "HexView",
+    "PatchHighlightRegion",
+    "RowCol",
+]
