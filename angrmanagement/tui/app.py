@@ -12,6 +12,7 @@ import asyncio
 import contextlib
 import logging
 import os
+import pickle
 import time
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -494,13 +495,36 @@ class AmApp(App):
             )
             if path:
                 Conf.last_used_directory = os.path.dirname(path)
-                self.services.message(
-                    "info",
-                    "Trace file",
-                    "The data dependency view, which shows trace files, is not in the terminal yet.",
-                )
+                self.load_trace_file(path)
 
         self.run_flow(flow())
+
+    def load_trace_file(self, file_path: str) -> None:
+        """Show the data dependencies of the SimState a trace file holds, as the Qt main window does."""
+        if isurl(file_path):
+            self.services.message(
+                "critical",
+                "Unsupported Action",
+                "Downloading trace files is not yet supported. Please specify a path to a file on disk.",
+            )
+        elif os.path.isfile(file_path):
+            try:
+                with open(file_path, "rb") as f:
+                    loaded_sim_state = pickle.load(f)
+            except pickle.PickleError:
+                self.services.message(
+                    "critical", "Unable to load trace file", "Trace file must contain a serialized SimState."
+                )
+                return
+            analysis_params = {"end_state": loaded_sim_state, "start_addr": None, "end_addr": None, "block_addrs": None}
+            self.workspace.view_data_dependency_graph(analysis_params)
+            self._recent_file(file_path)
+        else:
+            self.services.message(
+                "critical",
+                "File not found",
+                f"angr management cannot open file {file_path}. Please make sure that the file exists.",
+            )
 
     def load_signature_button(self) -> None:
         sig_mgr = self.workspace.main_instance.signature_mgr

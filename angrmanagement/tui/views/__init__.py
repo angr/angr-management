@@ -7,7 +7,7 @@ from .call_explorer import CallExplorerTuiView
 from .code import CodeTuiView
 from .console import ConsoleTuiView
 from .disassembly import DisassemblyTuiView
-from .graphs import DependencyTuiView, ProximityTuiView
+from .graphs import DataDepTuiView, DependencyTuiView, ProximityTuiView
 from .hex import HexTuiView
 from .search import SearchTuiView
 from .symexec import SymexecTuiView
@@ -53,6 +53,7 @@ TUI_VIEW_CLASSES: dict[str, type[TuiView]] = {
     "call_explorer": CallExplorerTuiView,
     "proximity": ProximityTuiView,
     "dependencies": DependencyTuiView,
+    "data_dependency": DataDepTuiView,
     "console": ConsoleTuiView,
     "log": LogTuiView,
     "jobs": JobsTuiView,

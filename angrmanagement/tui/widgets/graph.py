@@ -72,6 +72,7 @@ class BoxGraphWidget(ScrollView, can_focus=True):
     :param on_context_menu: Called with the node under a right click (None off the boxes) and the screen offset.
     :param tooltip_of:      The tooltip of a node, or None.
     :param on_key:          Called with the key of a press the widget does not use; returns whether it was used.
+    :param before_draw:     Called before each drawing (to restyle the edges, say).
     """
 
     DEFAULT_CSS = """
@@ -90,6 +91,7 @@ class BoxGraphWidget(ScrollView, can_focus=True):
         on_context_menu: Callable[[Any, tuple[int, int]], Any] | None = None,
         tooltip_of: Callable[[Any], str | None] | None = None,
         on_key: Callable[[str], bool] | None = None,
+        before_draw: Callable[[], Any] | None = None,
     ) -> None:
         super().__init__()
         self.presenter = presenter
@@ -99,6 +101,7 @@ class BoxGraphWidget(ScrollView, can_focus=True):
         self.on_context_menu = on_context_menu
         self.tooltip_of = tooltip_of
         self.key_handler = on_key
+        self.before_draw = before_draw
         self.style_of = StyleCache(self)
         self.canvas: CharCanvas | None = None
         self._drag: tuple[int, int, float, float] | None = None
@@ -120,6 +123,8 @@ class BoxGraphWidget(ScrollView, can_focus=True):
     def redraw(self) -> None:
         """Draw the picture again (a selection changed)."""
         picture = self.presenter.picture
+        if self.before_draw is not None:
+            self.before_draw()
         self.canvas = draw_picture(picture, self.presenter.selected) if picture.boxes else None
         width, height = (self.canvas.width, self.canvas.height) if self.canvas is not None else (0, 0)
         self.virtual_size = Size(width, height)
