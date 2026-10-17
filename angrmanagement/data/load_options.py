@@ -338,6 +338,145 @@ def default_selection(
     )
 
 
+#
+# What the Load Binary dialog shows and checks, for any frontend
+#
+
+#: The three address fields: the key, and the caption and message of the error a bad value gives.
+ADDRESS_FIELDS = (
+    ("base_addr", "Incorrect base address", "Please input a valid base address."),
+    ("entry_addr", "Incorrect entry point address", "Please input a valid entry point address."),
+    ("offset", "Incorrect offset", "Please input a valid offset."),
+)
+
+#: The kinds of symbol path entry the dialog's Add entry offers.
+SYMBOL_PATH_ENTRY_TYPES = ("local", "srv")
+
+
+class LoadChoiceError(Exception):
+    """A choice of the Load Binary dialog cannot be used; ``caption`` and ``message`` say why, as the dialog does."""
+
+    def __init__(self, caption: str, message: str) -> None:
+        super().__init__(message)
+        self.caption = caption
+        self.message = message
+
+
+def outer_backend_names() -> list[str]:
+    """The outer backend choices: none, then each outer backend."""
+    return [NO_OUTER_BACKEND] + [
+        name for name, backend in available_backends().items() if getattr(backend, "is_outer", False) is True
+    ]
+
+
+def arch_label(arch: Any) -> str:
+    """How the architecture list names an architecture."""
+    if isinstance(arch, archinfo.Arch):
+        return f"{arch.bits}b {arch.name} ({arch.memory_endness[-2:]})"
+    if pypcode and isinstance(arch, pypcode.ArchLanguage):
+        return f"{arch.id} (P-code Engine)"
+    raise AssertionError("Unexpected arch type")
+
+
+def arch_choices(partial_ld: cle.Loader) -> tuple[list[Any], list[Any], Any]:
+    """The architecture list: the suggested ones (the ideal one first), the others, and the ideal one or None."""
+    ideal, recommended, other = split_arches(partial_ld, available_archs())
+    if ideal is not None:
+        recommended = [ideal, *recommended]
+    return recommended, other, ideal
+
+
+def file_hashes(main_object: Any) -> tuple[str | None, str | None]:
+    """The MD5 and SHA256 the dialog shows, in hex, or None for each the object does not have."""
+    md5 = getattr(main_object, "md5", None)
+    sha256 = getattr(main_object, "sha256", None)
+    return (md5.hex() if md5 is not None else None, sha256.hex() if sha256 is not None else None)
+
+
+def initial_address_texts(
+    partial_ld: cle.Loader, suggested_backend: type[cle.Backend] | None
+) -> tuple[bool, dict[str, str]]:
+    """
+    Whether the address fields start out switched on, and the text each starts with: a blob starts with all three on
+    and 0x0, anything else with them off and the addresses the partial load found.
+    """
+    if suggested_backend is not None and issubclass(suggested_backend, cle.Blob):
+        return True, dict.fromkeys(("base_addr", "entry_addr", "offset"), "0x0")
+    base_addr, entry_addr, offset = loaded_addresses(partial_ld)
+    texts = {}
+    for key, value in (("entry_addr", entry_addr), ("base_addr", base_addr), ("offset", offset)):
+        if value is not None:
+            texts[key] = hex(value)
+    return False, texts
+
+
+def symbol_path_entry_error(entry_type: str, path: str) -> str | None:
+    """Why a symbol path entry the user added cannot be used, or None."""
+    if entry_type == "srv":
+        return None if path else "Server URL is required for symbol server entries."
+    if entry_type == "local":
+        return None if path else "Path is required for local entries."
+    return "Invalid entry type."
+
+
+def selection_from_choices(
+    *,
+    outer_backend: str,
+    backend: str,
+    simos_name: str,
+    arch: Any,
+    auto_load_libs: bool,
+    load_debug_info: bool,
+    dependencies: list[tuple[str, bool]],
+    address_texts: dict[str, str | None],
+    allow_symbol_download: bool = True,
+    symbol_path_rows: list[tuple[str, str, str]] | None = None,
+    enckey: bytes | None = None,
+) -> LoadSelection:
+    """
+    What the Load Binary dialog loads with, from what its widgets hold: the backend and OS names, the architecture
+    picked (None if none), each dependency and whether it is checked (loaded), and the text of each address field that
+    is switched on (None for one that is off). Raises :class:`LoadChoiceError` with the dialog's message for the first
+    choice that cannot be used, in the order the dialog checks them.
+    """
+    backends = available_backends()
+    outer: str | None = outer_backend
+    if outer_backend == NO_OUTER_BACKEND:
+        outer = None
+    elif not outer_backend or outer_backend not in backends:
+        raise LoadChoiceError("Incorrect backend selection", "Please select a backend before continue.")
+    if not backend or backend not in backends:
+        raise LoadChoiceError("Incorrect backend selection", "Please select a backend before continue.")
+    if not simos_name or simos_name not in available_simos():
+        raise LoadChoiceError("Incorrect OS selection", "Please select a OS before continue.")
+    if arch is None:
+        raise LoadChoiceError("Incorrect architecture selection", "Please select an architecture before continue.")
+    addresses: dict[str, int] = {}
+    for key, caption, message in ADDRESS_FIELDS:
+        text = address_texts.get(key)
+        if text is not None:
+            try:
+                addresses[key] = int(text, 16)
+            except ValueError:
+                raise LoadChoiceError(caption, message) from None
+    return LoadSelection(
+        backend=backend,
+        simos_name=simos_name,
+        arch=arch,
+        outer_backend=outer,
+        auto_load_libs=auto_load_libs,
+        load_debug_info=load_debug_info,
+        force_load_libs=[name for name, checked in dependencies if checked],
+        skip_libs={name for name, checked in dependencies if not checked},
+        base_addr=addresses.get("base_addr"),
+        entry_addr=addresses.get("entry_addr"),
+        offset=addresses.get("offset"),
+        allow_symbol_download=allow_symbol_download,
+        symbol_path_rows=list(symbol_path_rows or []),
+        enckey=enckey,
+    )
+
+
 def confirm_symbol_download(url: str) -> bool:
     """Ask whether cle may download debug symbols from ``url``; cle asks on the loading thread."""
     # cle calls this on the loading thread, so the question goes to the UI thread

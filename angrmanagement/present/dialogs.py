@@ -9,13 +9,17 @@ call too, so the two frontends accept the same input.
 
 from __future__ import annotations
 
+import ast
+import base64
 import contextlib
 from dataclasses import dataclass
+from enum import IntEnum
 from typing import TYPE_CHECKING, Any
 
 from archinfo import ArchError
 
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
+from angrmanagement.data.load_options import key_to_hex
 
 from .forms import Form, FormAction, FormCheck, FormField, valid_status
 
@@ -92,6 +96,120 @@ def rename_label_form(label_addr: int, text: str) -> Form:
 def set_comment_form(text: str) -> Form:
     """The Set Comment dialog: several lines; Ctrl+Enter accepts."""
     return Form("Set Comment", [FormField("comment", "Comment text", "multiline", text)])
+
+
+#
+# Encryption keys
+#
+
+
+class EncKeyFormat(IntEnum):
+    """
+    The format that an encryption key is entered in.
+    """
+
+    BASE64 = 0
+    BYTESTRING = 1
+    ASCII = 2
+    HEX = 3
+
+
+def parse_hex_key(txt: str) -> bytes | None:
+    """A hexadecimal key, with an optional 0x prefix and whitespace, ':' or '-' between the digits; None if not one."""
+    digits = txt.strip()
+    if digits[:2].lower() == "0x":
+        digits = digits[2:]
+    for separator in " \t:-":
+        digits = digits.replace(separator, "")
+    if not digits or len(digits) % 2 != 0:
+        return None
+    try:
+        return bytes.fromhex(digits)
+    except ValueError:
+        return None
+
+
+def parse_encryption_key(txt: str, key_format: EncKeyFormat | None = None) -> bytes | None:
+    """
+    The key the user typed, in ``key_format``, or with None the first of hex, Base64, a Python byte string and ASCII
+    that reads it; None if it reads as none of them.
+    """
+    if not txt:
+        return None
+    # parse it as a hexadecimal string. this is attempted before base64 because hex-shaped text is also valid
+    # base64 more often than not, and it is far likelier to have been meant as hex.
+    if key_format is None or key_format == EncKeyFormat.HEX:
+        key = parse_hex_key(txt)
+        if key is not None:
+            return key
+        if key_format == EncKeyFormat.HEX:
+            return None
+    if key_format is None or key_format == EncKeyFormat.BASE64:
+        try:
+            return base64.b64decode(txt, validate=True)
+        except (ValueError, TypeError):
+            pass
+        if key_format == EncKeyFormat.BASE64:
+            return None
+    # parse it as a Python byte string. accept both a complete literal and the escaped content of one.
+    if key_format is None or key_format == EncKeyFormat.BYTESTRING:
+        candidates = [txt] if txt.startswith(('b"', "b'")) else []
+        candidates.append(f'b"{txt}"')
+        for candidate in candidates:
+            try:
+                key = ast.literal_eval(candidate)
+            except (SyntaxError, ValueError, MemoryError, RecursionError):
+                continue
+            if isinstance(key, bytes):
+                return key
+        if key_format == EncKeyFormat.BYTESTRING:
+            return None
+    if key_format is None or key_format == EncKeyFormat.ASCII:
+        try:
+            return txt.encode("ascii")
+        except UnicodeEncodeError:
+            pass
+    return None
+
+
+ENCKEY_FORMAT_CHOICES = [
+    ("Auto-detect", None),
+    ("Hex", EncKeyFormat.HEX),
+    ("Base64", EncKeyFormat.BASE64),
+    ("Python byte string", EncKeyFormat.BYTESTRING),
+    ("ASCII", EncKeyFormat.ASCII),
+]
+
+
+def encryption_key_form(prompt: str = "", initial_text: str = "", title: str = "Set an encryption key") -> Form:
+    """The Set an encryption key dialog: the key's format, the key, and the bytes it reads as."""
+
+    def check(values: dict[str, Any]) -> FormCheck:
+        key = parse_encryption_key(values["key"], values["format"])
+        if key is None:
+            return FormCheck(False, "Invalid", {"as_bytes": "Key in byte string: ", "as_hex": "Key in bytes: "})
+        return FormCheck(
+            True, "Valid", {"as_bytes": f"Key in byte string: {key!r}", "as_hex": f"Key in hex: {key_to_hex(key)}"}
+        )
+
+    return Form(
+        title,
+        [
+            FormField("format", "Key format", "radio", None, ENCKEY_FORMAT_CHOICES),
+            FormField("key", "Encryption key", value=initial_text),
+            FormField("as_bytes", "", "label", "Key in byte string: "),
+            FormField("as_hex", "", "label", "Key in bytes: "),
+        ],
+        text=(prompt + "\n" if prompt else "")
+        + "Please provide an encryption key (in the form of a hexadecimal string, a Base64-encoded string, a Python "
+        "byte string, or an ASCII string):",
+        check=check,
+    )
+
+
+def key_of_form(values: dict[str, Any] | None) -> bytes | None:
+    """The key an encryption key form was accepted with, or None."""
+    return None if values is None else parse_encryption_key(values["key"], values["format"])
 
 
 #
@@ -442,6 +560,12 @@ def depends_on_form(function: Function | None) -> Form:
 
 __all__ = [
     "BREAKPOINT_TYPE_CHOICES",
+    "ENCKEY_FORMAT_CHOICES",
+    "EncKeyFormat",
+    "encryption_key_form",
+    "key_of_form",
+    "parse_encryption_key",
+    "parse_hex_key",
     "AssembledPatch",
     "PatchAssembler",
     "address_of_text",

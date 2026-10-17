@@ -8,7 +8,7 @@ import archinfo
 import cle
 from angr.angrdb import AngrDB
 
-from angrmanagement.data.load_options import key_to_hex
+from angrmanagement.data.load_options import default_load_options, key_to_hex
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.utils.cart_config import CART_CONFIG_KEY_OPTION, CART_CONFIG_PATH, load_cart_config_key
@@ -30,10 +30,15 @@ class LoadBinaryJob(InstanceJob):
     Job to display binary load dialog and create angr project.
     """
 
-    def __init__(self, instance: Instance, fname, load_options=None, on_finish=None) -> None:
+    def __init__(self, instance: Instance, fname, load_options=None, on_finish=None, ask: bool = True) -> None:
+        """
+        :param ask: Whether to ask the user how to load the file (the Load Binary dialog); with False it loads with
+                    the options the dialog would preselect.
+        """
         super().__init__("Loading file", instance, on_finish=on_finish)
         self.load_options = load_options or {}
         self.fname = fname
+        self.ask = ask
 
     def run(self, ctx: JobContext) -> None:
         ctx.set_progress(5)
@@ -61,17 +66,17 @@ class LoadBinaryJob(InstanceJob):
         # when an outer backend (e.g., CaRT) is in play, original_main_object is the outer object that wraps the real
         # main object; otherwise it is the main object itself
         original_main_object = partial_ld.original_main_object
-        options = gui_thread_schedule(
-            GlobalInfo.ui_services.load_binary_options,
-            (partial_ld,),
-            kwargs={
-                "suggested_backend": partial_ld.main_object.__class__,
-                "suggested_os_name": partial_ld.main_object.os,
-                "suggested_main_opts": main_opts,
-                "suggested_original_backend": original_main_object.__class__,
-                "suggested_main_filename": original_main_object.unpacked_name,
-            },
-        )
+        suggestions = {
+            "suggested_backend": partial_ld.main_object.__class__,
+            "suggested_os_name": partial_ld.main_object.os,
+            "suggested_main_opts": main_opts,
+            "suggested_original_backend": original_main_object.__class__,
+            "suggested_main_filename": original_main_object.unpacked_name,
+        }
+        if self.ask:
+            options = gui_thread_schedule(GlobalInfo.ui_services.load_binary_options, (partial_ld,), kwargs=suggestions)
+        else:
+            options = default_load_options(partial_ld, **suggestions)
         if options is None:
             return
         new_load_options, simos = options
