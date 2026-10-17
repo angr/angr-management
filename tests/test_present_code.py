@@ -275,6 +275,24 @@ class TestEdits(FauxwareCodeCase):
             func, offset, _old_type, new_type = stack_var_retyped.call_args.args
             assert (func.addr, offset, new_type.c_repr()) == (self.main.addr, v5.variable.offset, "long long")
 
+    def test_a_retyped_argument_is_announced_as_a_new_prototype(self):
+        """
+        Retyping an argument changes the prototype, as the Qt editor always did, so the plugins hear
+        handle_function_retyped with the new prototype and not handle_func_arg_retyped (which the MCP tools send).
+        """
+        plugins = self.workspace.plugins
+        with (
+            patch.object(plugins, "handle_function_retyped") as function_retyped,
+            patch.object(plugins, "handle_func_arg_retyped") as arg_retyped,
+        ):
+            self.presenter.apply_retype(self.element("a0", VariableNode).obj, SimTypeLongLong())
+            self.workspace.job_manager.join_all_jobs()
+            arg_retyped.assert_not_called()
+            function_retyped.assert_called_once()
+            func, _old_proto, new_proto = function_retyped.call_args.args
+            assert func.addr == self.main.addr
+            assert new_proto.args[0].c_repr() == "long long"
+
     def compare_renames(self, path: str, func_name: str, renames) -> None:
         """
         Rename through the presenter (the edit layer) in one project of ``path`` and directly, as the rename dialog
