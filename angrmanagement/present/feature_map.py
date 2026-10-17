@@ -312,7 +312,9 @@ def view_state_cursors(instance: Instance) -> list[int] | None:
 class FeatureMapPresenter:
     """
     The feature map of the main instance: the model, the cursors of the focused view, and the jump a click asks for.
-    The frontend sets :attr:`on_changed` (the maps or the layout changed) and :attr:`on_cursors_changed`.
+    The frontend sets :attr:`on_changed` (the maps or the layout changed) and :attr:`on_cursors_changed`, and may set
+    :attr:`on_reloading`, called before the maps are rebuilt. ``workspace`` may be None when the frontend does the
+    jump itself, as the Qt feature map's toolbar does.
     """
 
     #: the CFG job adds objects in bursts; redraw at most this often
@@ -325,6 +327,7 @@ class FeatureMapPresenter:
         self.cursors: list[int] = []
         self.on_changed: Callable[[], Any] | None = None
         self.on_cursors_changed: Callable[[], Any] | None = None
+        self.on_reloading: Callable[[], Any] | None = None
         self._last_refresh = 0.0
         self._refresh_pending = False
         container(self.instance.cfb).am_subscribe(self._on_cfb_event)
@@ -336,6 +339,8 @@ class FeatureMapPresenter:
         container(self.instance.active_view_state).am_unsubscribe(self._on_view_state_updated)
 
     def reload(self) -> None:
+        if self.on_reloading is not None:
+            self.on_reloading()
         with self.model.lock:
             self.model.build()
         self.refresh()

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import time
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QMarginsF, QPoint, QPointF, QRectF, QSize, Qt
@@ -18,8 +17,7 @@ from PySide6.QtWidgets import (
 
 from angrmanagement.config import Conf
 from angrmanagement.data.object_container import ObjectContainer
-from angrmanagement.logic.threads import gui_thread_schedule_async
-from angrmanagement.present.feature_map import FeatureMapModel
+from angrmanagement.present.feature_map import FeatureMapPresenter
 
 if TYPE_CHECKING:
     from angr.analyses.cfg.cfb import MemoryRegion
@@ -103,13 +101,6 @@ class FeatureMapItem(QGraphicsItem):
         self._height: int = 1
         self._pressed: bool = False
 
-        self._last_refresh_timestamp: float = 0
-        self._refresh_pending: bool = False
-        self._min_cfb_time_between_refresh: float = 1 / 30
-
-        #: the feature maps and the layout of the regions, shared with the terminal's feature map
-        self.model = FeatureMapModel(instance)
-
         self._cursor_addrs: list[int] = []
         self._cursor_items: list[QGraphicsItem] = []
         self._hover_region: MemoryRegion | None = None
@@ -118,17 +109,20 @@ class FeatureMapItem(QGraphicsItem):
         self._feature_palette: FeatureMapPalette
         self._refresh_palette()
 
-        self._register_events()
-        self.reload()
+        #: follows the CFB and keeps the maps and the layout of the regions, shared with the terminal's feature map;
+        #: the toolbar gives the cursors and does the jump
+        self._presenter = FeatureMapPresenter(None, instance)
+        self.model = self._presenter.model
+        self._presenter.on_reloading = self._clear_hover_region
+        self._presenter.on_changed = self._redraw
+        self.refresh()
 
-    def _register_events(self) -> None:
-        self.instance.cfb.am_subscribe(self._on_cfb_event)
+    def shutdown(self) -> None:
+        """Stop following the CFB."""
+        self._presenter.close()
 
     def reload(self) -> None:
-        self._clear_hover_region()
-        with self.model.lock:
-            self.model.build()
-        self.refresh()
+        self._presenter.reload()
 
     def set_cursor_addrs(self, cursor_addrs) -> None:
         self._cursor_addrs = cursor_addrs
@@ -136,13 +130,13 @@ class FeatureMapItem(QGraphicsItem):
         self.update()
 
     def refresh(self) -> None:
+        self._presenter.refresh()
+
+    def _redraw(self) -> None:
         self._layout_regions()
         self._create_hover_item()
         self._create_cursor_items()
         self.update()
-
-        self._last_refresh_timestamp = time.time()
-        self._refresh_pending = False
 
     def _refresh_palette(self) -> None:
         self._feature_palette = FeatureMapPalette()
@@ -167,20 +161,6 @@ class FeatureMapItem(QGraphicsItem):
 
     def boundingRect(self) -> QRectF:
         return QRectF(0, 0, self._width, self._height)
-
-    def _on_cfb_event(self, **kwargs) -> None:
-        if "objects_added" in kwargs:  # Called by task thread
-            added = self.model.add_objects(kwargs.get("objects_added"))
-
-            if (
-                added
-                and not self._refresh_pending
-                and time.time() - self._last_refresh_timestamp > self._min_cfb_time_between_refresh
-            ):
-                self._refresh_pending = True
-                gui_thread_schedule_async(self.refresh)
-        elif not kwargs:
-            self.reload()
 
     def _layout_regions(self) -> None:
         """
@@ -625,3 +605,7 @@ class QFeatureMap(QWidget):
 
     def set_cursor_addrs(self, cursor_addrs) -> None:
         self.view._feature_map_item.set_cursor_addrs(cursor_addrs)
+
+    def shutdown(self) -> None:
+        """Stop following the CFB."""
+        self.view._feature_map_item.shutdown()

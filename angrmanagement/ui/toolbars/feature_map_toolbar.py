@@ -40,6 +40,8 @@ class FeatureMapToolbar(Toolbar):
 
     def shutdown(self) -> None:
         self._unsubscribe_events()
+        if self._feature_map is not None:
+            self._feature_map.shutdown()
 
     def _on_feature_map_addr_selected(self) -> None:
         addr: Any = self._feature_map.addr.am_obj
