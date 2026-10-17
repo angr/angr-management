@@ -1906,10 +1906,6 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
             self.view_or_self("popup_xref_dialog")(**target)
 
     def parse_operand_and_popup_xref_dialog(self, ins_addr, operand) -> None:
-        own = self._view_method("parse_operand_and_popup_xref_dialog")
-        if own is not None:
-            own(ins_addr, operand)
-            return
         if operand is None:
             return
         if operand.variable is not None:

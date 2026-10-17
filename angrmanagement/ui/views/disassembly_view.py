@@ -649,16 +649,7 @@ class DisassemblyView(SynchronizedFunctionView):
             )
 
     def parse_operand_and_popup_xref_dialog(self, ins_addr, operand) -> None:
-        if operand is not None:
-            if operand.variable is not None:
-                # Display cross references to this variable
-                self.popup_xref_dialog(addr=ins_addr, variable=operand.variable)
-            elif operand.is_constant:
-                # Display cross references to an address
-                self.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_value)
-            elif operand.is_constant_memory:
-                # Display cross references to an address
-                self.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_memory_value)
+        self.presenter.parse_operand_and_popup_xref_dialog(ins_addr, operand)
 
     def popup_xref_dialog(self, addr: int | None = None, variable=None, dst_addr=None) -> None:
         if variable is not None:
