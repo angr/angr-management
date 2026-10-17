@@ -87,6 +87,21 @@ EXTRA_STYLES: dict[str, StyleSpec] = {
 BACKGROUND_PREFIX = "bg:"
 
 
+#: The colour entries the schemes set; the others (such as the bookmark colours) are the same in every scheme.
+_SCHEME_KEYS = frozenset(COLOR_SCHEMES[BASE_SCHEME])
+
+
+def _conf_color(key: str) -> Color | None:
+    """The configuration's colour for entry ``key``, or None if there is no such colour entry."""
+    from angrmanagement.config import Conf  # pylint:disable=import-outside-toplevel
+
+    try:
+        value = Conf.entry(key).value
+    except (KeyError, AttributeError):
+        return None
+    return value if isinstance(value, Color) else None
+
+
 def scheme_names() -> list[str]:
     """The built-in schemes, sorted, then the custom one: what the Preferences dialog offers."""
     return [*sorted(COLOR_SCHEMES), CUSTOM_SCHEME_NAME]
@@ -149,7 +164,11 @@ class Theme:
         return cls(name, colors)
 
     def color(self, key: str) -> Color | None:
-        return self.colors.get(key)
+        """The colour of entry ``key``: the scheme's, or the configuration's for an entry no scheme sets."""
+        color = self.colors.get(key)
+        if color is None and key not in _SCHEME_KEYS:
+            color = _conf_color(key)
+        return color
 
     def style(self, key: str | None) -> StyleSpec:
         """The style of ``key``, which may name several keys separated by spaces; unknown keys add nothing."""
@@ -166,7 +185,7 @@ class Theme:
             if extra is not None:
                 spec = spec.merged(extra)
                 continue
-            color = self.colors.get(part)
+            color = self.color(part)
             if color is None:
                 continue
             spec = replace(spec, bg=color) if _is_background_key(part) else replace(spec, fg=color)
@@ -185,7 +204,7 @@ class Theme:
         extra = EXTRA_STYLES.get(key)
         if extra is not None:
             return extra.bg if extra.bg is not None else extra.fg
-        return self.colors.get(key)
+        return self.color(key)
 
     def style_of(self, cell: Cell) -> StyleSpec:
         """The style of a table cell: its style key's, with the cell's own style on top."""

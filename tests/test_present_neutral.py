@@ -230,6 +230,18 @@ class TestTheme(unittest.TestCase):
         theme = Theme.from_scheme(CUSTOM_SCHEME_NAME)
         assert "function_table_color" in theme.colors
 
+    def test_entries_no_scheme_sets_come_from_the_configuration(self):
+        # the bookmark colours are the same in every scheme, so no scheme lists them
+        from angrmanagement.config import Conf  # pylint: disable=import-outside-toplevel
+
+        assert "pseudocode_bookmark_color" not in COLOR_SCHEMES["Light"]
+        for name in ("Light", "Dark"):
+            theme = Theme.from_scheme(name)
+            assert theme.style("bg:pseudocode_bookmark_color").bg == Conf.pseudocode_bookmark_color
+            assert theme.style("bg:disasm_view_bookmark_color").bg == Conf.disasm_view_bookmark_color
+            # a scheme's own colour is still the scheme's
+            assert theme.color("palette_base") == scheme_colors(name)["palette_base"]
+
 
 class TestTableHelpers(unittest.TestCase):
     """The filter helpers and the list model."""
