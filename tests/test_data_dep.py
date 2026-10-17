@@ -215,6 +215,12 @@ async def _data_dep_for_snapshot(pilot: Pilot) -> None:
     view.presenter.toggle_graph()
     for _ in range(4):
         await pilot.pause()
+    # Raising the view hides the disassembly graph that had the focus. Where Textual moves the focus then depends on
+    # whether the graph is still in the focus chain when it is blurred: to the left area's tabs, or nowhere. Put it
+    # in the view.
+    view.focus_view()
+    for _ in range(4):
+        await pilot.pause()
 
 
 def test_snapshot_data_dependency(snap_compare):
