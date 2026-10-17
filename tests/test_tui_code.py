@@ -74,6 +74,15 @@ async def wait_for_code(pilot: Pilot, rounds: int = 200) -> None:
     await settle(pilot)
 
 
+async def wait_for_screen(pilot: Pilot, screen_class: type, shown: bool = True, rounds: int = 200) -> None:
+    """Pause until the app's screen is (or, with ``shown`` False, is no longer) a ``screen_class``."""
+    for _ in range(rounds):
+        if isinstance(pilot.app.screen, screen_class) == shown:
+            break
+        await pilot.pause()
+    await settle(pilot)
+
+
 def run_app(scenario: Callable[[AmApp, Pilot, CodeTuiView], Awaitable[None]], tier: int = 2) -> None:
     """Open fauxware's main in the pseudocode view of an interactive headless app and run ``scenario``."""
 
@@ -174,7 +183,7 @@ class TestEdits(unittest.TestCase):
             view.code.set_cursor(elem.start)
             await settle(pilot)
             await pilot.press("n")
-            await settle(pilot)
+            await wait_for_screen(pilot, RenameScreen)
             assert isinstance(app.screen, RenameScreen)
             await pilot.press(*"username", "enter")
             await settle(pilot)
@@ -189,8 +198,10 @@ class TestEdits(unittest.TestCase):
     def test_an_invalid_name_cannot_be_confirmed(self):
         async def scenario(app: AmApp, pilot: Pilot, view: CodeTuiView) -> None:
             view.code.set_cursor(element(view, "v5", VariableNode).start)
-            await pilot.press("n")
             await settle(pilot)
+            await pilot.press("n")
+            await wait_for_screen(pilot, RenameScreen)
+            assert isinstance(app.screen, RenameScreen)
             await pilot.press("space", "enter")
             await settle(pilot)
             screen = app.screen
@@ -206,7 +217,7 @@ class TestEdits(unittest.TestCase):
         async def scenario(app: AmApp, pilot: Pilot, view: CodeTuiView) -> None:
             view.code.set_cursor(element(view, "v5", VariableNode).start)
             await pilot.press("y")
-            await settle(pilot)
+            await wait_for_screen(pilot, RetypeScreen)
             screen = app.screen
             assert isinstance(screen, RetypeScreen)
             # the box completes the known type names
@@ -224,7 +235,7 @@ class TestEdits(unittest.TestCase):
             row = next(i for i, line in enumerate(doc.lines) if 'puts("Password: ")' in line.text)
             view.code.set_cursor(doc.position(row, 6))
             await pilot.press("semicolon")
-            await settle(pilot)
+            await wait_for_screen(pilot, PromptScreen)
             assert isinstance(app.screen, PromptScreen)
             await pilot.press(*"ask for it", "enter")
             await settle(pilot)
@@ -234,7 +245,7 @@ class TestEdits(unittest.TestCase):
             assert "ask for it" in text_of(view).split("\n")[row]
             # Shift+; edits it in the multi-line editor; Ctrl+S confirms where Ctrl+Enter is not reported
             await pilot.press("colon")
-            await settle(pilot)
+            await wait_for_screen(pilot, CommentScreen)
             assert isinstance(app.screen, CommentScreen)
             # the old comment is selected, so typing replaces it
             await pilot.press(*"first", "enter", *"second", "ctrl+s")
@@ -282,7 +293,7 @@ class TestNavigation(unittest.TestCase):
             assert presenter.flavor == "rust"
             # F opens the flavor menu
             await pilot.press("f")
-            await settle(pilot)
+            await wait_for_screen(pilot, MenuPopup)
             assert isinstance(app.screen, MenuPopup)
             # every flavor the decompiler has, as the Qt flavor selector lists them
             assert menu_texts(app.screen.menu) == presenter.available_flavors
@@ -342,7 +353,7 @@ class TestNavigation(unittest.TestCase):
         async def scenario(app: AmApp, pilot: Pilot, view: CodeTuiView) -> None:
             view.code.focus()
             await pilot.press("g")
-            await settle(pilot)
+            await wait_for_screen(pilot, PromptScreen)
             assert isinstance(app.screen, PromptScreen)
             await pilot.press(*"authenticate", "enter")
             await wait_for_code(pilot)
@@ -412,7 +423,7 @@ class TestMenusAndFind(unittest.TestCase):
         async def scenario(app: AmApp, pilot: Pilot, view: CodeTuiView) -> None:
             elem = element(view, "v5", VariableNode)
             await pilot.click(view.code, offset=offset_of(view, elem.start), button=3)
-            await settle(pilot)
+            await wait_for_screen(pilot, MenuPopup)
             assert isinstance(app.screen, MenuPopup)
             texts = menu_texts(app.screen.menu)
             for expected in ["Rename...", "Specify a new type", "Xrefs...", "Comment...", "AI: Refine All"]:
@@ -423,7 +434,7 @@ class TestMenusAndFind(unittest.TestCase):
             # Shift+F10 opens the same menu from the keyboard
             view.code.focus()
             await pilot.press("shift+f10")
-            await settle(pilot)
+            await wait_for_screen(pilot, MenuPopup)
             assert isinstance(app.screen, MenuPopup)
             assert menu_texts(app.screen.menu) == texts
 
@@ -453,6 +464,8 @@ class TestMenusAndFind(unittest.TestCase):
     def test_shift_arrows_select_and_ctrl_c_copies(self):
         async def scenario(app: AmApp, pilot: Pilot, view: CodeTuiView) -> None:
             view.code.set_cursor(0)
+            await settle(pilot)
+            assert app.focused is view.code
             await pilot.press("shift+right", "shift+right", "shift+right")
             await settle(pilot)
             assert view.code.selection_range() == (0, 3) and view.code.selected_text() == "int"
@@ -500,7 +513,7 @@ class TestSidePanels(unittest.TestCase):
                 assert "Decompilation Options" not in str(view.header.render())[: view.header.size.width]
                 view.code.focus()
                 await pilot.press("o")
-                await settle(pilot)
+                await wait_for_screen(pilot, OptionsScreen)
                 assert isinstance(app.screen, OptionsScreen) and not view.side_panel.display
                 sheet = view.presenter.options
                 widget = app.screen.sheet_widget
@@ -513,13 +526,13 @@ class TestSidePanels(unittest.TestCase):
                 assert not sheet.dirty
                 # O closes the modal as it hides the side panel; so does Escape
                 await pilot.press("o")
-                await settle(pilot)
+                await wait_for_screen(pilot, OptionsScreen, shown=False)
                 assert not isinstance(app.screen, OptionsScreen)
                 await pilot.press("o")
-                await settle(pilot)
+                await wait_for_screen(pilot, OptionsScreen)
                 assert isinstance(app.screen, OptionsScreen)
                 await pilot.press("escape")
-                await settle(pilot)
+                await wait_for_screen(pilot, OptionsScreen, shown=False)
                 assert not isinstance(app.screen, OptionsScreen)
 
         asyncio.run(main())
