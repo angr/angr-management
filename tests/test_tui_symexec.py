@@ -278,6 +278,9 @@ async def _stepped_for_snapshot(pilot: Pilot) -> None:
     await step_once(pilot, view)
     view.presenter.simgrs.toggle_stash("active")
     await settle(pilot)
+    # where the focus ends up after the new state screen closes depends on timing; put it in the view
+    view.focus_view()
+    await settle(pilot)
 
 
 def test_snapshot_symexec(snap_compare):

@@ -30,7 +30,7 @@ from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.workspace import BINARY_FILE_FILTER, recent_directory
 from angrmanagement.present.keymap import KITTY_KEYBOARD_TIER, Binding, Chord, Keymap, global_keymap
 from angrmanagement.present.menus import Menu as PresentMenu
-from angrmanagement.present.menus import MenuEntry, walk_entries
+from angrmanagement.present.menus import MenuEntry, MenuSeparator, walk_entries
 from angrmanagement.present.shell import DOCUMENTATION_URL, FileMenu, build_main_menus
 from angrmanagement.present.symexec import open_new_state
 from angrmanagement.present.theme import CUSTOM_SCHEME_NAME, Theme
@@ -42,6 +42,8 @@ from angrmanagement.tui.palette import AmCommandProvider, GotoProvider
 from angrmanagement.tui.services import TuiServices
 from angrmanagement.tui.theme import all_textual_themes, theme_id
 from angrmanagement.tui.view_manager import DockArea
+from angrmanagement.tui.widgets.debug_bar import DebugBar
+from angrmanagement.tui.widgets.feature_map import FeatureMapStrip
 from angrmanagement.tui.widgets.menubar import MenuBar, MenuPopup
 from angrmanagement.tui.widgets.statusbar import StatusBar
 from angrmanagement.tui.workspace import TuiWorkspace
@@ -120,6 +122,10 @@ class AmApp(App):
         height: 1;
         background: $panel;
     }
+    #toolbars {
+        height: 1;
+        background: $panel;
+    }
 
     #center-placeholder {
         height: 1fr;
@@ -174,6 +180,9 @@ class AmApp(App):
         self._plugin_menu = self.menus[4]
         self.workspace.main_instance.project.am_subscribe(self._on_project_changed)
         self.menu_bar = MenuBar(self.menus, self.shortcut_text)
+        # the Qt window's Debug and Feature Map toolbars, in one row under the menu bar
+        self.debug_bar = DebugBar(self.workspace, id="debug-bar")
+        self.feature_map = FeatureMapStrip(self.workspace, id="feature-map")
         self.status_bar = StatusBar(
             self.workspace.job_manager.interrupt_current_job, self.caps.summary(), self._plugin_status_texts
         )
@@ -187,8 +196,35 @@ class AmApp(App):
     def _known_scheme(name: str) -> bool:
         return name == CUSTOM_SCHEME_NAME or any(scheme == name for scheme, _, _ in all_textual_themes())
 
-    def _view_menu_extras(self) -> list[MenuEntry]:
-        return [MenuEntry("&Bottom Area", self.toggle_bottom_panel, shortcut="F12")]
+    def _view_menu_extras(self) -> list[Any]:
+        self._toolbar_entries = {
+            name: MenuEntry(
+                caption, lambda on, name=name: self.set_toolbar_visible(name, on), checkable=True, checked=True
+            )
+            for name, caption in (("debug-bar", "Debug"), ("feature-map", "Feature Map"))
+        }
+        toolbars = PresentMenu(
+            "&Toolbars",
+            [
+                MenuEntry("Show all", lambda: self.set_all_toolbars_visible(True)),
+                MenuEntry("Hide all", lambda: self.set_all_toolbars_visible(False)),
+                MenuSeparator(),
+                *self._toolbar_entries.values(),
+            ],
+        )
+        return [toolbars, MenuEntry("&Bottom Area", self.toggle_bottom_panel, shortcut="F12")]
+
+    def set_toolbar_visible(self, name: str, visible: bool) -> None:
+        """Show or hide a toolbar (``debug-bar`` or ``feature-map``); the row goes when both are hidden."""
+        self._toolbar_entries[name].checked = visible
+        widget = self.debug_bar if name == "debug-bar" else self.feature_map
+        widget.display = visible
+        if self.is_running:
+            self.query_one("#toolbars").display = self.debug_bar.display or self.feature_map.display
+
+    def set_all_toolbars_visible(self, visible: bool) -> None:
+        for name in self._toolbar_entries:
+            self.set_toolbar_visible(name, visible)
 
     def _bind_keys(self) -> None:
         for binding in self.keymap.for_tier(self.caps):
@@ -217,6 +253,9 @@ class AmApp(App):
 
     def compose(self) -> ComposeResult:
         yield self.menu_bar
+        with Horizontal(id="toolbars"):
+            yield self.debug_bar
+            yield self.feature_map
         with Horizontal(id="body"):
             yield DockArea("left")
             with Vertical(id="middle"):

@@ -27,6 +27,14 @@ from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps
 from angrmanagement.tui.views.trace_map import TraceMapTuiView
 
+#: what the debug bar asks a trace debugger: it can go nowhere
+STOPPED = {
+    "can_step_backward": False,
+    "can_step_forward": False,
+    "can_continue_backward": False,
+    "can_continue_forward": False,
+}
+
 
 class ScriptedTrace(BintraceDebugger):
     """A trace of 1000 events, replayed to event 250, with checkpoints at 100 and 600."""
@@ -39,7 +47,7 @@ class ScriptedTrace(BintraceDebugger):
             checkpoints=[SimpleNamespace(event_count=100), SimpleNamespace(event_count=600)],
         )
         self._trace = SimpleNamespace(trace=trace)  # pyright: ignore[reportAttributeAccessIssue]
-        self._trace_dbg = SimpleNamespace(state=SimpleNamespace(event_count=250))
+        self._trace_dbg = SimpleNamespace(state=SimpleNamespace(event_count=250), **STOPPED)
 
     def replay_to_nth_event(self, n: int) -> None:
         self.replayed.append(n)
@@ -63,7 +71,7 @@ class TestModel(unittest.TestCase):
 
     def test_segments(self):
         model = TraceMapModel()
-        assert model.segments(100) == []
+        assert not model.segments(100)
         model.update(ScriptedTrace(self.workspace))
         model.hover_addr = 900
         assert model.segments(100) == [

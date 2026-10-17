@@ -24,7 +24,8 @@ def shape(menu: Menu) -> list[Any]:
     out: list[Any] = []
     for item in menu.items():
         if isinstance(item, ToolbarMenu):
-            # the Qt toolbars; the terminal has none
+            # the Qt toolbars; the terminal has the Debug and Feature Map ones, and its File menu is its File toolbar
+            out.append((item.caption, [entry for entry in shape(item) if entry != ("File", None)]))
             continue
         if isinstance(item, Menu):
             out.append((item.caption, shape(item)))

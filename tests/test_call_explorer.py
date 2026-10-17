@@ -21,6 +21,14 @@ from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps
 from angrmanagement.tui.views.call_explorer import CallExplorerTuiView
 
+#: what the debug bar asks a trace debugger: it can go nowhere
+STOPPED = {
+    "can_step_backward": False,
+    "can_step_forward": False,
+    "can_continue_backward": False,
+    "can_continue_forward": False,
+}
+
 
 class ScriptedTrace(BintraceDebugger):
     """A trace debugger over a script: main calls puts (which calls write) and 0x401000."""
@@ -35,7 +43,7 @@ class ScriptedTrace(BintraceDebugger):
             get_prev_exec_event=lambda event, vcpu: ("before", event),
             get_next_exec_event=lambda event, vcpu: ("after", event),
         )
-        self._trace_dbg = SimpleNamespace(vcpu=0)
+        self._trace_dbg = SimpleNamespace(vcpu=0, **STOPPED)
 
     # the real one returns (function, event) too, whatever its annotation says
     def get_current_function(self):  # pyright: ignore[reportIncompatibleMethodOverride]
