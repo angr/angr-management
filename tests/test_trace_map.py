@@ -38,7 +38,7 @@ class ScriptedTrace(BintraceDebugger):
             get_num_events=lambda: 1000,
             checkpoints=[SimpleNamespace(event_count=100), SimpleNamespace(event_count=600)],
         )
-        self._trace = SimpleNamespace(trace=trace)
+        self._trace = SimpleNamespace(trace=trace)  # pyright: ignore[reportAttributeAccessIssue]
         self._trace_dbg = SimpleNamespace(state=SimpleNamespace(event_count=250))
 
     def replay_to_nth_event(self, n: int) -> None:
