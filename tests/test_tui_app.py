@@ -110,10 +110,10 @@ class TestStartup(TuiTestCase):
 
     def test_categories_without_a_view_do_nothing(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
-            # the hex view is a later phase's
-            app.action_show_view("hex")
+            # a category the terminal has no view class for, such as a plugin's own view
+            app.action_show_view("a_plugins_view")
             await settle(pilot)
-            assert app.view_widget("hex") is None
+            assert app.view_widget("a_plugins_view") is None
 
         run_app(scenario, binary=None)
 

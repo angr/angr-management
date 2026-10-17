@@ -6,6 +6,7 @@ from .base import TuiView
 from .code import CodeTuiView
 from .console import ConsoleTuiView
 from .disassembly import DisassemblyTuiView
+from .hex import HexTuiView
 from .search import SearchTuiView
 from .tables import (
     BookmarksTuiView,
@@ -27,6 +28,7 @@ from .tables import (
 TUI_VIEW_CLASSES: dict[str, type[TuiView]] = {
     "disassembly": DisassemblyTuiView,
     "pseudocode": CodeTuiView,
+    "hex": HexTuiView,
     "functions": FunctionsTuiView,
     "strings": StringsTuiView,
     "search": SearchTuiView,

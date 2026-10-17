@@ -9,6 +9,7 @@ from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.workspace import BaseWorkspace
 from angrmanagement.present.code import register_code_commands
 from angrmanagement.present.disasm import register_disasm_commands
+from angrmanagement.present.hexdump import register_hex_commands
 from angrmanagement.present.shell import register_basic_commands
 
 from .view_manager import TuiViewManager
@@ -46,6 +47,7 @@ class TuiWorkspace(BaseWorkspace):
         register_basic_commands(self.command_manager, self.app)
         register_disasm_commands(self)
         register_code_commands(self)
+        register_hex_commands(self)
 
     def add_default_views(self) -> None:
         enabled_tabs = [x.strip() for x in Conf.enabled_tabs.split(",") if x.strip()]
