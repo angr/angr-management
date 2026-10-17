@@ -8,6 +8,7 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QComboBox, QLabel, QMenu
 
 from angrmanagement.logic.debugger import Debugger, DebuggerListManager, DebuggerManager, DebuggerWatcher
+from angrmanagement.present.debug_bar import DebugBarPresenter, debugger_text
 
 from .toolbar import Toolbar, ToolbarAction, ToolbarSplitter
 
@@ -46,7 +47,7 @@ class AvailableDebuggersModel(QAbstractItemModel):
             return None
         row = index.row()
         dbg = self.index_to_debugger(row)
-        self.last_str[row] = "No Debugger" if dbg is None else str(dbg)
+        self.last_str[row] = debugger_text(dbg)
         return self.last_str[row]
 
     def debugger_to_index(self, dbg: Debugger | None) -> int:
@@ -66,6 +67,8 @@ class DebugToolbar(Toolbar):
         super().__init__(main_window, "DebugToolbar")
         self.workspace: Workspace = main_window.workspace
         self.instance: Instance = self.workspace.main_instance
+        #: what the buttons do and when they are enabled, shared with the terminal's debug bar
+        self._presenter = DebugBarPresenter(self.workspace, self.instance)
 
         self._cont_backward_act = ToolbarAction(
             qta.icon("fa5s.fast-backward"),
@@ -87,6 +90,16 @@ class DebugToolbar(Toolbar):
         self._start_act = ToolbarAction(qta.icon("fa5s.running"), "Launch", "New Debugger", self._on_start)
         self._stop_act = ToolbarAction(qta.icon("fa5s.stop-circle"), "Stop", "Stop Debugging", self._on_stop)
 
+        self._acts_by_name = {
+            "cont_backward": self._cont_backward_act,
+            "step_backward": self._step_backward_act,
+            "cont": self._cont_act,
+            "halt": self._halt_act,
+            "step": self._step_act,
+            "step_over": self._step_over_act,
+            "start": self._start_act,
+            "stop": self._stop_act,
+        }
         self.actions = [
             self._cont_backward_act,
             self._step_backward_act,
@@ -168,52 +181,36 @@ class DebugToolbar(Toolbar):
         self._dbg_combo.update()
 
     def _update_state(self) -> None:
-        dbg = self._dbg_mgr.debugger.am_obj
-        dbg_active = dbg is not None
-
-        def q(a):
-            return self._cached_actions[a]
-
-        q(self._step_act).setEnabled(dbg_active and dbg.can_step_forward)
-        q(self._step_over_act).setEnabled(dbg_active and dbg.can_step_forward)
-        q(self._step_backward_act).setEnabled(dbg_active and dbg.can_step_backward)
-        q(self._cont_backward_act).setEnabled(dbg_active and dbg.can_continue_backward)
-        q(self._cont_act).setEnabled(dbg_active and dbg.can_continue_forward)
-        q(self._cont_act).setVisible(not (dbg_active and dbg.can_halt))
-        q(self._halt_act).setEnabled(dbg_active and dbg.can_halt)
-        q(self._halt_act).setVisible(dbg_active and dbg.can_halt)
-        q(self._start_act).setEnabled(True)
-        q(self._stop_act).setEnabled(dbg_active and dbg.can_stop)
-
-        if dbg_active:
-            self._run_lbl.setText(dbg.state_description)
-        else:
-            self._run_lbl.setText("")
+        states = self._presenter.action_states()
+        for name, act in self._acts_by_name.items():
+            enabled, visible = states[name]
+            q = self._cached_actions[act]
+            q.setEnabled(enabled)
+            if name in ("cont", "halt"):
+                q.setVisible(visible)
+        self._run_lbl.setText(self._presenter.state_text())
 
     def _on_start(self) -> None:
         assert self._cached is not None
         self._cached.widgetForAction(self._cached_actions[self._start_act]).showMenu()
 
     def _on_stop(self) -> None:
-        self._dbg_mgr.debugger.stop()
-        self._dbg_list_mgr.remove_debugger(self._dbg_mgr.debugger.am_obj)
+        self._presenter.stop()
 
     def _on_cont(self) -> None:
-        self._dbg_mgr.debugger.continue_forward()
+        self._presenter.cont()
 
     def _on_cont_backward(self) -> None:
-        self._dbg_mgr.debugger.continue_backward()
+        self._presenter.cont_backward()
 
     def _on_halt(self) -> None:
-        self._dbg_mgr.debugger.halt()
+        self._presenter.halt()
 
     def _on_step(self) -> None:
-        self._dbg_mgr.debugger.step_forward()
+        self._presenter.step()
 
     def _on_step_over(self) -> None:
-        b = self._dbg_mgr.debugger.simstate.block()
-        until_addr = b.instruction_addrs[0] + b.size if b.instructions == 1 and b.vex.jumpkind == "Ijk_Call" else None
-        self._dbg_mgr.debugger.step_forward(until_addr=until_addr)
+        self._presenter.step_over()
 
     def _on_step_backward(self) -> None:
-        self._dbg_mgr.debugger.step_backward()
+        self._presenter.step_backward()
