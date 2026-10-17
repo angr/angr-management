@@ -28,7 +28,7 @@ from angrmanagement.present.hexdump import (
 from angrmanagement.tui.theme import rich_color
 from angrmanagement.tui.widgets.find_bar import FindBarWidget
 from angrmanagement.tui.widgets.header import HeaderBar, HeaderItem
-from angrmanagement.tui.widgets.styles import StyleCache, current_theme
+from angrmanagement.tui.widgets.styles import StyleCache, blend, current_theme
 
 from .base import TuiView
 
@@ -49,15 +49,6 @@ REGION_ALPHA = 0.18
 ACTIVE_REGION_ALPHA = 0.4
 #: How often the cursor blinks, in seconds, as the Qt view's.
 BLINK_INTERVAL = 0.75
-
-
-def blend(color: Color, base: Color, alpha: float) -> Color:
-    """``color`` laid over ``base`` with opacity ``alpha``."""
-    return Color(
-        round(color.r * alpha + base.r * (1 - alpha)),
-        round(color.g * alpha + base.g * (1 - alpha)),
-        round(color.b * alpha + base.b * (1 - alpha)),
-    )
 
 
 class HexLayout:

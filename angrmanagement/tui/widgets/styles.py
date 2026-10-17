@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from angrmanagement.config.color import Color
 from angrmanagement.present.theme import Theme
 from angrmanagement.tui.theme import rich_style
 
@@ -16,6 +17,15 @@ def current_theme(widget: Widget) -> Theme:
     """The theme the app shows, or the configuration's colours."""
     theme = getattr(widget.app, "am_theme", None)
     return theme if isinstance(theme, Theme) else Theme.from_conf()
+
+
+def blend(color: Color, base: Color, alpha: float) -> Color:
+    """``color`` laid over ``base`` with opacity ``alpha``."""
+    return Color(
+        round(color.r * alpha + base.r * (1 - alpha)),
+        round(color.g * alpha + base.g * (1 - alpha)),
+        round(color.b * alpha + base.b * (1 - alpha)),
+    )
 
 
 class StyleCache:
@@ -37,4 +47,4 @@ class StyleCache:
         return style
 
 
-__all__ = ["StyleCache", "current_theme"]
+__all__ = ["StyleCache", "blend", "current_theme"]

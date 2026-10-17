@@ -26,6 +26,7 @@ from .tables import (
     StringsTuiView,
     TracesTuiView,
 )
+from .trace_map import TraceMapTuiView
 from .types import TypesTuiView
 
 #: The view class of each category the terminal frontend has.
@@ -42,6 +43,7 @@ TUI_VIEW_CLASSES: dict[str, type[TuiView]] = {
     "bookmarks": BookmarksTuiView,
     "signatures": SignaturesTuiView,
     "traces": TracesTuiView,
+    "tracemap": TraceMapTuiView,
     "breakpoints": BreakpointsTuiView,
     "registers": RegistersTuiView,
     "stack": StackTuiView,
