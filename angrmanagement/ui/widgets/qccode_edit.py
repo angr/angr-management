@@ -8,6 +8,7 @@ from PySide6.QtCore import QEvent, Qt
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QApplication, QMenu
 
+from angrmanagement.present.code import MENU_GROUPS, context_menu_groups
 from angrmanagement.present.menus import Menu, MenuEntry, MenuSeparator
 from angrmanagement.ui.dialogs.rename_node import RenameNode
 from angrmanagement.ui.dialogs.retype_node import RetypeNode
@@ -62,6 +63,15 @@ class QCCodeEdit(api.CodeEdit):
 
         self._node_tip = QNodeTip(self)
 
+        # the actions of each group of context menu entries, as plugins have always found them; an action a plugin
+        # adds to one shows in the menu after the group's own entries (llm_actions: after the AI entries)
+        self.constant_actions: list[QAction] = []
+        self.operator_actions: list[QAction] = []
+        self.variable_actions: list[QAction] = []
+        self.call_actions: list[QAction] = []
+        self.default_actions: list[QAction] = []
+        self.function_name_actions: list[QAction] = []
+        self.llm_actions: list[QAction] = []
         self.action_rename_node = None
         self.action_xref = None
         self._selected_node = None
@@ -129,16 +139,46 @@ class QCCodeEdit(api.CodeEdit):
         mnu = QMenu()
         if menu is None:
             return mnu
+        shown: set[QAction] = set()
         for entry in menu.items():
             action = getattr(self, entry.key, None) if isinstance(entry, MenuEntry) and entry.key else None
             if action is not None:
                 mnu.addAction(action)
+                shown.add(action)
             elif isinstance(entry, MenuSeparator):
                 mnu.addSeparator()
             else:
                 # the plugins' entries
                 Menu.translate_element(mnu, entry)
+        self._insert_listed_actions(mnu, context_menu_groups(under_cursor), shown)
+        self._insert_listed_actions(mnu, ["llm"], shown)
         return mnu
+
+    def _insert_listed_actions(self, mnu: QMenu, groups: list[str], shown: set[QAction]) -> None:
+        """
+        Add the actions in the lists of ``groups`` that the presenter's menu does not hold, the ones plugins added to
+        ``variable_actions`` and the rest, where the Qt menu showed them: adding each group's list in turn, an action
+        already added moves to the end, so an added action goes before the built-in action that follows it.
+        """
+        order: list[QAction] = []
+        for group in groups:
+            for action in getattr(self, f"{group}_actions"):
+                if action in order:
+                    order.remove(action)
+                order.append(action)
+        for i, action in enumerate(order):
+            if action in shown or action.isSeparator():
+                continue
+            following = next((later for later in order[i + 1 :] if later in shown), None)
+            if following is None:
+                actions = mnu.actions()
+                last = max((j for j, own in enumerate(actions) if own in order), default=len(actions) - 1)
+                following = actions[last + 1] if last + 1 < len(actions) else None
+            if following is None:
+                mnu.addAction(action)
+            else:
+                mnu.insertAction(following, action)
+            shown.add(action)
 
     @property
     def presenter(self) -> CodePresenter:
@@ -480,3 +520,15 @@ class QCCodeEdit(api.CodeEdit):
         self.action_llm_suggest_func_name.triggered.connect(self._llm_suggest_func_name)
         self.action_llm_suggest_var_types = QAction("AI: Suggest Variable Types", self)
         self.action_llm_suggest_var_types.triggered.connect(self._llm_suggest_var_types)
+
+        # each group's list holds the actions it held at 37cbfea2, so a plugin that reads, extends or inserts into one
+        # finds what it always found
+        separators: dict[str, QAction] = {}
+        for group, keys in MENU_GROUPS.items():
+            actions: list[QAction] = getattr(self, f"{group}_actions")
+            for key in keys:
+                action = getattr(self, key, None)
+                if action is None:
+                    action = separators.setdefault(key, QAction(self))
+                    action.setSeparator(True)
+                actions.append(action)

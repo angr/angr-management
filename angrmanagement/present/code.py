@@ -648,37 +648,53 @@ def _add_keys(keys: list[str], more: Iterable[str]) -> None:
         keys.append(key)
 
 
+#: The groups of context menu entries, by the name of the QCCodeEdit list that holds each group's actions
+#: (``variable_actions`` and so on), as QCCodeEdit._initialize_context_menus builds them.
+MENU_GROUPS: dict[str, list[str]] = {
+    "constant": ["action_hex", "action_neg", "action_char", "action_float", "action_double"]
+    + _COMMENT_KEYS
+    + _BASE_KEYS
+    + _EXPR_KEYS,
+    "operator": _COMMENT_KEYS + _BASE_KEYS + _EXPR_KEYS,
+    "call": ["action_rename_node", "action_xref"] + _COMMENT_KEYS + _BASE_KEYS + _EXPR_KEYS,
+    "variable": ["action_rename_node", "action_retype_node", "action_toggle_struct", "action_asmgen", "action_xref"]
+    + _COMMENT_KEYS
+    + _BASE_KEYS
+    + _EXPR_KEYS,
+    "function_name": ["action_rename_node", "action_xref", "action_retype_node"] + _COMMENT_KEYS + _BASE_KEYS,
+    "default": _COMMENT_KEYS + _BASE_KEYS,
+    "llm": _LLM_KEYS,
+}
+
+
+def context_menu_groups(node: Any) -> list[str]:
+    """
+    The groups of :data:`MENU_GROUPS` the context menu shows for ``node``, in order (QCCodeEdit.get_context_menu):
+    one per kind of node that ``node`` is, then ``default`` unless it is the function's name. ``llm`` is not among
+    them: the AI entries follow the plugins' entries.
+    """
+    groups: list[str] = []
+    if isinstance(node, ConstantNode):
+        groups.append("constant")
+    if isinstance(node, BinaryOpNode | UnaryOpNode):
+        groups.append("operator")
+    tags = getattr(node, "tags", None) or {}
+    if isinstance(node, FunctionCallNode) and "vex_block_addr" in tags and "ins_addr" in tags:
+        groups.append("call")
+    if isinstance(node, VariableNode | IndexedVariableNode | VariableFieldNode | StructFieldNode):
+        groups.append("variable")
+    groups.append("function_name" if isinstance(node, FunctionNode) else "default")
+    return groups
+
+
 def context_menu_keys(node: Any) -> list[str]:
     """
     The QCCodeEdit actions the context menu shows for ``node``, in order (QCCodeEdit.get_context_menu): each kind of
     node adds its group, and an action a later group adds again moves to the end, as it does on a QMenu.
     """
     keys: list[str] = []
-    if isinstance(node, ConstantNode):
-        _add_keys(
-            keys,
-            ["action_hex", "action_neg", "action_char", "action_float", "action_double"]
-            + _COMMENT_KEYS
-            + _BASE_KEYS
-            + _EXPR_KEYS,
-        )
-    if isinstance(node, BinaryOpNode | UnaryOpNode):
-        _add_keys(keys, _COMMENT_KEYS + _BASE_KEYS + _EXPR_KEYS)
-    tags = getattr(node, "tags", None) or {}
-    if isinstance(node, FunctionCallNode) and "vex_block_addr" in tags and "ins_addr" in tags:
-        _add_keys(keys, ["action_rename_node", "action_xref"] + _COMMENT_KEYS + _BASE_KEYS + _EXPR_KEYS)
-    if isinstance(node, VariableNode | IndexedVariableNode | VariableFieldNode | StructFieldNode):
-        _add_keys(
-            keys,
-            ["action_rename_node", "action_retype_node", "action_toggle_struct", "action_asmgen", "action_xref"]
-            + _COMMENT_KEYS
-            + _BASE_KEYS
-            + _EXPR_KEYS,
-        )
-    if isinstance(node, FunctionNode):
-        _add_keys(keys, ["action_rename_node", "action_xref", "action_retype_node"] + _COMMENT_KEYS + _BASE_KEYS)
-    else:
-        _add_keys(keys, _COMMENT_KEYS + _BASE_KEYS)
+    for group in context_menu_groups(node):
+        _add_keys(keys, MENU_GROUPS[group])
     return keys
 
 
@@ -2380,11 +2396,13 @@ class HeadlessCodeView:
 
 __all__ = [
     "CODE_COMMANDS",
+    "MENU_GROUPS",
     "CodeDoc",
     "CodePresenter",
     "HeadlessCodeView",
     "build_code_doc",
     "closest_node_pos",
+    "context_menu_groups",
     "context_menu_keys",
     "floor_comment_addr",
     "format_prototype",
