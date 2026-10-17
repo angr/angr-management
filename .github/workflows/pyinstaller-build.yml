@@ -30,6 +30,10 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Install uv
         uses: astral-sh/setup-uv@v5
+      - name: Resolve pull request dependencies
+        run: uv run --no-project --no-sync --python 3.12 python -P .github/scripts/resolve-uv-sources.py
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Install dependencies (Ubuntu)
         run: |
           sudo apt-get update;

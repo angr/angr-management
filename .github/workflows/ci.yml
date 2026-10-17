@@ -5,6 +5,7 @@ on:
     branches:
       - master
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   workflow_dispatch:
 
 concurrency:
@@ -59,6 +60,10 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
         if: startsWith(runner.os, 'windows')
       - uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v6
+      - name: Resolve pull request dependencies
+        run: uv run --no-project --no-sync --python 3.12 python -P .github/scripts/resolve-uv-sources.py
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Sync dependencies
         run: uv sync -p 3.12
       - name: Run tests
