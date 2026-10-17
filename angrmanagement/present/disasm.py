@@ -1154,7 +1154,8 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
     def on_synchronized_cursor_address_changed(self) -> None:
         """
         Other views use real addresses while jump_to() uses odd addresses for ARM-THUMB mode instructions, so the
-        synchronized cursor jumps with ``is_real_addr``.
+        synchronized cursor jumps with ``is_real_addr``. The presenter is the synchronized participant where its view
+        is not one (the terminal); the Qt view is one and keeps its own copy of this method.
         """
         assert not self._processing_synchronized_cursor_update
         self._processing_synchronized_cursor_update = True

@@ -351,6 +351,9 @@ class DisassemblyView(SynchronizedFunctionView):
         """
         Handle synchronized cursor address change event. Note that other views use real addresses while jump_to() uses
         odd addresses for ARM-THUMB mode instructions. We process the address here in case it's ARM.
+
+        The presenter has the same method: in Qt this view is the synchronized participant, in the terminal the
+        presenter is, and each guards the update with its own flag, so the body cannot be shared by delegating.
         """
         assert not self._processing_synchronized_cursor_update
         self._processing_synchronized_cursor_update = True
