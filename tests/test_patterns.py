@@ -359,6 +359,8 @@ async def _pattern_for_snapshot(pilot: Pilot) -> None:
     view = await open_pattern(pilot)
     leaf = view.presenter.editor.leaves()[1][0]  # type: ignore[union-attr]
     view.presenter.select_node(leaf)
+    # raising the view hides the pseudocode that had the focus, and where Textual moves it depends on timing
+    view.focus_view()
     await settle(pilot)
     # the graph is wider than the view; where centering it lands depends on when the scroll bars came
     view.graph.scroll_to(0, 0, animate=False)

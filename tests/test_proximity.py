@@ -139,7 +139,10 @@ class TestProximity(unittest.TestCase):
 
 
 async def _proximity_for_snapshot(pilot: Pilot) -> None:
-    await open_proximity(pilot)
+    view = await open_proximity(pilot)
+    # raising the view hides the disassembly graph that had the focus, and where Textual moves it depends on timing
+    view.focus_view()
+    await settle(pilot)
 
 
 def test_snapshot_proximity(snap_compare):
