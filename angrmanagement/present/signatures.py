@@ -22,6 +22,32 @@ if TYPE_CHECKING:
     from .keymap import Keymap
 
 
+def signature_match_conflict(instance: Instance, addr: int, name: str) -> bool:
+    """
+    Whether applying ``name`` to the function at ``addr`` would overwrite a name the user or a better source gave
+    it: the function has a name of its own that differs and is not a generic one (unknown*, unresolved*, sub_*).
+    """
+    func = instance.kb.functions.get(addr)
+    if func and not func.is_default_name:
+        if func.name == name:
+            return False
+        return not func.name.lower().startswith(("unknown", "unresolved", "sub_"))
+    return False
+
+
+def signature_match_rows(instance: Instance, matches: dict[int, str]) -> list[tuple[int, str, bool]]:
+    """The Signature Matches dialog's rows, by address: the address, the name, and whether it is a conflict."""
+    return [(addr, name, signature_match_conflict(instance, addr, name)) for addr, name in sorted(matches.items())]
+
+
+def apply_signature_matches(
+    signature_mgr: SignatureManager, instance: Instance, sig: Signature, matches: dict[int, str], ignore: bool
+) -> None:
+    """Apply ``sig``; with ``ignore`` the functions whose names conflict keep them."""
+    ignore_addresses = {addr for addr, name in matches.items() if signature_match_conflict(instance, addr, name)}
+    signature_mgr.apply_signatures([sig], dry_run=False, ignore_addresses=ignore_addresses if ignore else set())
+
+
 class SignaturesTableModel(ListTableModel["Signature"]):
     """The signatures of a signature manager and how many functions each matched."""
 
@@ -123,8 +149,12 @@ class SignaturesPresenter(InstancePresenter):
         """Ask for signature files, then load them."""
         ask_open_files(*SIGNATURE_FILES_QUESTION, then=self.signature_mgr.load_signatures)
 
-    def show_matches(self, sig: Signature, matches: dict[int, str]) -> None:  # pylint:disable=no-self-use
-        """List the functions ``sig`` matched; a frontend with a matches dialog overrides this."""
+    def show_matches(self, sig: Signature, matches: dict[int, str]) -> None:
+        """Show the functions ``sig`` matched: in the view's Signature Matches dialog, or as a list."""
+        own = getattr(self.view, "show_signature_matches", None)
+        if own is not None:
+            own(sig, matches)
+            return
         lines = [f"{addr:#x}  {name}" for addr, name in sorted(matches.items())]
         GlobalInfo.ui_services.message("info", f"Matches of {sig.sig_name}", "\n".join(lines) or "No matches.")
 
