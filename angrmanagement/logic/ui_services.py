@@ -12,7 +12,7 @@ thread, through ``gui_thread_schedule`` when on another thread.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Literal, Protocol
+from typing import TYPE_CHECKING, Any, Literal, Protocol
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
     from angrmanagement.data.analysis_options import AnalysesConfiguration
     from angrmanagement.data.load_options import LoadOptions
+    from angrmanagement.present.forms import Form
 
 _l = logging.getLogger(__name__)
 
@@ -68,6 +69,13 @@ class UIServices(Protocol):
         """Ask like :meth:`pick_save_file` without waiting; ``callback`` gets the path later, on the UI thread."""
         raise NotImplementedError
 
+    def ask_form_async(self, form: Form, callback: Callable[[dict[str, Any] | None], None]) -> None:
+        """
+        Show a form (angrmanagement.present.forms) without waiting; ``callback`` gets its values by key, or None if
+        the user cancelled, later, on the UI thread.
+        """
+        raise NotImplementedError
+
     def analysis_options(self, workspace, configuration: AnalysesConfiguration) -> AnalysesConfiguration | None:
         """
         Let the user choose which analyses to run and with what options, editing ``configuration`` in place.
@@ -82,6 +90,14 @@ class UIServices(Protocol):
 
     def prompt_text(self, title: str, label: str, default: str = "") -> str | None:
         """Ask for a line of text; None if the user cancelled."""
+        raise NotImplementedError
+
+    def prompt_password(self, title: str, label: str, default: str = "") -> str | None:
+        """Ask for a line of text that is not shown as it is typed; None if the user cancelled."""
+        raise NotImplementedError
+
+    def prompt_multiline_text(self, title: str, label: str, default: str = "") -> str | None:
+        """Ask for text of several lines; None if the user cancelled."""
         raise NotImplementedError
 
     def pick_open_files(self, caption: str, directory: str, name_filter: str, multiple: bool) -> list[str]:
@@ -137,8 +153,8 @@ class HeadlessServices:
     """
     The UI services of a process with nobody to ask.
 
-    Messages are logged at their level; questions get their default answer; pickers and prompts return nothing; the
-    analyses run with the options they are given;
+    Messages are logged at their level; questions get their default answer; pickers, prompts and forms return
+    nothing; the analyses run with the options they are given;
     binaries load with the options the load dialog would preselect; there is no encryption key. The clipboard is a
     string held in this object.
     """
@@ -176,6 +192,12 @@ class HeadlessServices:
     ) -> None:
         callback(self.pick_save_file(caption, directory, name_filter))
 
+    def ask_form_async(  # pylint:disable=unused-argument
+        self, form: Form, callback: Callable[[dict[str, Any] | None], None]
+    ) -> None:
+        # nobody can confirm the form, so nothing it would do happens
+        callback(None)
+
     def analysis_options(  # pylint:disable=unused-argument
         self, workspace, configuration: AnalysesConfiguration
     ) -> AnalysesConfiguration | None:
@@ -185,6 +207,14 @@ class HeadlessServices:
         _l.info("Function %s at %#x", function.name, function.addr)
 
     def prompt_text(self, title: str, label: str, default: str = "") -> str | None:  # pylint:disable=unused-argument
+        return None
+
+    def prompt_password(self, title: str, label: str, default: str = "") -> str | None:  # pylint:disable=unused-argument
+        return None
+
+    def prompt_multiline_text(  # pylint:disable=unused-argument
+        self, title: str, label: str, default: str = ""
+    ) -> str | None:
         return None
 
     def pick_open_files(  # pylint:disable=unused-argument

@@ -4,11 +4,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QGuiApplication
-from PySide6.QtWidgets import QFileDialog, QInputDialog, QLineEdit, QMessageBox
+from PySide6.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit, QMessageBox
 
 from angrmanagement.data.load_options import LoadOptions
 from angrmanagement.logic import GlobalInfo
@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
     from angrmanagement.data.analysis_options import AnalysesConfiguration
     from angrmanagement.logic.ui_services import MessageLevel
+    from angrmanagement.present.forms import Form
 
 # looked up on QMessageBox when called, so that a test can replace QMessageBox.warning and see the call
 _MESSAGE_BOXES = {
@@ -44,17 +45,26 @@ _STANDARD_BUTTONS = {
 }
 
 
+def _modal_parent():
+    """The dialog the user is in, if any: a message from inside a dialog stays in front of it."""
+    return QApplication.activeModalWidget()
+
+
+def _window_parent():
+    return _modal_parent() or GlobalInfo.main_window
+
+
 class QtServices:
     """
     UIServices for the Qt frontend.
 
-    Call the methods on the GUI thread. message() and the file pickers open their dialogs with no parent, as the
-    core's own message boxes and file dialogs had none. question() and prompt_text() are parented on the main window,
-    so they stay in front of it, as the symbol download confirmation that question() replaced was.
+    Call the methods on the GUI thread. message() and the file pickers open their dialogs over the dialog the user is
+    in, or with no parent, as the core's own message boxes and file dialogs had none. question(), the prompts and
+    forms are parented on that dialog or the main window, so they stay in front of it.
     """
 
     def message(self, level: MessageLevel, title: str, text: str) -> None:
-        getattr(QMessageBox, _MESSAGE_BOXES.get(level, "information"))(None, title, text)
+        getattr(QMessageBox, _MESSAGE_BOXES.get(level, "information"))(_window_parent(), title, text)
 
     def notify(self, level: MessageLevel, title: str, text: str) -> None:
         box = QMessageBox(GlobalInfo.main_window)
@@ -122,7 +132,23 @@ class QtServices:
         FunctionDialog(function).exec_()
 
     def question(self, title: str, text: str, buttons: Sequence[str], default: str) -> str:
-        box = QMessageBox(GlobalInfo.main_window)
+        if all(caption in _STANDARD_BUTTONS for caption in buttons):
+            # the static question box with standard buttons, as the message boxes it replaces were
+            flags = QMessageBox.StandardButton.NoButton
+            for caption in buttons:
+                flags |= _STANDARD_BUTTONS[caption]
+            pressed = QMessageBox.question(
+                _window_parent(),
+                title,
+                text,
+                flags,
+                _STANDARD_BUTTONS.get(default, QMessageBox.StandardButton.NoButton),
+            )
+            for caption in buttons:
+                if _STANDARD_BUTTONS[caption] == pressed:
+                    return caption
+            return default
+        box = QMessageBox(_window_parent())
         box.setIcon(QMessageBox.Icon.Question)
         box.setWindowTitle(title)
         box.setText(text)
@@ -136,22 +162,37 @@ class QtServices:
         return by_button.get(box.clickedButton(), default)
 
     def prompt_text(self, title: str, label: str, default: str = "") -> str | None:
-        text, ok = QInputDialog.getText(GlobalInfo.main_window, title, label, QLineEdit.EchoMode.Normal, default)
+        text, ok = QInputDialog.getText(_window_parent(), title, label, QLineEdit.EchoMode.Normal, default)
         return text if ok else None
+
+    def prompt_password(self, title: str, label: str, default: str = "") -> str | None:
+        text, ok = QInputDialog.getText(_window_parent(), title, label, QLineEdit.EchoMode.Password, default)
+        return text if ok else None
+
+    def prompt_multiline_text(self, title: str, label: str, default: str = "") -> str | None:
+        text, ok = QInputDialog.getMultiLineText(_window_parent(), title, label, default)
+        return text if ok else None
+
+    def ask_form_async(self, form: Form, callback: Callable[[dict[str, Any] | None], None]) -> None:
+        from .dialogs.form import FormDialog  # pylint:disable=import-outside-toplevel
+
+        dialog = FormDialog(form, _window_parent())
+        dialog.exec_()
+        callback(dialog.values)
 
     def pick_open_files(self, caption: str, directory: str, name_filter: str, multiple: bool) -> list[str]:
         if multiple:
-            filenames, _ = QFileDialog.getOpenFileNames(None, caption, directory, name_filter)
+            filenames, _ = QFileDialog.getOpenFileNames(_modal_parent(), caption, directory, name_filter)
             return list(filenames)
-        filename, _ = QFileDialog.getOpenFileName(None, caption, directory, name_filter)
+        filename, _ = QFileDialog.getOpenFileName(_modal_parent(), caption, directory, name_filter)
         return [filename] if filename else []
 
     def pick_save_file(self, caption: str, directory: str, name_filter: str) -> str | None:
-        filename, _ = QFileDialog.getSaveFileName(None, caption, directory, name_filter)
+        filename, _ = QFileDialog.getSaveFileName(_modal_parent(), caption, directory, name_filter)
         return filename or None
 
     def pick_directory(self, caption: str, directory: str) -> str | None:
-        return QFileDialog.getExistingDirectory(None, caption, directory) or None
+        return QFileDialog.getExistingDirectory(_modal_parent(), caption, directory) or None
 
     def load_binary_options(
         self,
