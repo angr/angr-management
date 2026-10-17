@@ -81,6 +81,15 @@ EXTRA_STYLES: dict[str, StyleSpec] = {
     "disasm.mark.break": StyleSpec(fg=Color(220, 220, 220), bg=Color(200, 10, 10)),
     "disasm.mark": StyleSpec(fg=Color(0, 60, 0), bg=Color(0xD8, 0xF0, 0xD8)),
     "disasm.find.match": StyleSpec(underline=True),
+    # graphs of boxes (path tree, proximity, dependencies, patterns): the fixed colours the Qt blocks paint with
+    "graph.node": StyleSpec(fg=Color(0x00, 0x00, 0x00), bg=Color(0xFA, 0xFA, 0xFA)),
+    "graph.node.selected": StyleSpec(fg=Color(0x00, 0x00, 0x00), bg=Color(0xCC, 0xCC, 0xCC)),
+    "graph.node.border": StyleSpec(fg=Color(0xA0, 0xA0, 0xA0)),
+    "graph.node.selected.border": StyleSpec(fg=Color(0x40, 0x40, 0x40), bold=True),
+    "graph.edge": StyleSpec(fg=Color(0x50, 0x50, 0x50)),
+    # symbolic states: a base state navy, an original one green, as the Qt states table
+    "symexec.state.base": StyleSpec(fg=Color(0x00, 0x00, 0x80)),
+    "symexec.state.original": StyleSpec(fg=Color(0x00, 0x80, 0x00)),
 }
 
 #: The prefix that makes a style key name a background: ``"bg:disasm_view_bookmark_color"``.
