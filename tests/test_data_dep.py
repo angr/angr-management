@@ -20,6 +20,7 @@ from angr.analyses.data_dep import RegDepNode, TmpDepNode
 from angrmanagement.logic.headless_workspace import HeadlessWorkspace
 from angrmanagement.present.data_dep import DataDepPresenter, ancestors, graph_has_tmp_nodes, search_nodes
 from angrmanagement.present.menus import walk_entries
+from angrmanagement.present.shell import show_trace_file
 from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps
 from angrmanagement.tui.views.graphs import DataDepSearchScreen, DataDepTuiView
@@ -124,6 +125,33 @@ class TestPresenter(unittest.TestCase):
         second = presenter.search_next("tmp", "", "")
         assert isinstance(first, TmpDepNode) and isinstance(second, TmpDepNode) and first is not second
         assert presenter.graph.selected is second
+
+
+class TestTraceFile(unittest.TestCase):
+    """show_trace_file, which both frontends' File > Load a new trace... call."""
+
+    def setUp(self):
+        self.workspace: Any = HeadlessWorkspace(auto_analyze=False)
+        self.reported: list[str] = []
+
+    def report(self, title: str, text: str) -> None:
+        self.reported.append(title)
+
+    def test_errors(self):
+        assert not show_trace_file(self.workspace, "https://example.com/state.trace", self.report)
+        assert not show_trace_file(self.workspace, "/nonexistent/state.trace", self.report)
+        assert not show_trace_file(self.workspace, FAUXWARE, self.report)  # not a pickle
+        assert self.reported == ["Unsupported Action", "File not found", "Unable to load trace file"]
+
+    def test_loaded_state(self):
+        state = object()
+        with (
+            patch("angrmanagement.present.shell.pickle.load", return_value=state),
+            patch.object(self.workspace, "view_data_dependency_graph") as view,
+        ):
+            assert show_trace_file(self.workspace, FAUXWARE, self.report)
+        view.assert_called_once_with({"end_state": state, "start_addr": None, "end_addr": None, "block_addrs": None})
+        assert not self.reported
 
 
 class TestTerminal(unittest.TestCase):

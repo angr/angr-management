@@ -261,5 +261,40 @@ class TestMainWindowEventReceiver(AngrManagementTestCase):
             second.close()
 
 
+class TestLoadTraceFile(AngrManagementTestCase):
+    """File > Load a new trace...: the errors are boxes on the main window, and only a loaded trace is recent."""
+
+    FAUXWARE = os.path.join(test_location, "x86_64", "fauxware")
+
+    def test_errors(self):
+        cases = [
+            ("https://example.com/state.trace", "Unsupported Action"),
+            ("/nonexistent/state.trace", "File not found"),
+            (self.FAUXWARE, "Unable to load trace file"),  # not a pickle
+        ]
+        for path, title in cases:
+            with (
+                patch("angrmanagement.ui.main_window.QMessageBox.critical") as critical,
+                patch.object(self.main, "_recent_file") as recent,
+            ):
+                self.main.load_trace_file(path)
+            critical.assert_called_once()
+            assert critical.call_args.args[:2] == (self.main, title)
+            recent.assert_not_called()
+
+    def test_loaded_state(self):
+        state = object()
+        with (
+            patch("angrmanagement.present.shell.pickle.load", return_value=state),
+            patch.object(self.main.workspace, "view_data_dependency_graph") as view,
+            patch.object(self.main, "_recent_file") as recent,
+            patch("angrmanagement.ui.main_window.QMessageBox.critical") as critical,
+        ):
+            self.main.load_trace_file(self.FAUXWARE)
+        view.assert_called_once_with({"end_state": state, "start_addr": None, "end_addr": None, "block_addrs": None})
+        recent.assert_called_once_with(self.FAUXWARE)
+        critical.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

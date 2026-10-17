@@ -6,14 +6,18 @@ methods of a *host*: the frontend's main window object, which has a ``workspace`
 (``open_file_button``, ``save_database``, ...). Both frontends build their menu bars from these functions; the Qt menu
 classes in ``angrmanagement.ui.menus`` wrap them.
 :func:`basic_command_table` is the list of commands the command palette offers in every view.
+:func:`show_trace_file` is File > Load a new trace...: it shows the data dependencies of a pickled SimState.
 """
 
 from __future__ import annotations
 
+import os
+import pickle
 import platform
 from typing import TYPE_CHECKING, Any
 
 from angrmanagement.logic.commands import BasicCommand
+from angrmanagement.utils.io import isurl
 
 from .menus import Menu, MenuEntry, MenuSeparator
 
@@ -21,6 +25,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from angrmanagement.logic.commands import CommandManager
+    from angrmanagement.logic.workspace import BaseWorkspace
 
 DOCUMENTATION_URL = "https://angr-management.readthedocs.io/en/latest/"
 
@@ -279,3 +284,31 @@ def build_main_menus(host: Any, recent_files: Iterable[str] = (), view_extra_ent
         build_plugin_menu(host),
         build_help_menu(host),
     ]
+
+
+def show_trace_file(workspace: BaseWorkspace, file_path: str, report: Callable[[str, str], None]) -> bool:
+    """
+    Show the data dependencies of the SimState pickled in the trace file ``file_path``. Returns whether it did; when
+    it did not, it said why through ``report(title, text)``, which the frontend shows as an error.
+    """
+    if isurl(file_path):
+        report(
+            "Unsupported Action",
+            "Downloading trace files is not yet supported. Please specify a path to a file on disk.",
+        )
+        return False
+    if not os.path.isfile(file_path):
+        report(
+            "File not found",
+            f"angr management cannot open file {file_path}. Please make sure that the file exists.",
+        )
+        return False
+    try:
+        with open(file_path, "rb") as f:
+            loaded_sim_state = pickle.load(f)
+            analysis_params = {"end_state": loaded_sim_state, "start_addr": None, "end_addr": None, "block_addrs": None}
+            workspace.view_data_dependency_graph(analysis_params)
+    except pickle.PickleError:
+        report("Unable to load trace file", "Trace file must contain a serialized SimState.")
+        return False
+    return True

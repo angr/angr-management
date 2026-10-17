@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 import os
-import pickle
 import time
 import uuid
 from typing import TYPE_CHECKING
@@ -31,7 +30,7 @@ from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.mcp import MCPServerManager, is_mcp_available
 from angrmanagement.mcp.manager import DEFAULT_HOST, DEFAULT_PATH
-from angrmanagement.present.shell import DOCUMENTATION_URL, register_basic_commands
+from angrmanagement.present.shell import DOCUMENTATION_URL, register_basic_commands, show_trace_file
 from angrmanagement.ui.dialogs.archive_loader import ArchiveLoaderDialog
 from angrmanagement.ui.dialogs.progress_dialog import ProgressDialog
 from angrmanagement.ui.views import DisassemblyView
@@ -700,36 +699,8 @@ class MainWindow(QMainWindow):
         self.workspace.show_signatures_view()
 
     def load_trace_file(self, file_path) -> None:
-        if isurl(file_path):
-            QMessageBox.critical(
-                self,
-                "Unsupported Action",
-                "Downloading trace files is not yet supported. Please specify a path to a file on disk.",
-            )
-        else:
-            # File
-            if os.path.isfile(file_path):
-                try:
-                    with open(file_path, "rb") as f:
-                        loaded_sim_state = pickle.load(f)
-                        analysis_params = {
-                            "end_state": loaded_sim_state,
-                            "start_addr": None,
-                            "end_addr": None,
-                            "block_addrs": None,
-                        }
-                        self.workspace.view_data_dependency_graph(analysis_params)
-                    self._recent_file(file_path)
-                except pickle.PickleError:
-                    QMessageBox.critical(
-                        self, "Unable to load trace file", "Trace file must contain a serialized SimState."
-                    )
-            else:
-                QMessageBox.critical(
-                    self,
-                    "File not found",
-                    f"angr management cannot open file {file_path}. Please make sure that the file exists.",
-                )
+        if show_trace_file(self.workspace, file_path, lambda title, text: QMessageBox.critical(self, title, text)):
+            self._recent_file(file_path)
 
     def load_file(self, file_path) -> None:
         if not isurl(file_path):
