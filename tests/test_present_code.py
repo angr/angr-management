@@ -573,6 +573,16 @@ class TestOptionsAndPatterns(FauxwareCodeCase):
             "Clear highlights",
         ]
 
+    def test_the_options_sheet_is_made_when_first_asked_for(self):
+        with patch.object(
+            code_module, "DecompilationOptionsSheet", wraps=code_module.DecompilationOptionsSheet
+        ) as made:
+            presenter = CodePresenter(self.workspace, self.workspace.main_instance)
+            made.assert_not_called()
+            sheet = presenter.options
+            assert presenter.options is sheet
+        made.assert_called_once()
+
     def test_hover_text_of_a_call(self):
         elem = self.element("authenticate", FunctionCallNode)
         text = CodePresenter.hover_text(elem.obj)

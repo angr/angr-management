@@ -736,8 +736,8 @@ class CodePresenter(FunctionPresenter):
         self.vars_must_struct: set[str] = set()
         #: the flavors of the function's decompilations, as the flavor selector lists them
         self.available_flavors: list[str] = []
-        #: what the decompilation jobs are given: the Qt view's options widget, or the sheet
-        self.options: Any = DecompilationOptionsSheet(instance, self._plugin_passes)
+        # the Qt view gives its options widget; any other view gets a sheet, made when first asked for
+        self._options: Any = None
         #: the find bar the view shows (a FindBarState or the Qt QFindBar)
         self.find_bar: Any = None
         self.find_matches: list[tuple[int, int]] = []
@@ -758,6 +758,17 @@ class CodePresenter(FunctionPresenter):
         # kb.comments mirrored into the current codegen's stmt_comments: kb address -> stmt key
         self.mirrored_codegen = None
         self.mirrored_comments: dict[int, int] = {}
+
+    @property
+    def options(self) -> Any:
+        """What the decompilations are given: the Qt view's options widget, or a DecompilationOptionsSheet."""
+        if self._options is None:
+            self._options = DecompilationOptionsSheet(self.instance, self._plugin_passes)
+        return self._options
+
+    @options.setter
+    def options(self, value: Any) -> None:
+        self._options = value
 
     def _plugin_passes(self) -> list:
         plugins = getattr(self.workspace, "plugins", None)

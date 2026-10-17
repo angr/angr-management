@@ -14,9 +14,11 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import QDialog
 
+from angrmanagement.present import code as code_module
 from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.ui.dialogs.xref import XRefDialog
 from angrmanagement.ui.views.code_view import CodeView
+from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
 
 
 class TestCodeView(ProjectOpenTestCase):
@@ -51,6 +53,17 @@ class TestCodeView(ProjectOpenTestCase):
         self.code_view.close()
         del self.code_view
         super().tearDown()
+
+    def test_the_view_decompiles_with_its_options_widget_and_makes_no_sheet(self):
+        sheet_class = code_module.DecompilationOptionsSheet
+        with patch.object(code_module, "DecompilationOptionsSheet", wraps=sheet_class) as sheet:
+            view = CodeView(self.workspace, "center", self.instance)
+            try:
+                assert isinstance(view.presenter.options, QDecompilationOptions)
+                view.presenter.reload()
+            finally:
+                view.close()
+        sheet.assert_not_called()
 
     def test_popup_jumpto_dialog(self):
         """Test that CodeView.popup_jumpto_dialog() opens JumpTo dialog."""
