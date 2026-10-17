@@ -302,6 +302,13 @@ class TestTerminal(unittest.TestCase):
                 view = await open_pattern(pilot)
                 presenter = view.presenter
                 assert len(presenter.graph.picture.boxes) == 9
+                # Analyze > Discover Patterns... shows the Discover tab without running anything
+                app.discover_patterns()
+                await settle(pilot)
+                assert view.tabs.active == "discover-tab" and not presenter.families
+                view.show_tab("pattern")
+                await settle(pilot)
+                assert view.tabs.active == "pattern-tab"
                 assert view.graph.canvas is not None and "Call fflush" in str(view.graph.canvas)
                 assert "editing patternerrorsout: 3 statements" in str(view.status.render())
                 # C and E in the graph collapse and expand everything

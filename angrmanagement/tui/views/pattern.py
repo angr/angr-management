@@ -135,7 +135,8 @@ class PatternTuiView(GraphTuiView):
     """
 
     PRESENTER_CLASS = PatternPresenter
-    EMPTY_TEXT = "No pattern loaded: make one in the pseudocode view, or edit one of the project's patterns"
+    #: short enough for half the window; the Pattern tab's status line and the pseudocode view's menu say the rest
+    EMPTY_TEXT = "No pattern loaded"
     DEFAULT_CSS = """
     PatternTuiView > Horizontal {
         height: 1fr;
