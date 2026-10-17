@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QVBoxLayout
 
+from angrmanagement.present.symexec import temp_rows
+
 from .qast_viewer import QASTViewer
 
 if TYPE_CHECKING:
@@ -12,6 +14,8 @@ if TYPE_CHECKING:
 
 
 class QVEXTempsViewer(QFrame):
+    """The VEX temporaries of the selected state."""
+
     def __init__(self, state, parent, workspace: Workspace) -> None:
         super().__init__(parent)
         self.workspace = workspace
@@ -28,7 +32,7 @@ class QVEXTempsViewer(QFrame):
     # Overridden methods
     #
 
-    def sizeHint(self):
+    def sizeHint(self):  # pylint: disable=no-self-use
         return QSize(100, 100)
 
     #
@@ -53,22 +57,20 @@ class QVEXTempsViewer(QFrame):
         layout = QVBoxLayout()
 
         self._tmps.clear()
-        tmps = {} if state is None else state.scratch.temps
-
         # tmps
-        for tmp_id, tmp_value in tmps.items():
+        for tmp_name, tmp_value in temp_rows(state):
             sublayout = QHBoxLayout()
 
             lbl_tmp_name = QLabel(self)
             lbl_tmp_name.setProperty("class", "reg_viewer_label")
-            lbl_tmp_name.setText(f"tmp_{tmp_id}")
+            lbl_tmp_name.setText(tmp_name)
             lbl_tmp_name.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             sublayout.addWidget(lbl_tmp_name)
 
             sublayout.addSpacing(10)
 
             tmp_viewer = QASTViewer(tmp_value, workspace=self.workspace, parent=self)
-            self._tmps[tmp_id] = tmp_viewer
+            self._tmps[tmp_name] = tmp_viewer
             sublayout.addWidget(tmp_viewer)
 
             layout.addLayout(sublayout)

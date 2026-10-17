@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 
 from angrmanagement.data.jobs import SimgrExploreJob, SimgrStepJob
 from angrmanagement.logic.threads import gui_thread_schedule
+from angrmanagement.present.symexec import filter_actives
 from angrmanagement.ui.widgets.qsimulation_manager_viewer import QSimulationManagerViewer
 
 if TYPE_CHECKING:
@@ -29,6 +30,8 @@ if TYPE_CHECKING:
 
 
 class QSimulationManagers(QFrame):
+    """The simulation managers panel: the managers, their stash tree, stepping, exploring, avoids and finds."""
+
     def __init__(self, workspace: Workspace, instance: Instance, simgr, state, parent=None) -> None:
         """
         :param instance:                The data source for this project
@@ -335,15 +338,7 @@ class QSimulationManagers(QFrame):
     def _filter_actives(self, simgr, events: bool = True) -> bool:
         if not self._oneactive_checkbox.isChecked():
             return False
-        if len(simgr.active) < 2:
-            return False
-
-        stashed = simgr.active[1:]
-        simgr.stashes["stashed"].extend(stashed)
-        simgr.stashes["active"] = simgr.active[:1]
-        if events:
-            simgr.am_event(src="filter_actives", filtered=stashed)
-        return True
+        return filter_actives(simgr, events)
 
     @staticmethod
     def _get_checked_items(qlist: QTreeWidget):

@@ -7,12 +7,14 @@ from PySide6.QtGui import QColor, QPen
 from PySide6.QtWidgets import QGraphicsItem
 
 from angrmanagement.config import Conf
-from angrmanagement.utils import locate_function
+from angrmanagement.present.symexec import state_block_text
 
 _l = logging.getLogger(__name__)
 
 
 class QStateBlock(QGraphicsItem):
+    """A block of the path tree: a state's address and function."""
+
     HORIZONTAL_PADDING = 5
     VERTICAL_PADDING = 5
     LINE_MARGIN = 3
@@ -50,46 +52,7 @@ class QStateBlock(QGraphicsItem):
             return None
 
     def _init_widgets(self) -> None:
-        addr = None
-        try:
-            if self.state.regs._ip.symbolic:
-                self._label_str = str(self.state.regs._ip)
-            else:
-                addr = self.state.regs._ip.concrete_value
-                self._label_str = f"{addr:#x}"
-        except ReferenceError:
-            # The SimState was held via weakref and has been garbage-collected
-            # while the path-tree view was still alive (issue #1644). Fall back
-            # to a placeholder label instead of letting the graphical update
-            # abort halfway through.
-            self._label_str = "<state freed>"
-            self._function_str = "Function: Unknown"
-            self.addr = None
-            return
-
-        self.addr = addr
-
-        if addr is None:
-            self._function_str = "Unknown"
-        else:
-            the_func = locate_function(self._instance, addr)
-            if the_func is None:
-                # is it a SimProcedure?
-                if self._instance.project.is_hooked(addr):
-                    hooker = self._instance.project.hooked_by(addr)
-                    self._function_str = "SimProcedure " + hooker.__class__.__name__.split(".")[-1]
-                else:
-                    self._function_str = "Unknown"
-            else:
-                offset = addr - the_func.addr
-                if not the_func.name:
-                    self._function_str = f"{the_func.addr:#x}{offset:+x}"
-                else:
-                    self._function_str = f"{the_func.name}{offset:+x}"
-        self._function_str = f"Function: {self._function_str}"
-
-    def mousePressEvent(self, event) -> None:  # pylint: disable=no-self-use
-        super().mousePressEvent(event)
+        self._label_str, self._function_str, self.addr = state_block_text(self._instance, self.state)
 
     def mouseReleaseEvent(self, event) -> None:
         # _l.debug('QStateBlock received mouse release event')

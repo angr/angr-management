@@ -7,6 +7,8 @@ import networkx
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QFrame, QHBoxLayout
 
+from angrmanagement.present.symexec import path_tree_edges, simgr_histories
+
 from .qstate_block import QStateBlock
 from .qsymexec_graph import QSymExecGraph
 
@@ -17,6 +19,8 @@ log = logging.getLogger(__name__)
 
 
 class QPathTree(QFrame):
+    """The path tree: the states' histories as a graph of blocks."""
+
     def __init__(self, simgr, state, symexec_view, workspace: Workspace, parent=None) -> None:
         super().__init__(parent=parent)
 
@@ -40,10 +44,9 @@ class QPathTree(QFrame):
         if self.simgr.am_none:
             return
 
-        states = [state for (stash, states) in self.simgr.stashes.items() if stash != "pruned" for state in states]
         hierarchy = self.simgr._hierarchy
 
-        graph = self._generate_graph([state.history for state in states], hierarchy, self.symexec_view)
+        graph = self._generate_graph(simgr_histories(self.simgr), hierarchy, self.symexec_view)
 
         self._graph.graph = graph
 
@@ -66,7 +69,7 @@ class QPathTree(QFrame):
     # Overriden methods
     #
 
-    def sizeHint(self):
+    def sizeHint(self):  # pylint: disable=no-self-use
         return QSize(500, 500)
 
     #
@@ -75,28 +78,7 @@ class QPathTree(QFrame):
 
     @staticmethod
     def _all_edges_gen(state_histories, hierarchy):
-        # TODO: reduce duplication with above function
-        work = set(state_histories)
-        while len(work) > 0:
-            working_history = bot_history = work.pop()
-            while hierarchy.history_contains(working_history):
-                parent_histories = hierarchy.history_predecessors(working_history)
-                if not parent_histories:
-                    break
-
-                parent_history = parent_histories[0]
-
-                try:
-                    successors = hierarchy.history_successors(parent_history)
-                    if len(successors) > 1:
-                        yield (parent_history, bot_history)
-                        work.add(parent_history)
-                        break
-                    working_history = parent_history
-                except KeyError:
-                    # the parent history is not found in the path mapping
-                    log.error("Parent history %s is not found", parent_history)
-                    break
+        return path_tree_edges(state_histories, hierarchy)
 
     @staticmethod
     def _generate_graph(state_histories, hierarchy, symexec_view):
@@ -118,5 +100,5 @@ class QPathTree(QFrame):
 
         return g
 
-    def _watch_simgr(self, **kwargs) -> None:
+    def _watch_simgr(self, **_kwargs) -> None:
         self.reload()

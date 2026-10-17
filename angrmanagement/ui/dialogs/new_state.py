@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING
 
 import angr
@@ -19,6 +18,14 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from angrmanagement.present.symexec import (
+    StateMetadata,
+    StateSpec,
+    add_state,
+    build_state,
+    is_option,
+    parse_state_address,
+)
 from angrmanagement.ui.dialogs.env_config import EnvConfig
 from angrmanagement.ui.dialogs.fs_mount import FilesystemMount
 from angrmanagement.ui.widgets import QStateComboBox
@@ -29,34 +36,6 @@ from .socket_config import SocketConfig
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
-
-
-class StateMetadata(angr.SimStatePlugin):
-    """
-    Helper class for metadata.
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.name = None  # the state's name
-        self.base_name = None  # the name of the base state this was created from
-        self.is_original = False  # is this the original instantiation of this name?
-        self.is_base = False  # is this state created with nothing else as a base?
-
-    def copy(self, _=None):
-        c = StateMetadata()
-        c.name = self.name
-        c.base_name = self.base_name
-        c.is_original = False
-        c.is_base = False
-        return c
-
-
-StateMetadata.register_default("gui_data")
-
-
-def is_option(o):
-    return all(ch in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_" for ch in o)
 
 
 class NewState(QDialog):
@@ -155,16 +134,7 @@ class NewState(QDialog):
             validation_update()
 
         def parse_address():
-            txt = address_box.text()
-            try:
-                return self.instance.project.kb.labels.lookup(txt)
-            except KeyError:
-                pass
-
-            try:
-                return int(txt, 16)
-            except ValueError:
-                return None
+            return parse_state_address(self.instance, address_box.text())
 
         address_box.textEdited.connect(handle_address)
         layout.addWidget(address_label, row, 0)
@@ -393,53 +363,20 @@ class NewState(QDialog):
 
         def do_ok() -> None:
             name = name_box.text()
-            template = template_combo.currentData()
-            addr = parse_address()
-            base_state = base_state_combo.state
-            mode = mode_combo.currentData()
-            factory = self.instance.project.factory
-            if template in ("blank", "call") and base_state is not None:
-                if template == "blank":
-                    self.state = factory.blank_state(addr=addr, base_state=base_state, options=self._options)
-                else:
-                    self.state = factory.call_state(addr, base_state=base_state, options=self._options)
-                self.state.gui_data.base_name = base_state.gui_data.name
-            else:
-                if template == "blank":
-                    self.state = factory.blank_state(addr=addr, mode=mode, options=self._options)
-                elif template == "call":
-                    self.state = factory.call_state(addr, mode=mode, options=self._options)
-                elif template == "entry":
-                    self.state = factory.entry_state(
-                        mode=mode, options=self._options, args=self._args, env=dict(self._env_config)
-                    )
-                else:
-                    self.state = factory.full_init_state(mode=mode, options=self._options)
-                self.state.gui_data.base_name = name
-                self.state.gui_data.is_base = True
-
-            self.state.gui_data.name = name
-            self.state.gui_data.is_original = True
-
-            # mount fs
-            if self._fs_config:
-                for path, real in self._fs_config:
-                    if os.path.isdir(real):
-                        fs = angr.SimHostFilesystem(real)
-                        fs.set_state(self.state)
-                        self.state.fs.mount(path, fs)
-
-            if self._sockets_config:
-                self.state.posix.sockets = self._sockets_config.convert()
-
-            if self._push_to_instance:
-                states_list = self.instance.states
-                states_list.append(self.state)
-                states_list.am_event(src="new", state=self.state)
-
-            if self._create_simgr:
-                self.workspace.create_simulation_manager(self.state, name)
-
+            spec = StateSpec(
+                name,
+                address_box.text(),
+                template=template_combo.currentData(),
+                base_state=base_state_combo.state,
+                args=None if self._args is None else args_edit.toPlainText(),
+                mode=mode_combo.currentData(),
+                env=[(pair[0], pair[1]) for pair in self._env_config],
+                fs_mounts=list(self._fs_config or []),
+                sockets=self._sockets_config,
+                options=self._options,
+            )
+            self.state = build_state(self.instance, spec)
+            add_state(self.workspace, self.instance, self.state, self._push_to_instance, self._create_simgr)
             self.close()
 
         ok_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
@@ -454,3 +391,6 @@ class NewState(QDialog):
         self.main_layout.addWidget(buttons)
 
         handle_template(None)
+
+
+__all__ = ["NewState", "StateMetadata", "is_option"]
