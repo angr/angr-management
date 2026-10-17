@@ -611,8 +611,9 @@ class AmApp(App):
 
     def view_proximity_for_current_function(self) -> None:
         self.workspace.view_proximity_for_current_function()
-        if self.workspace.view_manager.first_view_in_category("proximity") is None:
-            self.show_status("The proximity view is not in the terminal yet")
+        view = self.workspace.view_manager.first_view_in_category("proximity")
+        if view is not None:
+            self.workspace.view_manager.focus_view(view)
 
     def run_analysis(self) -> None:
         self.workspace.run_analysis()

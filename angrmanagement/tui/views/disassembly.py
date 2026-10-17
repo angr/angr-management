@@ -914,6 +914,10 @@ class DisassemblyTuiView(TuiView):
         self.presenter.display_function(func, send_event=False)
 
     @property
+    def current_function(self):
+        return self.presenter.current_function
+
+    @property
     def current_graph(self):
         return self.presenter.current_graph
 
