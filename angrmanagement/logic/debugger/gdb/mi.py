@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import re
 import subprocess
@@ -175,9 +174,12 @@ def parse_record(line: str) -> MIRecord | None:
 
 
 def quote(value: str) -> str:
-    """MI strings use C escaping; JSON's ASCII escapes are compatible for command text."""
-    # Do not emit JSON's \u escapes: GDB interprets them literally rather than as Unicode.
-    return json.dumps(value, ensure_ascii=False)
+    """Quote MI command text using C escapes, including octal control bytes."""
+    escapes = {"\\": "\\\\", '"': '\\"', "\n": "\\n", "\r": "\\r", "\t": "\\t"}
+    escaped = "".join(
+        escapes.get(char, f"\\{ord(char):03o}" if ord(char) < 32 or ord(char) == 127 else char) for char in value
+    )
+    return '"' + escaped + '"'
 
 
 @dataclass
@@ -198,7 +200,14 @@ class MITransport:
     the transport because a late mutation reply cannot safely be treated as a failed mutation.
     """
 
-    def __init__(self, executable: str, callback: Callable[[MIRecord], None], timeout: float = 10.0) -> None:
+    def __init__(
+        self,
+        executable: str,
+        callback: Callable[[MIRecord], None],
+        timeout: float = 10.0,
+        *,
+        env: dict[str, str] | None = None,
+    ) -> None:
         self.timeout = timeout
         self._callback = callback
         self._serial = threading.RLock()
@@ -218,6 +227,7 @@ class MITransport:
                 errors="replace",
                 bufsize=1,
                 start_new_session=True,
+                env=env,
             )
         except OSError as exc:
             raise MIError(f"Cannot start GDB ({executable}): {exc}") from exc

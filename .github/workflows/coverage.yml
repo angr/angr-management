@@ -34,7 +34,7 @@ jobs:
           key: cov-test-durations-${{ github.sha }}
           restore-keys: cov-test-durations-
       - name: Build
-        run: uv sync --managed-python -v -p 3.12 --all-groups
+        run: uv sync --managed-python -v -p 3.12 --all-groups --extra llm
       - name: Archive environment
         run: tar -cpf /tmp/env.tzst --absolute-names --zstd $PWD $UV_CACHE_DIR $UV_PYTHON_INSTALL_DIR
       - name: Upload environment artifact

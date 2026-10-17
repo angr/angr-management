@@ -12,6 +12,7 @@ import time
 import unittest
 from contextlib import suppress
 from pathlib import Path
+from unittest.mock import patch
 
 from angrmanagement.logic.debugger.gdb import GDBRuntime, RuntimeErrorBase, _terminal_keeper
 from angrmanagement.logic.debugger.gdb.mappings import (
@@ -71,6 +72,11 @@ class TestMIParsing(unittest.TestCase):
         for text in ('1^done,x="unterminated', '1^done,x={a="b"', '1^done,x=["a"', '~"ok"garbage'):
             with self.subTest(text=text), self.assertRaises(ValueError):
                 parse_record(text)
+
+    def test_command_control_bytes_use_c_escapes(self):
+        self.assertEqual(quote("\x01" + "7" + "\x1b"), '"\\0017\\033"')
+        text = "".join(chr(value) for value in range(128)) + 'é\\u0001"'
+        self.assertEqual(_record("~" + quote(text)).text, text)
 
     def test_duplicate_result_keys_are_preserved(self):
         record = _record('1^done,bkpt={number="1"},bkpt={number="2"}')
@@ -385,7 +391,24 @@ class TestLiveGDBRuntime(unittest.TestCase):
         self.assertIn(str(FIXTURES), self.runtime.execute_console("pwd"))
 
     def test_launch_argument_bytes_and_rejection_before_session_mutation(self):
-        arguments = ["\t", "\x01", "\a", "\x1b", "\x7f", r"\t", 'a"b', "a b", "é", "", "'quoted'"]
+        arguments = [
+            "\t",
+            "\x01",
+            "\a",
+            "\x1b",
+            "\x7f",
+            r"\t",
+            'a"b',
+            "a b",
+            "é",
+            "",
+            "'quoted'",
+            "$(printf expanded)",
+            "`printf expanded`",
+            "$SHELL",
+            "*",
+            "a;printf expanded",
+        ]
         self.runtime.launch(str(FIXTURES / "2048.pie"), arguments)
         self.runtime.add_breakpoint("main", temporary=True)
         self.runtime.continue_execution()
@@ -403,6 +426,43 @@ class TestLiveGDBRuntime(unittest.TestCase):
                 self.runtime.launch(str(FIXTURES / "2048.pie"), [argument])
             self.assertEqual(self.runtime.snapshot()["generation"], original["generation"])
             self.assertEqual(self.runtime.state, "exited")
+
+    def test_launch_uses_posix_shell_and_preserves_inferior_shell(self):
+        for inherited, override in (
+            (None, None),
+            ("", None),
+            ("/not-a-posix-shell/\x01\t\n\r'\"é\\", None),
+            (" /not-a-posix-shell\t", "/target/shell"),
+        ):
+            with self.subTest(inherited=inherited, override=override):
+                with patch.dict(os.environ):
+                    if inherited is None:
+                        os.environ.pop("SHELL", None)
+                    else:
+                        os.environ["SHELL"] = inherited
+                    snapshot = self.runtime.launch(
+                        str(FIXTURES / "2048.pie"), ["test"], env={"SHELL": override} if override is not None else None
+                    )
+                self.runtime.add_breakpoint("slideArray", temporary=True)
+                self.runtime.continue_execution()
+                self.runtime.wait_for_stop()
+                self.assertEqual(self.runtime.refresh()["frame"]["func"], "slideArray")
+                actual = [
+                    entry
+                    for entry in Path(f"/proc/{snapshot['pid']}/environ").read_bytes().split(b"\0")
+                    if entry.startswith(b"SHELL=")
+                ]
+                expected = override if override is not None else inherited
+                self.assertEqual(actual, [] if expected is None else [b"SHELL=" + expected.encode("utf-8")])
+                self.runtime.stop()
+
+        original = self.runtime.snapshot()
+        for shell in (" leading", "\tleading", "trailing ", "trailing\t", "\udc80"):
+            with self.subTest(shell=shell), patch.dict(os.environ, SHELL=shell):
+                with self.assertRaisesRegex(RuntimeErrorBase, "SHELL"):
+                    self.runtime.launch(str(FIXTURES / "2048.pie"), ["test"])
+                self.assertEqual(self.runtime.snapshot()["generation"], original["generation"])
+                self.assertEqual(self.runtime.state, "exited")
 
     def test_watchpoint_continuation_conflicts_fail_closed(self):
         _, stopping = self.launch_slide()

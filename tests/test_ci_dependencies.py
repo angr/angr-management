@@ -41,7 +41,7 @@ class TestCIDependencies(unittest.TestCase):
         return resolver.resolve_sources(self.sources, self.event, "angr/angr-management", self.get_json)
 
     def test_latest_body_selects_exact_head_from_declared_source(self):
-        self.assertEqual(self.resolve(), {"angr": f"angr @ git+https://github.com/angr/angr.git@{self.sha}"})
+        self.assertEqual(self.resolve(), {"angr": self.sha})
         self.assertEqual(
             [call.args[0] for call in self.get_json.call_args_list],
             ["repos/angr/angr-management/pulls/10", "repos/angr/angr/pulls/30"],
@@ -54,8 +54,8 @@ class TestCIDependencies(unittest.TestCase):
         self.assertEqual(
             self.resolve(),
             {
-                "angr": f"angr @ git+https://github.com/angr/angr.git@{self.sha}",
-                "cle": f"cle @ git+https://github.com/angr/cle.git@{'b' * 40}",
+                "angr": self.sha,
+                "cle": "b" * 40,
             },
         )
 
@@ -96,7 +96,7 @@ class TestCIDependencies(unittest.TestCase):
     def test_undeclared_references_and_shell_text_are_data(self):
         self.current["body"] = "$(touch injected) `echo injected` other/angr#1\n" + self.current["body"]
         with patch("subprocess.run", side_effect=AssertionError("No subprocess may execute body text")):
-            self.assertEqual(self.resolve(), {"angr": f"angr @ git+https://github.com/angr/angr.git@{self.sha}"})
+            self.assertEqual(self.resolve(), {"angr": self.sha})
         self.assertEqual(self.get_json.call_count, 2)
 
     def test_comment_links_cannot_select_dependencies(self):
@@ -125,41 +125,116 @@ class TestCIDependencies(unittest.TestCase):
         self.assertEqual(request.get_header("Authorization"), "Bearer test-token")
         self.assertEqual(urlopen.call_args.kwargs, {"timeout": 30})
 
-    def test_main_writes_both_uv_settings_and_exports_same_config(self):
+    def run_main(self, root):
+        event = root / "event.json"
+        event.write_text(json.dumps(self.event), encoding="utf-8")
+        environment = {
+            "GITHUB_EVENT_PATH": str(event),
+            "GITHUB_REPOSITORY": "angr/angr-management",
+            "RUNNER_TEMP": str(root),
+            "GITHUB_ENV": str(root / "github-env"),
+        }
+        with (
+            patch.dict(os.environ, environment),
+            patch.object(resolver.Path, "cwd", return_value=root),
+            patch.object(resolver, "github_json", self.get_json),
+        ):
+            resolver.main()
+
+    def test_main_preserves_real_project_configuration(self):
+        original = (SCRIPT.parents[2] / "pyproject.toml").read_bytes()
+        expected = tomllib.loads(original.decode("utf-8"))
+        source = expected["tool"]["uv"]["sources"]["angr"]
+        for ref in ("branch", "tag", "rev"):
+            source.pop(ref, None)
+        source["rev"] = self.sha
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             project = root / "pyproject.toml"
-            project.write_text(
-                '[tool.uv.sources]\nangr = { git = "https://github.com/angr/angr.git", branch = "master" }\n',
-                encoding="utf-8",
-            )
-            original = project.read_bytes()
-            event = root / "event.json"
-            event.write_text(json.dumps(self.event), encoding="utf-8")
+            project.write_bytes(original)
             github_env = root / "github-env"
             github_env.write_text("EXISTING=value\n", encoding="utf-8")
-            environment = {
-                "GITHUB_EVENT_PATH": str(event),
-                "GITHUB_REPOSITORY": "angr/angr-management",
-                "RUNNER_TEMP": directory,
-                "GITHUB_ENV": str(github_env),
-            }
-            with (
-                patch.dict(os.environ, environment),
-                patch.object(resolver.Path, "cwd", return_value=root),
-                patch.object(resolver, "github_json", self.get_json),
-            ):
-                resolver.main()
-            config = root / "angr-management-uv.toml"
-            self.assertEqual(
-                tomllib.loads(config.read_text(encoding="utf-8")),
-                {
-                    "no-sources-package": ["angr"],
-                    "upgrade-package": [f"angr @ git+https://github.com/angr/angr.git@{self.sha}"],
-                },
-            )
-            self.assertEqual(github_env.read_text(encoding="utf-8"), f"EXISTING=value\nUV_CONFIG_FILE={config}\n")
-            self.assertEqual(project.read_bytes(), original)
+            self.run_main(root)
+            actual = tomllib.loads(project.read_text(encoding="utf-8"))
+            self.assertEqual(actual, expected)
+            self.assertEqual(actual["tool"]["uv"]["extra-build-dependencies"], {"keystone-engine": ["cmake<4"]})
+            self.assertEqual(github_env.read_text(encoding="utf-8"), "EXISTING=value\n")
+            self.assertFalse((root / "angr-management-uv.toml").exists())
+
+    def test_ref_kinds_preserve_all_other_bytes(self):
+        for ref in ("branch", "tag", "rev"):
+            for newline in ("\n", "\r\n"):
+                with self.subTest(ref=ref, newline=repr(newline)):
+                    original = (
+                        "# retained comment\n[tool.uv.sources] # sources\n"
+                        f'"angr" = {{ git = "https://github.com/angr/angr.git", {ref}  = \'old\', '
+                        'subdirectory = "python", marker = "sys_platform == \'linux\'" } # retained\n'
+                        'cle = { git = "https://github.com/angr/cle.git", tag = "v1" }\n'
+                        '[tool.uv.extra-build-dependencies]\nkeystone-engine = ["cmake<4"]\n'
+                    ).replace("\n", newline)
+                    self.assertEqual(
+                        resolver.pin_sources(original, {"angr": self.sha}),
+                        original.replace(f"{ref}  = 'old'", f"rev  = '{self.sha}'"),
+                    )
+
+    def test_no_companion_does_not_write_project_or_config(self):
+        self.current["body"] = "No companion"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = root / "pyproject.toml"
+            original = '[tool.uv.sources.angr]\ngit = "https://github.com/angr/angr.git"\nbranch = "master"\n'
+            project.write_text(original, encoding="utf-8")
+            with patch.object(resolver.Path, "write_bytes", side_effect=AssertionError("Unexpected project write")):
+                self.run_main(root)
+            self.assertEqual(project.read_text(encoding="utf-8"), original)
+            self.assertFalse((root / "github-env").exists())
+            self.assertFalse((root / "angr-management-uv.toml").exists())
+
+    def test_invalid_or_ambiguous_format_refuses_before_writing(self):
+        projects = (
+            '[tool.uv.sources.angr]\ngit = "https://github.com/angr/angr.git"\nbranch = "master"\n',
+            '[tool.uv.sources]\nangr = { git = "https://github.com/angr/angr.git", branch = "master", rev = "old" }\n',
+            '[tool.uv.sources]\nangr = { git = "https://github.com/angr/angr.git", "branch" = "master" }\n',
+            (
+                '[tool.uv.sources]\nangr = { git = "https://github.com/angr/angr.git", branch = "master" }\n'
+                'text = """\nangr = { branch = "spoof" }\n"""\n'
+            ),
+        )
+        for original in projects:
+            with self.subTest(original=original), tempfile.TemporaryDirectory() as directory:
+                self.get_json.side_effect = [self.current, self.dependency]
+                root = Path(directory)
+                project = root / "pyproject.toml"
+                project.write_text(original, encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    self.run_main(root)
+                self.assertEqual(project.read_text(encoding="utf-8"), original)
+                self.assertFalse((root / "github-env").exists())
+
+    def test_full_project_comparison_refuses_misleading_string_content(self):
+        original = (
+            "text = '''\n[tool.uv.sources]\n"
+            "angr = { branch = \"spoof\" }\n'''\n"
+            '[tool.uv.sources.angr]\ngit = "https://github.com/angr/angr.git"\nbranch = "master"\n'
+        )
+        with self.assertRaisesRegex(ValueError, "unrelated project configuration"):
+            resolver.pin_sources(original, {"angr": self.sha})
+
+    def test_multiple_pins_and_existing_exact_revision(self):
+        original = (
+            '[tool.uv.sources]\nangr = { git = "https://github.com/angr/angr.git", branch = "master" }\n'
+            'cle = { git = "https://github.com/angr/cle.git", tag = "v1" }\n'
+        )
+        expected = original.replace('branch = "master"', f'rev = "{self.sha}"').replace(
+            'tag = "v1"', f'rev = "{"b" * 40}"'
+        )
+        self.assertEqual(resolver.pin_sources(original, {"angr": self.sha, "cle": "b" * 40}), expected)
+        self.assertEqual(resolver.pin_sources(expected, {"angr": self.sha, "cle": "b" * 40}), expected)
+
+    def test_invalid_pin_is_rejected(self):
+        original = '[tool.uv.sources]\nangr = { git = "https://github.com/angr/angr.git", branch = "master" }\n'
+        with self.assertRaisesRegex(ValueError, "Invalid dependency head"):
+            resolver.pin_sources(original, {"angr": "master"})
 
 
 if __name__ == "__main__":

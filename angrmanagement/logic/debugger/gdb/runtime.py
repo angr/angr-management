@@ -4,6 +4,7 @@ import copy
 import logging
 import os
 import re
+import shlex
 import tempfile
 import threading
 import time
@@ -46,9 +47,10 @@ def _quote_argument(value: str) -> str:
         value.encode("utf-8")
     except UnicodeEncodeError as exc:
         raise RuntimeErrorBase("Launch arguments must be valid UTF-8 text") from exc
-    # -exec-arguments retains C control escapes literally, unlike ordinary MI
-    # arguments. Quote only its delimiters and preserve the remaining bytes.
-    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    # -exec-arguments passes its remainder directly to the startup shell. Older
+    # GDB versions split on whitespace without unquoting when that shell
+    # is disabled, so use POSIX shell quoting on every supported version.
+    return shlex.quote(value)
 
 
 def _command_word(word: str) -> str:
@@ -368,7 +370,7 @@ class GDBRuntime:
                     raise RuntimeErrorBase("The selected frame moved; select the variable at its current instruction")
             return operation()
 
-    def _start(self, mode: str, executable: str | None) -> None:
+    def _start(self, mode: str, executable: str | None, *, inferior_shell: str | None = None) -> None:
         if self.state in ("running", "stopped"):
             raise RuntimeErrorBase("Stop or detach the active target before starting another session")
         self.close()
@@ -392,7 +394,13 @@ class GDBRuntime:
             self._architecture = None
             self._stale_breakpoints.clear()
             self._pending_stop = None
-        self._transport = MITransport(self.gdb_path, self._receive, self.timeout)
+        transport_env = None
+        if mode == "launch":
+            transport_env = dict(os.environ)
+            # GDB chooses its startup shell from its own environment, separately
+            # from the inferior's. The argument quoting requires a POSIX shell.
+            transport_env["SHELL"] = "/bin/sh"
+        self._transport = MITransport(self.gdb_path, self._receive, self.timeout, env=transport_env)
         self._probe_shutdown.clear()
         self._probe_thread = threading.Thread(target=self._probe_stops, name="gdb-stop-verifier", daemon=True)
         self._probe_thread.start()
@@ -403,7 +411,12 @@ class GDBRuntime:
             self._command("-gdb-set breakpoint pending on")
             # Keep GDB from disabling ASLR; relocation must use the actual mappings.
             self._command("-gdb-set disable-randomization off")
-            self._command("-gdb-set startup-with-shell off")
+            self._command(f"-gdb-set startup-with-shell {'on' if mode == 'launch' else 'off'}")
+            if mode == "launch":
+                restore_shell = (
+                    "unset environment SHELL" if inferior_shell is None else "set environment SHELL=" + inferior_shell
+                )
+                self._command(f"-interpreter-exec console {quote(restore_shell)}")
             if executable:
                 self._command(f"-file-exec-and-symbols {quote(os.path.abspath(executable))}")
             self._set_state("ready")
@@ -420,8 +433,18 @@ class GDBRuntime:
         stop_at_entry: bool = True,
     ) -> dict:
         arguments = " ".join(_quote_argument(arg) for arg in (args or []))
+        inferior_shell = (env or {}).get("SHELL", os.environ.get("SHELL"))
+        if inferior_shell is not None:
+            if inferior_shell != inferior_shell.strip(" \t"):
+                raise RuntimeErrorBase(
+                    "GDB cannot preserve leading or trailing spaces or tabs in SHELL; override SHELL"
+                )
+            try:
+                inferior_shell.encode("utf-8")
+            except UnicodeEncodeError as exc:
+                raise RuntimeErrorBase("SHELL must be valid UTF-8 text; override SHELL") from exc
         with self._commands:
-            self._start("launch", executable)
+            self._start("launch", executable, inferior_shell=inferior_shell)
             try:
                 self._terminal = InferiorTerminal(lambda text: self._stream("@", text))
                 self._command(f"-inferior-tty-set {quote(self._terminal.path)}")

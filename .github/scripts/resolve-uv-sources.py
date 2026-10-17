@@ -38,7 +38,7 @@ def resolve_sources(
     repository: str,
     get_json: Callable[[str], dict[str, Any]],
 ) -> dict[str, str]:
-    """Return exact Git requirements without changing unreferenced project sources."""
+    """Return exact Git revisions for referenced project sources."""
     if "pull_request" not in event:
         return {}
     if re.fullmatch(r"[\w.-]+/[\w.-]+", repository) is None:
@@ -63,7 +63,7 @@ def resolve_sources(
             continue
         name = url.removeprefix("https://github.com/").removesuffix(".git")
         if re.fullmatch(r"[\w.-]+/[\w.-]+", name) is not None and name != repository:
-            declared[name] = (package, url)
+            declared[name] = package
 
     selected = {}
     seen = {}
@@ -87,24 +87,78 @@ def resolve_sources(
         sha = dependency["head"]["sha"]
         if not isinstance(sha, str) or re.fullmatch(r"[0-9a-f]{40}", sha) is None:
             raise ValueError(f"Invalid dependency head: {name}")
-        package, url = declared[name]
-        selected[package] = f"{package} @ git+{url}@{sha}"
+        package = declared[name]
+        selected[package] = sha
         print(f"Using {package} from {name}#{dependency_number} at {sha}")
     return selected
 
 
+def pin_sources(text: str, selected: dict[str, str]) -> str:
+    """Replace inline Git refs while preserving the rest of the project configuration."""
+    if not selected:
+        return text
+    expected = tomllib.loads(text)
+    headers = list(re.finditer(r"(?m)^[ \t]*\[tool\.uv\.sources\][ \t]*(?:#[^\r\n]*)?\r?$", text))
+    if len(headers) != 1:
+        raise ValueError("Expected one [tool.uv.sources] table")
+    start = headers[0].end()
+    next_header = re.search(r"(?m)^[ \t]*\[", text[start:])
+    end = start + next_header.start() if next_header else len(text)
+    body = text[start:end]
+    for package, sha in selected.items():
+        if re.fullmatch(r"[0-9a-f]{40}", sha) is None:
+            raise ValueError(f"Invalid dependency head: {package}")
+        source = expected["tool"]["uv"]["sources"][package]
+        refs = {"branch", "tag", "rev"}.intersection(source)
+        if len(refs) != 1:
+            raise ValueError(f"Expected one Git ref for {package}")
+        ref = refs.pop()
+        del source[ref]
+        source["rev"] = sha
+        key = re.escape(package)
+        entries = list(
+            re.finditer(
+                rf"(?m)^[ \t]*(?:{key}|\"{key}\"|'{key}')[ \t]*=[ \t]*\{{(?P<fields>[^{{}}\r\n]*)\}}"
+                r"[ \t]*(?:#[^\r\n]*)?\r?$",
+                body,
+            )
+        )
+        if len(entries) != 1:
+            raise ValueError(f"Expected one inline source entry for {package}")
+        entry = entries[0]
+        fields = entry["fields"]
+        references = list(
+            re.finditer(
+                r"(?:^|,)[ \t]*(?P<key>branch|tag|rev)(?P<equals>[ \t]*=[ \t]*)"
+                r"(?P<value>\"(?:[^\"\\]|\\.)*\"|'[^']*')(?=[ \t]*(?:,|$))",
+                fields,
+            )
+        )
+        if len(references) != 1 or references[0]["key"] != ref:
+            raise ValueError(f"Unsupported Git ref format for {package}")
+        match = references[0]
+        quote = match["value"][0]
+        offset = entry.start("fields")
+        body = (
+            body[: offset + match.start("key")]
+            + f"rev{match['equals']}{quote}{sha}{quote}"
+            + body[offset + match.end("value") :]
+        )
+    updated = text[:start] + body + text[end:]
+    if tomllib.loads(updated) != expected:
+        raise ValueError("Source ref replacement changed unrelated project configuration")
+    return updated
+
+
 def main() -> None:
-    project = tomllib.loads((Path.cwd() / "pyproject.toml").read_text(encoding="utf-8"))
+    path = Path.cwd() / "pyproject.toml"
+    original = path.read_bytes().decode("utf-8")
+    project = tomllib.loads(original)
     event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
     selected = resolve_sources(project["tool"]["uv"]["sources"], event, os.environ["GITHUB_REPOSITORY"], github_json)
-    config = Path(os.environ["RUNNER_TEMP"]) / "angr-management-uv.toml"
-    config.write_text(
-        f"no-sources-package = {json.dumps(sorted(selected))}\n"
-        f"upgrade-package = {json.dumps([selected[name] for name in sorted(selected)])}\n",
-        encoding="utf-8",
-    )
-    with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as output:
-        output.write(f"UV_CONFIG_FILE={config}\n")
+    updated = pin_sources(original, selected)
+    if updated != original:
+        path.write_bytes(updated.encode("utf-8"))
 
 
 if __name__ == "__main__":

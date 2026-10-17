@@ -15,6 +15,9 @@ Attaching requires the host's usual debugger permissions. Local launch requires
 POSIX pseudo-terminal (PTY) support.
 Arguments are passed literally; carriage returns, newlines, NUL characters and
 strings that cannot be encoded as UTF-8 are rejected before starting a session.
+The inherited ``SHELL`` value must also be UTF-8 and cannot begin or end with
+spaces or tabs. If needed, override it with ``SHELL=/bin/sh`` in the launch
+environment.
 
 A launch stops at the first instruction by default, including for stripped
 executables. Set an execution breakpoint at ``main`` or another function and

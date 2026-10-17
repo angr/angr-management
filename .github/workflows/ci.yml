@@ -65,6 +65,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Sync dependencies
-        run: uv sync -p 3.12
+        run: uv sync -p 3.12 --extra llm
       - name: Run tests
-        run: uv run pytest -vv -n auto --timeout 900 --timeout-method=thread tests
+        run: uv run --extra llm pytest -vv -n auto --timeout 900 --timeout-method=thread tests
