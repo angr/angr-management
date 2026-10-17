@@ -490,6 +490,13 @@ class TestSidePanels(unittest.TestCase):
                 widget.query_one("#apply-options", Button).press()
                 await wait_for_code(pilot)
                 assert not sheet.dirty
+                # O closes the modal as it hides the side panel; so does Escape
+                await pilot.press("o")
+                await settle(pilot)
+                assert not isinstance(app.screen, OptionsScreen)
+                await pilot.press("o")
+                await settle(pilot)
+                assert isinstance(app.screen, OptionsScreen)
                 await pilot.press("escape")
                 await settle(pilot)
                 assert not isinstance(app.screen, OptionsScreen)

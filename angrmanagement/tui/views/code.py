@@ -572,7 +572,7 @@ class OptionsScreen(ModalScreen[None]):
     DEFAULT_CSS = (
         dialog_css("OptionsScreen") + "OptionsScreen OptionsSheetWidget { width: 60; height: 80vh; max-height: 30; }"
     )
-    BINDINGS: ClassVar = [Binding("escape", "close", "Close")]
+    BINDINGS: ClassVar = [Binding("escape", "close", "Close"), Binding("o", "close", "Close", show=False)]
 
     def __init__(self, view: CodeTuiView) -> None:
         super().__init__()
