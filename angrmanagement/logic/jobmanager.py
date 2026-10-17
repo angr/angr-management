@@ -38,6 +38,11 @@ class JobContext:
         self._last_reported_percentage = 0.0
         self._last_text = ""
 
+    @property
+    def workspace(self) -> BaseWorkspace | None:
+        """The workspace whose job manager runs the job, or None."""
+        return self._job_worker.job_manager.workspace
+
     def set_progress(self, percentage: float, text: str = "", ignore_cancel: bool = False) -> None:
         if self._job.state == JobState.CANCELLED and not ignore_cancel:
             raise JobCancelled

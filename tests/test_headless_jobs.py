@@ -10,12 +10,16 @@ import logging
 import os
 import threading
 import unittest
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+from unittest.mock import patch
 
+import angr
 from headless import run_without_qt, test_location  # pylint: disable=import-error
 
+from angrmanagement.data.jobs import DecompileFunctionJob
 from angrmanagement.data.load_options import _confirm_symbol_download
 from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.headless_workspace import HeadlessWorkspace
 from angrmanagement.logic.signal import Signal
 from angrmanagement.logic.threads import DirectExecutor, gui_thread_schedule, gui_thread_schedule_async, is_gui_thread
 from angrmanagement.logic.ui_services import HeadlessServices
@@ -97,6 +101,38 @@ class TestHeadlessCFGJob(unittest.TestCase):
             ("starting", result["main_thread"]),
             ("finished", result["main_thread"]),
         ]
+
+
+class TestHeadlessDecompileJob(unittest.TestCase):
+    """A decompilation job in a workspace without a window: GlobalInfo.main_window is None there."""
+
+    def test_the_job_finishes_and_tells_the_plugins_without_a_window(self):
+        project = angr.Project(FAUXWARE, auto_load_libs=False)
+        cfg = project.analyses.CFGFast(normalize=True)
+        workspace: Any = HeadlessWorkspace(auto_analyze=False)
+        # a Qt test run earlier in this process may have left its main window behind
+        no_window = patch.object(GlobalInfo, "main_window", None)
+        no_window.start()
+        self.addCleanup(no_window.stop)
+        try:
+            instance = workspace.main_instance
+            instance.project.am_obj = project
+            instance.project.am_event()
+            instance.cfg.am_obj = cfg.model
+            instance.cfg.am_event()
+            assert GlobalInfo.main_window is None
+            finished = []
+            func = project.kb.functions["main"]
+            with patch.object(workspace.plugins, "decompile_callback") as decompile_callback:
+                workspace.job_manager.add_job(
+                    DecompileFunctionJob(instance, func, cfg=instance.cfg, on_finish=lambda *_: finished.append(1))
+                )
+                workspace.job_manager.join_all_jobs()
+            assert finished == [1]
+            decompile_callback.assert_called_once_with(func)
+            assert (func.addr, "pseudocode") in project.kb.decompilations
+        finally:
+            workspace.job_manager.quit()
 
 
 class DirectExecutorTestCase(unittest.TestCase):
