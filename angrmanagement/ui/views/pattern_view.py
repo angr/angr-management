@@ -33,6 +33,7 @@ from angrmanagement.present.patterns import (
     match_cells,
     pattern_tree,
 )
+from angrmanagement.ui.menus.menu import to_qmenu
 from angrmanagement.ui.views.view import InstanceView
 from angrmanagement.ui.widgets.qpattern_graph import QPatternGraph, QPatternNode
 from angrmanagement.ui.widgets.qpattern_library import QPatternLibrary
@@ -328,17 +329,7 @@ class PatternView(InstanceView, PatternViewMixin):
         return [i for i in (self.family_at(r) for r in rows) if i is not None]
 
     def families_context_menu(self) -> QMenu:
-        indices = self.selected_families()
-        menu = QMenu(self._families_table)
-        pseudocode = menu.addAction("Highlight patterns in pseudocode", lambda: self.open_families(indices))
-        disassembly = menu.addAction(
-            "Highlight patterns in disassembly", lambda: self.highlight_families_in_disassembly(indices)
-        )
-        for action in (pseudocode, disassembly):
-            action.setEnabled(bool(indices))
-        edit = menu.addAction("Edit pattern...", lambda: self.load_family(indices[0]))
-        edit.setEnabled(len(indices) == 1 and self.families[indices[0]].pattern is not None)
-        return menu
+        return to_qmenu(self.families_menu(self.selected_families()), self._families_table)
 
     def _init_discover_tab(self) -> QWidget:
         self._min_size = QSpinBox()
