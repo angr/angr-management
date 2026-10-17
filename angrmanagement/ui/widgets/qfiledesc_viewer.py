@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import os
 import typing
 
-from PySide6.QtWidgets import QComboBox, QFileDialog, QFrame, QPushButton, QTextEdit, QVBoxLayout
+from PySide6.QtWidgets import QComboBox, QFrame, QPushButton, QTextEdit, QVBoxLayout
 
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.symexec import STD_FDS, fd_choices, fd_text
 
 if typing.TYPE_CHECKING:
@@ -48,9 +48,8 @@ class QFileDescriptorViewer(QFrame):
     def save_as(self) -> None:
         if self._state.am_none or self._current_fd is None:
             return
-        filename, folder = QFileDialog.getSaveFileName(self, "Save content to ...", "", "Any file (*);")
-        if filename and folder:
-            save_to = os.path.join(folder, filename)
+        save_to = GlobalInfo.ui_services.pick_save_file("Save content to ...", "", "Any file (*);")
+        if save_to:
             with open(save_to, "wb") as f:
                 f.write(self._state.posix.dumps(self._current_fd))
 

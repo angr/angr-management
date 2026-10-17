@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QContextMenuEvent, QCursor
-from PySide6.QtWidgets import QAbstractItemView, QInputDialog, QMenu, QMessageBox, QTreeWidget, QTreeWidgetItem
+from PySide6.QtWidgets import QAbstractItemView, QMenu, QTreeWidget, QTreeWidgetItem
 
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.symexec import create_stash, drop_states, move_states, paste_states, stash_states
 
 if TYPE_CHECKING:
@@ -167,15 +168,16 @@ class QSimulationManagerViewer(QTreeWidget):
     def move_to_stash(self, stash_name: str):
         lambda_str = ""
         while True:
-            lambda_str, accepted = QInputDialog.getText(
-                self, "Move state from active to here", "Condition lambda", text=lambda_str
+            answer = GlobalInfo.ui_services.prompt_text(
+                "Move state from active to here", "Condition lambda", lambda_str
             )
-            if not accepted:
+            if answer is None:
                 return
+            lambda_str = answer
             error = move_states(self.simgr, stash_name, lambda_str)
             if error is None:
                 return
-            QMessageBox.critical(self, "Exception!", error)
+            GlobalInfo.ui_services.message("critical", "Exception!", error)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         item = self.itemAt(event.pos())
@@ -187,13 +189,13 @@ class QSimulationManagerViewer(QTreeWidget):
             menu.exec_(QCursor.pos())
 
     def _create_new_stash(self, *args, **kwargs) -> None:  # pylint: disable=unused-argument
-        stash_name, accepted = QInputDialog.getText(self, "Stash name", "Blah")
+        stash_name = GlobalInfo.ui_services.prompt_text("Stash name", "Blah")
 
-        if not accepted:
+        if stash_name is None:
             return
         error = create_stash(self.simgr, stash_name)
         if error:
-            QMessageBox.critical(None, "Duplicate stash name", error)
+            GlobalInfo.ui_services.message("critical", "Duplicate stash name", error)
         elif error is None:
             self.refresh()
 

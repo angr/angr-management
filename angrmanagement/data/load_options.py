@@ -338,13 +338,23 @@ def default_selection(
     )
 
 
-def _confirm_symbol_download(url: str) -> bool:
+def confirm_symbol_download(url: str) -> bool:
+    """Ask whether cle may download debug symbols from ``url``; cle asks on the loading thread."""
     # cle calls this on the loading thread, so the question goes to the UI thread
     answer = gui_thread_schedule(
         GlobalInfo.ui_services.question,
-        ("Confirm Symbol Download", f"Download debug symbols from:\n{url}", ("Yes", "No"), "Yes"),
+        (
+            "Confirm Symbol Download",
+            f"Download debug symbols from:\n{url}\n\nDo you want to proceed?",
+            ("Yes", "No"),
+            "Yes",
+        ),
     )
     return answer == "Yes"
+
+
+#: The name this had before the Qt dialog shared it.
+_confirm_symbol_download = confirm_symbol_download
 
 
 def default_load_options(
@@ -375,5 +385,5 @@ def default_load_options(
         selection,
         suggested_main_opts=suggested_main_opts,
         suggested_main_filename=suggested_main_filename,
-        confirm_symbol_download=_confirm_symbol_download,
+        confirm_symbol_download=confirm_symbol_download,
     )

@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QRect, Qt
-from PySide6.QtWidgets import QMessageBox
 
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.disasm import DisassemblyLevel
 
 if TYPE_CHECKING:
@@ -137,8 +137,8 @@ class QDisassemblyBaseControl:
                     return
 
             # message the user
-            QMessageBox.critical(
-                None,
+            GlobalInfo.ui_services.message(
+                "critical",
                 "Invalid selection for XRefs",
                 "You must select an operand, a label, a variable, or a function header before requesting XRefs.",
             )

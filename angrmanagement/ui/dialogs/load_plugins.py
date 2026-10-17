@@ -8,16 +8,15 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
-    QFileDialog,
     QFrame,
     QGroupBox,
     QListWidget,
     QListWidgetItem,
-    QMessageBox,
     QPushButton,
     QVBoxLayout,
 )
 
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.plugins import load_plugin_description
 
 if TYPE_CHECKING:
@@ -120,15 +119,16 @@ class LoadPlugins(QDialog):
         self.close()
 
     def _on_load_clicked(self) -> None:
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Open a plugin description file (plugin.toml)", "", "Toml files (*.toml)"
+        files = GlobalInfo.ui_services.pick_open_files(
+            "Open a plugin description file (plugin.toml)", "", "Toml files (*.toml)", False
         )
-        if not file_path:
+        if not files:
             return
+        file_path = files[0]
         plugins = load_plugin_description(str(Path(file_path).parent))
 
         if not plugins:
-            QMessageBox.warning(self, "Error", "File contained no plugin descriptions")
+            GlobalInfo.ui_services.message("warning", "Error", "File contained no plugin descriptions")
             return
 
         for plugin in plugins:

@@ -321,7 +321,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         assert item is not None
         dlg._tree.setCurrentItem(item)
         with patch(
-            "angrmanagement.ui.dialogs.archive_loader.QInputDialog.getText",
+            "PySide6.QtWidgets.QInputDialog.getText",
             return_value=(ENC_ZIP_PASSWORD, True),
         ) as prompt:
             dlg._on_accept()
@@ -338,7 +338,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         assert item is not None
         dlg._tree.setCurrentItem(item)
         with patch(
-            "angrmanagement.ui.dialogs.archive_loader.QInputDialog.getText",
+            "PySide6.QtWidgets.QInputDialog.getText",
             return_value=("", False),
         ):
             dlg._on_accept()
@@ -354,10 +354,10 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         dlg._tree.setCurrentItem(item)
         with (
             patch(
-                "angrmanagement.ui.dialogs.archive_loader.QInputDialog.getText",
+                "PySide6.QtWidgets.QInputDialog.getText",
                 side_effect=[("wrong", True), (ENC_ZIP_PASSWORD, True)],
             ) as prompt,
-            patch("angrmanagement.ui.dialogs.archive_loader.QMessageBox.warning") as warning,
+            patch("PySide6.QtWidgets.QMessageBox.warning") as warning,
         ):
             dlg._on_accept()
         assert prompt.call_count == 2
@@ -422,7 +422,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         """Test that exec() returns Rejected when archive has error."""
         dlg = ArchiveLoaderDialog(self._not_archive_path, parent=self.main)
         assert dlg._err is not None
-        with patch("angrmanagement.ui.dialogs.archive_loader.QMessageBox.critical"):
+        with patch("PySide6.QtWidgets.QMessageBox.critical"):
             result = dlg.exec()
         assert result == QDialog.DialogCode.Rejected
         dlg.close()

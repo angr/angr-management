@@ -6,7 +6,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
-    QFileDialog,
     QHBoxLayout,
     QHeaderView,
     QMenu,
@@ -17,6 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.patterns import delete_stored, export_stored, import_stored, toggle_stored
 
 if TYPE_CHECKING:
@@ -372,11 +372,11 @@ class QPatternLibrary(QWidget):
         stored = self.selection()
         if stored is None:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Export pattern", f"{stored.name}.json", "JSON (*.json)")
+        path = GlobalInfo.ui_services.pick_save_file("Export pattern", f"{stored.name}.json", "JSON (*.json)")
         if path:
             self.export(stored, path)
 
     def _on_import_clicked(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Import pattern", "", "JSON (*.json)")
-        if path:
-            self.import_(path)
+        paths = GlobalInfo.ui_services.pick_open_files("Import pattern", "", "JSON (*.json)", False)
+        if paths:
+            self.import_(paths[0])

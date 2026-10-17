@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import QComboBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QPushButton
+from PySide6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton
 
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.menus.disasm_options_menu import DisasmOptionsMenu
 from angrmanagement.ui.toolbars import NavToolbar
 
@@ -143,8 +143,8 @@ class QDisasmStatusBar(QFrame):
         self._function_label.setText(label_text)
 
     def _on_saveimage_btn_clicked(self) -> None:
-        filename, folder = QFileDialog.getSaveFileName(self, "Save image...", "", "PNG Files (*.png);;Bitmaps (*.bmp)")
-        if not filename or not folder:
+        filename = GlobalInfo.ui_services.pick_save_file("Save image...", "", "PNG Files (*.png);;Bitmaps (*.bmp)")
+        if not filename:
             return
 
-        self.disasm_view.save_image_to(os.path.join(folder, filename))
+        self.disasm_view.save_image_to(filename)

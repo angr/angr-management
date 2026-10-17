@@ -12,9 +12,7 @@ from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QGuiApplication, QIcon, QKeySequence, QShortcut, QWindow
 from PySide6.QtWidgets import (
     QDialog,
-    QFileDialog,
     QMainWindow,
-    QMessageBox,
     QWidget,
 )
 
@@ -229,8 +227,7 @@ class MainWindow(QMainWindow):
     def open_mainfile_dialog(self):
         # pylint: disable=assigning-non-slot
         # https://github.com/PyCQA/pylint/issues/3793
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
+        files = GlobalInfo.ui_services.pick_open_files(
             "Open a binary",
             self._get_recent_dir(),
             "All executables (*)"
@@ -238,8 +235,9 @@ class MainWindow(QMainWindow):
             ";;Core Dumps (*.core)"
             ";;angr database (*.adb)"
             ";;Archives (*.zip *.tar *.tar.gz *.tgz *.tar.bz2 *.tbz2 *.tar.xz *.txz)",
+            False,
         )
-        return file_path
+        return files[0] if files else ""
 
     def open_load_plugins_dialog(self) -> None:
         dlg = LoadPlugins(self.workspace.plugins)
@@ -248,7 +246,9 @@ class MainWindow(QMainWindow):
 
     def open_newstate_dialog(self) -> None:
         if self.workspace.main_instance.project.am_none:
-            QMessageBox.critical(self, "Cannot create new states", "Please open a binary to analyze first.")
+            GlobalInfo.ui_services.message(
+                "critical", "Cannot create new states", "Please open a binary to analyze first."
+            )
             return
         new_state_dialog = NewState(self.workspace, self.workspace.main_instance, parent=self, create_simgr=True)
         new_state_dialog.exec_()
@@ -467,7 +467,7 @@ class MainWindow(QMainWindow):
 
         def report_error(title: str, message: str) -> None:
             if interactive:
-                QMessageBox.critical(self, title, message)
+                GlobalInfo.ui_services.message("critical", title, message)
             else:
                 _l.warning("%s: %s", title, message)
                 self.statusBar().showMessage(f"{title}: {message}", 10000)
@@ -546,21 +546,21 @@ class MainWindow(QMainWindow):
         supported = scheme.is_url_scheme_supported()
 
         if not registered and supported and not Conf.prompted_for_url_scheme_registration:
-            btn = QMessageBox.question(
-                None,
+            btn = GlobalInfo.ui_services.question(
                 "Setting up angr URL scheme",
                 'angr URL scheme allows "deep linking" from browsers and other applications '
                 "by registering the angr:// protocol to the current user. Do you want to "
                 "register it? You may unregister at any "
                 "time in Preferences.",
-                defaultButton=QMessageBox.StandardButton.Yes,
+                ["Yes", "No"],
+                "Yes",
             )
-            if btn == QMessageBox.StandardButton.Yes:
+            if btn == "Yes":
                 try:
                     AngrUrlScheme().register_url_scheme()
                 except (ValueError, FileNotFoundError) as ex:
-                    QMessageBox.warning(
-                        None,
+                    GlobalInfo.ui_services.message(
+                        "warning",
                         "Error in registering angr URL scheme",
                         "Failed to register the angr URL scheme.\nThe following exception occurred:\n" + str(ex),
                     )
@@ -590,21 +590,17 @@ class MainWindow(QMainWindow):
             and not self.workspace.main_instance.project.am_none
             and self.shown_at_start
         ):
-            msgbox = QMessageBox(self)
-            msgbox.setWindowTitle("Save database")
-            msgbox.setText("angr management is about to exit. Do you want to save the database?")
-            msgbox.setIcon(QMessageBox.Icon.Question)
-            msgbox.setWindowIcon(self.windowIcon())
-            msgbox.setStandardButtons(
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
+            r = GlobalInfo.ui_services.question(
+                "Save database",
+                "angr management is about to exit. Do you want to save the database?",
+                ["Yes", "No", "Cancel"],
+                "Yes",
             )
-            msgbox.setDefaultButton(QMessageBox.StandardButton.Yes)
-            r = msgbox.exec_()
 
-            if r == QMessageBox.StandardButton.Cancel:
+            if r == "Cancel":
                 event.ignore()
                 return
-            elif r == QMessageBox.StandardButton.Yes:
+            elif r == "Yes":
                 save_r = self.save_database()
                 if not save_r:
                     # failed to save the database
@@ -658,8 +654,8 @@ class MainWindow(QMainWindow):
         """
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return True
-        QMessageBox.warning(
-            self,
+        GlobalInfo.ui_services.message(
+            "warning",
             "A project is already open",
             "A binary is already loaded. Please close it first (File → Close Project) before opening a new one.",
         )
@@ -668,26 +664,23 @@ class MainWindow(QMainWindow):
     def close_project(self) -> None:
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return
-        msgbox = QMessageBox(self)
-        msgbox.setWindowTitle("Close project")
-        msgbox.setText("Close the current project? Any unsaved analysis will be lost.")
-        msgbox.setIcon(QMessageBox.Icon.Question)
-        msgbox.setWindowIcon(self.windowIcon())
-        msgbox.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        msgbox.setDefaultButton(QMessageBox.StandardButton.No)
-        if msgbox.exec_() != QMessageBox.StandardButton.Yes:
+        answer = GlobalInfo.ui_services.question(
+            "Close project", "Close the current project? Any unsaved analysis will be lost.", ["Yes", "No"], "No"
+        )
+        if answer != "Yes":
             return
         self.workspace.close_project()
 
     def open_trace_file_button(self) -> None:
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
+        files = GlobalInfo.ui_services.pick_open_files(
             "Open a trace file",
             Conf.last_used_directory,
             "All files (*);;Trace files (*.trace);;",
+            False,
         )
-        if not file_path:
+        if not files:
             return
+        file_path = files[0]
         Conf.last_used_directory = os.path.dirname(file_path)
         self.load_trace_file(file_path)
 
@@ -699,7 +692,9 @@ class MainWindow(QMainWindow):
         self.workspace.show_signatures_view()
 
     def load_trace_file(self, file_path) -> None:
-        if show_trace_file(self.workspace, file_path, lambda title, text: QMessageBox.critical(self, title, text)):
+        if show_trace_file(
+            self.workspace, file_path, lambda title, text: GlobalInfo.ui_services.message("critical", title, text)
+        ):
             self._recent_file(file_path)
 
     def load_file(self, file_path) -> None:
@@ -731,8 +726,8 @@ class MainWindow(QMainWindow):
                     self._recent_file(file_path)
                     self.workspace.job_manager.add_job(LoadBinaryJob(self.workspace.main_instance, file_path))
             else:
-                QMessageBox.critical(
-                    self,
+                GlobalInfo.ui_services.message(
+                    "critical",
                     "File not found",
                     f"angr management cannot open file {file_path}. Please make sure that the file exists.",
                 )
@@ -740,23 +735,25 @@ class MainWindow(QMainWindow):
             # url
             if not self._ensure_no_open_project():
                 return
-            r = QMessageBox.question(
-                self,
+            r = GlobalInfo.ui_services.question(
                 "Downloading a file",
                 f"Do you want to download a file from {file_path} and open it in angr management?",
-                defaultButton=QMessageBox.StandardButton.Yes,
+                ["Yes", "No"],
+                "Yes",
             )
-            if r == QMessageBox.StandardButton.Yes:
+            if r == "Yes":
                 try:
                     target_path = download_url(file_path, parent=self, to_file=True, file_path=None)
                 except InvalidURLError:
-                    QMessageBox.critical(
-                        self, "Downloading failed", "angr management failed to download the file. The URL is invalid."
+                    GlobalInfo.ui_services.message(
+                        "critical",
+                        "Downloading failed",
+                        "angr management failed to download the file. The URL is invalid.",
                     )
                     return
                 except UnexpectedStatusCodeError as ex:
-                    QMessageBox.critical(
-                        self,
+                    GlobalInfo.ui_services.message(
+                        "critical",
                         "Downloading failed",
                         "angr management failed to retrieve the header of the file. "
                         f"The HTTP request returned an unexpected status code {ex.status_code}.",
@@ -774,15 +771,11 @@ class MainWindow(QMainWindow):
             return
 
         # Open File window
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Load angr database",
-            ".",
-            "angr databases (*.adb)",
-        )
+        files = GlobalInfo.ui_services.pick_open_files("Load angr database", ".", "angr databases (*.adb)", False)
 
-        if not file_path:
+        if not files:
             return
+        file_path = files[0]
 
         self._load_database(file_path)
 
@@ -804,11 +797,8 @@ class MainWindow(QMainWindow):
             default_database_path = os.path.normpath(self.workspace.main_instance.project.filename) + ".adb"
 
         # Open File window
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "Save angr database",
-            default_database_path,
-            "angr databases (*.adb)",
+        file_path = GlobalInfo.ui_services.pick_save_file(
+            "Save angr database", default_database_path, "angr databases (*.adb)"
         )
 
         if not file_path:
@@ -823,8 +813,7 @@ class MainWindow(QMainWindow):
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return
 
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
+        file_path = GlobalInfo.ui_services.pick_save_file(
             "Save patched binary as...",
             self.workspace.main_instance.project.loader.main_object.binary
             + ".patched",  # FIXME: this will not work if we are loading from an angrdb
@@ -837,10 +826,10 @@ class MainWindow(QMainWindow):
                 f.write(b)
 
     def load_trace(self) -> None:
-        file_path, _ = QFileDialog.getOpenFileName(self, "Load trace", ".", "bintrace (*.trace)")
-        if not file_path:
+        files = GlobalInfo.ui_services.pick_open_files("Load trace", ".", "bintrace (*.trace)", False)
+        if not files:
             return
-        self.workspace.load_trace_from_path(file_path)
+        self.workspace.load_trace_from_path(files[0])
 
     def preferences(self) -> None:
         pref = Preferences(self.workspace, parent=self)

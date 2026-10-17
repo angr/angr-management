@@ -12,19 +12,16 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
-    QFileDialog,
     QFileIconProvider,
     QFrame,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
-    QInputDialog,
     QLabel,
     QLineEdit,
     QListWidget,
     QListWidgetItem,
-    QMessageBox,
     QPushButton,
     QSizePolicy,
     QTableWidget,
@@ -34,6 +31,8 @@ from PySide6.QtWidgets import (
     QTreeWidgetItem,
     QVBoxLayout,
 )
+
+from angrmanagement.data.load_options import confirm_symbol_download
 
 try:
     import pypcode
@@ -566,13 +565,12 @@ class LoadBinary(QDialog):
         Handle the "Enter symbol path string" button click.
         Parses a symbol path string (like _NT_SYMBOL_PATH) and populates the table.
         """
-        text, ok = QInputDialog.getText(
-            self,
+        text = GlobalInfo.ui_services.prompt_text(
             "Enter Symbol Path String",
             "Enter symbol path string (e.g., from _NT_SYMBOL_PATH):",
-            text=os.environ.get("_NT_SYMBOL_PATH", ""),
+            os.environ.get("_NT_SYMBOL_PATH", ""),
         )
-        if not ok or not text:
+        if not text:
             return
 
         self._parse_symbol_path_str_and_populate_symbol_paths_table(text)
@@ -671,14 +669,16 @@ class LoadBinary(QDialog):
             # Validate input
             if entry_type == "srv":
                 if not path:
-                    QMessageBox.warning(self, "Invalid Input", "Server URL is required for symbol server entries.")
+                    GlobalInfo.ui_services.message(
+                        "warning", "Invalid Input", "Server URL is required for symbol server entries."
+                    )
                     return
             elif entry_type == "local":
                 if not path:
-                    QMessageBox.warning(self, "Invalid Input", "Path is required for local entries.")
+                    GlobalInfo.ui_services.message("warning", "Invalid Input", "Path is required for local entries.")
                     return
             else:
-                QMessageBox.warning(self, "Invalid Input", "Invalid entry type.")
+                GlobalInfo.ui_services.message("warning", "Invalid Input", "Invalid entry type.")
                 return
 
             # Add the entry to the table
@@ -703,11 +703,8 @@ class LoadBinary(QDialog):
         """
         Open a directory selection dialog and populate the path_edit field with the selected directory.
         """
-        directory = QFileDialog.getExistingDirectory(
-            self,
-            "Select Directory",
-            path_edit.text() if path_edit.text() else os.getcwd(),
-            QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks,
+        directory = GlobalInfo.ui_services.pick_directory(
+            "Select Directory", path_edit.text() if path_edit.text() else os.getcwd()
         )
         if directory:
             # convert the separator from '/' to '\\' on Windows
@@ -729,7 +726,7 @@ class LoadBinary(QDialog):
             selected_rows.add(item.row())
 
         if not selected_rows:
-            QMessageBox.information(self, "No Selection", "Please select one or more rows to remove.")
+            GlobalInfo.ui_services.message("info", "No Selection", "Please select one or more rows to remove.")
             return
 
         # Remove rows in reverse order to maintain indices
@@ -831,26 +828,30 @@ class LoadBinary(QDialog):
         if outer_backend == NO_OUTER_BACKEND:
             outer_backend = None
         elif not outer_backend or outer_backend not in self.available_backends:
-            QMessageBox.critical(None, "Incorrect backend selection", "Please select a backend before continue.")
+            GlobalInfo.ui_services.message(
+                "critical", "Incorrect backend selection", "Please select a backend before continue."
+            )
             return
 
         backend_dropdown: QComboBox = self.option_widgets["backend"]
         backend: str = backend_dropdown.currentText()
         if not backend or backend not in self.available_backends:
-            QMessageBox.critical(None, "Incorrect backend selection", "Please select a backend before continue.")
+            GlobalInfo.ui_services.message(
+                "critical", "Incorrect backend selection", "Please select a backend before continue."
+            )
             return
 
         os_dropdown: QComboBox = self.option_widgets["os"]
         cur_simos_name: str = os_dropdown.currentText()
         if not cur_simos_name or cur_simos_name not in self.available_simos:
-            QMessageBox.critical(None, "Incorrect OS selection", "Please select a OS before continue.")
+            GlobalInfo.ui_services.message("critical", "Incorrect OS selection", "Please select a OS before continue.")
             return
 
         arch_tree: QTreeWidget = self.option_widgets["arch"]
         item = arch_tree.currentItem()
         if not isinstance(item, ArchTreeWidgetItem):
-            QMessageBox.critical(
-                None, "Incorrect architecture selection", "Please select an architecture before continue."
+            GlobalInfo.ui_services.message(
+                "critical", "Incorrect architecture selection", "Please select an architecture before continue."
             )
             return
 
@@ -869,7 +870,7 @@ class LoadBinary(QDialog):
                 try:
                     addresses[key] = int(self.option_widgets[key].text(), 16)
                 except ValueError:
-                    QMessageBox.critical(None, caption, message)
+                    GlobalInfo.ui_services.message("critical", caption, message)
                     return
 
         allow_symbol_download = True
@@ -922,24 +923,10 @@ class LoadBinary(QDialog):
     @staticmethod
     def _allow_symbol_download(url: str) -> bool:
         """
-        Callback function called by cle to confirm a symbol download.
-        This will be called from a background thread, so we need to use gui_thread_schedule.
+        Callback function called by cle to confirm a symbol download, from a background thread: the question goes
+        to the GUI thread, as the headless load options ask it.
         """
-
-        def _show_confirmation_dialog() -> bool:
-            msgbox = QMessageBox(GlobalInfo.main_window)
-            msgbox.setWindowTitle("Confirm Symbol Download")
-            msgbox.setText(f"Download debug symbols from:\n{url}")
-            msgbox.setInformativeText("Do you want to proceed?")
-            msgbox.setIcon(QMessageBox.Icon.Question)
-            msgbox.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-            msgbox.setDefaultButton(QMessageBox.StandardButton.Yes)
-            result = msgbox.exec_()
-            return result == QMessageBox.StandardButton.Yes
-
-        # Schedule on GUI thread and wait for result
-        result = gui_thread_schedule(_show_confirmation_dialog, ())
-        return result if result is not None else False
+        return confirm_symbol_download(url)
 
     @staticmethod
     def _symbol_download_progress(downloaded_bytes: int, total_bytes: int | None) -> bool:

@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 
 from angrmanagement.config import Conf
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.ui.views.hex_view import (
     BreakpointHighlightRegion,
@@ -966,15 +967,7 @@ class TestPatchHighlightRegion(unittest.TestCase):
     def test_revert_with_prompt_confirmed(self):
         """revert_with_prompt reverts patch when user confirms."""
         region = self._make_region()
-        yes_sentinel = 1
-        with patch("angrmanagement.ui.views.hex_view.QMessageBox") as mock_msg_cls:
-            mock_msg_cls.StandardButton.Yes = yes_sentinel
-            mock_msg_cls.StandardButton.Cancel = 2
-            mock_msg_cls.Icon.Question = 0
-            mock_dlg = MagicMock()
-            mock_dlg.exec_.return_value = yes_sentinel
-            mock_msg_cls.return_value = mock_dlg
-
+        with patch.object(GlobalInfo.ui_services, "question", return_value="Yes"):
             region.revert_with_prompt()
 
             pm: Any = region.view.instance.patches  # type: ignore[union-attr]
@@ -983,16 +976,7 @@ class TestPatchHighlightRegion(unittest.TestCase):
     def test_revert_with_prompt_cancelled(self):
         """revert_with_prompt does nothing when user cancels."""
         region = self._make_region()
-        yes_sentinel = 1
-        cancel_sentinel = 2
-        with patch("angrmanagement.ui.views.hex_view.QMessageBox") as mock_msg_cls:
-            mock_msg_cls.StandardButton.Yes = yes_sentinel
-            mock_msg_cls.StandardButton.Cancel = cancel_sentinel
-            mock_msg_cls.Icon.Question = 0
-            mock_dlg = MagicMock()
-            mock_dlg.exec_.return_value = cancel_sentinel
-            mock_msg_cls.return_value = mock_dlg
-
+        with patch.object(GlobalInfo.ui_services, "question", return_value="Cancel"):
             region.revert_with_prompt()
 
             pm: Any = region.view.instance.patches  # type: ignore[union-attr]
@@ -1349,15 +1333,7 @@ class TestHexViewPatching(TestHexViewBase):
         self.hex_view.inner_widget.hex.set_cursor(addr)
         self.hex_view.inner_widget.hex.update_active_highlight_regions()
 
-        yes_sentinel = 1
-        with patch("angrmanagement.ui.views.hex_view.QMessageBox") as mock_msg_cls:
-            mock_msg_cls.StandardButton.Yes = yes_sentinel
-            mock_msg_cls.StandardButton.Cancel = 2
-            mock_msg_cls.Icon.Question = 0
-            mock_dlg = MagicMock()
-            mock_dlg.exec_.return_value = yes_sentinel
-            mock_msg_cls.return_value = mock_dlg
-
+        with patch.object(GlobalInfo.ui_services, "question", return_value="Yes"):
             self.hex_view.revert_selected_patches()
 
             patches = self.instance.project.kb.patches.get_all_patches(addr, 1)
@@ -1372,16 +1348,7 @@ class TestHexViewPatching(TestHexViewBase):
 
         self.hex_view.inner_widget.hex.set_cursor(addr)
 
-        yes_sentinel = 1
-        cancel_sentinel = 2
-        with patch("angrmanagement.ui.views.hex_view.QMessageBox") as mock_msg_cls:
-            mock_msg_cls.StandardButton.Yes = yes_sentinel
-            mock_msg_cls.StandardButton.Cancel = cancel_sentinel
-            mock_msg_cls.Icon.Question = 0
-            mock_dlg = MagicMock()
-            mock_dlg.exec_.return_value = cancel_sentinel
-            mock_msg_cls.return_value = mock_dlg
-
+        with patch.object(GlobalInfo.ui_services, "question", return_value="Cancel"):
             self.hex_view.revert_selected_patches()
 
             patches = self.instance.project.kb.patches.get_all_patches(addr, 1)

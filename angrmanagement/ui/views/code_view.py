@@ -10,8 +10,6 @@ from PySide6.QtWidgets import (
     QDockWidget,
     QFrame,
     QHBoxLayout,
-    QInputDialog,
-    QLineEdit,
     QMainWindow,
     QTableWidget,
     QTextEdit,
@@ -21,6 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.config import Conf
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.code import (
     CodePresenter,
     register_code_commands,
@@ -201,18 +200,13 @@ class CodeView(FunctionView):
         if not multiline:
             self._textedit.begin_inline_comment(addr, text)
             return
-        answer, ok = QInputDialog.getText(
-            self, "Statement Comment", "", QLineEdit.EchoMode.Normal, text.replace("\n", " ")
-        )
-        then(answer if ok else None)
+        then(GlobalInfo.ui_services.prompt_text("Statement Comment", "", text.replace("\n", " ")))
 
     def ask_expr_comment(self, _addr: int, text: str, then: Callable[[str | None], None]) -> None:
-        answer, ok = QInputDialog.getText(self, "Expression Comment", "", QLineEdit.EchoMode.Normal, text)
-        then(answer if ok else None)
+        then(GlobalInfo.ui_services.prompt_text("Expression Comment", "", text))
 
     def ask_pattern_name(self, then: Callable[[str | None], None]) -> None:
-        answer, ok = QInputDialog.getText(self._textedit, "Pattern", "Name of the call the pattern becomes:")
-        then(answer if ok else None)
+        then(GlobalInfo.ui_services.prompt_text("Pattern", "Name of the call the pattern becomes:"))
 
     def on_flavors_changed(self) -> None:
         self._update_available_views(self.presenter.available_flavors)

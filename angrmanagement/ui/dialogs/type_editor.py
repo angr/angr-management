@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLineEdit, QMessageBox, QPushButton, QVBoxLayout
+from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLineEdit, QPushButton, QVBoxLayout
 
 from angrmanagement.config import Conf
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.types import ParsedTypes, PycParseErrorCls, field_number, field_text, parse_types, set_field
 
 from .set_comment import QCommentTextBox
@@ -116,7 +117,7 @@ def edit_field(ty, field, predefined_types=None) -> bool:
     dialog.exec_()
     changed, warning = set_field(ty, fieldno, ParsedTypes(dialog.main_result))
     if warning is not None:
-        QMessageBox.warning(None, "Duplicate field name", warning)
+        GlobalInfo.ui_services.message("warning", "Duplicate field name", warning)
     return changed
 
 

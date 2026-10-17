@@ -4,9 +4,10 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QPainter
-from PySide6.QtWidgets import QMessageBox, QSizePolicy, QWidget
+from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from angrmanagement.config import Conf
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.types import ParsedTypes, edit_typedef, stript, typedef_lines, typedef_text
 from angrmanagement.ui.dialogs.type_editor import CTypeEditor, edit_field
 
@@ -110,7 +111,7 @@ class QCTypeDef(QWidget):
         if dialog.main_result:
             warning = edit_typedef(self.all_types, self.type, ParsedTypes(dialog.main_result))
             if warning is not None:
-                QMessageBox.warning(None, "Duplicate type name", warning)
+                GlobalInfo.ui_services.message("warning", "Duplicate type name", warning)
             if self.editor is not None:
                 self.editor.reload()
             else:

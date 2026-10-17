@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
     QHBoxLayout,
-    QInputDialog,
     QLabel,
     QPushButton,
     QTabWidget,
@@ -18,6 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.data.jobs import SimgrExploreJob, SimgrStepJob
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule
 from angrmanagement.present.symexec import filter_actives
 from angrmanagement.ui.widgets.qsimulation_manager_viewer import QSimulationManagerViewer
@@ -354,10 +354,10 @@ class QSimulationManagers(QFrame):
         return items
 
     def _import_to_list(self, qlist: QTreeWidget) -> None:
-        text, ok = QInputDialog.getMultiLineText(
-            self, "Input Address List", "Address in hex (one address each line):", ""
+        text = GlobalInfo.ui_services.prompt_multiline_text(
+            "Input Address List", "Address in hex (one address each line):", ""
         )
-        if not ok:
+        if text is None:
             return
         for line in text.splitlines(keepends=False):
             try:

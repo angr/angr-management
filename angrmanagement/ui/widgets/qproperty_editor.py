@@ -21,7 +21,6 @@ from PySide6.QtWidgets import (
     QColorDialog,
     QComboBox,
     QDoubleSpinBox,
-    QFileDialog,
     QFontDialog,
     QHBoxLayout,
     QLineEdit,
@@ -37,6 +36,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.icons import icon
 
 
@@ -563,9 +563,9 @@ class PropertyDelegate(QStyledItemDelegate):
                     return False
                 case PropertyType.FILE:
                     if double_clicked_on_value:
-                        file_path, _ = QFileDialog.getOpenFileName(option.widget, "Select File", "", "All Files (*)")
-                        if file_path:
-                            model.setData(index, file_path, Qt.ItemDataRole.EditRole)
+                        files = GlobalInfo.ui_services.pick_open_files("Select File", "", "All Files (*)", False)
+                        if files:
+                            model.setData(index, files[0], Qt.ItemDataRole.EditRole)
                         return True
                     return False
                 case PropertyType.BOOL:

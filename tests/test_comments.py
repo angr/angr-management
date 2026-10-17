@@ -15,6 +15,7 @@ from PySide6.QtCore import QCoreApplication, QEvent, Qt
 
 from angrmanagement.config import Conf
 from angrmanagement.data.annotations import CommentKind
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.views.code_view import CodeView
 from angrmanagement.ui.views.comments_view import CommentsView
 from angrmanagement.ui.views.disassembly_view import DisassemblyView
@@ -247,20 +248,24 @@ class TestPseudocodeComments(AngrManagementTestCase):
         with patch.object(edit, "begin_inline_comment") as inline:
             edit.comment(node=node)
         inline.assert_called_once_with(addr, "")
-        # the dialog: for a statement comment of several lines, and for an expression comment
+        # the prompt, over the main window: for a statement comment of several lines, and for an expression comment
         with patch("PySide6.QtWidgets.QInputDialog.getText", return_value=("from the dialog", True)) as get_text:
             edit.comment(node=node, inline=False)
-            assert get_text.call_args.args[:2] == (self.code_view, "Statement Comment")
+            assert get_text.call_args.args[:2] == (GlobalInfo.main_window, "Statement Comment")
             assert self.instance.kb.comments[addr] == "from the dialog"
             edit.comment(expr=True, node=node)
-            assert get_text.call_args.args[:2] == (self.code_view, "Expression Comment")
+            assert get_text.call_args.args[:2] == (GlobalInfo.main_window, "Expression Comment")
             assert self.code_view.codegen.expr_comments[addr] == "from the dialog"
         # the name of a pattern's call, cancelled
         text = self.code_view.codegen.text
         self.code_view.select_range(0, len(text))
         with patch("PySide6.QtWidgets.QInputDialog.getText", return_value=("", False)) as get_text:
             assert edit.create_pattern() is None
-        assert get_text.call_args.args == (edit, "Pattern", "Name of the call the pattern becomes:")
+        assert get_text.call_args.args[:3] == (
+            GlobalInfo.main_window,
+            "Pattern",
+            "Name of the call the pattern becomes:",
+        )
 
     def test_comment_survives_redecompilation(self):
         addr = self._rendered_addr()

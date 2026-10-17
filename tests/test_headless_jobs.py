@@ -297,7 +297,7 @@ class TestDirectExecutor(DirectExecutorTestCase):
         assert asked == [
             (
                 "Confirm Symbol Download",
-                "Download debug symbols from:\nhttp://symbols",
+                "Download debug symbols from:\nhttp://symbols\n\nDo you want to proceed?",
                 ("Yes", "No"),
                 threading.current_thread(),
             )

@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QListWidget,
     QListWidgetItem,
-    QMessageBox,
     QSplitter,
     QVBoxLayout,
 )
@@ -27,6 +26,7 @@ from angrmanagement.data.analysis_options import (
     IntAnalysisOption,
     StringAnalysisOption,
 )
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.widgets.qproperty_editor import (
     BoolPropertyItem,
     ComboPropertyItem,
@@ -220,17 +220,16 @@ class AnalysisOptionsDialog(QDialog):
 
         action_word = "enable" if want_enabled else "disable"
         display_names = ", ".join(c.display_name for c in targets)
-        reply = QMessageBox.question(
-            self,
+        reply = GlobalInfo.ui_services.question(
             f"{action_word.capitalize()} {lang_name}-specific analyses?",
             f"The selected language is {lang_name if want_enabled else 'not ' + lang_name}. "
             f"Would you like to {action_word} the following {lang_name}-specific "
             f"{'analyses' if len(targets) > 1 else 'analysis'}?\n\n"
             f"{display_names}",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes,
+            ["Yes", "No"],
+            "Yes",
         )
-        if reply != QMessageBox.StandardButton.Yes:
+        if reply != "Yes":
             return
 
         for config in targets:

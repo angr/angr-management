@@ -30,12 +30,12 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QMenu,
-    QMessageBox,
     QPushButton,
     QVBoxLayout,
 )
 
 from angrmanagement.config import Conf
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.present import hexdump
 from angrmanagement.present.hexdump import (
     HexAddress,
@@ -119,13 +119,12 @@ class PatchHighlightRegion(hexdump.PatchHighlightRegion, HexHighlightRegion):
         """
         Revert this patch. Prompt for confirmation.
         """
-        dlg = QMessageBox()
-        dlg.setWindowTitle("Revert patch")
-        dlg.setText("Are you sure you want to revert this patch?")
-        dlg.setIcon(QMessageBox.Icon.Question)
-        dlg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
-        dlg.setDefaultButton(QMessageBox.StandardButton.Cancel)
-        if dlg.exec_() != QMessageBox.StandardButton.Yes:
+        if (
+            GlobalInfo.ui_services.question(
+                "Revert patch", "Are you sure you want to revert this patch?", ["Yes", "Cancel"], "Cancel"
+            )
+            != "Yes"
+        ):
             return
         self.revert()
 
@@ -1064,13 +1063,12 @@ class HexView(SynchronizedInstanceView, HexViewMixin):
         """
         Revert any selected patches.
         """
-        dlg = QMessageBox()
-        dlg.setWindowTitle("Revert patches")
-        dlg.setText("Are you sure you want to revert selected patches?")
-        dlg.setIcon(QMessageBox.Icon.Question)
-        dlg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
-        dlg.setDefaultButton(QMessageBox.StandardButton.Cancel)
-        if dlg.exec_() != QMessageBox.StandardButton.Yes:
+        if (
+            GlobalInfo.ui_services.question(
+                "Revert patches", "Are you sure you want to revert selected patches?", ["Yes", "Cancel"], "Cancel"
+            )
+            != "Yes"
+        ):
             return
         self._revert_selected_patches()
 

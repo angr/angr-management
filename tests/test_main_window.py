@@ -180,7 +180,7 @@ class TestOpenCloseGuards(AngrManagementTestCase):
         self._load()
         instance = self.main.workspace.main_instance
         before = instance.project.am_obj
-        with patch("angrmanagement.ui.main_window.QMessageBox.warning") as warn:
+        with patch("PySide6.QtWidgets.QMessageBox.warning") as warn:
             self.main.load_file(os.path.join(test_location, "x86_64", "true"))
         for _ in range(10):
             QApplication.processEvents()
@@ -191,7 +191,7 @@ class TestOpenCloseGuards(AngrManagementTestCase):
         self._load()
         instance = self.main.workspace.main_instance
         assert not instance.project.am_none
-        with patch.object(QMessageBox, "exec_", return_value=QMessageBox.StandardButton.Yes):
+        with patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes):
             self.main.close_project()
         for _ in range(10):
             QApplication.processEvents()
@@ -200,7 +200,7 @@ class TestOpenCloseGuards(AngrManagementTestCase):
     def test_close_project_cancelled_keeps_project(self):
         self._load()
         instance = self.main.workspace.main_instance
-        with patch.object(QMessageBox, "exec_", return_value=QMessageBox.StandardButton.No):
+        with patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.No):
             self.main.close_project()
         assert not instance.project.am_none
 
@@ -220,7 +220,7 @@ class TestMCPAutostart(AngrManagementTestCase):
         original_port = Conf.mcp_server_port
         Conf.mcp_server_port = port
         try:
-            with patch("angrmanagement.ui.main_window.QMessageBox.critical") as critical:
+            with patch("PySide6.QtWidgets.QMessageBox.critical") as critical:
                 # returns immediately: the autostart is deferred onto the event loop, not run inline
                 self.main._run_mcp(use_mcp=True)
                 assert self.main.mcp_server_manager is None
@@ -274,7 +274,7 @@ class TestLoadTraceFile(AngrManagementTestCase):
         ]
         for path, title in cases:
             with (
-                patch("angrmanagement.ui.main_window.QMessageBox.critical") as critical,
+                patch("PySide6.QtWidgets.QMessageBox.critical") as critical,
                 patch.object(self.main, "_recent_file") as recent,
             ):
                 self.main.load_trace_file(path)
@@ -288,7 +288,7 @@ class TestLoadTraceFile(AngrManagementTestCase):
             patch("angrmanagement.present.shell.pickle.load", return_value=state),
             patch.object(self.main.workspace, "view_data_dependency_graph") as view,
             patch.object(self.main, "_recent_file") as recent,
-            patch("angrmanagement.ui.main_window.QMessageBox.critical") as critical,
+            patch("PySide6.QtWidgets.QMessageBox.critical") as critical,
         ):
             self.main.load_trace_file(self.FAUXWARE)
         view.assert_called_once_with({"end_state": state, "start_addr": None, "end_addr": None, "block_addrs": None})

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QPoint, Qt, Signal
 from PySide6.QtGui import QCursor, QKeySequence, QShortcut
-from PySide6.QtWidgets import QApplication, QHBoxLayout, QMenu, QMessageBox, QVBoxLayout
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QMenu, QVBoxLayout
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.present import disasm as present_disasm
@@ -622,12 +622,7 @@ class DisassemblyView(SynchronizedFunctionView):
             if r is not None:
                 _, addr, operand = r
             else:
-                QMessageBox.critical(
-                    self,
-                    "No operand",
-                    "Please select an operand first.",
-                    buttons=QMessageBox.StandardButton.Ok,
-                )
+                GlobalInfo.ui_services.message("critical", "No operand", "Please select an operand first.")
                 return
         else:
             if addr is None:

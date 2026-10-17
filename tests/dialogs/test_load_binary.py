@@ -73,7 +73,7 @@ class TestLoadBinaryValidation(unittest.TestCase):
         base_addr_checkbox.setChecked(True)
         dialog.option_widgets["base_addr"].setText("not hex")
 
-        with patch("angrmanagement.ui.dialogs.load_binary.QMessageBox.critical") as critical:
+        with patch("PySide6.QtWidgets.QMessageBox.critical") as critical:
             dialog._on_ok_clicked()
         critical.assert_called_once()
         assert dialog.load_options is None
