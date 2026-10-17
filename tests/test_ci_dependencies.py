@@ -8,6 +8,7 @@ import tempfile
 import tomllib
 import unittest
 import urllib.error
+from email.message import Message
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -19,6 +20,8 @@ SPEC.loader.exec_module(resolver)
 
 
 class TestCIDependencies(unittest.TestCase):
+    """Check companion selection and the configuration consumed by uv."""
+
     def setUp(self):
         self.sources = {
             "angr": {"git": "https://github.com/angr/angr.git", "branch": "master"},
@@ -72,7 +75,7 @@ class TestCIDependencies(unittest.TestCase):
         self.assertEqual(self.sources["angr"]["branch"], "master")
 
     def test_http_failures_do_not_fall_back_to_master(self):
-        error = urllib.error.HTTPError("https://api.github.com/", 403, "Forbidden", None, None)
+        error = urllib.error.HTTPError("https://api.github.com/", 403, "Forbidden", Message(), None)
         for replies in ([error], [self.current, error]):
             with self.subTest(replies=replies):
                 self.get_json.side_effect = replies
