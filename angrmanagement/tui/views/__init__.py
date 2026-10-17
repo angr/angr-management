@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .base import TuiView
+from .call_explorer import CallExplorerTuiView
 from .code import CodeTuiView
 from .console import ConsoleTuiView
 from .disassembly import DisassemblyTuiView
@@ -46,6 +47,7 @@ TUI_VIEW_CLASSES: dict[str, type[TuiView]] = {
     "stack": StackTuiView,
     "symexec": SymexecTuiView,
     "states": StatesTuiView,
+    "call_explorer": CallExplorerTuiView,
     "console": ConsoleTuiView,
     "log": LogTuiView,
     "jobs": JobsTuiView,
