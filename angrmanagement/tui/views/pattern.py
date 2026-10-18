@@ -11,8 +11,8 @@ import contextlib
 from typing import TYPE_CHECKING, Any
 
 from rich.text import Text
-from textual.containers import Horizontal, VerticalScroll
-from textual.widgets import Button, Checkbox, Input, Label, Select, TabbedContent, TabPane
+from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.widgets import Button, Checkbox, Input, Label, Select, Static, TabbedContent, TabPane
 
 from angrmanagement.present.patterns import STATEMENT_MODES, PatternPresenter
 from angrmanagement.tui.widgets.table import TableWidget
@@ -20,6 +20,7 @@ from angrmanagement.tui.widgets.table import TableWidget
 from .graphs import GraphTuiView
 
 if TYPE_CHECKING:
+    from textual import events
     from textual.app import ComposeResult
     from textual.widget import Widget
 
@@ -65,12 +66,16 @@ class PropertySheet(VerticalScroll):
         self.view = view
         #: the property of each editor
         self.specs: dict[Widget, PropertySpec] = {}
+        #: each group's header and its property rows with their labels, for the filter
+        self._groups: list[tuple[Widget, str, list[tuple[Widget, str]]]] = []
+        self.filter_text = ""
 
     def show(self, groups: list[PropertyGroup]) -> None:
         """Show ``groups``, keeping the focus on the row it was on."""
         focused = self.app.focused if self.is_attached else None
         focused_key = self.specs[focused].key if focused in self.specs else None
         self.specs = {}
+        self._groups = []
         self.remove_children()
         rows: list[Widget] = []
         refocus = None
@@ -78,6 +83,7 @@ class PropertySheet(VerticalScroll):
             header = Label(Text(group.name), classes="group")
             header.tooltip = group.description
             rows.append(header)
+            members: list[tuple[Widget, str]] = []
             for spec in group.items:
                 editor = self._editor(spec)
                 self.specs[editor] = spec
@@ -86,11 +92,29 @@ class PropertySheet(VerticalScroll):
                 label = Label(Text(spec.label))
                 if spec.description:
                     label.tooltip = editor.tooltip = spec.description
-                rows.append(Horizontal(label, editor, classes="property"))
+                row = Horizontal(label, editor, classes="property")
+                rows.append(row)
+                members.append((row, spec.label))
+            self._groups.append((header, group.name, members))
+        self.set_filter(self.filter_text)
         if rows:
             self.mount_all(rows)
         if refocus is not None:
             self.call_after_refresh(refocus.focus)
+
+    def set_filter(self, text: str) -> None:
+        """
+        Show only the rows whose label holds ``text``, ignoring case, and the groups that keep a row or whose own name
+        holds it, as the Qt property editor's filter box does.
+        """
+        self.filter_text = text
+        needle = text.lower()
+        for header, name, members in self._groups:
+            shown = 0
+            for row, label in members:
+                row.display = not needle or needle in label.lower()
+                shown += row.display
+            header.display = not needle or shown > 0 or needle in name.lower()
 
     @staticmethod
     def _editor(spec: PropertySpec) -> Widget:
@@ -124,6 +148,75 @@ class PropertySheet(VerticalScroll):
     def on_select_changed(self, event: Select.Changed) -> None:
         event.stop()
         self._apply(event.select, event.value)
+
+
+class PropertyEditor(Vertical):
+    """
+    The property sheet with the Qt property editor's chrome: a "Filter by name..." box and a Docs toggle above it,
+    and under it a description of the focused property, which the toggle shows and hides.
+    """
+
+    DEFAULT_CSS = """
+    PropertyEditor {
+        height: 1fr;
+    }
+    PropertyEditor > .tools {
+        height: 1;
+        margin-top: 1;
+    }
+    PropertyEditor > .tools > Input {
+        width: 1fr;
+    }
+    PropertyEditor > .tools > Button {
+        margin: 0 0 0 1;
+        min-width: 6;
+    }
+    PropertyEditor > #description {
+        height: 4;
+        padding: 0 1;
+        border-top: solid $foreground 30%;
+    }
+    """
+
+    def __init__(self, sheet: PropertySheet) -> None:
+        super().__init__(id="property-editor")
+        self.sheet = sheet
+        self.filter_box = Input(placeholder="Filter by name...", id="property-filter", compact=True)
+        self.docs_button = Button("Docs", id="property-docs", compact=True, tooltip="Show or hide the description")
+        self.description = Static("", id="description")
+
+    def compose(self) -> ComposeResult:
+        with Horizontal(classes="tools"):
+            yield self.filter_box
+            yield self.docs_button
+        yield self.sheet
+        yield self.description
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        if event.input is self.filter_box:
+            event.stop()
+            self.sheet.set_filter(event.value)
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input is self.filter_box:
+            event.stop()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button is self.docs_button:
+            event.stop()
+            self.description.display = not self.description.display
+
+    def on_descendant_focus(self, event: events.DescendantFocus) -> None:
+        spec = self.sheet.specs.get(event.widget)
+        if spec is not None:
+            self.describe(spec)
+
+    def describe(self, spec: PropertySpec | None) -> None:
+        """Show ``spec``'s name in bold and its description, as the Qt description box does."""
+        if spec is None:
+            self.description.update("")
+            return
+        self.description.update(Text.assemble((spec.label, "bold"), "\n", spec.description))
 
 
 class PatternTuiView(GraphTuiView):
@@ -199,6 +292,7 @@ class PatternTuiView(GraphTuiView):
         self.matches = TableWidget(presenter.matches_model, id="matches")
         self.families = TableWidget(presenter.families_model, id="families")
         self.properties = PropertySheet(self)
+        self.property_editor = PropertyEditor(self.properties)
         self.status = Label(Text(presenter.status), classes="status", id="status")
         self.discover_status = Label(Text(presenter.discover_status), classes="status", id="discover-status")
         self.undo_button = Button("Undo", id="undo", compact=True, disabled=True)
@@ -216,7 +310,7 @@ class PatternTuiView(GraphTuiView):
                         yield Button("Delete", id="lib-delete", compact=True)
                         yield Button("Export...", id="lib-export", compact=True)
                         yield Button("Import...", id="lib-import", compact=True)
-                    yield self.properties
+                    yield self.property_editor
                     with Horizontal(classes="buttons"):
                         yield self.undo_button
                         yield Button("Loosen constants", id="loosen", compact=True, tooltip=LOOSEN_TIP)
@@ -376,4 +470,4 @@ class PatternTuiView(GraphTuiView):
             self.presenter.statements = event.value
 
 
-__all__ = ["PatternTuiView", "PropertySheet"]
+__all__ = ["PatternTuiView", "PropertyEditor", "PropertySheet"]

@@ -329,6 +329,32 @@ class TestTerminal(unittest.TestCase):
                 # the focus stays on the row
                 focused = app.focused
                 assert focused in view.properties.specs and view.properties.specs[focused].label == "Call name"
+                # the Qt property editor's chrome: the focused property's description under the sheet, and a filter
+                # box that keeps the rows whose name holds the text, ignoring case
+                assert str(view.property_editor.description.render()).startswith("Call name")
+                # a node's properties have descriptions
+                view.graph.select(presenter.graph.nodes()[-1])
+                await settle(pilot)
+                described, spec = next((w, sp) for w, sp in view.properties.specs.items() if sp.description)
+                described.focus()
+                await settle(pilot)
+                assert str(view.property_editor.description.render()) == f"{spec.label}\n{spec.description}"
+                focused = next(w for w, sp in view.properties.specs.items() if sp.label == "Call name")
+                view.property_editor.filter_box.value = "call NAME"
+                await settle(pilot)
+                rows = view.properties.query(".property")
+                shown = [row for row in rows if row.display]
+                assert len(rows) > 1 and len(shown) == 1 and focused in shown[0].children
+                view.property_editor.filter_box.value = ""
+                await settle(pilot)
+                assert all(row.display for row in view.properties.query(".property"))
+                # the Docs button hides and shows the description
+                await pilot.click("#property-docs")
+                await settle(pilot)
+                assert not view.property_editor.description.display
+                await pilot.click("#property-docs")
+                await settle(pilot)
+                assert view.property_editor.description.display
                 # Save to project fills the library
                 await pilot.click("#save")
                 await settle(pilot)
