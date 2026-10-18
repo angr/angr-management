@@ -389,7 +389,10 @@ class MCPHistoryTuiView(TableTuiView):
     """The MCP tool calls an agent made against this session."""
 
     PRESENTER_CLASS = MCPHistoryPresenter
-    DEFAULT_CSS = toolbar_css("MCPHistoryTuiView")
+    # the spacer takes the row's free width, so Clear sits at the right end as the Qt button after its stretch
+    DEFAULT_CSS = (
+        toolbar_css("MCPHistoryTuiView") + "MCPHistoryTuiView > .toolbar > #spacer { width: 1fr; padding: 0; }"
+    )
 
     presenter: MCPHistoryPresenter
 

@@ -124,6 +124,16 @@ class TestStartup(TuiTestCase):
 class TestQtLayout(TuiTestCase):
     """Where things sit in a view, as the Qt frontend puts them (screenshots/qt-baseline, shot at 1600x1000)."""
 
+    def test_mcp_history_clear_is_at_the_right(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = await show_view(pilot, "mcp_history")
+            clear = view.query_one("#clear", Button)
+            # the Qt row is a stretch and then the button
+            assert clear.region.right >= view.region.right - 2
+            assert clear.region.x > view.region.x + view.region.width // 2
+
+        run_app(scenario)
+
     def test_strings_start_sorted_on_address_descending(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
             view: Any = await show_view(pilot, "strings")
