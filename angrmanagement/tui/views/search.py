@@ -48,6 +48,8 @@ class SearchTuiView(TuiView):
             placeholder="Filter results...",
             on_filter=self.presenter.filter_results,
             status=lambda: self.presenter.status,
+            # the filter box and the status under the results, as in the Qt view
+            filter_below=True,
         )
 
     def compose(self) -> ComposeResult:

@@ -281,6 +281,7 @@ class FilterableTable(Vertical):
     :param on_filter:   Called with the filter text; ``model.filter`` by default.
     :param on_submit:   Called when Enter is pressed in the filter box.
     :param status:      Returns the text of the status label, such as a row count; refreshed on every model change.
+    :param filter_below: Put the filter box and the status label under the table, as the Qt search view does.
     """
 
     DEFAULT_CSS = """
@@ -308,8 +309,10 @@ class FilterableTable(Vertical):
         status: Callable[[], str] | None = None,
         show_filter: bool = True,
         id: str | None = None,  # pylint:disable=redefined-builtin
+        filter_below: bool = False,
     ) -> None:
         super().__init__(id=id)
+        self.filter_below = filter_below
         self.model = model
         self.placeholder = placeholder
         self.on_filter = on_filter if on_filter is not None else model.filter
@@ -323,10 +326,13 @@ class FilterableTable(Vertical):
         self.status_label = Static("", classes="status")
 
     def compose(self) -> ComposeResult:
+        if self.filter_below:
+            yield self.table
         with Horizontal():
             yield self.filter_box
             yield self.status_label
-        yield self.table
+        if not self.filter_below:
+            yield self.table
 
     def on_mount(self) -> None:
         if not self.show_filter:

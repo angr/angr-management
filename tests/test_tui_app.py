@@ -134,6 +134,13 @@ class TestQtLayout(TuiTestCase):
 
         run_app(scenario)
 
+    def test_search_filter_is_under_the_results(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = await show_view(pilot, "search")
+            assert view.results.filter_box.region.y > view.results.table.region.bottom - 1
+
+        run_app(scenario)
+
     def test_strings_start_sorted_on_address_descending(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
             view: Any = await show_view(pilot, "strings")
