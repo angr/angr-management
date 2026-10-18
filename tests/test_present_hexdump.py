@@ -37,6 +37,12 @@ test_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", 
 FAUXWARE = os.path.join(test_location, "x86_64", "fauxware")
 
 
+def fixture_head(path: str, size: int) -> bytes:
+    """The first ``size`` bytes of the fixture file, which the loader maps at its lowest address."""
+    with open(path, "rb") as f:
+        return f.read(size)
+
+
 def set_services(services: Any) -> None:
     GlobalInfo.ui_services = services  # pyright: ignore[reportAttributeAccessIssue]
 
@@ -284,7 +290,7 @@ class TestLoaderSource(FauxwareHexCase):
         grid = self.grid
         assert (grid.start_addr, grid.end_addr) == (self.loader.min_addr, self.loader.max_addr + 1)
         assert grid.cursor == self.loader.min_addr
-        assert [grid.read(self.loader.min_addr + i) for i in range(4)] == list(b"\x7fELF")
+        assert [grid.read(self.loader.min_addr + i) for i in range(4)] == list(fixture_head(FAUXWARE, 4))
         assert self.presenter.status_text() == f"Address: {self.loader.min_addr:08x}"
 
     def test_status_shows_the_selection(self):
@@ -398,12 +404,13 @@ class TestPatching(FauxwareHexCase):
         copy = find_entry(menu, "Copy 4 bytes")
         assert copy is not None
         copy.trigger()
-        assert presenter._clipboard == bytearray(b"\x7fELF")
+        head = fixture_head(FAUXWARE, 4)
+        assert bytes(presenter._clipboard) == head
         presenter.jump_to(start + 0x400)
         paste = find_entry(presenter.context_menu(), "Paste 4 bytes")
         assert paste is not None
         paste.trigger()
-        assert [self.grid.read(start + 0x400 + i) for i in range(4)] == list(b"\x7fELF")
+        assert [self.grid.read(start + 0x400 + i) for i in range(4)] == list(head)
 
 
 class TestBreakpoints(FauxwareHexCase):
