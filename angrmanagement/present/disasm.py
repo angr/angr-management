@@ -41,6 +41,7 @@ from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
 from angrmanagement.data.object_container import ObjectContainer
 from angrmanagement.data.search import BytePattern, Searcher, SearchError
 from angrmanagement.logic import GlobalInfo
+from angrmanagement.logic.analysis_gate import gate_of
 from angrmanagement.logic.commands import ViewCommand
 from angrmanagement.logic.disassembly import InfoDock, JumpHistory
 from angrmanagement.logic.signal import Signal
@@ -303,6 +304,9 @@ class LinearSource:
         self.addr_to_region_offset: SortedDict = SortedDict()
         self.max_offset = 0
         self.objects: SmartLRUCache = SmartLRUCache(maxsize=cache_size)
+        #: False while a walk may not read functions or disassemble (CFG recovery did not stop for it; see
+        #: :mod:`angrmanagement.logic.analysis_gate`): blocks not made yet show as raw bytes until a later walk
+        self.read_functions = True
         self.initialize()
 
     @property
@@ -407,7 +411,7 @@ class LinearSource:
         instance: Any = self.instance
         if isinstance(obj, Block):
             cfg = instance.cfg
-            if isinstance(cfg, ObjectContainer) and cfg.am_none:
+            if not self.read_functions or (isinstance(cfg, ObjectContainer) and cfg.am_none):
                 return UnknownNode(obj_addr, obj.bytes)
             cfg_node = cfg.get_any_node(obj_addr, force_fastpath=True)
             if cfg_node is None:
@@ -2059,10 +2063,13 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         kb = self.kb
         if kb is None or self._disassembly_level is DisassemblyLevel.AIL:
             return None
-        func = kb.functions.floor_func(addr)
-        if func is None:
-            return None
-        return self.linear_disasm(func) if self.is_linear else self.graph_disasm(func)
+        with gate_of(self.instance).access() as granted:
+            if not granted:
+                return None
+            func = kb.functions.floor_func(addr)
+            if func is None:
+                return None
+            return self.linear_disasm(func) if self.is_linear else self.graph_disasm(func)
 
     def insn_context_menu(self, insn_addr: int, insn: Any = None) -> Menu:
         """

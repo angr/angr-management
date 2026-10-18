@@ -7,10 +7,12 @@ linear view's objects, find, menus, keys, and the render models the terminal dra
 
 from __future__ import annotations
 
+import contextlib
 import os
 import unittest
 from types import SimpleNamespace
 from typing import Any
+from unittest.mock import patch
 
 import angr
 
@@ -18,7 +20,7 @@ from angrmanagement.data.function_graph import FunctionGraph
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.headless_workspace import HeadlessWorkspace
 from angrmanagement.logic.ui_services import HeadlessServices
-from angrmanagement.present.block_tree.disasm_nodes import InsnNode, LabelNode
+from angrmanagement.present.block_tree.disasm_nodes import InsnNode, LabelNode, UnknownNode
 from angrmanagement.present.dialogs import address_of_text
 from angrmanagement.present.disasm import (
     DISASM_COMMANDS,
@@ -333,6 +335,51 @@ class TestLinear(FauxwareDisasmCase):
         self.workspace.job_manager.join_all_jobs()
         self.presenter.display_function(self.main)
         assert len(self.view.linear_viewer.objects[self.main.addr].insn_addrs) == 2
+
+
+class TestWhileCfgRecoveryRuns(FauxwareDisasmCase):
+    """What the views read when CFG recovery on the job thread does not stop for them (see the analysis gate)."""
+
+    def refuse_reads(self) -> list:
+        """Make the instance's gate refuse every read; returns the reads deferred until the recovery is done."""
+        deferred: list = []
+
+        @contextlib.contextmanager
+        def refused(timeout: float = 0.0):  # pylint:disable=unused-argument
+            yield False
+
+        gate = self.instance.analysis_gate
+        patcher = patch.multiple(gate, access=refused, retry_when_done=deferred.append)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return deferred
+
+    def test_the_linear_view_shows_raw_bytes_and_disassembles_on_a_later_walk(self):
+        self.presenter.display_linear_viewer()
+        linear = self.view.linear_viewer
+        self.refuse_reads()
+        self.presenter.display_function(self.main)
+        assert isinstance(linear.objects[self.main.addr], UnknownNode)
+        patch.stopall()
+        linear.refresh()
+        assert isinstance(linear.objects[self.main.addr], LinearBlock)
+
+    def test_the_graph_is_laid_out_when_recovery_is_done(self):
+        deferred = self.refuse_reads()
+        self.presenter.display_function(self.main)
+        graph = self.view.flow_graph
+        assert graph.doc is None
+        assert deferred == [graph.reload]
+        patch.stopall()
+        deferred[0]()
+        assert graph.doc is not None
+        assert graph.doc.blocks[graph.doc.entry].addr == self.main.addr
+
+    def test_an_instruction_menu_finds_no_disassembly(self):
+        self.presenter.display_function(self.main)
+        assert self.presenter._function_disasm_at(self.main.addr) is not None
+        self.refuse_reads()
+        assert self.presenter._function_disasm_at(self.main.addr) is None
 
 
 class TestFind(FauxwareDisasmCase):

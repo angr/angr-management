@@ -7,6 +7,7 @@ from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, Qt, QTimeLine
 from PySide6.QtWidgets import QFrame
 
 from angrmanagement.config import Conf
+from angrmanagement.logic.analysis_gate import gate_of
 from angrmanagement.logic.threads import needs_gui_thread
 from angrmanagement.utils.cfg import categorize_edges
 from angrmanagement.utils.graph_layouter import GraphLayouter
@@ -132,6 +133,37 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         scene = self.scene()
         assert self.instance.kb is not None
 
+        gate = gate_of(self.instance)
+        with gate.access() as granted:
+            if not granted:
+                # CFG recovery is in a long step and is still adding to this function: lay it out when it is done
+                gate.retry_when_done(self.reload)
+                self._minimap.reload_target_scene()
+                return
+            self._make_blocks(scene)
+
+        if self.entry_block is None and self.blocks:
+            # no supernode starts exactly at the function address: the entry block may have been merged behind a
+            # lower-addressed block in the supergraph, or pruned. fall back to the block containing the function
+            # address, or the first block
+            self.entry_block = self._insaddr_to_block.get(self._function_graph.function.addr, self.blocks[0])
+
+        self.request_relayout()
+        self._update_scene_boundary()
+
+        # determine initial view focus point
+        self._reset_view()
+
+        # select the old instructions
+        assert selected_insns is not None
+        for insn_addr in selected_insns:
+            self.infodock.select_instruction(insn_addr, unique=False, use_animation=False)
+
+        self._minimap.reload_target_scene()
+
+    def _make_blocks(self, scene) -> None:
+        """Make the blocks of the function graph's supergraph and add them to ``scene``."""
+        assert self._function_graph is not None
         # the presenter keeps the analyses shown, by function and level
         presenter = self.disasm_view.presenter
         self.disasm = presenter.graph_disasm(self._function_graph.function, self._disassembly_level)
@@ -169,25 +201,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
             for insn_addr in block.addr_to_insns:
                 self._insaddr_to_block[insn_addr] = block
-
-        if self.entry_block is None and self.blocks:
-            # no supernode starts exactly at the function address: the entry block may have been merged behind a
-            # lower-addressed block in the supergraph, or pruned. fall back to the block containing the function
-            # address, or the first block
-            self.entry_block = self._insaddr_to_block.get(self._function_graph.function.addr, self.blocks[0])
-
-        self.request_relayout()
-        self._update_scene_boundary()
-
-        # determine initial view focus point
-        self._reset_view()
-
-        # select the old instructions
-        assert selected_insns is not None
-        for insn_addr in selected_insns:
-            self.infodock.select_instruction(insn_addr, unique=False, use_animation=False)
-
-        self._minimap.reload_target_scene()
 
     @needs_gui_thread
     def refresh(self) -> None:

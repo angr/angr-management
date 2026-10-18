@@ -17,6 +17,7 @@ from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, Breakp
 from angrmanagement.data.signatures import SignatureManager
 from angrmanagement.data.trace import Trace
 from angrmanagement.errors import ContainerAlreadyRegisteredError
+from angrmanagement.logic.analysis_gate import AnalysisGate
 from angrmanagement.logic.debugger import DebuggerListManager, DebuggerManager
 
 from .log import LogRecord, initialize
@@ -81,6 +82,8 @@ class Instance:
         self.signature_mgr = SignatureManager(self)
         self.debugger_list_mgr = DebuggerListManager()
         self.debugger_mgr = DebuggerManager(self.debugger_list_mgr)
+        #: what the UI thread waits on to read what CFG recovery is still changing
+        self.analysis_gate = AnalysisGate()
 
         self.project.am_subscribe(self.initialize)
 

@@ -15,6 +15,7 @@ from sortedcontainers import SortedDict
 
 from angrmanagement.config import Conf
 from angrmanagement.data.object_container import ObjectContainer
+from angrmanagement.logic.analysis_gate import gate_of
 from angrmanagement.logic.threads import needs_gui_thread
 from angrmanagement.utils.cache import SmartLRUCache
 from angrmanagement.utils.graph import get_out_branches
@@ -102,6 +103,8 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self._start_line_in_object = 0
 
         self.objects = SmartLRUCache(maxsize=1024, evict=self._on_object_eviction)
+        #: False during a walk CFG recovery did not stop for (see prepare_objects)
+        self._read_functions = True
 
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
 
@@ -419,10 +422,16 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         previous offset) and a following refresh retries.
         """
         prev_offset = self._offset
-        try:
-            self._prepare_objects(offset, start_line=start_line, adjust_start_line=adjust_start_line)
-        except (RuntimeError, KeyError, IndexError):
-            self._offset = prev_offset
+        # CFG recovery may be adding to the functions shown: read them only while it stops for us (blocks not made
+        # yet show as raw bytes until a later refresh otherwise)
+        with gate_of(self.instance).access() as granted:
+            self._read_functions = granted
+            try:
+                self._prepare_objects(offset, start_line=start_line, adjust_start_line=adjust_start_line)
+            except (RuntimeError, KeyError, IndexError):
+                self._offset = prev_offset
+            finally:
+                self._read_functions = True
 
     @timethis
     def _prepare_objects(self, offset: int, start_line: int = 0, adjust_start_line: bool = False) -> None:
@@ -636,9 +645,10 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         if isinstance(obj, Block):
             cfg = self.cfg
-            if isinstance(cfg, ObjectContainer) and cfg.am_none:
-                # during CFG recovery, blocks may land in the CFB before the (partial) CFG model is first published;
-                # render them as raw bytes for now - they will be re-rendered once the CFG is available
+            if not self._read_functions or (isinstance(cfg, ObjectContainer) and cfg.am_none):
+                # during CFG recovery, blocks may land in the CFB before the (partial) CFG model is first published,
+                # or the recovery did not stop for this walk; render them as raw bytes for now - they will be
+                # re-rendered on a later refresh
                 return False, QUnknownBlock(self.instance, obj_addr, obj.bytes, disasm_view=self.disasm_view)
             cfg_node = self.cfg.get_any_node(obj_addr, force_fastpath=True)
             if cfg_node is not None:

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from angrmanagement.logic.analysis_gate import gate_of
 from angrmanagement.logic.signal import Signal
 
 from .block_tree.disasm_nodes import InsnNode, LabelNode, MemoryDataNode
@@ -107,7 +108,13 @@ class GraphControl:
         self._drawn_states = {}
         if self._function_graph is None:
             return
-        result = self.presenter.graph_doc(self._function_graph, self._measure, options=self.display, **self.margins)
+        gate = gate_of(self.presenter.instance)
+        with gate.access() as granted:
+            if not granted:
+                # CFG recovery is in a long step and is still adding to this function: lay it out when it is done
+                gate.retry_when_done(self.reload)
+                return
+            result = self.presenter.graph_doc(self._function_graph, self._measure, options=self.display, **self.margins)
         if result is None:
             return
         self.doc, self.disasm = result
@@ -390,11 +397,17 @@ class LinearControl:
             offset = 0
         if not force and offset == self.offset and start_line == self.start_line and self.shown:
             return
-        try:
-            shown, offset, start_line = self.source.objects_at(offset, self.rows, start_line)
-        except (RuntimeError, KeyError, IndexError):
-            # the CFB is being mutated by CFG recovery; keep what is shown, a later refresh retries
-            return
+        source = self.source
+        # CFG recovery may be adding to the functions shown: read them only while it stops for us
+        with gate_of(self.presenter.instance).access() as granted:
+            source.read_functions = granted
+            try:
+                shown, offset, start_line = source.objects_at(offset, self.rows, start_line)
+            except (RuntimeError, KeyError, IndexError):
+                # the CFB is being mutated by CFG recovery; keep what is shown, a later refresh retries
+                return
+            finally:
+                source.read_functions = True
         self.offset, self.start_line, self.shown = offset, start_line, shown
         self._insaddr_to_block = {}
         for _addr, node, _first in shown:
