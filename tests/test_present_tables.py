@@ -10,6 +10,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import os
+import threading
 import unittest
 from datetime import datetime
 from typing import Any
@@ -372,6 +373,35 @@ class TestLog(FauxwareTestCase):
         presenter.clear_log()
         assert model.row_count == 0
         presenter.close()
+
+    def test_close_waits_for_a_record_being_handed_over_and_stops_later_ones(self):
+        # the log listener's thread hands records over; once close() returns, it must not reach the UI executor
+        presenter = LogPresenter(self.workspace, self.instance)
+        record = LogRecord(logging.WARNING, 0, "src", "late")
+        handing, release = threading.Event(), threading.Event()
+        handed: list[Any] = []
+
+        def schedule_async(_func, args=None, _kwargs=None):
+            handed.append(args)
+            handing.set()
+            assert release.wait(5)
+
+        with patch("angrmanagement.present.log.gui_thread_schedule_async", schedule_async):
+            listener = threading.Thread(target=presenter._on_new_logrecord, args=(record,), daemon=True)
+            listener.start()
+            assert handing.wait(5)
+            closer = threading.Thread(target=presenter.close, daemon=True)
+            closer.start()
+            closer.join(0.2)
+            assert closer.is_alive(), "close() returned while a record was being handed to the UI thread"
+            release.set()
+            closer.join(5)
+            listener.join(5)
+            assert not closer.is_alive() and not listener.is_alive()
+            # a listener that took the subscriber list before close() still calls in; nothing goes further
+            presenter._on_new_logrecord(record)
+            self.instance.log.am_event(log_record=record)
+        assert handed == [(record,)]
 
 
 class TestBreakpoints(FauxwareTestCase):

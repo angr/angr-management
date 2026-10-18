@@ -653,6 +653,31 @@ class TestExit(TuiTestCase):
         assert bar.status_text == ""
 
 
+class TestExitWithTheLogListener(TuiTestCase):
+    def test_a_log_record_handed_over_after_the_exit_reaches_no_executor(self) -> None:
+        apps: list[AmApp] = []
+
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            assert app.view_widget("log") is not None
+            apps.append(app)
+
+        run_app(scenario, binary=None)
+        # the log listener's thread outlives the app: hand a record to the app's instance as it would, late
+        handler = LogDumpHandler(apps[0].workspace.main_instance)
+        handed: list[Any] = []
+        record = logging.LogRecord("angrmanagement.tests", logging.WARNING, __file__, 0, "late", None, None)
+        with patch(
+            "angrmanagement.present.log.gui_thread_schedule_async",
+            lambda func, args=None, kwargs=None: handed.append(args),
+        ):
+            thread = threading.Thread(target=handler.emit, args=(record,), daemon=True)
+            thread.start()
+            thread.join(5)
+        assert not thread.is_alive()
+        assert not handed, "the log view of an app that exited still hands records to the UI executor"
+        assert GlobalInfo._executor is self.saved[0]
+
+
 class TestConsole(TuiTestCase):
     def test_runs_code_in_the_workspace_namespace(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:

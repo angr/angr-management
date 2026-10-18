@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 from typing import TYPE_CHECKING, ClassVar
 
 from angrmanagement.logic import GlobalInfo
@@ -111,6 +112,10 @@ class LogPresenter(InstancePresenter):
         #: what the copy actions put text on the clipboard with; the UI services' clipboard when None
         self.clipboard_writer: Callable[[str], None] | None = None
         self.model.set_rows(list(self._log))
+        # the log listener's thread hands records over while holding this; close() takes it, so once close() returns
+        # no thread is still handing one to the UI thread, and none will
+        self._delivery_lock = threading.RLock()
+        self._closed = False
         container(self.instance.log).am_subscribe(self._on_new_logrecord)
 
     @property
@@ -118,6 +123,8 @@ class LogPresenter(InstancePresenter):
         return container(self.instance.log)
 
     def close(self) -> None:
+        with self._delivery_lock:
+            self._closed = True
         self._log.am_unsubscribe(self._on_new_logrecord)
 
     @property
@@ -165,7 +172,10 @@ class LogPresenter(InstancePresenter):
         return menu
 
     def _on_new_logrecord(self, log_record: LogRecord | None = None) -> None:
-        gui_thread_schedule_async(self._on_new_logrecord_core, (log_record,))
+        # called on the log listener's thread, which the frontend does not own and cannot stop
+        with self._delivery_lock:
+            if not self._closed:
+                gui_thread_schedule_async(self._on_new_logrecord_core, (log_record,))
 
     def _on_new_logrecord_core(self, log_record: LogRecord | None = None) -> None:
         if log_record is None:

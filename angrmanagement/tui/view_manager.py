@@ -73,6 +73,7 @@ class TuiViewManager(BaseViewManager):
         self._panes: dict[Any, tuple[str, str]] = {}
         self._mounting: dict[str, Any] = {}
         self._next_pane = 0
+        self._views_closed = False
         self.layout: dict[str, Any] = load_layout()
 
     #
@@ -155,6 +156,24 @@ class TuiViewManager(BaseViewManager):
         pane = TabPane(view.caption, view, id=pane_id)
         self._mounting[pane_id] = area.add_pane(pane)
         self.update_areas()
+
+    def close_views(self) -> None:
+        """
+        The app exits: every view's presenter stops listening, once however often this runs. The views stay listed,
+        for what reads the layout afterwards; their panes go with the screen.
+        """
+        if self._views_closed:
+            return
+        self._views_closed = True
+        for view in list(self.views):
+            close_view = getattr(view, "close_view", None)
+            if close_view is None:
+                continue
+            try:
+                close_view()
+            except Exception:  # pylint:disable=broad-exception-caught
+                # the app still has to give its globals back
+                _l.warning("Closing the %s view failed", view.category, exc_info=True)
 
     def remove_view(self, view) -> None:
         if not self._unregister_view(view):
