@@ -996,7 +996,7 @@ def ast_strings(ast, display_size: bool = True, byte_format: str | None = None) 
         return size, fmt % ast.concrete_value, False
     if isinstance(ast, claripy.ast.BV) and ast.op == "BVS":
         return size, str(ast.args[0]), True
-    # the Qt viewer called ast.__repr__(max_depth=1), which claripy's repr no longer takes (TypeError)
+    # claripy's __repr__ takes no max_depth; shallow_repr does
     return size, ast.shallow_repr(max_depth=1), True
 
 

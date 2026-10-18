@@ -54,7 +54,7 @@ if TYPE_CHECKING:
 
 _l = logging.getLogger(__name__)
 
-#: moved to the presenter, which throttles the listing's refreshes during CFG recovery; importable from here as before
+#: the presenter's, re-exported for code that imports it here; it throttles the listing's refreshes during CFG recovery
 MIN_OBJECTS_ADDED_REFRESH_INTERVAL = present_disasm.MIN_OBJECTS_ADDED_REFRESH_INTERVAL
 
 

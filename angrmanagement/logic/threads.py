@@ -224,8 +224,8 @@ def gui_thread_schedule_async[T](
 
 
 def __getattr__(name: str):
-    # ExecuteCodeEvent is a Qt event and lives with the Qt executor now; resolve the old import path on demand so
-    # that importing this module never imports PySide6.
+    # ExecuteCodeEvent is a Qt event and lives with the Qt executor; resolve its old import path on demand so that
+    # importing this module never imports PySide6.
     if name == "ExecuteCodeEvent":
         from angrmanagement.ui.qt_executor import ExecuteCodeEvent  # pylint:disable=import-outside-toplevel
 

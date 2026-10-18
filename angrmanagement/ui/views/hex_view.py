@@ -144,7 +144,7 @@ class HexGraphicsObject(QGraphicsObject, HexGrid):
 
     cursor_changed = Signal()
     viewport_changed = Signal()
-    #: the grid's cursor address, which hides QGraphicsItem.cursor() as it did before the grid moved to hexdump.py
+    #: the grid's cursor address; it hides QGraphicsItem.cursor() on purpose
     cursor: HexAddress  # pyright: ignore[reportIncompatibleMethodOverride]
 
     def __init__(self) -> None:
