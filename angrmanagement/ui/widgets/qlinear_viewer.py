@@ -15,7 +15,6 @@ from sortedcontainers import SortedDict
 
 from angrmanagement.config import Conf
 from angrmanagement.data.object_container import ObjectContainer
-from angrmanagement.logic.analysis_gate import gate_of
 from angrmanagement.logic.threads import needs_gui_thread
 from angrmanagement.utils.cache import SmartLRUCache
 from angrmanagement.utils.graph import get_out_branches
@@ -424,7 +423,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         prev_offset = self._offset
         # CFG recovery may be adding to the functions shown: read them only while it stops for us (blocks not made
         # yet show as raw bytes until a later refresh otherwise)
-        with gate_of(self.instance).access() as granted:
+        with self.disasm_view.presenter.reading_functions() as granted:
             self._read_functions = granted
             try:
                 self._prepare_objects(offset, start_line=start_line, adjust_start_line=adjust_start_line)

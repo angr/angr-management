@@ -87,7 +87,7 @@ from .theme import BACKGROUND_PREFIX
 
 if TYPE_CHECKING:
     import re
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
 
     from angr.knowledge_plugins import VariableManager
     from angr.knowledge_plugins.functions import Function
@@ -2057,13 +2057,27 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
                 return insn
         return None
 
+    @contextlib.contextmanager
+    def reading_functions(self, retry: Callable[[], object] | None = None) -> Iterator[bool]:
+        """
+        Read the functions and disassemble while CFG recovery may be changing them: yields True once the recovery has
+        stopped for this read (or none runs), and False when it did not stop in time, in which case the caller must
+        neither read the functions nor disassemble. ``retry``, when given, is called on the UI thread once the
+        recovery is done if this read was refused. See :mod:`angrmanagement.logic.analysis_gate`.
+        """
+        gate = gate_of(self.instance)
+        with gate.access() as granted:
+            if not granted and retry is not None:
+                gate.retry_when_done(retry)
+            yield granted
+
     def _function_disasm_at(self, addr: int) -> Any:
         """The machine-code or lifter IR Disassembly of the function containing ``addr`` that the control shown uses,
         or None (no function there, or the AIL level, which has no angr Instructions)."""
         kb = self.kb
         if kb is None or self._disassembly_level is DisassemblyLevel.AIL:
             return None
-        with gate_of(self.instance).access() as granted:
+        with self.reading_functions() as granted:
             if not granted:
                 return None
             func = kb.functions.floor_func(addr)

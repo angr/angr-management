@@ -7,7 +7,6 @@ from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, Qt, QTimeLine
 from PySide6.QtWidgets import QFrame
 
 from angrmanagement.config import Conf
-from angrmanagement.logic.analysis_gate import gate_of
 from angrmanagement.logic.threads import needs_gui_thread
 from angrmanagement.utils.cfg import categorize_edges
 from angrmanagement.utils.graph_layouter import GraphLayouter
@@ -133,11 +132,9 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         scene = self.scene()
         assert self.instance.kb is not None
 
-        gate = gate_of(self.instance)
-        with gate.access() as granted:
+        # CFG recovery may still be adding to this function: if it does not stop for us, lay it out when it is done
+        with self.disasm_view.presenter.reading_functions(retry=self.reload) as granted:
             if not granted:
-                # CFG recovery is in a long step and is still adding to this function: lay it out when it is done
-                gate.retry_when_done(self.reload)
                 self._minimap.reload_target_scene()
                 return
             self._make_blocks(scene)

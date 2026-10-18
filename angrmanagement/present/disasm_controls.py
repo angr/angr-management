@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from angrmanagement.logic.analysis_gate import gate_of
 from angrmanagement.logic.signal import Signal
 
 from .block_tree.disasm_nodes import InsnNode, LabelNode, MemoryDataNode
@@ -96,6 +95,7 @@ class GraphControl:
     def reload(self, old_infodock=None) -> None:
         """Lay the function out again; reselect what ``old_infodock`` had selected, and show the entry."""
         selected_insns = set(old_infodock.selected_insns.am_obj) if old_infodock is not None else set()
+        # selected even when the layout is put off until CFG recovery is done: the infodock keeps the selection
         self._layout()
         self._reset_view()
         for insn_addr in selected_insns:
@@ -103,16 +103,15 @@ class GraphControl:
         self._changed()
 
     def _layout(self) -> None:
+        """Lay the function out, or, when CFG recovery does not stop for it, when the recovery is done."""
         self.doc, self.disasm = None, None
         self._insaddr_to_block = {}
         self._drawn_states = {}
         if self._function_graph is None:
             return
-        gate = gate_of(self.presenter.instance)
-        with gate.access() as granted:
+        # CFG recovery may still be adding to this function
+        with self.presenter.reading_functions(retry=self.reload) as granted:
             if not granted:
-                # CFG recovery is in a long step and is still adding to this function: lay it out when it is done
-                gate.retry_when_done(self.reload)
                 return
             result = self.presenter.graph_doc(self._function_graph, self._measure, options=self.display, **self.margins)
         if result is None:
@@ -399,7 +398,7 @@ class LinearControl:
             return
         source = self.source
         # CFG recovery may be adding to the functions shown: read them only while it stops for us
-        with gate_of(self.presenter.instance).access() as granted:
+        with self.presenter.reading_functions() as granted:
             source.read_functions = granted
             try:
                 shown, offset, start_line = source.objects_at(offset, self.rows, start_line)
