@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import atexit
 import logging
+import weakref
 from datetime import datetime
 from logging.handlers import QueueHandler, QueueListener
 from multiprocessing import Queue
@@ -59,17 +60,28 @@ class LogRecord:
 
 class LogDumpHandler(logging.Handler):
     """
-    Dumps log messages.
+    Dumps log messages into the log of an instance.
+
+    The handler holds the instance weakly: the listener thread that calls it, and the atexit hook that stops that
+    thread, last as long as the process, so a strong reference would keep every instance ever made alive, with its
+    project. Records that arrive after the instance is gone are dropped.
     """
 
     def __init__(self, instance: Instance, level=logging.NOTSET) -> None:
         super().__init__(level=level)
-        self.instance = instance
+        self._instance = weakref.ref(instance)
+
+    @property
+    def instance(self) -> Instance | None:
+        return self._instance()
 
     def emit(self, record: logging.LogRecord) -> None:
+        instance = self.instance
+        if instance is None:
+            return
         log_record = LogRecord(record.levelno, record.created, record.name, self.format(record))
-        self.instance.log.append(log_record)
-        self.instance.log.am_event(log_record=log_record)
+        instance.log.append(log_record)
+        instance.log.am_event(log_record=log_record)
 
 
 class AMQueueHandler(QueueHandler):

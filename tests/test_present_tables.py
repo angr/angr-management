@@ -8,10 +8,12 @@ and context menus.
 from __future__ import annotations
 
 import dataclasses
+import gc
 import logging
 import os
 import threading
 import unittest
+import weakref
 from datetime import datetime
 from typing import Any
 from unittest.mock import patch
@@ -20,6 +22,7 @@ import angr
 from angr.knowledge_plugins.patches import Patch
 
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
+from angrmanagement.data.instance import Instance
 from angrmanagement.data.jobs.job import Job, JobState
 from angrmanagement.data.log import LogRecord
 from angrmanagement.data.search import SearchKind, SearchResult
@@ -355,6 +358,14 @@ class TestPatches(FauxwareTestCase):
 
 
 class TestLog(FauxwareTestCase):
+    def test_an_instance_nothing_else_holds_is_freed(self):
+        # every Instance starts a log listener thread, and an atexit hook to stop it, that outlive the Instance
+        instance = Instance()
+        freed = weakref.ref(instance)
+        del instance
+        gc.collect()
+        assert freed() is None, "the log listener keeps an Instance alive"
+
     def test_records_and_copy(self):
         presenter = LogPresenter(self.workspace, self.instance)
         before = presenter.model.row_count
