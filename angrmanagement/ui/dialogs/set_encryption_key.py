@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.data.load_options import key_to_hex
-from angrmanagement.present.dialogs import EncKeyFormat, parse_encryption_key, parse_hex_key
+from angrmanagement.present.dialogs import EncKeyFormat, parse_encryption_key
 
 __all__ = ["EncKeyFormat", "SetEncryptionKeyDialog", "key_to_hex"]
 
@@ -119,13 +119,6 @@ class SetEncryptionKeyDialog(QDialog):
         if self._initial_text:
             key_box.setText(self._initial_text)
             key_box.selectAll()
-
-    @staticmethod
-    def _parse_hex(txt: str) -> bytes | None:
-        """
-        Parse a hexadecimal key. Accepts an optional 0x prefix and whitespace, ':' or '-' separators.
-        """
-        return parse_hex_key(txt)
 
     def _get_enckey(self, txt: str) -> bytes | None:
         key_format = None

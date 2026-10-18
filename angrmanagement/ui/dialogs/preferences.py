@@ -44,7 +44,6 @@ from angrmanagement.present.preferences import (
     save_mcp,
     save_theme,
     scheme_entry_values,
-    sync_llm_client,
     theme_choices,
     url_scheme_state,
 )
@@ -364,9 +363,6 @@ class LLMSettings(Page):
             },
             self.workspace,
         )
-
-    def _sync_llm_client_to_project(self) -> None:
-        sync_llm_client(self.workspace)
 
 
 class MCPSettings(Page):
