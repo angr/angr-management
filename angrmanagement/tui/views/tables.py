@@ -65,12 +65,17 @@ class TableTuiView(TuiView):
     #: The column the rows start sorted on and whether descending, or None for the model's order. A Qt table that
     #: calls ``setSortingEnabled(True)`` sorts at once on its header's default indicator, column 0 descending.
     INITIAL_SORT: tuple[int, bool] | None = None
+    #: A header mark with the rows left in the model's order: a Qt table that calls ``setSortIndicatorShown(True)``
+    #: without sorting shows its header's default indicator, column 0 descending.
+    SORT_MARK: tuple[int, bool] | None = None
 
     def __init__(self, workspace, default_docking_position: str, instance) -> None:
         super().__init__(workspace, default_docking_position, instance)
         self.table = self.make_table()
         if self.INITIAL_SORT is not None:
             self.table.table.sort_by(*self.INITIAL_SORT)
+        elif self.SORT_MARK is not None:
+            self.table.table.mark_sort(*self.SORT_MARK)
 
     def make_table(self) -> FilterableTable:
         return FilterableTable(
@@ -104,6 +109,8 @@ class FunctionsTuiView(TableTuiView):
     PRESENTER_CLASS = FunctionsPresenter
     FILTER_PLACEHOLDER = "Filter by name..."
     SHOW_FILTER = True
+    # QFunctionTable: header.setSortIndicatorShown(True)
+    SORT_MARK = (0, True)
     DEFAULT_CSS = toolbar_css("FunctionsTuiView")
 
     presenter: FunctionsPresenter
@@ -221,6 +228,8 @@ class CommentsTuiView(TableTuiView):
     PRESENTER_CLASS = CommentsPresenter
     FILTER_PLACEHOLDER = "Filter comments..."
     SHOW_FILTER = True
+    # QCommentTable: header.setSortIndicatorShown(True)
+    SORT_MARK = (0, True)
 
     presenter: CommentsPresenter
 
@@ -356,6 +365,8 @@ class JobsTuiView(TableTuiView):
     """The jobs and their progress; Delete or the context menu cancels the selected one."""
 
     PRESENTER_CLASS = JobsPresenter
+    # QJobs: horizontalHeader().setSortIndicatorShown(True)
+    SORT_MARK = (0, True)
     DEFAULT_CSS = toolbar_css("JobsTuiView")
 
     presenter: JobsPresenter

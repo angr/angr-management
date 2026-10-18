@@ -160,7 +160,33 @@ class TestQtLayout(TuiTestCase):
             assert model.sort_order == (0, True)
             addrs = [model.column_value(row, 0) for row in model.rows]
             assert len(addrs) > 1 and addrs == sorted(addrs, reverse=True)
-            assert view.table_widget.ordered_columns[0].label.plain.endswith("▼")
+            # Qt's header draws descending as an upward arrow (final/r3/probe/sortglyph2.py measured it on Fusion)
+            assert view.table_widget.ordered_columns[0].label.plain == "Address ▲"
+            # a click on the header sorts ascending and turns the mark over
+            await pilot.click(view.table_widget, offset=(2, 0))
+            await settle(pilot)
+            assert model.sort_order == (0, False)
+            assert view.table_widget.ordered_columns[0].label.plain == "Address ▼"
+
+        run_app(scenario)
+
+    def test_tables_with_a_shown_sort_indicator_mark_column_0_without_sorting(self) -> None:
+        # QFunctionTable, QSearchTable, QCommentTable and QJobs call setSortIndicatorShown(True) and never sort, so the
+        # header shows its default indicator, column 0 descending, over rows in the model's order
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            for category in ("functions", "search", "comments", "jobs"):
+                view: Any = await show_view(pilot, category)
+                table = view.results.table if category == "search" else view.table_widget
+                labels = [column.label.plain for column in table.ordered_columns]
+                assert labels[0].endswith("▲"), (category, labels)
+                # the mark fits the column: the DataTable cuts a label at the column's width
+                first = table.ordered_columns[0]
+                assert first.auto_width or len(labels[0]) <= first.width, (category, labels, first.width)
+                assert not any(label.endswith(("▲", "▼")) for label in labels[1:]), (category, labels)
+            functions: Any = app.view_widget("functions")
+            assert functions.table_widget.ordered_columns[0].label.plain == "In▲"
+            model = functions.presenter.model
+            assert model.sort_order[0] is None
 
         run_app(scenario)
 

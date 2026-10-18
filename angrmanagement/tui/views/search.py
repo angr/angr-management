@@ -51,6 +51,8 @@ class SearchTuiView(TuiView):
             # the filter box and the status under the results, as in the Qt view
             filter_below=True,
         )
+        # QSearchTable: header.setSortIndicatorShown(True), with the results in the order they were found
+        self.results.table.mark_sort(0, True)
 
     def compose(self) -> ComposeResult:
         kinds = [(kind.value, kind) for kind in SearchKind]

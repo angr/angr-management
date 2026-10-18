@@ -130,7 +130,12 @@ class TableWidget(DataTable):
     def _header_label(self, idx: int, column: Column) -> Text:
         label = column.name
         if idx == self._sort_column:
-            label += " ▼" if self._sort_descending else " ▲"
+            # Qt's header draws descending as an upward arrow and ascending as a downward one (QHeaderView maps
+            # Qt.DescendingOrder to QStyleOptionHeader.SortUp); the marks match the Qt tables'
+            mark = "▲" if self._sort_descending else "▼"
+            width = 0 if column.stretch else column.width_hint
+            # in a narrow column the name gives way to the mark, as Qt elides it ("In▲" for "Inline?")
+            label = f"{label[: width - 1]}{mark}" if width and len(label) + 2 > width else f"{label} {mark}"
         justify: Any = column.align
         return Text(label, justify=justify)
 
@@ -212,6 +217,17 @@ class TableWidget(DataTable):
         """Sort the rows on the model's column ``col`` and mark its header, as a click on the header does."""
         self._sort_column, self._sort_descending = col, descending
         self.model.sort(col, descending)
+
+    def mark_sort(self, col: int, descending: bool = False) -> None:
+        """
+        Mark the header of the model's column ``col`` as sorted without sorting the rows, as a Qt header with
+        ``setSortIndicatorShown(True)`` and no sort applied does; a click on the header then sorts as usual.
+        """
+        self._sort_column, self._sort_descending = col, descending
+        if self._column_count >= 0:
+            for idx in self._shown:
+                self.columns[str(idx)].label = self._header_label(idx, self.model.columns[idx])  # type: ignore[index]
+            self.refresh()
 
     def on_data_table_header_selected(self, event: DataTable.HeaderSelected) -> None:
         event.stop()
