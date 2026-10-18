@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import tempfile
 import threading
 import unittest
 from types import SimpleNamespace
@@ -51,7 +52,7 @@ from angrmanagement.present.preferences import PAGE_NAMES, color_entry_names, co
 from angrmanagement.tui.app import AmApp, config_file_path
 from angrmanagement.tui.caps import TerminalCaps
 from angrmanagement.tui.executor import TextualExecutor
-from angrmanagement.tui.screens import MessageScreen, PromptScreen, QuestionScreen
+from angrmanagement.tui.screens import FilePickerScreen, MessageScreen, PromptScreen, QuestionScreen
 from angrmanagement.tui.screens.about import AboutScreen
 from angrmanagement.tui.screens.analysis_options import AnalysisOptionsScreen
 from angrmanagement.tui.screens.archive import ArchiveScreen
@@ -648,6 +649,31 @@ class TestSmallScreens(DialogCase):
             assert not isinstance(app.screen, ProgressScreen) and app.progress_screen is None
 
         run_app(scenario, binary=None)
+
+
+class TestDirectoryPicker(DialogCase):
+    def test_a_symbolic_link_is_resolved_only_when_asked(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            real = os.path.join(root, "real")
+            link = os.path.join(root, "link")
+            os.mkdir(real)
+            os.symlink(real, link)
+            answers: list[str | None] = []
+
+            async def scenario(app: AmApp, pilot: Pilot) -> None:
+                for resolve in (False, True):
+                    app.services.pick_directory_async("Directory", root, answers.append, resolve_symlinks=resolve)
+                    picker = await wait_for_screen(pilot, FilePickerScreen)
+                    picker.query_one("#path", Input).value = link
+                    picker.query_one("#ok", Button).press()
+                    for _ in range(100):
+                        if not isinstance(app.screen, FilePickerScreen):
+                            break
+                        await pilot.pause()
+                    await settle(pilot)
+
+            run_app(scenario, binary=None, interactive=True)
+            assert answers == [link, os.path.realpath(real)]
 
 
 if __name__ == "__main__":

@@ -55,7 +55,7 @@ class QFileSystemTable(QTableWidget):
             self.setItem(self.currentRow(), 1, QTableWidgetItem(files[0]))
 
     def _action_select_dir(self) -> None:
-        dir_path = GlobalInfo.ui_services.pick_directory("Select a directory", "")
+        dir_path = GlobalInfo.ui_services.pick_directory("Select a directory", "", resolve_symlinks=True)
         if dir_path:
             self.setItem(self.currentRow(), 1, QTableWidgetItem(dir_path))
 

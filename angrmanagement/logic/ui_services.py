@@ -77,7 +77,9 @@ class UIServices(Protocol):
         """
         raise NotImplementedError
 
-    def pick_directory_async(self, caption: str, directory: str, callback: Callable[[str | None], None]) -> None:
+    def pick_directory_async(
+        self, caption: str, directory: str, callback: Callable[[str | None], None], resolve_symlinks: bool = False
+    ) -> None:
         """Ask like :meth:`pick_directory` without waiting; ``callback`` gets the directory later, on the UI thread."""
         raise NotImplementedError
 
@@ -121,8 +123,13 @@ class UIServices(Protocol):
         """Ask for a file to save to; None if the user cancelled. ``directory`` may include a file name."""
         raise NotImplementedError
 
-    def pick_directory(self, caption: str, directory: str) -> str | None:
-        """Ask for a directory; None if the user cancelled."""
+    def pick_directory(self, caption: str, directory: str, resolve_symlinks: bool = False) -> str | None:
+        """
+        Ask for a directory; None if the user cancelled.
+
+        :param resolve_symlinks:    Whether a directory reached through a symbolic link is answered by the path it
+                                    links to rather than by the link's own path.
+        """
         raise NotImplementedError
 
     def load_binary_options(
@@ -207,8 +214,10 @@ class HeadlessServices:
         # nobody can confirm the form, so nothing it would do happens
         callback(None)
 
-    def pick_directory_async(self, caption: str, directory: str, callback: Callable[[str | None], None]) -> None:
-        callback(self.pick_directory(caption, directory))
+    def pick_directory_async(
+        self, caption: str, directory: str, callback: Callable[[str | None], None], resolve_symlinks: bool = False
+    ) -> None:
+        callback(self.pick_directory(caption, directory, resolve_symlinks))
 
     def popup_menu(self, menu: Menu) -> None:  # pylint:disable=unused-argument
         # nobody can pick an entry
@@ -243,7 +252,9 @@ class HeadlessServices:
     ) -> str | None:
         return None
 
-    def pick_directory(self, caption: str, directory: str) -> str | None:  # pylint:disable=unused-argument
+    def pick_directory(  # pylint:disable=unused-argument
+        self, caption: str, directory: str, resolve_symlinks: bool = False
+    ) -> str | None:
         return None
 
     def load_binary_options(

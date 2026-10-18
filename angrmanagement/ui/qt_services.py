@@ -119,8 +119,10 @@ class QtServices:
     ) -> None:
         callback(self.pick_save_file(caption, directory, name_filter))
 
-    def pick_directory_async(self, caption: str, directory: str, callback: Callable[[str | None], None]) -> None:
-        callback(self.pick_directory(caption, directory))
+    def pick_directory_async(
+        self, caption: str, directory: str, callback: Callable[[str | None], None], resolve_symlinks: bool = False
+    ) -> None:
+        callback(self.pick_directory(caption, directory, resolve_symlinks))
 
     def popup_menu(self, menu: Menu) -> None:
         from PySide6.QtGui import QCursor  # pylint:disable=import-outside-toplevel
@@ -201,8 +203,10 @@ class QtServices:
         filename, _ = QFileDialog.getSaveFileName(_window_parent(), caption, directory, name_filter)
         return filename or None
 
-    def pick_directory(self, caption: str, directory: str) -> str | None:
-        options = QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks
+    def pick_directory(self, caption: str, directory: str, resolve_symlinks: bool = False) -> str | None:
+        options = QFileDialog.Option.ShowDirsOnly
+        if not resolve_symlinks:
+            options |= QFileDialog.Option.DontResolveSymlinks
         return QFileDialog.getExistingDirectory(_window_parent(), caption, directory, options) or None
 
     def load_binary_options(

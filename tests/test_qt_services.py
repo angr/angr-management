@@ -2,7 +2,7 @@
 The Qt frontend's UI services: which window their dialogs open over, and the options the file pickers pass.
 """
 
-# pylint: disable=missing-class-docstring
+# pylint: disable=missing-class-docstring,no-self-use
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QFileDialog
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.qt_services import QtServices
+from angrmanagement.ui.widgets.filesystem_table import QFileSystemTable
 
 
 class TestFilePickers(AngrManagementTestCase):
@@ -55,6 +56,28 @@ class TestFilePickers(AngrManagementTestCase):
         options = calls[-1][1][3]
         assert options & QFileDialog.Option.DontResolveSymlinks
         assert options & QFileDialog.Option.ShowDirsOnly
+
+    def test_the_mount_table_resolves_symbolic_links(self) -> None:
+        # the filesystem mount table's directory picker passed Qt no options, so Qt resolved symbolic links
+        asked: list[Any] = []
+
+        def directory(*args: Any) -> str:
+            asked.append(args[3])
+            return "/tmp"
+
+        saved_services = GlobalInfo._ui_services  # pylint: disable=protected-access
+        GlobalInfo.ui_services = QtServices()
+        try:
+            table = QFileSystemTable([["/", ""]], None)
+            table.setCurrentCell(0, 1)
+            with patch.object(QFileDialog, "getExistingDirectory", directory):
+                table._action_select_dir()  # pylint: disable=protected-access
+        finally:
+            GlobalInfo._ui_services = saved_services  # pylint: disable=protected-access
+        assert table.item(0, 1).text() == "/tmp"
+        assert len(asked) == 1
+        assert asked[0] & QFileDialog.Option.ShowDirsOnly
+        assert not asked[0] & QFileDialog.Option.DontResolveSymlinks
 
 
 if __name__ == "__main__":

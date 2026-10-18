@@ -239,8 +239,11 @@ class TuiServices:
     ) -> None:
         self._ask_then(FilePickerScreen(caption, directory, name_filter, "save"), None, callback)
 
-    def pick_directory_async(self, caption: str, directory: str, callback: Callable[[str | None], None]) -> None:
-        self._ask_then(FilePickerScreen(caption, directory, "", "directory"), None, callback)
+    def pick_directory_async(
+        self, caption: str, directory: str, callback: Callable[[str | None], None], resolve_symlinks: bool = False
+    ) -> None:
+        picker = FilePickerScreen(caption, directory, "", "directory", resolve_symlinks=resolve_symlinks)
+        self._ask_then(picker, None, callback)
 
     def popup_menu(self, menu: Any) -> None:
         if not self._running:
@@ -264,8 +267,10 @@ class TuiServices:
     def pick_save_file(self, caption: str, directory: str, name_filter: str) -> str | None:
         return self._ask_sync(lambda: FilePickerScreen(caption, directory, name_filter, "save"), None)
 
-    def pick_directory(self, caption: str, directory: str) -> str | None:
-        return self._ask_sync(lambda: FilePickerScreen(caption, directory, "", "directory"), None)
+    def pick_directory(self, caption: str, directory: str, resolve_symlinks: bool = False) -> str | None:
+        return self._ask_sync(
+            lambda: FilePickerScreen(caption, directory, "", "directory", resolve_symlinks=resolve_symlinks), None
+        )
 
     def load_binary_options(
         self,

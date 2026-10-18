@@ -186,6 +186,8 @@ class FilePickerScreen(ModalScreen[Any]):
 
     :param mode:        ``"open"`` (existing files; a list), ``"save"`` (a path) or ``"directory"`` (a directory).
     :param multiple:    In open mode, whether the path box may hold several paths separated by ``;``.
+    :param resolve_symlinks:    In directory mode, whether a directory reached through a symbolic link is answered by
+                                the path it links to rather than by the link's own path.
     """
 
     DEFAULT_CSS = (
@@ -198,11 +200,20 @@ FilePickerScreen Input { width: 100%; }
     )
     BINDINGS: ClassVar = [Binding("escape", "cancel", "Cancel")]
 
-    def __init__(self, caption: str, directory: str, name_filter: str = "", mode: str = "open", multiple: bool = False):
+    def __init__(
+        self,
+        caption: str,
+        directory: str,
+        name_filter: str = "",
+        mode: str = "open",
+        multiple: bool = False,
+        resolve_symlinks: bool = False,
+    ):
         super().__init__()
         self.caption = caption
         self.mode = mode
         self.multiple = multiple
+        self.resolve_symlinks = resolve_symlinks
         self.name_filter = name_filter
         start = directory or os.getcwd()
         self.initial_name = ""
@@ -257,7 +268,7 @@ FilePickerScreen Input { width: 100%; }
             if not os.path.isdir(path):
                 self.notify("Choose an existing directory.", severity="warning")
                 return
-            self.dismiss(path)
+            self.dismiss(os.path.realpath(path) if self.resolve_symlinks else path)
         else:
             path = os.path.expanduser(value)
             if not path or path.endswith(os.sep):
