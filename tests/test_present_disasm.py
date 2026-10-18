@@ -7,7 +7,6 @@ linear view's objects, find, menus, keys, and the render models the terminal dra
 
 from __future__ import annotations
 
-import contextlib
 import os
 import unittest
 from types import SimpleNamespace
@@ -15,6 +14,7 @@ from typing import Any
 from unittest.mock import patch
 
 import angr
+from refused_gate import refuse_gate_reads
 
 from angrmanagement.data.function_graph import FunctionGraph
 from angrmanagement.data.search import Searcher
@@ -343,17 +343,7 @@ class TestWhileCfgRecoveryRuns(FauxwareDisasmCase):
 
     def refuse_reads(self) -> list:
         """Make the instance's gate refuse every read; returns the reads deferred until the recovery is done."""
-        deferred: list = []
-
-        @contextlib.contextmanager
-        def refused(timeout: float = 0.0):  # pylint:disable=unused-argument
-            yield False
-
-        gate = self.instance.analysis_gate
-        patcher = patch.multiple(gate, access=refused, retry_when_done=deferred.append)
-        patcher.start()
-        self.addCleanup(patcher.stop)
-        return deferred
+        return refuse_gate_reads(self.instance.analysis_gate, self.addCleanup)
 
     def test_the_linear_view_shows_raw_bytes_and_disassembles_on_a_later_walk(self):
         self.presenter.display_linear_viewer()

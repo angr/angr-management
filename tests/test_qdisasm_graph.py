@@ -1,7 +1,6 @@
 # pylint:disable=missing-class-docstring,wrong-import-order
 from __future__ import annotations
 
-import contextlib
 import os
 import sys
 import unittest
@@ -10,6 +9,7 @@ from unittest.mock import patch
 
 import angr
 from common import AngrManagementTestCase, open_analyzed_project, test_location
+from refused_gate import refuse_gate_reads
 
 from angrmanagement.ui.views import DisassemblyView
 
@@ -87,16 +87,9 @@ class TestQDisassemblyGraph(AngrManagementTestCase):
         disasm_view.infodock.clear_selection()
 
         # CFG recovery does not stop for the layout: it is put off until the recovery is done
-        deferred = []
-
-        @contextlib.contextmanager
-        def refused(timeout: float = 0.0):  # pylint:disable=unused-argument
-            yield False
-
-        with patch.multiple(
-            main.workspace.main_instance.analysis_gate, access=refused, retry_when_done=deferred.append
-        ):
-            flow_graph.reload(old_infodock)
+        deferred = refuse_gate_reads(main.workspace.main_instance.analysis_gate, self.addCleanup)
+        flow_graph.reload(old_infodock)
+        patch.stopall()
         assert not flow_graph.blocks
         assert deferred == [flow_graph.reload]
 
