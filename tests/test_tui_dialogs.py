@@ -31,7 +31,7 @@ from textual.widgets import (
     TextArea,
     Tree,
 )
-from tui_pilot import kb_of  # pylint: disable=import-error
+from tui_pilot import kb_of, settle  # pylint: disable=import-error
 
 import angrmanagement
 from angrmanagement.config import Conf
@@ -103,11 +103,6 @@ async def show_view(app: AmApp, pilot: Pilot, category: str) -> Any:
             return view
         await pilot.pause()
     raise AssertionError(f"no {category} view")
-
-
-async def settle(pilot: Pilot, rounds: int = 4) -> None:
-    for _ in range(rounds):
-        await pilot.pause()
 
 
 async def wait_for_screen(pilot: Pilot, kind: type[Any], rounds: int = 200) -> Any:

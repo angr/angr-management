@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 import cle
 from textual.widgets import Button, Checkbox, DataTable, Input, Select, SelectionList, TabbedContent, Tree
+from tui_pilot import settle  # pylint: disable=import-error
 
 from angrmanagement.config import Conf
 from angrmanagement.data.load_options import build_load_options
@@ -57,11 +58,6 @@ def run_screen(
             await scenario(app, pilot, screen, results)
 
     asyncio.run(main())
-
-
-async def settle(pilot: Pilot, rounds: int = 4) -> None:
-    for _ in range(rounds):
-        await pilot.pause()
 
 
 class LoadScreenCase(unittest.TestCase):

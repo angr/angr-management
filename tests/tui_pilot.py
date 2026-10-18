@@ -21,10 +21,14 @@ async def settle(pilot: Pilot, rounds: int = 4) -> None:
         await pilot.pause()
 
 
-async def wait_for(pilot: Pilot, condition: Callable[[], bool], rounds: int = 300) -> None:
-    """Pause until ``condition()`` holds; fail when it has not after ``rounds`` short pauses."""
+async def wait_for(pilot: Pilot, condition: Callable[[], bool], rounds: int = 300, then_settle: int = 0) -> None:
+    """
+    Pause until ``condition()`` holds, then :func:`settle` ``then_settle`` rounds; fail when it has not held after
+    ``rounds`` short pauses.
+    """
     for _ in range(rounds):
         if condition():
+            await settle(pilot, then_settle)
             return
         await pilot.pause(0.02)
     raise AssertionError("the condition never held")

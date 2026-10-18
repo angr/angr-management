@@ -8,6 +8,7 @@ entry, view or hooks exercised, as the Qt frontend shows them.
 from __future__ import annotations
 
 import asyncio
+import functools
 import json
 import os
 import re
@@ -19,7 +20,8 @@ from unittest.mock import patch
 from angr.analyses.decompiler.structured_codegen import FunctionCallNode
 from headless import run_without_qt  # pylint: disable=import-error
 from textual.widgets import Button, Input
-from tui_pilot import kb_of  # pylint: disable=import-error
+from tui_pilot import kb_of, settle  # pylint: disable=import-error
+from tui_pilot import wait_for as wait_until  # pylint: disable=import-error
 
 from angrmanagement.config import Conf
 from angrmanagement.config.color import Color
@@ -63,18 +65,8 @@ def run_app(scenario: Callable[[AmApp, Pilot], Awaitable[None]], binary: str | N
     asyncio.run(main())
 
 
-async def settle(pilot: Pilot, rounds: int = 4) -> None:
-    for _ in range(rounds):
-        await pilot.pause()
-
-
-async def wait_for(pilot: Pilot, condition: Callable[[], bool], rounds: int = 400) -> None:
-    for _ in range(rounds):
-        if condition():
-            await settle(pilot)
-            return
-        await pilot.pause(0.02)
-    raise AssertionError("the condition never held")
+#: the plugins' views take longer to come up than the app's own, and are let settle once there
+wait_for = functools.partial(wait_until, rounds=400, then_settle=4)
 
 
 async def wait_for_screen(pilot: Pilot, kind: type[Any]) -> Any:
