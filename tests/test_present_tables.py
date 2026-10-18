@@ -205,6 +205,16 @@ class TestStringsTable(FauxwareTestCase):
         assert "Welcome to the admin console, trusted user!" in self.texts()
         assert [c.name for c in self.model.columns] == ["Address", "Size (Bytes)", "Length", "String"]
 
+    def test_no_rows_until_the_cfg_is_recovered(self):
+        # the instance's CFG container is empty until CFGFast finishes; a view opened before that lists nothing
+        self.instance.cfg.am_obj = None
+        presenter = StringsPresenter(self.workspace, self.instance)
+        presenter.reload()
+        assert presenter.model.row_count == 0
+        self.instance.cfg.am_obj = self.cfg.model
+        presenter.reload()
+        assert presenter.model.row_count == self.model.row_count > 0
+
     def test_wildcard_and_regex_filters(self):
         self.presenter.set_filter("*admin*")
         assert self.texts() == ["Welcome to the admin console, trusted user!"]

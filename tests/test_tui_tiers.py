@@ -36,6 +36,7 @@ from angrmanagement.tui.executor import TextualExecutor
 from angrmanagement.tui.picture_mode import qt_available, qt_picture
 from angrmanagement.tui.screens.capabilities import CapabilitiesScreen
 from angrmanagement.tui.screens.image_preview import ImagePreviewScreen
+from angrmanagement.tui.views import TUI_VIEW_CLASSES
 from angrmanagement.tui.widgets.menubar import MenuPopup
 from angrmanagement.tui.widgets.picture import image_module
 
@@ -368,7 +369,37 @@ class TestTabs(AppCase):
             await settle(pilot, 8)
             assert manager.area("bottom").active == manager.pane_id_of(jobs)
 
+        async def third(app: AmApp, pilot: Pilot) -> None:
+            # whether the restored strings view opened before the CFG or after, it lists the strings once it exists
+            await wait_for(pilot, lambda: not app.workspace.main_instance.cfg.am_none, rounds=1500)
+            strings: Any = app.view_widget("strings")
+            await wait_for(pilot, lambda: strings is not None and strings.table_widget.row_count > 0)
+
         run_app(second, tier(2))
+        run_app(third, tier(2))
+
+    def test_every_view_opens_before_the_cfg_exists(self) -> None:
+        # the saved tabs open as soon as a binary is loaded, which can be before CFGFast has finished: every view must
+        # open on an empty CFG container, and the strings view fills in when the CFG arrives
+        Conf.tui_layout = ""
+
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            instance = app.workspace.main_instance
+            await wait_for(pilot, lambda: not instance.cfg.am_none, rounds=1500)
+            cfg = instance.cfg.am_obj
+            instance.cfg.am_obj = None
+            for category in TUI_VIEW_CLASSES:
+                await app.run_action(f"show_view({category!r})")
+                await settle(pilot)
+                assert app.view_widget(category) is not None, category
+            strings: Any = app.view_widget("strings")
+            assert strings.table_widget.row_count == 0
+            instance.cfg.am_obj = cfg
+            app.workspace.on_cfg_generated()
+            await settle(pilot)
+            assert strings.table_widget.row_count == strings.presenter.model.row_count > 0
+
+        run_app(scenario, tier(2))
 
 
 if __name__ == "__main__":

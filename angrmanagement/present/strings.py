@@ -99,9 +99,12 @@ class StringsTableModel(ListTableModel["MemoryData"]):
 
     def _get_all_string_memory_data(self) -> list[MemoryData]:
         lst = []
-        if self._cfg is None:
+        # the instance hands over its CFG container, which is empty until the CFG is recovered (a view restored with
+        # the saved tabs can open before that); the view reloads when the CFG arrives
+        cfg = self._cfg
+        if cfg is None or getattr(cfg, "am_none", False):
             return lst
-        for v in self._cfg.memory_data.values():
+        for v in cfg.memory_data.values():
             if v.sort in {MemoryDataSort.String, MemoryDataSort.UnicodeString}:
                 if self._function is None:
                     lst.append(v)
