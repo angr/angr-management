@@ -2,9 +2,10 @@
 The Python console of the terminal frontend.
 
 It runs an in-process IPython kernel (what qtconsole wraps in the Qt frontend), shows what the kernel prints in a
-``RichLog`` and reads code from an ``Input`` with history (Up and Down) and completion from the kernel (Tab). The
-namespace is the Qt console's: angr, claripy, cle, workspace, instance, project, and func once a function is shown.
-Like the Qt console, a cell runs on the UI thread.
+``RichLog`` and reads code from an ``Input`` with history (Up and Down) and completion from the kernel (Tab). It opens
+with the kernel's banner and numbers the cells ``In [n]:`` as qtconsole does. The namespace is the Qt console's: angr,
+claripy, cle, workspace, instance, project, and func once a function is shown. Like the Qt console, a cell runs on the
+UI thread.
 """
 
 from __future__ import annotations
@@ -14,7 +15,8 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from rich.text import Text
 from textual.binding import Binding
-from textual.widgets import Input, RichLog
+from textual.containers import Horizontal
+from textual.widgets import Input, Label, RichLog
 
 from angrmanagement.present.base import InstancePresenter
 from angrmanagement.present.console import console_namespace, function_namespace
@@ -72,6 +74,20 @@ class ConsolePresenter(InstancePresenter):
 
     def reload(self) -> None:
         self.push_namespace(console_namespace(self.workspace, self.instance))
+
+    @property
+    def banner(self) -> str:
+        """The kernel's banner (the Python and IPython versions and a tip), as qtconsole prints it first."""
+        if self.kernel_manager is None:
+            return ""
+        return str(self.kernel_manager.kernel.banner)
+
+    @property
+    def execution_count(self) -> int:
+        """The number the next cell runs as, the ``n`` of qtconsole's ``In [n]:``."""
+        if self.kernel_manager is None:
+            return 1
+        return int(self.kernel_manager.kernel.shell.execution_count)
 
     def execute(self, code: str) -> list[dict]:
         """Run ``code`` and return the kernel's iopub messages about it."""
@@ -138,7 +154,7 @@ class ConsoleInput(Input):
     ]
 
     def __init__(self, presenter: ConsolePresenter, **kwargs) -> None:
-        super().__init__(placeholder=">>> Python", compact=True, **kwargs)
+        super().__init__(compact=True, **kwargs)
         self.presenter = presenter
         self._history_index: int | None = None
 
@@ -167,8 +183,8 @@ class ConsoleInput(Input):
         if len(common) > end - start:
             self.value = self.value[:start] + common + self.value[end:]
             self.cursor_position = len(self.value)
-        view = self.parent
-        if isinstance(view, ConsoleTuiView):
+        view = next((node for node in self.ancestors if isinstance(node, ConsoleTuiView)), None)
+        if view is not None:
             view.print_text("  ".join(matches[:60]))
 
     def reset_history(self) -> None:
@@ -183,7 +199,10 @@ class ConsoleTuiView(TuiView):
     ConsoleTuiView > RichLog {
         height: 1fr;
     }
-    ConsoleTuiView > Input {
+    ConsoleTuiView > Horizontal {
+        height: auto;
+    }
+    ConsoleTuiView > Horizontal > Input {
         width: 1fr;
     }
     """
@@ -194,17 +213,30 @@ class ConsoleTuiView(TuiView):
         super().__init__(workspace, default_docking_position, instance)
         self.output = RichLog(wrap=True, markup=False, highlight=False, max_lines=10000)
         self.input = ConsoleInput(self.presenter)
+        self.prompt = Label(id="prompt")
 
     def compose(self) -> ComposeResult:
         yield self.output
-        yield self.input
+        with Horizontal():
+            yield self.prompt
+            yield self.input
 
     def on_mount(self) -> None:
         if not self.presenter.start():
             self.output.write(Text(self.presenter.error or "The console is not available.", style="red"))
             self.input.disabled = True
             return
-        self.output.write(Text("Python console. The namespace has angr, claripy, cle, workspace, instance, project."))
+        # the kernel's banner and a blank line, as qtconsole starts
+        self.output.write(Text(self.presenter.banner.rstrip("\n") + "\n"))
+        self._show_prompt()
+
+    def prompt_text(self, count: int | None = None) -> Text:
+        """qtconsole's input prompt, ``In [n]: `` with the number bold, in its green."""
+        count = self.presenter.execution_count if count is None else count
+        return Text.assemble(("In [", "green"), (str(count), "bold green"), ("]: ", "green"))
+
+    def _show_prompt(self) -> None:
+        self.prompt.update(self.prompt_text())
 
     def close_view(self) -> None:
         self.presenter.close()
@@ -240,11 +272,12 @@ class ConsoleTuiView(TuiView):
     #
 
     def execute(self, code: str) -> None:
-        self.output.write(Text(">>> " + code, style="bold"))
+        self.output.write(self.prompt_text() + Text(code))
         for msg in self.presenter.execute(code):
             text = message_text(msg)
             if text is not None:
                 self.output.write(text)
+        self._show_prompt()
         # like the Qt console: a cell that ran may have changed what the disassembly shows
         view = self.workspace.view_manager.first_view_in_category("disassembly")
         if view is not None:

@@ -602,6 +602,11 @@ class TestConsole(TuiTestCase):
             await settle(pilot)
             text = "\n".join(line.text for line in view.output.lines)
             assert hex(app.workspace.main_instance.project.entry) in text
+            # the kernel's banner first and qtconsole's numbered prompts, as the Qt console shows them
+            lines = [line.text for line in view.output.lines]
+            assert lines[0].startswith("Python ") and any(line.startswith("IPython ") for line in lines[:4])
+            assert "In [1]: hex(project.entry)" in lines
+            assert str(view.prompt.render()) == "In [2]: "
             # history
             await pilot.press("up")
             assert view.input.value == "hex(project.entry)"
