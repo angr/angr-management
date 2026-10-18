@@ -539,6 +539,13 @@ async def _open_main(pilot: Pilot, linear: bool) -> None:
     if linear:
         view.display_linear_viewer()
         await settle(pilot, 6)
+    # The stored captures show the functions table in its unfocused colours, as it is once the disassembly view has
+    # the focus. The view takes it when the CFG arrives, but one full-suite run captured the table still focused, so
+    # give it to the view here.
+    view.focus_view()
+    await settle(pilot)
+    assert app.focused is (view.linear_widget if linear else view.graph_widget)
+    if linear:
         return
     # the entry block's top a quarter of the way down, or the capture would not match the stored one
     widget = view.graph_widget
