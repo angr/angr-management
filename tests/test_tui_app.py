@@ -31,7 +31,7 @@ from angrmanagement.logic.view_manager import default_position
 from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps, caps_from_environment
 from angrmanagement.tui.executor import Deferred, TextualExecutor
-from angrmanagement.tui.screens import ChecklistScreen, MessageScreen, QuestionScreen
+from angrmanagement.tui.screens import MessageScreen, QuestionScreen
 from angrmanagement.tui.screens.analysis_options import AnalysisOptionsScreen
 from angrmanagement.tui.screens.form import FormScreen
 from angrmanagement.tui.screens.load_binary import LoadBinaryScreen
@@ -369,10 +369,6 @@ async def wait_for_screen(pilot: Pilot, kind: type[Any], title: str, timeout: fl
     raise AssertionError(f"no {title!r} screen")
 
 
-async def wait_for_checklist(pilot: Pilot, title: str, timeout: float = 120) -> ChecklistScreen:
-    return await wait_for_screen(pilot, ChecklistScreen, title, timeout)
-
-
 async def wait_for_load_screen(pilot: Pilot, timeout: float = 120) -> LoadBinaryScreen:
     return await wait_for_screen(pilot, LoadBinaryScreen, "Load a new binary", timeout)
 
@@ -625,7 +621,7 @@ class TestServices(TuiTestCase):
                 original(error)
 
             app._handle_exception = record  # type: ignore[method-assign]
-            app.push_screen(ChecklistScreen("Load a binary", "text", [("a", True)]))
+            app.push_screen(QuestionScreen("Load a binary", "text", ["OK", "Cancel"], "OK"))
             app.exit()
 
         run_app(scenario, binary=None)

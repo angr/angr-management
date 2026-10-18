@@ -13,10 +13,10 @@ from rich.text import Text
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
-from textual.widgets import Button, Checkbox, DirectoryTree, Input, Label, Static
+from textual.widgets import Button, DirectoryTree, Input, Label, Static
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Sequence
 
     from textual.app import ComposeResult
     from textual.screen import Screen
@@ -267,50 +267,3 @@ FilePickerScreen Input { width: 100%; }
 
     def action_cancel(self) -> None:
         self.dismiss([] if self.mode == "open" else None)
-
-
-class ChecklistScreen(ModalScreen[list[bool] | None]):
-    """A list of check boxes and OK/Cancel; dismisses with the states, or None."""
-
-    DEFAULT_CSS = dialog_css("ChecklistScreen")
-    BINDINGS: ClassVar = [Binding("escape", "cancel", "Cancel")]
-
-    def __init__(self, title: str, text: str, items: Iterable[tuple[str, bool]], ok: str = "OK") -> None:
-        super().__init__()
-        self.title_text = title
-        self.text = text
-        self.items = list(items)
-        self.ok = ok
-
-    def compose(self) -> ComposeResult:
-        with Vertical():
-            yield Label(Text(self.title_text), classes="title")
-            if self.text:
-                yield Static(Text(self.text))
-            with VerticalScroll(classes="body"):
-                for idx, (caption, checked) in enumerate(self.items):
-                    yield Checkbox(caption, checked, id=f"item-{idx}")
-            with Horizontal(classes="buttons"):
-                yield Button(self.ok, id="ok", variant="primary")
-                yield Button("Cancel", id="cancel")
-
-    def on_mount(self) -> None:
-        focus_if_present(self, "#ok")
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "ok":
-            self.dismiss([self.query_one(f"#item-{idx}", Checkbox).value for idx in range(len(self.items))])
-        else:
-            self.dismiss(None)
-
-    def action_cancel(self) -> None:
-        self.dismiss(None)
-
-
-class InfoScreen(MessageScreen):
-    """Facts as label and value rows."""
-
-    def __init__(self, title: str, rows: Iterable[tuple[str, str]]) -> None:
-        rows = list(rows)
-        width = max((len(k) for k, _ in rows), default=0)
-        super().__init__("info", title, "\n".join(f"{k.ljust(width)}  {v}" for k, v in rows))
