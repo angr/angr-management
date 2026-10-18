@@ -208,14 +208,15 @@ class TableWidget(DataTable):
     # Events and actions
     #
 
+    def sort_by(self, col: int, descending: bool = False) -> None:
+        """Sort the rows on the model's column ``col`` and mark its header, as a click on the header does."""
+        self._sort_column, self._sort_descending = col, descending
+        self.model.sort(col, descending)
+
     def on_data_table_header_selected(self, event: DataTable.HeaderSelected) -> None:
         event.stop()
         col = self._shown[event.column_index] if event.column_index < len(self._shown) else event.column_index
-        if self._sort_column == col:
-            self._sort_descending = not self._sort_descending
-        else:
-            self._sort_column, self._sort_descending = col, False
-        self.model.sort(col, self._sort_descending)
+        self.sort_by(col, not self._sort_descending if self._sort_column == col else False)
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         event.stop()

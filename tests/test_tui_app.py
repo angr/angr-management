@@ -121,6 +121,22 @@ class TestStartup(TuiTestCase):
         run_app(scenario, binary=None)
 
 
+class TestQtLayout(TuiTestCase):
+    """Where things sit in a view, as the Qt frontend puts them (screenshots/qt-baseline, shot at 1600x1000)."""
+
+    def test_strings_start_sorted_on_address_descending(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = await show_view(pilot, "strings")
+            model = view.presenter.model
+            # QStringTable.setSortingEnabled(True) sorts on the header's default indicator, column 0 descending
+            assert model.sort_order == (0, True)
+            addrs = [model.column_value(row, 0) for row in model.rows]
+            assert len(addrs) > 1 and addrs == sorted(addrs, reverse=True)
+            assert view.table_widget.ordered_columns[0].label.plain.endswith("▼")
+
+        run_app(scenario)
+
+
 class TestFunctionsTable(TuiTestCase):
     def test_filter_and_open(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:

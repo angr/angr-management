@@ -62,10 +62,15 @@ class TableTuiView(TuiView):
 
     FILTER_PLACEHOLDER = "Filter..."
     SHOW_FILTER = False
+    #: The column the rows start sorted on and whether descending, or None for the model's order. A Qt table that
+    #: calls ``setSortingEnabled(True)`` sorts at once on its header's default indicator, column 0 descending.
+    INITIAL_SORT: tuple[int, bool] | None = None
 
     def __init__(self, workspace, default_docking_position: str, instance) -> None:
         super().__init__(workspace, default_docking_position, instance)
         self.table = self.make_table()
+        if self.INITIAL_SORT is not None:
+            self.table.table.sort_by(*self.INITIAL_SORT)
 
     def make_table(self) -> FilterableTable:
         return FilterableTable(
@@ -136,6 +141,8 @@ class StringsTuiView(TableTuiView):
     """The strings the CFG found, all or one function's, with a wildcard or regex filter; X shows cross-references."""
 
     PRESENTER_CLASS = StringsPresenter
+    # QStringTable.setSortingEnabled(True): Address descending
+    INITIAL_SORT = (0, True)
     DEFAULT_CSS = (
         toolbar_css("StringsTuiView") + "StringsTuiView Select { width: 40; } StringsTuiView Input { width: 1fr; }"
     )
@@ -228,6 +235,8 @@ class BookmarksTuiView(TableTuiView):
     """The bookmarked addresses."""
 
     PRESENTER_CLASS = BookmarksPresenter
+    # QBookmarkTable.setSortingEnabled(True)
+    INITIAL_SORT = (0, True)
 
 
 class SignaturesTuiView(TableTuiView):
