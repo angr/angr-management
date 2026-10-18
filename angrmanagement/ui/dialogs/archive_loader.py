@@ -15,16 +15,13 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.logic import GlobalInfo
-from angrmanagement.present.archive import ArchiveNode, archive_tree, extract_member, format_size
+from angrmanagement.present.archive import ArchiveNode, archive_tree, extract_member
 from angrmanagement.utils.archive import (
     Archive,
     ArchiveError,
     ArchiveMember,
     get_archive_object,
 )
-
-#: The name this had before the terminal frontend shared it.
-_format_size = format_size
 
 
 class ArchiveLoaderDialog(QDialog):

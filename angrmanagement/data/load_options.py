@@ -492,10 +492,6 @@ def confirm_symbol_download(url: str) -> bool:
     return answer == "Yes"
 
 
-#: The name this had before the Qt dialog shared it.
-_confirm_symbol_download = confirm_symbol_download
-
-
 def default_load_options(
     partial_ld: cle.Loader,
     suggested_backend: type[cle.Backend] | None = None,

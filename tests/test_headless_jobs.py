@@ -17,7 +17,7 @@ import angr
 from headless import run_without_qt, test_location  # pylint: disable=import-error
 
 from angrmanagement.data.jobs import DecompileFunctionJob
-from angrmanagement.data.load_options import _confirm_symbol_download
+from angrmanagement.data.load_options import confirm_symbol_download
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.headless_workspace import HeadlessWorkspace
 from angrmanagement.logic.signal import Signal
@@ -289,7 +289,7 @@ class TestDirectExecutor(DirectExecutorTestCase):
         GlobalInfo.ui_services = Services()
         try:
             box = {}
-            thread = self.run_in_thread(lambda: box.setdefault("answer", _confirm_symbol_download("http://symbols")))
+            thread = self.run_in_thread(lambda: box.setdefault("answer", confirm_symbol_download("http://symbols")))
             assert self.executor.pump_until(lambda: not thread.is_alive(), timeout=30)
         finally:
             GlobalInfo.ui_services = saved_services
