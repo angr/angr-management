@@ -52,6 +52,7 @@ from angrmanagement.tui.theme import all_textual_themes, textual_theme, theme_id
 from angrmanagement.tui.view_manager import DockArea
 from angrmanagement.tui.widgets.debug_bar import DebugBar
 from angrmanagement.tui.widgets.feature_map import FeatureMapStrip
+from angrmanagement.tui.widgets.file_bar import FileBar
 from angrmanagement.tui.widgets.menubar import MenuBar, MenuPopup
 from angrmanagement.tui.widgets.statusbar import StatusBar
 from angrmanagement.tui.workspace import TuiWorkspace
@@ -216,7 +217,8 @@ class AmApp(App):
         )
         self.workspace.main_instance.project.am_subscribe(self._on_project_changed)
         self.menu_bar = MenuBar(self.menus, self.shortcut_text)
-        # the Qt window's Debug and Feature Map toolbars, in one row under the menu bar
+        # the Qt window's File, Debug and Feature Map toolbars, in one row under the menu bar
+        self.file_bar = FileBar(id="file-bar")
         self.debug_bar = DebugBar(self.workspace, id="debug-bar")
         self.feature_map = FeatureMapStrip(self.workspace, id="feature-map")
         self.status_bar = StatusBar(
@@ -237,7 +239,7 @@ class AmApp(App):
             name: MenuEntry(
                 caption, lambda on, name=name: self.set_toolbar_visible(name, on), checkable=True, checked=True
             )
-            for name, caption in (("debug-bar", "Debug"), ("feature-map", "Feature Map"))
+            for name, caption in (("file-bar", "File"), ("debug-bar", "Debug"), ("feature-map", "Feature Map"))
         }
         toolbars = PresentMenu(
             "&Toolbars",
@@ -265,13 +267,15 @@ class AmApp(App):
             return
         show_picture()
 
+    def _toolbars(self) -> dict[str, Widget]:
+        return {"file-bar": self.file_bar, "debug-bar": self.debug_bar, "feature-map": self.feature_map}
+
     def set_toolbar_visible(self, name: str, visible: bool) -> None:
-        """Show or hide a toolbar (``debug-bar`` or ``feature-map``); the row goes when both are hidden."""
+        """Show or hide a toolbar (``file-bar``, ``debug-bar`` or ``feature-map``); the row goes when all are hidden."""
         self._toolbar_entries[name].checked = visible
-        widget = self.debug_bar if name == "debug-bar" else self.feature_map
-        widget.display = visible
+        self._toolbars()[name].display = visible
         if self.is_running:
-            self.query_one("#toolbars").display = self.debug_bar.display or self.feature_map.display
+            self.query_one("#toolbars").display = any(widget.display for widget in self._toolbars().values())
 
     def set_all_toolbars_visible(self, visible: bool) -> None:
         for name in self._toolbar_entries:
@@ -305,6 +309,7 @@ class AmApp(App):
     def compose(self) -> ComposeResult:
         yield self.menu_bar
         with Horizontal(id="toolbars"):
+            yield self.file_bar
             yield self.debug_bar
             yield self.feature_map
         with Horizontal(id="body"):

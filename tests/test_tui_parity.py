@@ -16,17 +16,12 @@ from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.menus import Menu, MenuEntry, MenuSeparator
 from angrmanagement.present.shell import basic_command_table
 from angrmanagement.tui.app import AmApp
-from angrmanagement.ui.menus.view_menu import ToolbarMenu
 
 
 def shape(menu: Menu) -> list[Any]:
     """The captions and shortcuts of a menu, its submenus nested, separators as "-"."""
     out: list[Any] = []
     for item in menu.items():
-        if isinstance(item, ToolbarMenu):
-            # the Qt toolbars; the terminal has the Debug and Feature Map ones, and its File menu is its File toolbar
-            out.append((item.caption, [entry for entry in shape(item) if entry != ("File", None)]))
-            continue
         if isinstance(item, Menu):
             out.append((item.caption, shape(item)))
         elif isinstance(item, MenuEntry):

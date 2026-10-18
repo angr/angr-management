@@ -1,8 +1,8 @@
 """
-The Debug and Feature Map toolbars, without a toolkit and in the terminal, on fauxware: the feature map's regions,
-tags and layout (as the Qt feature map lays them out), its cursors and the jump a click asks for; the debug bar's
-buttons as a simulation debugger allows them, the debugger selector, the launch menu, and stepping; and the View >
-Toolbars entries that hide them.
+The File, Debug and Feature Map toolbars, without a toolkit and in the terminal, on fauxware: the feature map's
+regions, tags and layout (as the Qt feature map lays them out), its cursors and the jump a click asks for; the debug
+bar's buttons as a simulation debugger allows them, the debugger selector, the launch menu, and stepping; the file
+bar's Open and Save; and the View > Toolbars entries that hide them.
 """
 
 # pylint: disable=missing-class-docstring,protected-access,no-self-use,unused-argument
@@ -185,6 +185,19 @@ class TestTerminal(unittest.TestCase):
                 bar = app.debug_bar
                 assert [name for name, button in bar.buttons.items() if not button.disabled] == ["start"]
                 assert not bar.buttons["halt"].display and bar.selector.disabled
+                # the File toolbar's Open and Save, at the left of the row as in Qt, run the File menu's actions
+                row = list(app.query_one("#toolbars").children)
+                assert row.index(app.file_bar) == 0 and row.index(bar) == 1
+                assert [str(b.label) for b in app.file_bar.buttons.values()] == ["Open", "Save"]
+                pressed: list[str] = []
+                with (
+                    patch.object(app, "open_file_button", lambda: pressed.append("open")),
+                    patch.object(app, "save_database", lambda: pressed.append("save")),
+                ):
+                    await pilot.click("#file-open")
+                    await pilot.click("#file-save")
+                    await settle(pilot)
+                assert pressed == ["open", "save"]
                 await app.open_binary(FAUXWARE, function="main")
                 await settle(pilot, 8)
                 strip = app.feature_map
@@ -192,15 +205,18 @@ class TestTerminal(unittest.TestCase):
                 assert model.position_to_region and sum(model.region_to_width.values()) == strip.size.width
                 cells = strip.cells()
                 assert len(cells) == strip.size.width and any(seg.text == "▏" for seg in cells)
-                # a click on the strip shows its address in the disassembly
-                x = int(model.position_at_addr(MAIN) or 0)
+                # a click on the strip shows its address in the view the user worked in last, here the disassembly
+                disasm: Any = app.view_widget("disassembly")
+                app.workspace.view_manager.raise_view(disasm)
+                await settle(pilot)
+                assert app.workspace.view_manager.most_recently_focused_view is disasm
+                x = int(model.position_at_addr(MAIN + 0x30) or 0)
                 await pilot.click("#feature-map", offset=(x, 0))
                 await settle(pilot)
-                disasm: Any = app.view_widget("disassembly")
                 shown = model.addr_at_position(x + 0.5)
-                # the disassembly lands on the instruction that holds it
+                # the disassembly lands on the instruction that holds it, away from where it was
                 current = disasm.presenter.jump_history.current
-                assert shown is not None and current is not None and current <= shown < current + 16
+                assert shown is not None and current is not None and MAIN < current <= shown < current + 16
                 # Launch opens the menu of new debuggers
                 await pilot.click("#dbg-start")
                 await settle(pilot)
@@ -208,17 +224,21 @@ class TestTerminal(unittest.TestCase):
                 assert captions(app.screen.menu) == ["New simulation...", "New trace debugger"]
                 await pilot.press("escape")
                 await settle(pilot)
-                # View > Toolbars hides them, and the row goes when both are hidden
+                # View > Toolbars hides them, and the row goes when all are hidden
+                assert list(app._toolbar_entries) == ["file-bar", "debug-bar", "feature-map"]
                 app.set_toolbar_visible("debug-bar", False)
                 await settle(pilot)
                 assert not bar.display and app.query_one("#toolbars").display
+                app.set_toolbar_visible("file-bar", False)
+                await settle(pilot)
+                assert not app.file_bar.display and app.query_one("#toolbars").display
                 app.set_all_toolbars_visible(False)
                 await settle(pilot)
                 assert not app.query_one("#toolbars").display
                 assert not app._toolbar_entries["feature-map"].checked
                 app.set_all_toolbars_visible(True)
                 await settle(pilot)
-                assert app.query_one("#toolbars").display and strip.display and bar.display
+                assert app.query_one("#toolbars").display and strip.display and bar.display and app.file_bar.display
 
         asyncio.run(main())
 
