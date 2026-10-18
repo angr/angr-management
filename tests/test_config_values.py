@@ -477,5 +477,18 @@ class TestConfigDirectory(unittest.TestCase):
                 assert config_module._find_config_dir() == os.path.join(tmp, "new")
 
 
+class TestTheTestsConfigurationDirectory(unittest.TestCase):
+    """The tests save angr management's configuration in a directory of their own, one for every pytest process."""
+
+    def test_every_process_has_its_own(self):
+        directory = os.environ["ANGR_MANAGEMENT_CONFIG_DIR"]
+        assert os.path.basename(directory).startswith("angr-management-test-config-")
+        assert config_module.config_path == os.path.join(directory, "config.toml")
+        # xdist workers that shared one would read each other's saves in place of their own
+        worker = os.environ.get("PYTEST_XDIST_WORKER")
+        if worker is not None:
+            assert os.path.basename(directory).startswith(f"angr-management-test-config-{worker}-")
+
+
 if __name__ == "__main__":
     unittest.main()

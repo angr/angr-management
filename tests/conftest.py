@@ -21,9 +21,13 @@ import pytest
 
 # Keep the tests' configuration away from the user's: angr management reads and saves config.toml in this directory.
 # It is set at import, before any test module imports angrmanagement.config, and removed when the process that made
-# it exits. xdist workers inherit the variable from the controller, so they use its directory and make none.
-if not os.environ.get("ANGR_MANAGEMENT_CONFIG_DIR"):
-    _config_dir = tempfile.mkdtemp(prefix="angr-management-test-config-")
+# it exits. Every xdist worker makes its own, whatever it inherits from the controller: workers that shared one file
+# read each other's saves, and a test that saves and reads back the configuration found another worker's file.
+_xdist_worker = os.environ.get("PYTEST_XDIST_WORKER")
+if _xdist_worker or not os.environ.get("ANGR_MANAGEMENT_CONFIG_DIR"):
+    _config_dir = tempfile.mkdtemp(
+        prefix=f"angr-management-test-config-{_xdist_worker}-" if _xdist_worker else "angr-management-test-config-"
+    )
     os.environ["ANGR_MANAGEMENT_CONFIG_DIR"] = _config_dir
     atexit.register(shutil.rmtree, _config_dir, ignore_errors=True)
 
