@@ -74,7 +74,8 @@ class TestFilePickers(AngrManagementTestCase):
                 table._action_select_dir()  # pylint: disable=protected-access
         finally:
             GlobalInfo._ui_services = saved_services  # pylint: disable=protected-access
-        assert table.item(0, 1).text() == "/tmp"
+        item = table.item(0, 1)
+        assert item is not None and item.text() == "/tmp"
         assert len(asked) == 1
         assert asked[0] & QFileDialog.Option.ShowDirsOnly
         assert not asked[0] & QFileDialog.Option.DontResolveSymlinks

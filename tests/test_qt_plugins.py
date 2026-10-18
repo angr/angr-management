@@ -30,7 +30,7 @@ class TestSourceViewer(AngrManagementTestCase):
         plugins.activate_plugin_by_name("source_viewer")
         plugin = plugins.get_plugin_instance_by_name("source_viewer")
         assert plugin is not None
-        view = plugin.source_viewer
+        view = plugin.source_viewer  # type: ignore[attr-defined]
         assert isinstance(view, SourceViewer)
         assert view in self.main.workspace.view_manager.views
         plugins.deactivate_plugin_by_name("source_viewer")
