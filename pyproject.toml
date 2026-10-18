@@ -71,7 +71,9 @@ testing = [
   "pytest-durations",
   "pytest-profiling",
   "pytest-split",
-  "pytest-textual-snapshot",
+  # 1.0.0 sets syrupy 4's `_file_extension`, which syrupy 5 renamed, so with syrupy 5 or 6 it looks for `.raw`
+  # snapshots and never finds the stored `.svg` ones. 1.1.0 pins syrupy 4.8.0 (and so pytest 8), which reads them.
+  "pytest-textual-snapshot>=1.1.0",
   "pytest-timeout",
   "pytest-xdist",
   "textual-image",
