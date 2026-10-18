@@ -36,6 +36,18 @@ notification (OSC 99) when it ends while the window is not focused.
 Opening a view in a window of its own, attached to the same session through the daemon, is future work: the daemon
 passes URL actions between processes, and a second process cannot show the first one's workspace.
 
+Plugins
+-------
+The bundled plugins work in both frontends. A plugin of your own does too when its entry point (the file
+``plugin.toml`` names) imports no toolkit at module level: import PySide6 or your Qt widgets inside a branch on
+``angrmanagement.plugins.base_plugin.qt_frontend()``, and use the neutral hooks and ``GlobalInfo.ui_services`` for
+what both frontends show and ask.
+
+Configuration entries hold frontend-neutral values: ``Conf.entry(name).value`` is a ``Color`` where it used to be a
+``QColor`` and a ``FontSpec`` where it was a ``QFont``, and ``Conf.entry(name).changed`` emits the same. To get the
+value as the running frontend uses it, listen with ``Conf.connect(name, fn, init)``, which gives a Qt plugin the
+``QColor`` or ``QFont``.
+
 Layout
 ------
 The sizes of the side and bottom areas, the tabs open in each area and the active ones are saved in the
