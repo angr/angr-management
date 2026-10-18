@@ -30,6 +30,7 @@ from angrmanagement.config import Conf
 from angrmanagement.data.log import LogDumpHandler
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.view_manager import default_position
+from angrmanagement.present import log as log_presenter_module
 from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps, caps_from_environment
 from angrmanagement.tui.executor import Deferred, TextualExecutor
@@ -678,6 +679,40 @@ class TestExitWithTheLogListener(TuiTestCase):
         assert not thread.is_alive()
         assert not handed, "the log view of an app that exited still hands records to the UI executor"
         assert GlobalInfo._executor is self.saved[0]
+
+    def test_a_log_record_handed_over_while_the_views_close_finds_the_closed_executor(self) -> None:
+        # the order inside shutdown: a record that arrives while the views close must still find the app's own
+        # executor, which has closed and drops it, and not the executor the app gives back
+        apps: list[AmApp] = []
+        found: list[Any] = []
+        schedule = log_presenter_module.gui_thread_schedule_async
+
+        def schedule_and_note_the_executor(func, args=None, kwargs=None) -> None:
+            found.append(GlobalInfo._executor)
+            schedule(func, args, kwargs)
+
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            assert app.view_widget("log") is not None
+            apps.append(app)
+            view_manager: Any = app.workspace.view_manager
+            close_views = view_manager.close_views
+            handler = LogDumpHandler(app.workspace.main_instance)
+            record = logging.LogRecord("angrmanagement.tests", logging.WARNING, __file__, 0, "late", None, None)
+
+            def close_views_after_a_record() -> None:
+                # the log listener's thread hands the record over, as it would
+                thread = threading.Thread(target=handler.emit, args=(record,), daemon=True)
+                thread.start()
+                thread.join(5)
+                assert not thread.is_alive()
+                close_views()
+
+            view_manager.close_views = close_views_after_a_record
+
+        with patch.object(log_presenter_module, "gui_thread_schedule_async", schedule_and_note_the_executor):
+            run_app(scenario, binary=None)
+        assert found == [apps[0].executor], f"the record found {found} and not the app's executor"
+        assert GlobalInfo._executor is self.saved[0], "a record handed over during the exit created an executor"
 
 
 class TestAnAppThatExited(TuiTestCase):
