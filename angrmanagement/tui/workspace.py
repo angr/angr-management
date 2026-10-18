@@ -23,6 +23,9 @@ if TYPE_CHECKING:
 
 #: The default views, as the Qt workspace opens them: category, area, and the Qt class name ``enabled_tabs`` uses.
 DEFAULT_VIEWS = [
+    ("disassembly", "center", "DisassemblyView"),
+    ("hex", "center", "HexView"),
+    ("pseudocode", "center", "CodeView"),
     ("functions", "left", "FunctionsView"),
     ("console", "bottom", "ConsoleView"),
     ("log", "bottom", "LogView"),
@@ -51,7 +54,11 @@ class TuiWorkspace(BaseWorkspace):
 
     def add_default_views(self) -> None:
         enabled_tabs = [x.strip() for x in Conf.enabled_tabs.split(",") if x.strip()]
-        for category, position, qt_name in DEFAULT_VIEWS:
+        views = list(DEFAULT_VIEWS)
+        if Conf.has_operation_mango:
+            # after the functions, as the Qt workspace appends its dependency view
+            views.insert(4, ("dependencies", "center", "DependencyView"))
+        for category, position, qt_name in views:
             if not enabled_tabs or qt_name in enabled_tabs:
                 self.view_manager.create_view(category, position)
 

@@ -22,7 +22,7 @@ from unittest.mock import patch
 
 import pytest
 from textual.command import CommandPalette
-from textual.widgets import Button
+from textual.widgets import Button, TabPane
 
 from angrmanagement.config import Conf
 from angrmanagement.data.log import LogDumpHandler
@@ -123,6 +123,17 @@ class TestStartup(TuiTestCase):
 
 class TestQtLayout(TuiTestCase):
     """Where things sit in a view, as the Qt frontend puts them (screenshots/qt-baseline, shot at 1600x1000)."""
+
+    def test_the_centre_opens_with_qt_s_three_tabs(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            vm = app.workspace.view_manager
+            panes = [pane.id for pane in vm.area("center").query(TabPane)]
+            # Qt's default_tabs: DisassemblyView, HexView, CodeView in "center", in that order, before anything else
+            expected = [vm.pane_id_of(vm.first_view_in_category(c)) for c in ("disassembly", "hex", "pseudocode")]
+            assert None not in expected
+            assert panes[:3] == expected
+
+        run_app(scenario)
 
     def test_mcp_history_clear_is_at_the_right(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
