@@ -328,7 +328,9 @@ class FeatureMapPresenter:
         self.on_changed: Callable[[], Any] | None = None
         self.on_cursors_changed: Callable[[], Any] | None = None
         self.on_reloading: Callable[[], Any] | None = None
-        self._last_refresh = 0.0
+        #: when the map was last redrawn, by time.perf_counter(): a steady clock that ticks finer than Windows'
+        #: time.time() (about 15 ms), which the 33 ms throttle would otherwise round
+        self._last_refresh = float("-inf")
         self._refresh_pending = False
         container(self.instance.cfb).am_subscribe(self._on_cfb_event)
         container(self.instance.active_view_state).am_subscribe(self._on_view_state_updated)
@@ -346,7 +348,7 @@ class FeatureMapPresenter:
         self.refresh()
 
     def refresh(self) -> None:
-        self._last_refresh = time.time()
+        self._last_refresh = time.perf_counter()
         self._refresh_pending = False
         if self.on_changed is not None:
             self.on_changed()
@@ -356,7 +358,7 @@ class FeatureMapPresenter:
             if (
                 self.model.add_objects(kwargs["objects_added"])
                 and not self._refresh_pending
-                and time.time() - self._last_refresh > self.MIN_REFRESH_INTERVAL
+                and time.perf_counter() - self._last_refresh > self.MIN_REFRESH_INTERVAL
             ):
                 self._refresh_pending = True
                 gui_thread_schedule_async(self.refresh)

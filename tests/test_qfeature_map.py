@@ -8,6 +8,7 @@ hiding the toolbar stops it.
 
 from __future__ import annotations
 
+import time
 import unittest
 from types import SimpleNamespace
 from typing import Any
@@ -47,14 +48,16 @@ class TestQFeatureMap(ProjectOpenTestCase):
 
     def test_added_objects_redraw_at_most_so_often(self):
         presenter = self.item._presenter
-        self.item.refresh()
-        stamp = presenter._last_refresh
+        # stamps the clock cannot produce, so the test does not depend on how finely it ticks or how fast this runs
+        just_now = time.perf_counter() + 3600
         with patch.object(self.item.model, "add_objects", return_value=True):
+            presenter._last_refresh = just_now
             self.cfb.am_event(objects_added=[])
-            assert presenter._last_refresh == stamp, "too soon after the last refresh"
-            presenter._last_refresh = 0.0
+            assert presenter._last_refresh == just_now, "too soon after the last refresh"
+            long_ago = float("-inf")
+            presenter._last_refresh = long_ago
             self.cfb.am_event(objects_added=[])
-        assert presenter._last_refresh > stamp
+        assert presenter._last_refresh not in (just_now, long_ago), "the added objects were not drawn"
 
     def test_shutdown_stops_following_the_cfb(self):
         self.feature_map.shutdown()
