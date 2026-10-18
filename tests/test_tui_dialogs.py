@@ -464,8 +464,9 @@ class TestSmallScreens(DialogCase):
                     app.open_about_dialog()
                     screen = await wait_for_screen(pilot, AboutScreen)
                     logo = screen.query_one("#logo")
-                    if tier == 3:
-                        assert isinstance(logo, image_module().Image), type(logo)
+                    module = image_module()
+                    if tier == 3 and module is not None:
+                        assert isinstance(logo, module.Image), type(logo)
                     else:
                         assert isinstance(logo, Static) and "|___/" in str(logo.render())
                     assert angrmanagement.__version__ in str(screen.query_one("#version").render())

@@ -74,6 +74,7 @@ testing = [
   "pytest-textual-snapshot",
   "pytest-timeout",
   "pytest-xdist",
+  "textual-image",
 ]
 
 [project.scripts]

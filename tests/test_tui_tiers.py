@@ -11,8 +11,10 @@ ends while the terminal is not focused; and the tabs saved on exit and opened ag
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import os
+import sys
 import unittest
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
@@ -38,7 +40,7 @@ from angrmanagement.tui.widgets.menubar import MenuPopup
 from angrmanagement.tui.widgets.picture import image_module
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import Awaitable, Callable, Iterator
 
     from textual.pilot import Pilot
 
@@ -194,9 +196,27 @@ class TestLinks(AppCase):
         run_app(scenario, tier(0))
 
 
+@contextlib.contextmanager
+def without_textual_image() -> Iterator[None]:
+    """Make ``import textual_image.widget`` fail, as it does where the tui extra is not installed."""
+    name = "textual_image.widget"
+    saved = sys.modules.get(name)
+    sys.modules[name] = None  # type: ignore[assignment]
+    try:
+        yield
+    finally:
+        if saved is None:
+            del sys.modules[name]
+        else:
+            sys.modules[name] = saved
+
+
 class TestPictures(AppCase):
     def test_tier_three_mounts_image_widgets(self) -> None:
-        image_class = image_module().Image
+        module = image_module()
+        if module is None:
+            self.skipTest("textual-image (the tui extra) is not installed")
+        image_class = module.Image
 
         async def scenario(app: AmApp, pilot: Pilot) -> None:
             # the feature map
@@ -248,7 +268,9 @@ class TestPictures(AppCase):
         run_app(scenario, tier(3))
 
     def test_below_tier_three_the_text_drawings_stay(self) -> None:
-        image_class = image_module().Image
+        # the image widgets, when textual-image is installed, so a test can look for them
+        module = image_module()
+        image_class: Any = module.Image if module is not None else type(None)
 
         async def scenario(app: AmApp, pilot: Pilot) -> None:
             assert app.feature_map.picture is None and not app.feature_map.query(image_class)
@@ -268,7 +290,11 @@ class TestPictures(AppCase):
             assert not isinstance(preview, image_class)
             assert any(0x2800 <= ord(char) <= 0x28FF for char in str(preview.render()))
 
-        run_app(scenario, tier(2))
+        with self.subTest("tier 2"):
+            run_app(scenario, tier(2))
+        with self.subTest("tier 3 without textual-image"), without_textual_image():
+            assert image_module() is None
+            run_app(scenario, tier(3))
 
 
 class TestNotification(AppCase):
