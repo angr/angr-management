@@ -77,29 +77,6 @@ class BreakpointsTableModel(ListTableModel[Breakpoint]):
         return self.presenter.breakpoints_menu(self.objects(rows))
 
 
-def parse_breakpoint(text: str) -> tuple[BreakpointType, int, int] | None:
-    """
-    Parse ``[execute|read|write] ADDRESS [SIZE]``, the prompt answer of a frontend without a breakpoint dialog.
-    Numbers are in hex with or without ``0x``. Returns None for anything else.
-    """
-    parts = text.split()
-    if not parts:
-        return None
-    types = {"execute": BreakpointType.Execute, "read": BreakpointType.Read, "write": BreakpointType.Write}
-    type_ = BreakpointType.Execute
-    if parts[0].lower() in types:
-        type_ = types[parts[0].lower()]
-        parts = parts[1:]
-    if not 1 <= len(parts) <= 2:
-        return None
-    try:
-        addr = int(parts[0], 16)
-        size = int(parts[1], 16) if len(parts) == 2 else 1
-    except ValueError:
-        return None
-    return type_, addr, size
-
-
 class BreakpointsPresenter(InstancePresenter):
     """The breakpoints view."""
 

@@ -27,7 +27,7 @@ from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.headless_workspace import HeadlessWorkspace
 from angrmanagement.logic.ui_services import HeadlessServices
 from angrmanagement.present.bookmarks import BookmarksPresenter
-from angrmanagement.present.breakpoints import BreakpointsPresenter, parse_breakpoint
+from angrmanagement.present.breakpoints import BreakpointsPresenter
 from angrmanagement.present.comments import CommentsPresenter
 from angrmanagement.present.functions import FunctionsPresenter
 from angrmanagement.present.jobs import JobsPresenter, progress_bar
@@ -381,8 +381,6 @@ class TestBreakpoints(FauxwareTestCase):
         assert model.row_count == 2
         added = model.row(1)
         assert (added.type, added.addr, added.size) == (BreakpointType.Read, 0x601050, 8)
-        assert parse_breakpoint("400100") == (BreakpointType.Execute, 0x400100, 1)
-        assert parse_breakpoint("nope") is None
         presenter.remove_breakpoints(model.objects([0, 1]))
         assert model.row_count == 0
         presenter.close()

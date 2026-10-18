@@ -15,7 +15,6 @@ are the position-map helpers the Qt document used to have, and the text helpers 
 from __future__ import annotations
 
 import bisect
-import contextlib
 import logging
 from collections import OrderedDict
 from dataclasses import dataclass, field
@@ -1297,22 +1296,6 @@ class CodePresenter(FunctionPresenter):
         self.jump_history.record_address(from_addr)
         self.jump_history.jump_to(to_func.addr)
         self.workspace.decompile_function(to_func, view=self.view if self.view is not None else self)
-
-    def resolve_address(self, text: str) -> int | None:
-        """An address from what the user typed: a number (hex with or without 0x), a function name or a label."""
-        if self.instance.project.am_none:
-            return None
-        kb = self.kb
-        with contextlib.suppress(KeyError):
-            return kb.functions[text].addr
-        for addr, name in kb.labels.items():
-            if name == text:
-                return addr
-        with contextlib.suppress(ValueError):
-            return int(text, 16)
-        with contextlib.suppress(ValueError):
-            return int(text, 0)
-        return None
 
     def popup_jumpto_dialog(self) -> None:
         """Ask for an address or a function name and go there (the Qt view shows its JumpTo dialog instead)."""

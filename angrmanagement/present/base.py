@@ -10,7 +10,6 @@ mirror the Qt view hierarchy in angrmanagement.ui.views.view: :class:`Presenter`
 
 from __future__ import annotations
 
-import contextlib
 from typing import TYPE_CHECKING, Any, cast
 
 from angrmanagement.data.object_container import ObjectContainer
@@ -158,23 +157,6 @@ def project_of(instance: Instance) -> angr.Project | None:
     if instance.project.am_none:
         return None
     return cast("angr.Project", instance.project.am_obj)
-
-
-def resolve_address(instance: Instance, text: str) -> int | None:
-    """An address from what the user typed: a number (hex with or without 0x), a function name or a label."""
-    kb = instance.kb
-    if instance.project.am_none or kb is None:
-        return None
-    with contextlib.suppress(KeyError):
-        return kb.functions[text].addr
-    for addr, name in kb.labels.items():
-        if name == text:
-            return addr
-    with contextlib.suppress(ValueError):
-        return int(text, 16)
-    with contextlib.suppress(ValueError):
-        return int(text, 0)
-    return None
 
 
 def is_function_view(view: Any) -> bool:

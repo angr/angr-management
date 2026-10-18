@@ -19,6 +19,7 @@ from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.headless_workspace import HeadlessWorkspace
 from angrmanagement.logic.ui_services import HeadlessServices
 from angrmanagement.present.block_tree.disasm_nodes import InsnNode, LabelNode
+from angrmanagement.present.dialogs import address_of_text
 from angrmanagement.present.disasm import (
     DISASM_COMMANDS,
     DisasmPresenter,
@@ -140,10 +141,11 @@ class TestJumps(FauxwareDisasmCase):
         assert self.presenter.infodock.selected_labels or self.view.linear_viewer.offset is not None
 
     def test_resolve_address(self):
-        assert self.presenter.resolve_address("main") == self.main.addr
-        assert self.presenter.resolve_address("40071d") == 0x40071D
-        assert self.presenter.resolve_address("0x40071d") == 0x40071D
-        assert self.presenter.resolve_address("no such thing") is None
+        instance = self.presenter.instance
+        assert address_of_text(instance, "main") == self.main.addr
+        assert address_of_text(instance, "40071d") == 0x40071D
+        assert address_of_text(instance, "0x40071d") == 0x40071D
+        assert address_of_text(instance, "no such thing") is None
 
     def test_jumpto_prompt(self):
         services = PromptServices("authenticate")

@@ -1808,22 +1808,6 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
         # the Qt JumpTo dialog's box: OK only while the text is an address, a function name or a label
         ask_form(jump_to_form(self.instance), then)
 
-    def resolve_address(self, text: str) -> int | None:
-        """An address from what the user typed: a number (hex with or without 0x), a function name or a label."""
-        if self.instance.project.am_none:
-            return None
-        kb = self.kb
-        with contextlib.suppress(KeyError):
-            return kb.functions[text].addr
-        for addr, name in kb.labels.items():
-            if name == text:
-                return addr
-        with contextlib.suppress(ValueError):
-            return int(text, 16)
-        with contextlib.suppress(ValueError):
-            return int(text, 0)
-        return None
-
     def popup_comment_dialog(self) -> None:
         own = self._view_method("popup_comment_dialog")
         if own is not None:
