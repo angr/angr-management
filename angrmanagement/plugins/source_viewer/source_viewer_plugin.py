@@ -12,8 +12,6 @@ from PySide6.QtGui import QCursor, QPainter, QPen
 from PySide6.QtWidgets import QMenu, QPlainTextEdit, QStyle, QVBoxLayout
 
 from angrmanagement.logic import GlobalInfo
-from angrmanagement.plugins import BasePlugin
-from angrmanagement.plugins.base_plugin import qt_frontend
 from angrmanagement.ui.views.view import InstanceView
 from angrmanagement.ui.widgets.qccode_edit import ColorSchemeIDA
 from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
@@ -268,24 +266,3 @@ class SourceViewer(InstanceView):
 
     def remove_point(self, fn, line) -> None:
         remove_point(self.workspace, self._source_map(), fn, line)
-
-
-class SourceViewerPlugin(BasePlugin):
-    """
-    Plugin loader
-    """
-
-    def __init__(self, workspace: Workspace) -> None:
-        super().__init__(workspace)
-        if qt_frontend():
-            self.source_viewer = SourceViewer(workspace)
-            workspace.default_tabs += [self.source_viewer]
-        else:
-            # the terminal's view of the same sources (tui_view.py)
-            from .tui_view import SourceTuiView  # pylint:disable=import-outside-toplevel
-
-            self.source_viewer = SourceTuiView(workspace, "center", workspace.main_instance)
-        workspace.add_view(self.source_viewer)
-
-    def teardown(self) -> None:
-        self.workspace.remove_view(self.source_viewer)

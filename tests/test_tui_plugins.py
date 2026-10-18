@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 from angr.analyses.decompiler.structured_codegen import FunctionCallNode
+from headless import run_without_qt  # pylint: disable=import-error
 from textual.widgets import Button, Input
 from tui_pilot import kb_of  # pylint: disable=import-error
 
@@ -500,6 +501,52 @@ class TestCodePlugins(PluginCase):
             assert "The AIL block:" in screen.values["asm"]
 
         run_app(scenario)
+
+
+#: Plugins that are Qt-only by nature: angr_binsync is the BinSync project's own Qt plugin, which it ships itself.
+QT_ONLY_PLUGINS = {"binsync"}
+
+WITHOUT_QT_SCRIPT = """
+import asyncio
+import os
+
+import angrmanagement.plugins as plugins_pkg
+from angrmanagement.plugins import load_plugin_description, load_plugins_from_file
+from angrmanagement.tui.app import AmApp
+from angrmanagement.tui.caps import TerminalCaps
+
+# every bundled plugin's entry point, loaded as the plugin manager loads it
+root = os.path.dirname(plugins_pkg.__file__)
+failed = {}
+for sub in sorted(os.listdir(root)):
+    for desc in load_plugin_description(os.path.join(root, sub)):
+        entry = os.path.join(os.path.dirname(desc.plugin_file_path), desc.entrypoints[0])
+        errors = [repr(cls) for cls in load_plugins_from_file(entry) if isinstance(cls, Exception)]
+        if errors:
+            failed[desc.shortname] = errors
+
+
+async def main():
+    app = AmApp(caps=TerminalCaps(truecolor=True, forced_tier=2), interactive=False)
+    async with app.run_test(size=(160, 50)) as pilot:
+        await pilot.pause()
+        app.workspace.plugins.activate_plugin_by_name("source_viewer")
+        await pilot.pause()
+        plugin = app.workspace.plugins.get_plugin_instance_by_name("source_viewer")
+        return None if plugin is None else type(plugin.source_viewer).__name__
+
+
+RESULT = {"failed": failed, "source_viewer": asyncio.run(main())}
+"""
+
+
+class TestWithoutQt(unittest.TestCase):
+    def test_the_bundled_plugins_load_and_the_source_viewer_activates_without_pyside6(self) -> None:
+        outcome = run_without_qt(WITHOUT_QT_SCRIPT)
+        result = outcome["result"]
+        assert outcome["qt_modules_loaded"] == []
+        assert set(result["failed"]) == QT_ONLY_PLUGINS, result["failed"]
+        assert result["source_viewer"] == "SourceTuiView"
 
 
 if __name__ == "__main__":
