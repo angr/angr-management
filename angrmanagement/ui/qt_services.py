@@ -59,9 +59,8 @@ class QtServices:
     """
     UIServices for the Qt frontend.
 
-    Call the methods on the GUI thread. message() and the file pickers open their dialogs over the dialog the user is
-    in, or with no parent, as the core's own message boxes and file dialogs had none. question(), the prompts and
-    forms are parented on that dialog or the main window, so they stay in front of it.
+    Call the methods on the GUI thread. Every dialog opens over the dialog the user is in, or else over the main
+    window, so it stays in front of it.
     """
 
     def message(self, level: MessageLevel, title: str, text: str) -> None:
@@ -193,17 +192,18 @@ class QtServices:
 
     def pick_open_files(self, caption: str, directory: str, name_filter: str, multiple: bool) -> list[str]:
         if multiple:
-            filenames, _ = QFileDialog.getOpenFileNames(_modal_parent(), caption, directory, name_filter)
+            filenames, _ = QFileDialog.getOpenFileNames(_window_parent(), caption, directory, name_filter)
             return list(filenames)
-        filename, _ = QFileDialog.getOpenFileName(_modal_parent(), caption, directory, name_filter)
+        filename, _ = QFileDialog.getOpenFileName(_window_parent(), caption, directory, name_filter)
         return [filename] if filename else []
 
     def pick_save_file(self, caption: str, directory: str, name_filter: str) -> str | None:
-        filename, _ = QFileDialog.getSaveFileName(_modal_parent(), caption, directory, name_filter)
+        filename, _ = QFileDialog.getSaveFileName(_window_parent(), caption, directory, name_filter)
         return filename or None
 
     def pick_directory(self, caption: str, directory: str) -> str | None:
-        return QFileDialog.getExistingDirectory(_modal_parent(), caption, directory) or None
+        options = QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks
+        return QFileDialog.getExistingDirectory(_window_parent(), caption, directory, options) or None
 
     def load_binary_options(
         self,
