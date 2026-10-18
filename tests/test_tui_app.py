@@ -234,6 +234,8 @@ class TestFunctionsTable(TuiTestCase):
             await settle(pilot)
             popup = app.screen
             assert isinstance(popup, MenuPopup) and popup.menu.text == "Column Menu"
+            # and does not sort, as a Qt header does not on a right click
+            assert view.presenter.model.sort_order[0] is None and str(table.ordered_columns[0].label) == "In▲"
             entries: list[Any] = popup.items
             assert [entry.text for entry in entries] == names and all(entry.checked for entry in entries)
             await pilot.press("escape")
@@ -242,9 +244,7 @@ class TestFunctionsTable(TuiTestCase):
             table.header_menu().items()[hidden].trigger()
             await settle(pilot)
             assert len(table.columns) == len(names) - 1
-            assert [str(c.label).split(" ", maxsplit=1)[0] for c in table.columns.values()] == [
-                n.split(" ", maxsplit=1)[0] for i, n in enumerate(names) if i != hidden
-            ]
+            assert [c.key.value for c in table.columns.values()] == [str(i) for i in range(len(names)) if i != hidden]
             # the cells follow the shown columns, and the last shown column cannot be hidden
             assert len(table.get_row_at(0)) == len(names) - 1
             for idx in range(len(names)):
@@ -258,6 +258,30 @@ class TestFunctionsTable(TuiTestCase):
                 table.set_column_visible(idx, True)
             await settle(pilot)
             assert len(table.columns) == len(names)
+
+        run_app(scenario)
+
+    def test_a_right_click_on_the_highlighted_row_opens_its_menu_and_does_not_open_it(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = app.view_widget("functions")
+            table = view.table_widget
+            table.move_cursor(row=0)
+            await settle(pilot)
+            activated: list[int] = []
+            with patch.object(view.presenter.model, "activate", activated.append):
+                # a first click puts the cursor on the cell; a click on the cell under the cursor activates the row
+                await pilot.click(table, offset=(8, 1 - table.scroll_offset.y))
+                await settle(pilot)
+                assert activated == []
+                await pilot.click(table, offset=(8, 1 - table.scroll_offset.y), button=3)
+                await settle(pilot)
+                assert isinstance(app.screen, MenuPopup)
+                await pilot.press("escape")
+                await settle(pilot)
+                # a left click on the highlighted row still activates it
+                await pilot.click(table, offset=(8, 1 - table.scroll_offset.y))
+                await settle(pilot)
+            assert activated == [0]
 
         run_app(scenario)
 
@@ -278,7 +302,8 @@ class TestFunctionsTable(TuiTestCase):
             )
             await settle(pilot)
             assert [f.addr for f in model.rows] == sorted(addrs, reverse=True)
-            assert "▼" in str(table.ordered_columns[3].label)
+            # descending is Qt's upward mark; the name gives way to it in the 8-cell column
+            assert str(table.ordered_columns[3].label) == "Address▲"
 
         run_app(scenario)
 

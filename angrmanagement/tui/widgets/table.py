@@ -273,6 +273,13 @@ class TableWidget(DataTable):
         if open_menu is not None:
             open_menu(menu, offset)
 
+    async def _on_click(self, event: events.Click) -> None:
+        if event.button != 1:
+            # only the left button sorts on a header or picks a row, as in a Qt table: the right one opens a menu
+            # (on_mouse_down) and must not also sort the column or activate the highlighted row
+            event.prevent_default()
+            return
+
     def on_mouse_down(self, event: events.MouseDown) -> None:
         if event.button == 3:
             meta = event.style.meta if event.style else {}
