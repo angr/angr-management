@@ -9,6 +9,7 @@ entries, the console runs code, a worker thread can ask the user, and every view
 from __future__ import annotations
 
 import asyncio
+import gc
 import json
 import logging
 import os
@@ -16,13 +17,14 @@ import tempfile
 import threading
 import time
 import unittest
+import weakref
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, ClassVar
 from unittest.mock import patch
 
 import pytest
 from textual.command import CommandPalette
-from textual.widgets import Button, TabPane
+from textual.widgets import Button, DataTable, TabPane
 
 from angrmanagement.config import Conf
 from angrmanagement.data.log import LogDumpHandler
@@ -676,6 +678,25 @@ class TestExitWithTheLogListener(TuiTestCase):
         assert not thread.is_alive()
         assert not handed, "the log view of an app that exited still hands records to the UI executor"
         assert GlobalInfo._executor is self.saved[0]
+
+
+class TestAnAppThatExited(TuiTestCase):
+    def test_is_freed(self) -> None:
+        # a test process runs many apps; what one keeps alive grows the heap that every garbage collection walks
+        apps: list[weakref.ref] = []
+
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            assert app.view_widget("console") is not None
+            apps.append(weakref.ref(app))
+
+        for _ in range(3):
+            run_app(scenario)
+        # What may keep one app, and never more: IPython keeps the output capture of the app it was first imported
+        # under, its one in-process shell keeps the latest kernel and so the latest app, and DataTable keeps its 32
+        # latest style lookups, keyed by table. The middle app has none of these once that bounded cache is cleared.
+        DataTable._get_styles_to_render_cell.cache_clear()
+        gc.collect()
+        assert apps[1]() is None, "an app that exited is still alive"
 
 
 class TestConsole(TuiTestCase):

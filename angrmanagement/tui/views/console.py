@@ -10,6 +10,7 @@ UI thread.
 
 from __future__ import annotations
 
+import atexit
 import logging
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -119,7 +120,11 @@ class ConsolePresenter(InstancePresenter):
         if self.kernel_client is not None:
             self.kernel_client.stop_channels()
         if self.kernel_manager is not None:
+            iopub = self.kernel_manager.kernel.iopub_thread
             self.kernel_manager.shutdown_kernel()
+            # the kernel registered the stop of its IOPub thread at exit; the thread is stopped now, and the hook would
+            # keep it, and the app's output capture it took when it started, for the life of the process
+            atexit.unregister(iopub.stop)
         self.kernel_client = None
         self.kernel_manager = None
 
