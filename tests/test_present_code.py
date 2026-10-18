@@ -698,7 +698,7 @@ def pyqodeng_scopes(text: str) -> tuple[list[int], dict[int, int]]:
             pass
 
     editor = CodeEdit()
-    highlighter = Highlighter(editor.document())
+    highlighter: Any = Highlighter(editor.document())
     editor.modes.append(highlighter)
     highlighter.fold_detector = CharBasedFoldDetector()
     editor.setPlainText(text, "text/x-c", "utf-8")
