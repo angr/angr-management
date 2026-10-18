@@ -4,7 +4,7 @@ stop between its steps and keeps it stopped while it reads, gives up after a sho
 for it.
 """
 
-# pylint: disable=missing-class-docstring,missing-function-docstring,protected-access
+# pylint: disable=missing-class-docstring,missing-function-docstring,protected-access,no-self-use
 
 from __future__ import annotations
 
