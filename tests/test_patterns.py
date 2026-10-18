@@ -32,6 +32,7 @@ from angrmanagement.present.patterns import (
 )
 from angrmanagement.tui.app import AmApp
 from angrmanagement.tui.caps import TerminalCaps
+from angrmanagement.tui.screenshot import show_view
 from angrmanagement.tui.views.pattern import PatternTuiView
 
 if TYPE_CHECKING:
@@ -377,6 +378,34 @@ class TestTerminal(unittest.TestCase):
                 assert view.tabs.active == "discover-tab"
                 assert view.families.row_count == len(presenter.families) > 0
                 assert str(view.discover_status.render()).startswith(f"{len(presenter.families)} famil")
+
+        asyncio.run(main())
+
+
+class TestShortView(unittest.TestCase):
+    def test_the_property_editor_keeps_its_rows(self):
+        """
+        In the window shot's layout (200x58 cells, the trace map open above and the console below, so the view has
+        31 rows), with no pattern loaded, the property sheet and the description still show rows on screen.
+        """
+
+        async def main() -> None:
+            app = AmApp(caps=TerminalCaps(truecolor=True, forced_tier=2), interactive=False)
+            async with app.run_test(size=(SIZE[0], 58)) as pilot:
+                await pilot.pause()
+                await app.open_binary(BINARY)
+                for category in ("tracemap", "console", "pattern"):
+                    await show_view(pilot, category)
+                await settle(pilot, 6)
+                view = app.view_widget("pattern")
+                assert isinstance(view, PatternTuiView) and 0 < view.region.height <= 31
+
+                def shown_rows(widget) -> int:
+                    # the rows on screen: the widget's region within its clip, which a squeezed tab cuts off
+                    geometry = app.screen.find_widget(widget)
+                    return geometry.region.intersection(geometry.clip).height
+
+                assert shown_rows(view.property_editor.description) >= 2 and shown_rows(view.properties) >= 1
 
         asyncio.run(main())
 

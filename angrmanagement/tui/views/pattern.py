@@ -159,6 +159,7 @@ class PropertyEditor(Vertical):
     DEFAULT_CSS = """
     PropertyEditor {
         height: 1fr;
+        min-height: 7;
     }
     PropertyEditor > .tools {
         height: 1;
@@ -172,7 +173,7 @@ class PropertyEditor(Vertical):
         min-width: 6;
     }
     PropertyEditor > #description {
-        height: 4;
+        height: 3;
         padding: 0 1;
         border-top: solid $foreground 30%;
     }
@@ -266,10 +267,12 @@ class PatternTuiView(GraphTuiView):
         margin: 0 0 0 1;
     }
     PatternTuiView #library {
-        height: 7;
+        height: 5;
     }
     PatternTuiView #matches {
-        height: 7;
+        height: 1fr;
+        min-height: 4;
+        max-height: 8;
         margin-top: 1;
     }
     PatternTuiView #families {
