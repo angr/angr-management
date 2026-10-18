@@ -17,6 +17,7 @@ from unittest.mock import patch
 import angr
 
 from angrmanagement.data.function_graph import FunctionGraph
+from angrmanagement.data.search import Searcher
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.headless_workspace import HeadlessWorkspace
 from angrmanagement.logic.ui_services import HeadlessServices
@@ -395,6 +396,19 @@ class TestWhileCfgRecoveryRuns(FauxwareDisasmCase):
         deferred[0]()
         assert graph.doc is not None
         assert insn in self.presenter.infodock.selected_insns
+
+    def test_find_finds_nothing_in_a_function_it_could_not_read_and_reads_it_next_time(self):
+        self.presenter.display_function(self.main)
+        searcher = Searcher(self.project, kb=self.project.kb)
+        self.refuse_reads()
+        assert not self.presenter._function_details(searcher, self.main)
+        patch.stopall()
+        assert sorted(addr for addr, _text, _raw in self.presenter._function_details(searcher, self.main)) == self.insns
+
+    def test_the_instruction_text_is_not_read(self):
+        assert self.instance.get_instruction_text_at(self.main.addr) is not None
+        self.refuse_reads()
+        assert self.instance.get_instruction_text_at(self.main.addr) is None
 
 
 class TestFind(FauxwareDisasmCase):

@@ -2215,7 +2215,12 @@ class DisasmPresenter(Synchronized, FunctionPresenter):
     def _function_details(self, searcher: Searcher, func: Function) -> list[tuple[int, str, bytes]]:
         cached = self._find_text_cache.get(func.addr)
         if cached is None:
-            cached = list(searcher.iter_instruction_details(func))
+            # disassembling uses the capstone handle CFG recovery uses
+            with self.reading_functions() as granted:
+                if not granted:
+                    # the recovery did not stop for this find: nothing found here, and a later find reads it again
+                    return []
+                cached = list(searcher.iter_instruction_details(func))
             self._find_text_cache[func.addr] = cached
         return cached
 

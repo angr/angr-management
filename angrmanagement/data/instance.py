@@ -191,7 +191,8 @@ class Instance:
         Get the text representation of an instruction at `addr`.
 
         :param int addr:    Address of the instruction.
-        :return:            Text representation of the instruction, or None if no instruction can be found there.
+        :return:            Text representation of the instruction, or None if no instruction can be found there (or a
+                            running CFG recovery did not stop for the read).
         :rtype:             Optional[str]
         """
 
@@ -209,10 +210,14 @@ class Instance:
                 # TODO: Support getting disassembly from pypcode
                 return "..."
 
-            for insn in obj.capstone.insns:
-                if insn.address == addr:
-                    insn_piece = Instruction(insn, None, project=self.project)
-                    return insn_piece.render()[0]
+            # disassembling uses the capstone handle a running CFG recovery uses
+            with self.analysis_gate.access() as granted:
+                if not granted:
+                    return None
+                for insn in obj.capstone.insns:
+                    if insn.address == addr:
+                        insn_piece = Instruction(insn, None, project=self.project)
+                        return insn_piece.render()[0]
         return None
 
     def delete_hook(self, addr: int) -> None:
