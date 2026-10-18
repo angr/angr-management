@@ -29,6 +29,7 @@ from angrmanagement.data.load_options import (
 )
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.dialogs import encryption_key_form, function_actions, function_info_form, key_of_form
+from angrmanagement.present.forms import Form, FormField
 
 from .executor import Deferred, TextualExecutor
 from .screens import FilePickerScreen, MessageScreen, PromptScreen, QuestionScreen
@@ -46,7 +47,6 @@ if TYPE_CHECKING:
 
     from angrmanagement.data.analysis_options import AnalysesConfiguration
     from angrmanagement.logic.ui_services import MessageLevel
-    from angrmanagement.present.forms import Form
 
 _l = logging.getLogger(__name__)
 
@@ -207,8 +207,6 @@ class TuiServices:
         return self._ask_sync(lambda: PromptScreen(title, label, default, password=True), None)
 
     def prompt_multiline_text(self, title: str, label: str, default: str = "") -> str | None:
-        from angrmanagement.present.forms import Form, FormField  # pylint:disable=import-outside-toplevel
-
         form = Form(title, [FormField("text", "", "multiline", default)], text=label)
         return self._ask_sync(
             lambda: FormScreen(form), None, then=lambda values: None if values is None else values["text"]
