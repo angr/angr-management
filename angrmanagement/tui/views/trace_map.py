@@ -3,11 +3,14 @@ The trace map of the terminal frontend: a strip over the trace's events, one col
 replay position (a yellow line with arrows at its ends, red shading before it and blue after, as the Qt map's
 gradients), the checkpoints in green and the event under the mouse in grey. A click or a drag replays the trace to
 the event under the mouse; Left and Right move the replay by one column.
+
+On a tier 3 terminal a picture of the map lies over the cells, eight columns a cell, so the replay position is the
+one pixel line the Qt map draws.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from rich.segment import Segment
 from rich.style import Style
@@ -16,7 +19,9 @@ from textual.widget import Widget
 
 from angrmanagement.config.color import Color
 from angrmanagement.present.trace_map import TraceMapPresenter, pos_from_addr
+from angrmanagement.tui.pictures import PIXELS_PER_CELL, columns_image, placeholder, style_color
 from angrmanagement.tui.theme import rich_color
+from angrmanagement.tui.widgets.picture import graphics_tier, image_module, set_picture
 from angrmanagement.tui.widgets.styles import blend, current_theme
 
 from .base import TuiView
@@ -43,12 +48,44 @@ class TraceMapWidget(Widget, can_focus=True):
         height: 1fr;
         width: 1fr;
     }
+    TraceMapWidget #trace-map-picture {
+        height: 1fr;
+        width: 1fr;
+    }
     """
 
     def __init__(self, view: TraceMapTuiView) -> None:
         super().__init__()
         self.view = view
         self._dragging = False
+        #: the picture of the map on a tier 3 terminal, None on any other
+        self.picture: Widget | None = None
+
+    def compose(self) -> ComposeResult:
+        if graphics_tier(getattr(self.app, "caps", None)):
+            self.picture = image_module().Image(placeholder(), id="trace-map-picture")
+            yield self.picture
+
+    def update_picture(self) -> None:
+        """Draw the picture again, where there is one."""
+        if self.picture is not None and self.size.width:
+            set_picture(self.picture, self.picture_image())
+
+    def picture_image(self) -> Any:
+        """The map as a picture, :data:`PIXELS_PER_CELL` pixels a cell: each marker a one pixel line."""
+        base = current_theme(self).background
+        colors = [
+            style_color(style, char != " ", base)
+            for char, style in self.column_styles(self.size.width * PIXELS_PER_CELL[0])
+        ]
+        return columns_image(colors, max(self.size.height, 1) * PIXELS_PER_CELL[1])
+
+    def refresh_map(self) -> None:
+        self.refresh()
+        self.update_picture()
+
+    def on_resize(self, _event: events.Resize) -> None:
+        self.update_picture()
 
     @property
     def presenter(self) -> TraceMapPresenter:
@@ -91,7 +128,8 @@ class TraceMapWidget(Widget, can_focus=True):
         return Strip([Segment(char, style) for char, style in cells], width)
 
     def _pos(self, event: events.MouseEvent) -> int:
-        return max(0, min(int(event.x), self.size.width - 1))
+        # the column in the map, also for an event that comes up from the picture
+        return max(0, min(int(event.screen_x - self.region.x), self.size.width - 1))
 
     def on_mouse_down(self, event: events.MouseDown) -> None:
         if event.button == 1:
@@ -104,7 +142,7 @@ class TraceMapWidget(Widget, can_focus=True):
             self.presenter.select_offset(self._pos(event), self.size.width)
             return
         self.presenter.hover(self._pos(event), self.size.width)
-        self.refresh()
+        self.refresh_map()
 
     def on_mouse_up(self, _event: events.MouseUp) -> None:
         if self._dragging:
@@ -113,7 +151,7 @@ class TraceMapWidget(Widget, can_focus=True):
 
     def on_leave(self, _event: events.Leave) -> None:
         self.presenter.hover(None, self.size.width)
-        self.refresh()
+        self.refresh_map()
 
     def on_key(self, event: events.Key) -> None:
         if event.key not in ("left", "right"):
@@ -143,7 +181,7 @@ class TraceMapTuiView(TuiView):
 
     def map_changed(self) -> None:
         if self.is_attached:
-            self.map.refresh()
+            self.map.refresh_map()
 
     def focus_view(self) -> None:
         self.map.focus()

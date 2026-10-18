@@ -41,14 +41,18 @@ from angrmanagement.present.disasm_style import (
     edge_style,
 )
 from angrmanagement.present.find import FindBarState
+from angrmanagement.present.links import disasm_link_addr, with_link
 from angrmanagement.present.marks import Mark
 from angrmanagement.present.menus import Menu, MenuEntry
 from angrmanagement.present.symexec import open_new_state
 from angrmanagement.present.theme import BACKGROUND_PREFIX
 from angrmanagement.tui.canvas import DOWN, CharCanvas
+from angrmanagement.tui.pictures import minimap_image, placeholder
+from angrmanagement.tui.screens.image_preview import ImagePreviewScreen
 from angrmanagement.tui.widgets.find_bar import FindBarWidget
 from angrmanagement.tui.widgets.header import HeaderBar, HeaderItem, function_label
-from angrmanagement.tui.widgets.styles import StyleCache
+from angrmanagement.tui.widgets.picture import graphics_tier, image_module, set_picture
+from angrmanagement.tui.widgets.styles import StyleCache, current_theme
 
 from .base import TuiView
 
@@ -70,7 +74,10 @@ WHEEL_LINES = 3
 
 def line_strip(line: Line, style_of: Callable[[str], Style], x0: int, width: int, base: str = "") -> Strip:
     """A line of spans as a Strip from column ``x0``, ``width`` cells wide."""
-    segments = [Segment(span.text, style_of(f"{base} {span.style}".strip())) for span in line.spans]
+    segments = [
+        Segment(span.text, style_of(with_link(f"{base} {span.style}".strip(), disasm_link_addr(span))))
+        for span in line.spans
+    ]
     strip = Strip(segments).crop(x0, x0 + width)
     return strip.extend_cell_length(width, style_of(base))
 
@@ -214,6 +221,8 @@ class GraphWidget(ScrollView, can_focus=True):
         self.pad = (0, 0)
         self.minimap_rows: list = []
         self.minimap_scale = (1.0, 1.0)
+        #: what the minimap's picture shows (tier 3), so it is drawn again only when that changes
+        self._minimap_state: Any = None
         #: the scroll offset asked for and not reached yet; it is made after a refresh, when the scrollbars fit
         self._scroll_target: tuple[int, int] | None = None
         control.on_change = self.rebuild
@@ -352,9 +361,40 @@ class GraphWidget(ScrollView, can_focus=True):
         if self.canvas is None:
             return Strip.blank(width, self.style_of(CANVAS_STYLE))
         strip = self.canvas.strip(scroll_y + y - self.pad[1], self.style_of, scroll_x - self.pad[0], width)
-        if self.presenter.show_minimap and self.control.doc is not None:
+        if self.view.minimap_picture is not None:
+            if y == 0:
+                self._sync_minimap_picture()
+        elif self.presenter.show_minimap and self.control.doc is not None:
             strip = self._with_minimap(strip, y)
         return strip
+
+    def _sync_minimap_picture(self) -> None:
+        """On a tier 3 terminal: show the minimap's picture for the part of the graph on screen, or hide it."""
+        picture = self.view.minimap_picture
+        assert picture is not None
+        doc = self.control.doc
+        state: Any = None
+        if self.presenter.show_minimap and doc is not None:
+            sx, sy = self.scroll_offset
+            viewport = (sx - self.pad[0], sy - self.pad[1], self.size.width, self.size.height)
+            self.minimap_rows, self.minimap_scale = draw_minimap(doc, viewport)
+            state = (id(doc), viewport, len(self.minimap_rows), len(self.minimap_rows[0]) if self.minimap_rows else 0)
+        if state == self._minimap_state:
+            return
+        self._minimap_state = state
+        if state is None or not self.minimap_rows:
+            self.call_later(picture.hide)
+            return
+        assert doc is not None
+        layout = [(x, y, *doc.sizes[key]) for key, (x, y) in doc.layout.items()]
+        cells = (len(self.minimap_rows[0]), len(self.minimap_rows))
+        self.call_later(picture.show_map, layout, state[1], cells, self.minimap_scale)
+
+    def minimap_jump(self, mx: int, my: int) -> None:
+        """Centre the graph on the minimap's cell ``(mx, my)``."""
+        x = int(mx * self.minimap_scale[0]) + self.pad[0]
+        y = int(my * self.minimap_scale[1]) + self.pad[1]
+        self.scroll_to(max(x - self.size.width // 2, 0), max(y - self.size.height // 2, 0), animate=False)
 
     def _with_minimap(self, strip: Strip, y: int) -> Strip:
         if y == 0:
@@ -401,10 +441,8 @@ class GraphWidget(ScrollView, can_focus=True):
     def on_mouse_down(self, event: events.MouseDown) -> None:
         if event.button != 1:
             return
-        target = self._minimap_target(event)
-        if target is not None:
-            x, y = target[0] + self.pad[0], target[1] + self.pad[1]
-            self.scroll_to(max(x - self.size.width // 2, 0), max(y - self.size.height // 2, 0), animate=False)
+        if self.view.minimap_picture is None and self._minimap_target(event) is not None:
+            self.minimap_jump(int(event.x) - 2, int(event.y) - 1)
             return
         hit = self.control.node_at(*self._layout_cell(event))
         if hit is None:
@@ -427,7 +465,7 @@ class GraphWidget(ScrollView, can_focus=True):
 
     def on_click(self, event: events.Click) -> None:
         self.focus()
-        if self._minimap_target(event) is not None:
+        if self.view.minimap_picture is None and self._minimap_target(event) is not None:
             return
         hit = self.control.node_at(*self._layout_cell(event))
         if hit is None:
@@ -602,6 +640,68 @@ class LinearWidget(Widget, can_focus=True):
 #
 
 
+class MinimapPicture(Widget):
+    """
+    The minimap as a picture, over the graph's top left corner where the braille minimap is drawn below tier 3. A
+    click centres the graph there, as a click on the braille minimap does.
+    """
+
+    DEFAULT_CSS = """
+    MinimapPicture {
+        position: absolute;
+        width: 24;
+        height: 12;
+        display: none;
+    }
+    MinimapPicture > * {
+        width: 1fr;
+        height: 1fr;
+    }
+    """
+
+    def __init__(self, view: DisassemblyTuiView) -> None:
+        super().__init__(id="minimap-picture")
+        self.view = view
+        self.image = image_module().Image(placeholder())
+
+    def compose(self) -> ComposeResult:
+        yield self.image
+
+    def show_map(
+        self,
+        layout: list[tuple[int, int, int, int]],
+        viewport: tuple[int, int, int, int],
+        cells: tuple[int, int],
+        scale: tuple[float, float],
+    ) -> None:
+        theme = current_theme(self)
+        colors = tuple(
+            theme.color(name) or theme.foreground
+            for name in (
+                "disasm_view_minimap_background_color",
+                "disasm_view_minimap_outline_color",
+                "disasm_view_minimap_viewport_color",
+            )
+        )
+        set_picture(self.image, minimap_image(layout, viewport, cells, scale, colors))  # type: ignore[arg-type]
+        graph = self.view.graph_widget.region
+        origin = self.view.content_region
+        self.styles.width, self.styles.height = cells
+        # where the braille minimap starts: two columns in and one row down
+        self.styles.offset = (graph.x - origin.x + 2, graph.y - origin.y + 1)
+        self.display = True
+
+    def hide(self) -> None:
+        self.display = False
+
+    def on_mouse_down(self, event: events.MouseDown) -> None:
+        if event.button == 1:
+            event.stop()
+            self.view.graph_widget.minimap_jump(
+                int(event.screen_x - self.region.x), int(event.screen_y - self.region.y)
+            )
+
+
 class DisassemblyTuiView(TuiView):
     """The disassembly view: header, find bar, and the graph or the linear listing."""
 
@@ -637,6 +737,8 @@ class DisassemblyTuiView(TuiView):
         self._last_mouse: tuple[int, int] | None = None
         #: widgets plugins put beside the graph (instrument_disassembly_view), docked on the right
         self.plugin_widgets: list[Widget] = []
+        #: the minimap as a picture on a tier 3 terminal; None on any other, which draws it in braille
+        self.minimap_picture: MinimapPicture | None = None
         presenter.level_changed.connect(lambda _level: self.header_changed())
         presenter.view_visibility_changed.connect(self.header_changed)
         presenter.attach(self, node_target=presenter)
@@ -651,6 +753,9 @@ class DisassemblyTuiView(TuiView):
         yield from self.plugin_widgets
         yield self.graph_widget
         yield self.linear_widget
+        if graphics_tier(getattr(self.app, "caps", None)):
+            self.minimap_picture = MinimapPicture(self)
+            yield self.minimap_picture
 
     def add_plugin_widget(self, widget: Widget) -> None:
         """Show a plugin's widget beside the graph and the listing, as the Qt view adds it to its layout."""
@@ -718,7 +823,26 @@ class DisassemblyTuiView(TuiView):
             ],
         )
 
-    def save_image(self) -> None:
+    def show_picture(self) -> None:
+        """View > Graph Picture: the graph (or the linear page) as a picture across the screen; Save... saves it."""
+
+        async def flow() -> None:
+            services: Any = GlobalInfo.ui_services
+            ask = getattr(services, "ask", None)
+            if ask is None:
+                return
+            background = current_theme(self).background
+            screen = ImagePreviewScreen(
+                self.image_strips(), getattr(self.app, "caps", None), background, "Graph picture", large=True
+            )
+            if await ask(screen, False):
+                self.save_image(preview=False)
+
+        run_flow = getattr(self.app, "run_flow", None)
+        if run_flow is not None:
+            run_flow(flow())
+
+    def save_image(self, preview: bool = True) -> None:
         """Save the graph (or the linear page) as an SVG of its text, as the Qt view saves a PNG."""
 
         async def flow() -> None:
@@ -726,6 +850,13 @@ class DisassemblyTuiView(TuiView):
             if not hasattr(services, "ask_save_file"):
                 return
             func = self.presenter.function.am_obj
+            # what is about to be written, as a picture on a tier 3 terminal
+            ask = getattr(services, "ask", None)
+            if ask is not None and preview:
+                background = current_theme(self).background
+                screen = ImagePreviewScreen(self.image_strips(), getattr(self.app, "caps", None), background)
+                if not await ask(screen, True):
+                    return
             default = f"{func.name if func is not None else 'disassembly'}.svg"
             path = await services.ask_save_file("Save image...", default, "SVG files (*.svg)")
             if path:
@@ -735,17 +866,17 @@ class DisassemblyTuiView(TuiView):
         if run_flow is not None:
             run_flow(flow())
 
+    def image_strips(self) -> list[Strip]:
+        """The rows of the image Save image writes: the whole graph, or the linear page."""
+        if self.graph_widget.display and self.graph_widget.canvas is not None:
+            return self.graph_widget.canvas.to_strips(None, self.graph_widget.style_of)
+        return [line_strip(line, self.linear_widget.style_of, 0, 160) for _node, line in self.linear_viewer.lines()]
+
     def write_image(self, path: str) -> str:
         """Write the whole graph (or the linear page) to ``path`` as SVG; returns the path."""
         from rich.console import Console  # pylint:disable=import-outside-toplevel
 
-        if self.graph_widget.display and self.graph_widget.canvas is not None:
-            canvas = self.graph_widget.canvas
-            strips = canvas.to_strips(None, self.graph_widget.style_of)
-        else:
-            strips = [
-                line_strip(line, self.linear_widget.style_of, 0, 160) for _node, line in self.linear_viewer.lines()
-            ]
+        strips = self.image_strips()
         width = max((strip.cell_length for strip in strips), default=1)
         console = Console(record=True, width=width, file=io.StringIO(), color_system="truecolor")
         for strip in strips:

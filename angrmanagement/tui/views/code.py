@@ -42,6 +42,7 @@ from angrmanagement.present.code import (
 from angrmanagement.present.code_options import PASSES_GROUP, PEEPHOLE_GROUP, preset_names, value_kind
 from angrmanagement.present.code_patterns import PatternLibraryModel
 from angrmanagement.present.find import FindBarState
+from angrmanagement.present.links import code_link_addr, with_link
 from angrmanagement.present.menus import Menu, MenuEntry
 from angrmanagement.tui.code_screens import CommentScreen, RenameScreen, RetypeScreen
 from angrmanagement.tui.screens import PromptScreen, dialog_css
@@ -95,9 +96,16 @@ def column_ranges(doc: CodeDoc, start: int, end: int) -> dict[int, tuple[int, in
     return out
 
 
-def styled_cells(line: Line, overlays: Sequence[tuple[int, int, str]]) -> list[tuple[str, str]]:
-    """``(character, style key)`` for each cell of ``line``: its span's style with the overlays laid over in order."""
-    cells = [(char, f"{CODE_BACKGROUND} {span.style}".strip()) for span in line.spans for char in span.text]
+def styled_cells(line: Line, overlays: Sequence[tuple[int, int, str]], kb: Any = None) -> list[tuple[str, str]]:
+    """
+    ``(character, style key)`` for each cell of ``line``: its span's style with the overlays laid over in order. A
+    function, or a constant that is a function's address in ``kb``, links to its angr:// URL.
+    """
+    cells = [
+        (char, with_link(f"{CODE_BACKGROUND} {span.style}".strip(), code_link_addr(span.node, kb)))
+        for span in line.spans
+        for char in span.text
+    ]
     for first, last, style in overlays:
         for col in range(max(first, 0), min(last, len(cells))):
             char, key = cells[col]
@@ -278,7 +286,7 @@ class CodeWidget(CodeSelectionMixin, ScrollView, can_focus=True):
         assert self._overlays is not None and self._bands is not None
         line = doc.lines[row]
         band = self._bands.get(row, "")
-        cells = styled_cells(line, self._overlays.get(row, ()))
+        cells = styled_cells(line, self._overlays.get(row, ()), self.view.presenter.kb)
         segments: list[Segment] = []
         col = 0
         while col < len(cells):

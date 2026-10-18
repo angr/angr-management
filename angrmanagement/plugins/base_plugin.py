@@ -41,13 +41,19 @@ def to_color(color: Any) -> Color | None:
 
 def qt_frontend() -> bool:
     """
-    Whether the Qt frontend runs in this process (a QApplication exists). A plugin with Qt widgets of its own shows
-    them only then; in the terminal, the neutral hooks carry what it shows.
+    Whether the Qt frontend runs in this process: a QApplication exists and the main window, if there is one, is a Qt
+    widget. A plugin with Qt widgets of its own shows them only then; in the terminal, the neutral hooks carry what it
+    shows. The terminal app can have a QApplication too, offscreen, for its picture mode; its main window is no widget.
     """
     import sys  # pylint:disable=import-outside-toplevel
 
+    from angrmanagement.logic import GlobalInfo  # pylint:disable=import-outside-toplevel
+
     widgets = sys.modules.get("PySide6.QtWidgets")
-    return widgets is not None and widgets.QApplication.instance() is not None
+    if widgets is None or widgets.QApplication.instance() is None:
+        return False
+    main_window = GlobalInfo.main_window
+    return main_window is None or isinstance(main_window, widgets.QWidget)
 
 
 class BasePlugin:

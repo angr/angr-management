@@ -37,6 +37,20 @@ atexit.register(shutil.rmtree, _ipython_dir, ignore_errors=True)
 
 
 @pytest.fixture(autouse=True)
+def keep_the_tui_layout():
+    """
+    Give every test the terminal layout it started with. The terminal app saves its tabs in Conf.tui_layout when it
+    exits with a binary loaded, as a snapshot test's app does, and opens them again with the next binary, so one
+    test's views would otherwise show up in the next test's screen.
+    """
+    from angrmanagement.config import Conf  # pylint: disable=import-outside-toplevel
+
+    saved = Conf.tui_layout
+    yield
+    Conf.tui_layout = saved
+
+
+@pytest.fixture(autouse=True)
 def qthread_coverage(monkeypatch):
     """
     Patch QThread.run for coverage support.

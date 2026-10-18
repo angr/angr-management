@@ -4,7 +4,7 @@ URL actions arriving from the daemon reach the app's workspace and bring the ter
 starts at launch when configured and from the AI menu, and stops.
 """
 
-# pylint: disable=missing-class-docstring,protected-access
+# pylint: disable=missing-class-docstring,protected-access,no-self-use
 
 from __future__ import annotations
 
@@ -14,6 +14,8 @@ import socket
 import unittest
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
+
+from tui_pilot import settle, wait_for  # pylint: disable=import-error
 
 from angrmanagement.config import Conf
 from angrmanagement.daemon.client import ClientService
@@ -45,19 +47,6 @@ def run_app(scenario: Callable[[AmApp, Pilot], Awaitable[None]], binary: str | N
             await scenario(app, pilot)
 
     asyncio.run(main())
-
-
-async def settle(pilot: Pilot, rounds: int = 4) -> None:
-    for _ in range(rounds):
-        await pilot.pause()
-
-
-async def wait_for(pilot: Pilot, condition: Callable[[], bool], rounds: int = 300) -> None:
-    for _ in range(rounds):
-        if condition():
-            return
-        await pilot.pause(0.02)
-    raise AssertionError("the condition never held")
 
 
 def free_port() -> int:
@@ -115,7 +104,7 @@ class TestDaemonClient(AppCase):
         run_app(scenario, binary=None, caps=TerminalCaps(truecolor=True, kitty=True, forced_tier=3))
 
     def test_with_the_daemon_it_connects_at_start(self) -> None:
-        async def scenario(app: AmApp, pilot: Pilot) -> None:
+        async def scenario(_app: AmApp, pilot: Pilot) -> None:
             await settle(pilot)
 
         with patch("angrmanagement.daemon.client.connect_to_daemon") as connect:

@@ -4,7 +4,9 @@ Docking for the terminal frontend.
 The screen has five areas, left, center, right, top and bottom, each a ``TabbedContent`` whose tabs are views.
 :class:`TuiViewManager` puts a new view in the area its category opens in, raises and focuses views, cycles the tabs
 of the center area, hides empty side areas, lets the bottom area hide itself as the Qt dock does, and resizes areas.
-The layout (area sizes and whether the bottom area is hidden) is saved in the configuration.
+The layout (area sizes, whether the bottom area is hidden, and the tabs open in each area with the active one) is
+saved in the configuration's ``tui_layout``; the tabs are saved when the app exits with a binary loaded and opened
+again when the next binary loads.
 """
 
 from __future__ import annotations
@@ -12,6 +14,7 @@ from __future__ import annotations
 import contextlib
 import json
 import logging
+from collections import Counter
 from typing import TYPE_CHECKING, Any
 
 from textual.widgets import TabbedContent, TabPane
@@ -242,6 +245,50 @@ class TuiViewManager(BaseViewManager):
     # Layout
     #
 
+    def tab_state(self) -> tuple[dict[str, list[str]], dict[str, str]]:
+        """The categories of the views open in each area, in tab order, and the category of each area's active tab."""
+        tabs: dict[str, list[str]] = {}
+        active: dict[str, str] = {}
+        for view, (name, _pane_id) in self._panes.items():
+            if view.category in TUI_VIEW_CLASSES:
+                tabs.setdefault(name, []).append(view.category)
+        for name in tabs:
+            with contextlib.suppress(Exception):
+                view = self.view_for_pane(self.area(name).active)
+                if view is not None and view.category in TUI_VIEW_CLASSES:
+                    active[name] = view.category
+        return tabs, active
+
+    def save_tabs(self) -> None:
+        """Remember the tabs of every area and the active ones (on exit)."""
+        self.layout["tabs"], self.layout["active"] = self.tab_state()
+        save_layout(self.layout)
+
+    def restore_tabs(self) -> None:
+        """Open the views the saved tabs name that are not open, in their areas, and activate the saved tabs."""
+        tabs = self.layout.get("tabs") or {}
+        have = Counter(view.category for view in self.views)
+        for name, categories in tabs.items():
+            if name not in DOCKING_AREAS:
+                continue
+            for category in categories:
+                if have[category] > 0:
+                    have[category] -= 1
+                    continue
+                self.create_view(category, name)
+        for name, category in (self.layout.get("active") or {}).items():
+            view = next((v for v in self.views_in_area(name) if v.category == category), None)
+            if view is None:
+                continue
+            pane_id = self.pane_id_of(view)
+
+            def activate(name: str = name, pane_id: str | None = pane_id) -> None:
+                # not raise_view: that would show the bottom area the user hid
+                with contextlib.suppress(Exception):
+                    self.area(name).active = pane_id
+
+            self._when_mounted(view, activate)
+
     def toggle_bottom(self) -> None:
         self.layout["bottom_hidden"] = not self.layout.get("bottom_hidden")
         self.update_areas()
@@ -266,6 +313,11 @@ def load_layout() -> dict[str, Any]:
         saved = {}
     if isinstance(saved, dict):
         layout.update({k: v for k, v in saved.items() if k in DEFAULT_LAYOUT})
+        tabs, active = saved.get("tabs"), saved.get("active")
+        if isinstance(tabs, dict) and all(isinstance(v, list) for v in tabs.values()):
+            layout["tabs"] = {str(k): [str(c) for c in v] for k, v in tabs.items()}
+        if isinstance(active, dict):
+            layout["active"] = {str(k): str(v) for k, v in active.items()}
     return layout
 
 

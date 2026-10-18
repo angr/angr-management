@@ -25,7 +25,8 @@ app = None
 def create_qapp():
     global app
     if app is None:
-        app = QApplication([])
+        # a test of the terminal's picture mode may have made the process's QApplication already
+        app = QApplication.instance() or QApplication([])
         install_qt_frontend()
         Conf.init_font_config()
     return app

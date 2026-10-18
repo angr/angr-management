@@ -48,7 +48,12 @@ def collapse(shown: list[Any]) -> list[Any]:
 
 
 #: what the terminal's menus have and the Qt ones do not, as (menu, entry): the Qt Toolbars submenu stands there
-TERMINAL_ONLY = {("&View", ("&Bottom Area", "F12"))}
+TERMINAL_ONLY = {
+    ("&View", ("&Bottom Area", "F12")),
+    # picture mode and the terminal's capabilities have no Qt counterpart
+    ("&View", ("Graph &Picture", None)),
+    ("&Help", ("Terminal &Capabilities...", None)),
+}
 
 
 class TestMenuParity(AngrManagementTestCase):

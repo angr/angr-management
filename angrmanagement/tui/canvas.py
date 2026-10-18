@@ -16,6 +16,8 @@ from rich.segment import Segment
 from rich.style import Style
 from textual.strip import Strip
 
+from angrmanagement.present.links import disasm_link_addr, with_link
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
 
@@ -125,7 +127,8 @@ class CharCanvas:
         for row, line in enumerate(lines):
             col = x
             for span in line.spans:
-                style = f"{base_style} {span.style}".strip()
+                # an address of the disassembly links to its angr:// URL (angrmanagement.present.links)
+                style = with_link(f"{base_style} {span.style}".strip(), disasm_link_addr(span))
                 col = self.text(col, y + row, span.text, style)
             if width is not None:
                 for pad in range(col, x + width):

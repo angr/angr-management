@@ -67,6 +67,50 @@ class TerminalCaps:
         return ", ".join(parts)
 
 
+#: What each tier adds, as Help > Terminal capabilities lists it.
+TIER_FEATURES = (
+    (0, "Any terminal: the key chords it reports, with an alternative for each Qt chord it cannot; braille pictures"),
+    (1, "True colour, angr:// links (OSC 8) on addresses, copying to the system clipboard (OSC 52)"),
+    (2, "The kitty keyboard protocol: every Qt chord, as the Qt window binds it"),
+    (3, "Graphics (kitty or Sixel): pictures for the logo, the minimap, the feature map, the trace map and exports"),
+)
+
+
+def yes_no(value: bool) -> str:
+    return "yes" if value else "no"
+
+
+def capability_rows(caps: TerminalCaps, env: dict[str, str] | None = None) -> list[tuple[str, str]]:
+    """``(feature, what was detected)`` for each thing :func:`detect` looks for, then the tier and its source."""
+    env = dict(os.environ) if env is None else env
+    forced = env.get(TIER_ENV)
+    source = "detected"
+    if caps.forced_tier is not None:
+        source = f"forced by {TIER_ENV}={forced}" if forced else "forced"
+    return [
+        ("TERM", caps.term or "(unset)"),
+        ("TERM_PROGRAM", caps.term_program or "(unset)"),
+        ("Terminal version (XTVERSION)", caps.version or "(no reply)"),
+        ("True colour", yes_no(caps.truecolor)),
+        ("Kitty keyboard protocol", yes_no(caps.kitty_keyboard)),
+        ("Kitty graphics protocol", yes_no(caps.kitty_graphics)),
+        ("Sixel graphics", yes_no(caps.sixel)),
+        ("Kitty (remote control, notifications)", yes_no(caps.kitty)),
+        ("Tier", f"{caps.tier} ({source})"),
+        *(("Note", note) for note in caps.notes),
+    ]
+
+
+def osc99(title: str, body: str, ident: str = "am") -> str:
+    """kitty's desktop notification (OSC 99): ``title``, then ``body``, as one notification ``ident``."""
+
+    def clean(text: str) -> str:
+        # the payload runs to the string terminator: no escapes or control characters in it
+        return "".join(char for char in text if char >= " " and char != "\x7f")
+
+    return f"\x1b]99;i={ident}:d=0;{clean(title)}\x1b\\\x1b]99;i={ident}:d=1:p=body;{clean(body)}\x1b\\"
+
+
 def caps_from_environment(env: dict[str, str] | None = None) -> TerminalCaps:
     """What the environment alone says about the terminal."""
     env = dict(os.environ) if env is None else env

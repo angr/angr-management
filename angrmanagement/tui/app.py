@@ -36,12 +36,13 @@ from angrmanagement.present.shell import DOCUMENTATION_URL, FileMenu, build_main
 from angrmanagement.present.symexec import open_new_state
 from angrmanagement.present.theme import CUSTOM_SCHEME_NAME, Theme
 from angrmanagement.present.xrefs import XRefsModel
-from angrmanagement.tui.caps import TerminalCaps, caps_from_environment
+from angrmanagement.tui.caps import TerminalCaps, caps_from_environment, osc99
 from angrmanagement.tui.executor import TextualExecutor
 from angrmanagement.tui.new_state import NewStateScreen
 from angrmanagement.tui.palette import AmCommandProvider, GotoProvider
 from angrmanagement.tui.screens.about import AboutScreen
 from angrmanagement.tui.screens.archive import ArchiveScreen
+from angrmanagement.tui.screens.capabilities import CapabilitiesScreen
 from angrmanagement.tui.screens.plugins import PluginsScreen
 from angrmanagement.tui.screens.preferences import PreferencesScreen
 from angrmanagement.tui.screens.progress import ProgressScreen
@@ -85,6 +86,8 @@ TUI_BINDINGS = Keymap(
 
 #: How long apart two Shift presses may be to open the goto palette, as in the Qt frontend.
 SHIFT_SHIFT_TIMEOUT = 1.0
+#: A job that ran at least this long (seconds) says so on the desktop when it ends while the terminal is not focused.
+NOTIFY_AFTER_SECONDS = 10.0
 
 
 class AmApp(App):
@@ -172,6 +175,10 @@ class AmApp(App):
         self.mcp_server_manager: Any = None
         #: the progress screen of the blocking job that runs, if one does
         self.progress_screen: ProgressScreen | None = None
+        #: when each running job started (time.monotonic), for the notification that a long job finished
+        self._job_started: dict[int, float] = {}
+        #: whether the saved tabs were opened (they are, when the first binary loads)
+        self._tabs_restored = False
         self.welcome = welcome
         self.use_daemon = use_daemon
         self.use_mcp = use_mcp
@@ -198,6 +205,11 @@ class AmApp(App):
         assert isinstance(file_menu, FileMenu)
         self._file_menu = file_menu
         self._plugin_menu = self.menus[4]
+        # the terminal's own Help entry, before About
+        help_menu = self.menus[5]
+        help_menu.add(
+            MenuEntry("Terminal &Capabilities...", self.open_terminal_capabilities), len(help_menu.items()) - 1
+        )
         self.workspace.main_instance.project.am_subscribe(self._on_project_changed)
         self.menu_bar = MenuBar(self.menus, self.shortcut_text)
         # the Qt window's Debug and Feature Map toolbars, in one row under the menu bar
@@ -232,7 +244,22 @@ class AmApp(App):
                 *self._toolbar_entries.values(),
             ],
         )
-        return [toolbars, MenuEntry("&Bottom Area", self.toggle_bottom_panel, shortcut="F12")]
+        return [
+            toolbars,
+            MenuEntry("&Bottom Area", self.toggle_bottom_panel, shortcut="F12"),
+            MenuEntry("Graph &Picture", self.show_graph_picture),
+        ]
+
+    def show_graph_picture(self) -> None:
+        """
+        View > Graph Picture: the disassembly the user worked in last as a picture, drawn by Qt where PySide6 is
+        installed (picture mode); a braille thumbnail below tier 3.
+        """
+        view = self.view_widget("disassembly")
+        if view is None or not hasattr(view, "show_picture"):
+            self.show_status("Open a disassembly view first.")
+            return
+        view.show_picture()
 
     def set_toolbar_visible(self, name: str, visible: bool) -> None:
         """Show or hide a toolbar (``debug-bar`` or ``feature-map``); the row goes when both are hidden."""
@@ -304,7 +331,7 @@ class AmApp(App):
         job_manager = self.workspace.job_manager
         job_manager.job_starting.connect(self._on_job_starting)
         job_manager.job_progressed.connect(self._on_job_progress)
-        job_manager.job_exception.connect(self._on_job_finished)
+        job_manager.job_exception.connect(lambda job, _exc: self._on_job_finished(job, failed=True))
         job_manager.job_finished.connect(self._on_job_finished)
 
         self.workspace.add_default_views()
@@ -480,6 +507,7 @@ class AmApp(App):
     #
 
     def _on_job_starting(self, job: Job) -> None:
+        self._job_started[id(job)] = time.monotonic()
         self.status_bar.progress("Working...", 0.0, True)
         if getattr(job, "blocking", False) and self.progress_screen is None:
             # a blocking job holds the user up, as the Qt progress dialog does; the others show in the status bar
@@ -492,11 +520,29 @@ class AmApp(App):
         if getattr(job, "blocking", False) and self.progress_screen is not None:
             self.progress_screen.update_progress(text, percentage)
 
-    def _on_job_finished(self, job: Job, *_args) -> None:  # pylint:disable=unused-argument
+    def _on_job_finished(self, job: Job, *_args, failed: bool = False) -> None:
+        started = self._job_started.pop(id(job), None)
+        if started is not None and time.monotonic() - started >= NOTIFY_AFTER_SECONDS and not self.app_focus:
+            # a long job ended while the user looked elsewhere: tell the desktop, as kitty can
+            self.notify_desktop("angr management", f"{job.name} {'failed' if failed else 'finished'}")
         self.status_bar.progress_done()
         screen, self.progress_screen = self.progress_screen, None
         if screen is not None and screen.is_attached:
             screen.dismiss(None)
+
+    def notify_desktop(self, title: str, body: str) -> bool:
+        """A desktop notification through the terminal (kitty's OSC 99); whether the terminal takes one."""
+        if not self.caps.kitty:
+            return False
+        self.write_escape(osc99(title, body))
+        return True
+
+    def write_escape(self, sequence: str) -> None:
+        """Write a terminal escape sequence past Textual's screen updates."""
+        driver = self._driver
+        if driver is not None:
+            driver.write(sequence)
+            driver.flush()
 
     def progress(self, status: str, progress: float) -> None:
         """Show a plugin's progress in the status bar, as the Qt main window's progress() does."""
@@ -521,6 +567,10 @@ class AmApp(App):
         instance = self.workspace.main_instance
         loaded = not instance.project.am_none
         self._file_menu.set_project_loaded(loaded)
+        if loaded and not self._tabs_restored:
+            # the views the last session had open, once there is a binary for them to show
+            self._tabs_restored = True
+            self.call_after_refresh(self.workspace.view_manager.restore_tabs)
         if loaded and instance.project.filename:
             self.sub_title = os.path.basename(instance.project.filename)
         elif loaded:
@@ -752,6 +802,15 @@ class AmApp(App):
     def quit(self) -> None:
         self.exit()
 
+    def exit(self, *args: Any, **kwargs: Any) -> None:
+        """Leave the app; with a binary loaded, the tabs of every area are saved for the next one first."""
+        if not self.workspace.main_instance.project.am_none:
+            try:
+                self.workspace.view_manager.save_tabs()
+            except Exception:  # pylint:disable=broad-exception-caught
+                _l.warning("Could not save the tabs", exc_info=True)
+        super().exit(*args, **kwargs)
+
     def show_command_palette(self) -> None:
         self.action_command_palette()
 
@@ -879,6 +938,10 @@ class AmApp(App):
 
     def open_about_dialog(self) -> None:
         self.push_screen(AboutScreen(self.caps))
+
+    def open_terminal_capabilities(self) -> None:
+        """Help > Terminal capabilities: what the terminal was found to do, and the tier."""
+        self.push_screen(CapabilitiesScreen(self.caps))
 
     def show_welcome_dialog(self) -> None:
         """The Welcome screen: the recent projects, open a file, the documentation and About."""
