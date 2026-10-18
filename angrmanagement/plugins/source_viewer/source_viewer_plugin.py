@@ -17,6 +17,7 @@ from angrmanagement.ui.widgets.qccode_edit import ColorSchemeIDA
 from angrmanagement.ui.widgets.qccode_highlighter import QCCodeHighlighter
 
 from .model import SourceMap, add_point, remove_point
+from .plugin import SourceViewerPlugin  # noqa: F401  # pylint: disable=unused-import
 
 if TYPE_CHECKING:
     from cle import Loader

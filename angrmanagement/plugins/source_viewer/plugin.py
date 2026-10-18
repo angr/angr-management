@@ -22,12 +22,16 @@ class SourceViewerPlugin(BasePlugin):
     def __init__(self, workspace: Workspace) -> None:
         super().__init__(workspace)
         if qt_frontend():
-            from .source_viewer_plugin import SourceViewer  # pylint:disable=import-outside-toplevel
+            # by its full name: the plugin loader runs this file as a package of its own, so a relative import would
+            # load a second copy of the module, whose SourceViewer is not the class other code imports
+            # pylint: disable-next=import-outside-toplevel
+            from angrmanagement.plugins.source_viewer.source_viewer_plugin import SourceViewer
 
             self.source_viewer = SourceViewer(workspace)
             workspace.default_tabs += [self.source_viewer]
         else:
-            from .tui_view import SourceTuiView  # pylint:disable=import-outside-toplevel
+            # pylint: disable-next=import-outside-toplevel
+            from angrmanagement.plugins.source_viewer.tui_view import SourceTuiView
 
             self.source_viewer = SourceTuiView(workspace, "center", workspace.main_instance)
         workspace.add_view(self.source_viewer)
