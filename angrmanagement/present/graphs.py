@@ -34,6 +34,9 @@ GRAPH_CELL_MARGINS = {
     "min_edge_col_width": 4,
     "arrow_gap": 1,
 }
+#: The proximity graph's margins: one row of edge between layers, as the Qt proximity graph packs its rows tighter
+#: than the other graphs (2 px margins there), so a whole call chain fits on a screen.
+PROXIMITY_CELL_MARGINS = {**GRAPH_CELL_MARGINS, "row_margin": 0}
 #: TreeGraphLayouter's spacing in cells: between layers, and between the boxes of a layer.
 TREE_HORIZONTAL_SPACING = 4
 TREE_VERTICAL_SPACING = 1
@@ -163,6 +166,7 @@ class TreeGraphPresenter:
     :param layouter:        ``"graph"`` for GraphLayouter, ``"tree"`` for TreeGraphLayouter.
     :param node_sorter:     Orders the boxes of a GraphLayouter row (a list of :class:`GraphBox` in, out).
     :param vertical:        For the tree layouter: layers from top to bottom instead of right to left.
+    :param margins:         GraphLayouter's margins in cells (:data:`GRAPH_CELL_MARGINS` when None).
     """
 
     def __init__(
@@ -172,12 +176,14 @@ class TreeGraphPresenter:
         layouter: str = "graph",
         node_sorter: Callable[[list[GraphBox]], list[GraphBox]] | None = None,
         vertical: bool = False,
+        margins: dict[str, int] | None = None,
     ) -> None:
         self.graph_source = graph_source
         self.label_builder = label_builder
         self.layouter = layouter
         self.node_sorter = node_sorter
         self.vertical = vertical
+        self.margins = GRAPH_CELL_MARGINS if margins is None else margins
         self._picture: GraphPicture | None = None
         #: the node the frontend shows as selected
         self.selected: Any = None
@@ -224,7 +230,7 @@ class TreeGraphPresenter:
             picture.boxes = [box for box in picture.boxes if box in picture.layout]
             picture.edges = tree_edges(boxes, picture.layout, self.vertical)
             return picture
-        gl = GraphLayouter(boxes, sizes, node_sorter=self.node_sorter, **GRAPH_CELL_MARGINS)
+        gl = GraphLayouter(boxes, sizes, node_sorter=self.node_sorter, **self.margins)
         picture.layout = {box: (int(x), int(y)) for box, (x, y) in gl.node_coordinates.items()}
         picture.edges = [
             GraphEdge(edge.src, edge.dst, [(int(x), int(y)) for x, y in edge.coordinates]) for edge in gl.edges
@@ -255,6 +261,7 @@ def text_lines(texts: Iterable[str], style: str = "") -> list[Line]:
 
 __all__ = [
     "GRAPH_CELL_MARGINS",
+    "PROXIMITY_CELL_MARGINS",
     "GraphBox",
     "GraphEdge",
     "GraphPicture",

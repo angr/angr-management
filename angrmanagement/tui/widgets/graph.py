@@ -138,16 +138,15 @@ class BoxGraphWidget(ScrollView, can_focus=True):
         return max((self.size.width - self.canvas.width) // 2, 0), max((self.size.height - self.canvas.height) // 2, 0)
 
     def center(self) -> None:
-        """Scroll so the middle of the graph is in the middle of the widget."""
+        """
+        Scroll so the middle of the graph is in the middle of the widget across, and its top row at the top. The Qt
+        graph views center on the middle both ways because their graphs fit; a graph taller than the widget shows its
+        root first, where reading starts, instead of a middle that shows neither end.
+        """
         if self.canvas is None:
             return
         self._centered = True
-        self.scroll_to(
-            max((self.canvas.width - self.size.width) // 2, 0),
-            max((self.canvas.height - self.size.height) // 2, 0),
-            animate=False,
-            immediate=True,
-        )
+        self.scroll_to(max((self.canvas.width - self.size.width) // 2, 0), 0, animate=False, immediate=True)
 
     def on_resize(self, _event: events.Resize) -> None:
         if not self._centered:

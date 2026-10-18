@@ -134,6 +134,32 @@ class TestProximity(unittest.TestCase):
 
         run_app(scenario)
 
+    def test_the_root_is_on_screen(self):
+        """
+        main's root box is on screen when the view opens, with one edge row and its arrow between layers as the
+        Qt view packs them, and still when the graph is taller than the view, which then shows its top.
+        """
+
+        def root_row(view: ProximityTuiView) -> int:
+            picture = view.presenter.graph.picture
+            root = next(box for box in picture.boxes if box.lines[0].text == "Function main")
+            return picture.layout[root][1] + view.graph.canvas_offset[1] - view.graph.scroll_offset.y
+
+        async def scenario(app: AmApp, pilot: Pilot, view: ProximityTuiView) -> None:
+            picture = view.presenter.graph.picture
+            ordered = sorted(picture.layout.items(), key=lambda item: item[1][1])
+            (first, (_x0, y0)), (_second, (_x1, y1)) = ordered[0], ordered[1]
+            assert y1 - (y0 + first.height) == 2
+            assert 0 <= root_row(view) < view.graph.size.height
+            await pilot.resize_terminal(SIZE[0], 30)
+            await settle(pilot)
+            view.graph.rebuild()
+            await settle(pilot)
+            assert view.graph.canvas is not None and view.graph.canvas.height > view.graph.size.height
+            assert 0 <= root_row(view) < view.graph.size.height
+
+        run_app(scenario)
+
     def test_argument_text(self):
         assert argument_text(object()) == (object, "Unknown")
 

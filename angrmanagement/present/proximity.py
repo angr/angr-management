@@ -22,7 +22,7 @@ from angr.analyses.proximity_graph import (
 )
 
 from .base import InstancePresenter, project_of
-from .graphs import GraphBox, TreeGraphPresenter
+from .graphs import PROXIMITY_CELL_MARGINS, GraphBox, TreeGraphPresenter
 from .keymap import Binding, Keymap
 from .spans import Line
 
@@ -133,7 +133,9 @@ class ProximityPresenter(InstancePresenter):
         self._function: Function | None = None
         self._expand_function_addrs: set[int] = set()
         self._proximity_graph: networkx.DiGraph | None = None
-        self.graph = TreeGraphPresenter(self._graph_source, self._box, "graph", node_sorter=sort_by_reference)
+        self.graph = TreeGraphPresenter(
+            self._graph_source, self._box, "graph", node_sorter=sort_by_reference, margins=PROXIMITY_CELL_MARGINS
+        )
         #: called after the graph changed
         self.on_reloaded: Callable[[], None] | None = None
 
