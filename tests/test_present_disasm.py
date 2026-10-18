@@ -381,6 +381,21 @@ class TestWhileCfgRecoveryRuns(FauxwareDisasmCase):
         self.refuse_reads()
         assert self.presenter._function_disasm_at(self.main.addr) is None
 
+    def test_the_graph_laid_out_later_selects_what_was_selected(self):
+        self.presenter.display_function(self.main)
+        graph = self.view.flow_graph
+        insn = self.insns[3]
+        # another view's infodock, as when the graph takes over from the linear view
+        old_infodock = SimpleNamespace(selected_insns=SimpleNamespace(am_obj={insn}))
+        self.presenter.infodock.clear_selection()
+        deferred = self.refuse_reads()
+        graph.reload(old_infodock)
+        assert graph.doc is None
+        patch.stopall()
+        deferred[0]()
+        assert graph.doc is not None
+        assert insn in self.presenter.infodock.selected_insns
+
 
 class TestFind(FauxwareDisasmCase):
     def test_find_in_graph(self):

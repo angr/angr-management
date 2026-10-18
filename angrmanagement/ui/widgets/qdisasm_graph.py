@@ -76,6 +76,8 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         self.blocks = []
         self.entry_block: QGraphBlock | None = None
+        #: the instructions selected when the layout was put off until CFG recovery is done, selected again then
+        self._deferred_selection: set[int] = set()
 
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
@@ -117,7 +119,9 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     def reload(self, old_infodock: InfoDock | None = None) -> None:
         # if there is an instruction in selection, we will want to select that instruction again after reloading this
         # view.
-        selected_insns = old_infodock.selected_insns.am_obj if old_infodock is not None else set()
+        selected_insns = set(old_infodock.selected_insns.am_obj) if old_infodock is not None else set()
+        selected_insns |= self._deferred_selection
+        self._deferred_selection = set()
 
         self._reset_scene()
         # _reset_scene() destroyed the C++ objects of the old block widgets; never keep a stale reference around
@@ -135,6 +139,7 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         # CFG recovery may still be adding to this function: if it does not stop for us, lay it out when it is done
         with self.disasm_view.presenter.reading_functions(retry=self.reload) as granted:
             if not granted:
+                self._deferred_selection = selected_insns
                 self._minimap.reload_target_scene()
                 return
             self._make_blocks(scene)
@@ -152,7 +157,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         self._reset_view()
 
         # select the old instructions
-        assert selected_insns is not None
         for insn_addr in selected_insns:
             self.infodock.select_instruction(insn_addr, unique=False, use_animation=False)
 
