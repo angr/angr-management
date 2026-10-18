@@ -402,7 +402,7 @@ class TestPreciseDiffing(PluginCase):
             picker.query_one("#ok", Button).press()
             load = await wait_for_screen(pilot, LoadBinaryScreen)
             load.query_one("#ok", Button).press()
-            await wait_for(pilot, lambda: plugin.current_revised_code is not None, rounds=3000)
+            await wait_until(pilot, lambda: plugin.current_revised_code is not None, rounds=3000, then_settle=4)
             await app.wait_for_jobs()
             await settle(pilot)
             vm = app.workspace.view_manager
@@ -434,7 +434,9 @@ class TestPreciseDiffing(PluginCase):
             await app.wait_for_jobs()
             code: Any = vm.first_view_in_category("pseudocode")
             diff_code: Any = plugin.current_revised_code
-            await wait_for(pilot, lambda: not diff_code.codegen.am_none and not code.codegen.am_none, rounds=3000)
+            await wait_until(
+                pilot, lambda: not diff_code.codegen.am_none and not code.codegen.am_none, rounds=3000, then_settle=4
+            )
             plugin.color_pseudocode_diff()
             highlights = code.extra_highlights + diff_code.extra_highlights
             assert {style for _start, _end, style in highlights} <= {"diff.added", "diff.deleted"}
