@@ -153,6 +153,43 @@ class TestFunctionsTable(TuiTestCase):
 
         run_app(scenario)
 
+    def test_a_right_click_on_the_header_hides_and_shows_columns(self) -> None:
+        async def scenario(app: AmApp, pilot: Pilot) -> None:
+            view: Any = app.view_widget("functions")
+            table = view.table_widget
+            names = [column.name for column in view.presenter.model.columns]
+            assert len(table.columns) == len(names) > 2
+            # a right click on the header row opens the column menu, a check box per column
+            await pilot.click(table, offset=(2, 0), button=3)
+            await settle(pilot)
+            popup = app.screen
+            assert isinstance(popup, MenuPopup) and popup.menu.text == "Column Menu"
+            assert [entry.text for entry in popup.items] == names and all(entry.checked for entry in popup.items)
+            await pilot.press("escape")
+            await settle(pilot)
+            hidden = names.index("Binary") if "Binary" in names else 1
+            table.header_menu().items()[hidden].trigger()
+            await settle(pilot)
+            assert len(table.columns) == len(names) - 1
+            assert [str(c.label).split(" ")[0] for c in table.columns.values()] == [
+                n.split(" ")[0] for i, n in enumerate(names) if i != hidden
+            ]
+            # the cells follow the shown columns, and the last shown column cannot be hidden
+            assert len(table.get_row_at(0)) == len(names) - 1
+            for idx in range(len(names)):
+                table.set_column_visible(idx, False)
+            await settle(pilot)
+            assert len(table.columns) == 1
+            menu = table.header_menu()
+            assert sum(entry.checked for entry in menu.items()) == 1
+            assert not next(entry for entry in menu.items() if entry.checked).enabled
+            for idx in range(len(names)):
+                table.set_column_visible(idx, True)
+            await settle(pilot)
+            assert len(table.columns) == len(names)
+
+        run_app(scenario)
+
     def test_sort_on_header_click(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
             view: Any = app.view_widget("functions")

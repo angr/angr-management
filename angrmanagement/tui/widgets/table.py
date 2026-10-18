@@ -3,8 +3,9 @@ Tables over angrmanagement.present.tables models.
 
 :class:`TableWidget` is a ``DataTable`` that shows a ``TableModel``: its columns, its cells with their style keys
 drawn through the current theme, sorting when a header is clicked, Enter or a click on the highlighted row to activate,
-and the model's context menu on Shift+F10 or a right click. :class:`FilterableTable` puts a filter box above it; typing
-a printable character in the table starts filtering and Escape clears the filter.
+and the model's context menu on Shift+F10 or a right click. With ``column_menu`` set, a right click on the header row
+lists the columns to show or hide, as the Qt functions table's header does. :class:`FilterableTable` puts a filter box
+above it; typing a printable character in the table starts filtering and Escape clears the filter.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from textual.containers import Horizontal, Vertical
 from textual.message import Message
 from textual.widgets import DataTable, Input, Static
 
+from angrmanagement.present.menus import Menu, MenuEntry
 from angrmanagement.present.tables import APPENDED, DATA
 from angrmanagement.tui.theme import rich_style
 from angrmanagement.tui.widgets.styles import current_theme
@@ -76,6 +78,43 @@ class TableWidget(DataTable):
         self._sort_column: int | None = None
         self._sort_descending = False
         self._column_count = -1
+        #: whether a right click on the header offers to hide columns (the Qt functions table's header menu)
+        self.column_menu = False
+        #: the model's columns that are not shown
+        self.hidden_columns: set[int] = set()
+        self._shown: list[int] = []
+
+    def shown_columns(self) -> list[int]:
+        """The model's columns that are shown, in order; at least one."""
+        count = len(self.model.columns)
+        shown = [idx for idx in range(count) if idx not in self.hidden_columns]
+        return shown or list(range(min(count, 1)))
+
+    def set_column_visible(self, idx: int, visible: bool) -> None:
+        """Show or hide the model's column ``idx``; the last shown column stays, as in Qt."""
+        if visible:
+            self.hidden_columns.discard(idx)
+        elif len(self.shown_columns()) > 1:
+            self.hidden_columns.add(idx)
+        self._column_count = -1
+        self.rebuild()
+
+    def header_menu(self) -> Menu:
+        """The header's menu: a check box per column."""
+        shown = self.shown_columns()
+        entries = []
+        for idx, column in enumerate(self.model.columns):
+            visible = idx in shown
+            entry = MenuEntry(
+                column.name,
+                lambda checked=True, idx=idx: self.set_column_visible(idx, bool(checked)),
+                checkable=True,
+                checked=visible,
+            )
+            if visible and len(shown) == 1:
+                entry.disable()
+            entries.append(entry)
+        return Menu("Column Menu", entries)
 
     #
     # Building
@@ -104,9 +143,10 @@ class TableWidget(DataTable):
         return Text(text, style=rich_style(theme.style_of(cell)), justify=justify, no_wrap=True)
 
     def cells_of_row(self, row: int, columns: list[Column] | None = None, theme: Theme | None = None) -> list[Text]:
+        """The texts of the shown cells of ``row``."""
         columns = columns if columns is not None else self.model.columns
         theme = theme if theme is not None else current_theme(self)
-        return [self._cell_text(self.model.cell(row, col), column, theme) for col, column in enumerate(columns)]
+        return [self._cell_text(self.model.cell(row, col), columns[col], theme) for col in self._shown]
 
     def rebuild(self) -> None:
         """Show the model's columns and rows again."""
@@ -114,7 +154,9 @@ class TableWidget(DataTable):
         cursor = self.cursor_row
         if len(columns) != self._column_count:
             self.clear(columns=True)
-            for idx, column in enumerate(columns):
+            self._shown = self.shown_columns()
+            for idx in self._shown:
+                column = columns[idx]
                 width = column.width_hint or None
                 if column.stretch:
                     width = None
@@ -122,8 +164,8 @@ class TableWidget(DataTable):
             self._column_count = len(columns)
         else:
             self.clear()
-            for idx, column in enumerate(columns):
-                self.columns[str(idx)].label = self._header_label(idx, column)  # type: ignore[index]
+            for idx in self._shown:
+                self.columns[str(idx)].label = self._header_label(idx, columns[idx])  # type: ignore[index]
         theme = current_theme(self)
         self.add_rows(self.cells_of_row(row, columns, theme) for row in range(self.model.row_count))
         if self.row_count:
@@ -147,7 +189,7 @@ class TableWidget(DataTable):
             columns = self.model.columns
             for row in range(first, last + 1):
                 for col, cell in enumerate(self.cells_of_row(row, columns, theme)):
-                    self.update_cell_at((row, col), cell)  # type: ignore[arg-type]
+                    self.update_cell_at((row, col), cell)  # type: ignore[arg-type]  # a shown column's place
             return
         self.rebuild()
 
@@ -168,7 +210,7 @@ class TableWidget(DataTable):
 
     def on_data_table_header_selected(self, event: DataTable.HeaderSelected) -> None:
         event.stop()
-        col = event.column_index
+        col = self._shown[event.column_index] if event.column_index < len(self._shown) else event.column_index
         if self._sort_column == col:
             self._sort_descending = not self._sort_descending
         else:
@@ -218,6 +260,13 @@ class TableWidget(DataTable):
         if event.button == 3:
             meta = event.style.meta if event.style else {}
             row = meta.get("row")
+            if row == -1 and self.column_menu:
+                # the header row
+                event.stop()
+                open_menu = getattr(self.app, "open_context_menu", None)
+                if open_menu is not None:
+                    open_menu(self.header_menu(), (event.screen_x, event.screen_y))
+                return
             if isinstance(row, int) and row >= 0:
                 self.move_cursor(row=row)
             event.stop()

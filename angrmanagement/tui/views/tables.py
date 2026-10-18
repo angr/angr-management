@@ -103,6 +103,12 @@ class FunctionsTuiView(TableTuiView):
 
     presenter: FunctionsPresenter
 
+    def make_table(self) -> FilterableTable:
+        table = super().make_table()
+        # a right click on the header hides or shows columns, as on the Qt functions table's header
+        table.table.column_menu = True
+        return table
+
     def compose(self) -> ComposeResult:
         with Horizontal(classes="toolbar"):
             yield Checkbox("Show alignment functions", self.presenter.show_alignment_functions, id="show-alignment")
