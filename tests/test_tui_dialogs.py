@@ -32,7 +32,7 @@ from textual.widgets import (
     TextArea,
     Tree,
 )
-from tui_pilot import kb_of, settle  # pylint: disable=import-error
+from tui_pilot import kb_of, settle, wait_for  # pylint: disable=import-error
 
 import angrmanagement
 from angrmanagement.config import Conf
@@ -98,21 +98,18 @@ def run_app(
 
 async def show_view(app: AmApp, pilot: Pilot, category: str) -> Any:
     app.workspace.show_view(category)
-    for _ in range(50):
+
+    def attached() -> bool:
         view = app.view_widget(category)
-        if view is not None and view.is_attached:
-            return view
-        await pilot.pause()
-    raise AssertionError(f"no {category} view")
+        return view is not None and view.is_attached
+
+    await wait_for(pilot, attached, rounds=50)
+    return app.view_widget(category)
 
 
 async def wait_for_screen(pilot: Pilot, kind: type[Any], rounds: int = 200) -> Any:
-    for _ in range(rounds):
-        if isinstance(pilot.app.screen, kind):
-            await settle(pilot)
-            return pilot.app.screen
-        await pilot.pause()
-    raise AssertionError(f"no {kind.__name__}")
+    await wait_for(pilot, lambda: isinstance(pilot.app.screen, kind), rounds=rounds, then_settle=4)
+    return pilot.app.screen
 
 
 class DialogCase(unittest.TestCase):
@@ -395,10 +392,7 @@ class TestForms(DialogCase):
     def test_function_documentation_of_a_call(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
             view: Any = app.view_widget("disassembly")
-            for _ in range(50):
-                if view.presenter.instruction_at(self.CALL_PUTS) is not None:
-                    break
-                await pilot.pause()
+            await wait_for(pilot, lambda: view.presenter.instruction_at(self.CALL_PUTS) is not None, rounds=50)
             view.presenter.popup_func_doc_dialog(self.CALL_PUTS)
             screen = await wait_for_screen(pilot, FormScreen)
             assert screen.title_text == "Function Documentation"
@@ -531,10 +525,7 @@ class TestSmallScreens(DialogCase):
             prompt = await wait_for_screen(pilot, PromptScreen)
             prompt.query_one("#answer", Input).value = ENC_ZIP_PASSWORD
             prompt.query_one("#ok", Button).press()
-            for _ in range(100):
-                if started:
-                    break
-                await pilot.pause()
+            await wait_for(pilot, lambda: bool(started), rounds=100)
             assert len(started) == 1
             path = started[0].fname
             assert os.path.isfile(path) and os.path.basename(path) == "fauxware"
@@ -637,10 +628,7 @@ class TestSmallScreens(DialogCase):
             manager.interrupt_current_job = interrupt  # type: ignore[method-assign]
             manager.add_job(Blocking())
             screen = await wait_for_screen(pilot, ProgressScreen)
-            for _ in range(100):
-                if "halfway" in screen.text:
-                    break
-                await pilot.pause(0.05)
+            await wait_for(pilot, lambda: "halfway" in screen.text)
             assert screen.text == "A blocking job: halfway"
             screen.query_one("#cancel", Button).press()
             await app.wait_for_jobs()
@@ -666,11 +654,7 @@ class TestDirectoryPicker(DialogCase):
                     picker = await wait_for_screen(pilot, FilePickerScreen)
                     picker.query_one("#path", Input).value = link
                     picker.query_one("#ok", Button).press()
-                    for _ in range(100):
-                        if not isinstance(app.screen, FilePickerScreen):
-                            break
-                        await pilot.pause()
-                    await settle(pilot)
+                    await wait_for(pilot, lambda: not isinstance(app.screen, FilePickerScreen), then_settle=4)
 
             run_app(scenario, binary=None, interactive=True)
             assert answers == [link, os.path.realpath(real)]
