@@ -35,6 +35,9 @@ try:
 except ImportError:  # pragma: no cover - keystone is a dependency of angr's patching
     keystone = None
 
+#: what keystone raises when it cannot assemble (nothing raises it without keystone)
+KS_ERROR: type[Exception] = keystone.KsError if keystone is not None else type("NoKeystoneError", (Exception,), {})
+
 
 #
 # Addresses and labels
@@ -316,11 +319,8 @@ class PatchAssembler:
                     message = "Warning: Patch is shorter than original instruction"
             elif delta < 0:
                 message = "Warning: Patch exceeds original instruction length"
-        except Exception as ks_error:  # pylint:disable=broad-exception-caught
-            # keystone.KsError, which unavailable() has made sure can be raised
-            if keystone is None or not isinstance(ks_error, keystone.KsError):
-                raise
-            return AssembledPatch(b"", "Error: " + ks_error.message, False)
+        except KS_ERROR as ks_error:
+            return AssembledPatch(b"", "Error: " + str(getattr(ks_error, "message", ks_error)), False)
         return AssembledPatch(new_bytes, message, len(new_bytes) > 0)
 
     def apply(self, new_bytes: bytes) -> None:
