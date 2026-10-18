@@ -164,9 +164,9 @@ class FunctionTableModel(ListTableModel[FunctionTableEntry]):
         Column("Tags", 6),
         Column("Address", 8),
         Column("Binary", 10),
-        Column("Size", 6, align="right"),
-        Column("Blocks", 6, align="right"),
-        Column("Complexity", align="right", stretch=True),
+        Column("Size", 6),
+        Column("Blocks", 6),
+        Column("Complexity", stretch=True),
     ]
     Headers: ClassVar[list[str]] = [c.name for c in COLUMNS]
 

@@ -281,7 +281,7 @@ class ProjectPatternsModel(ListTableModel[Any]):
         Column("Pattern", 20),
         Column("Call", 16),
         Column("Enabled", 9, checkable=True),
-        Column("Min similarity", 8, align="right"),
+        Column("Min similarity", 8),
         Column("From", 10, stretch=True),
     ]
     ENABLED = 2
@@ -380,8 +380,8 @@ class MatchesModel(ListTableModel[Any]):
     COLUMNS: ClassVar[list[Column]] = [
         Column("Function", 16),
         Column("Where", 20),
-        Column("Similarity", 6, align="right"),
-        Column("Identity", 6, align="right"),
+        Column("Similarity", 6),
+        Column("Identity", 6),
         Column("Verified", 10),
         Column("Outlinable", stretch=True),
     ]
@@ -401,9 +401,9 @@ class FamiliesModel(ListTableModel[int]):
     """The families the last discovery found; the rows are indices into ``families``."""
 
     COLUMNS: ClassVar[list[Column]] = [
-        Column("Copies", 6, align="right"),
-        Column("Size", 5, align="right"),
-        Column("Identity", 8, align="right"),
+        Column("Copies", 6),
+        Column("Size", 5),
+        Column("Identity", 8),
         Column("Outlinable", 10),
         Column("Found", 20),
         Column("Where", stretch=True),

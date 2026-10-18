@@ -32,10 +32,10 @@ class PatternLibraryModel(ListTableModel[Any]):
         Column("Pattern", 20),
         Column("Enabled", 9, checkable=True),
         Column("Highlight", 9, checkable=True),
-        Column("Matches", 7, align="right"),
-        Column("Outlined", 8, align="right"),
+        Column("Matches", 7),
+        Column("Outlined", 8),
         Column("Call", 16),
-        Column("Min similarity", 6, align="right"),
+        Column("Min similarity", 6),
         Column("From", 10, stretch=True),
     ]
     ENABLED, HIGHLIGHT = 1, 2

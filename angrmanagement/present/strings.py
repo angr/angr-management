@@ -45,8 +45,8 @@ class StringsTableModel(ListTableModel["MemoryData"]):
 
     COLUMNS: ClassVar[list[Column]] = [
         Column("Address", 10),
-        Column("Size (Bytes)", 12, align="right"),
-        Column("Length", 7, align="right"),
+        Column("Size (Bytes)", 12),
+        Column("Length", 7),
         Column("String", stretch=True),
     ]
     HEADER: ClassVar[list[str]] = [c.name for c in COLUMNS]
