@@ -4,7 +4,7 @@ label names, breakpoint sizes, the patch assembler, the hook presets, encryption
 signature match conflicts, the language questions of Run Analysis and the colour schemes of Preferences.
 """
 
-# pylint: disable=missing-class-docstring
+# pylint: disable=missing-class-docstring,no-self-use,unused-argument
 
 from __future__ import annotations
 
@@ -257,7 +257,7 @@ class TestForms(unittest.TestCase):
         with self.assertRaises(ValueError):
             FormField("x", "X", "slider")
         form = Form("t", [FormField("a", "A", value="1")])
-        assert form.checked({"a": "2"}).ok and form.changed("a", {"a": "2"}) == {}
+        assert form.checked({"a": "2"}).ok and not form.changed("a", {"a": "2"})
         assert SimpleNamespace(**form.initial_values()).a == "1"
 
 

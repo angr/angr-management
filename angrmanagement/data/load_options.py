@@ -234,7 +234,7 @@ def symbol_paths_from_rows(rows: list[tuple[str, str, str]]) -> list[str]:
     return symbol_paths
 
 
-def build_load_options(
+def build_load_options(  # pylint:disable=redefined-outer-name
     partial_ld: cle.Loader,
     selection: LoadSelection,
     suggested_main_opts: dict | None = None,
@@ -419,7 +419,7 @@ def symbol_path_entry_error(entry_type: str, path: str) -> str | None:
     return "Invalid entry type."
 
 
-def selection_from_choices(
+def selection_from_choices(  # pylint:disable=redefined-outer-name
     *,
     outer_backend: str,
     backend: str,

@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.present.signatures import apply_signature_matches, signature_match_conflict
 
 if TYPE_CHECKING:
@@ -40,10 +41,10 @@ class QSignatureMatchesTableModel(QAbstractTableModel):
         self.instance = instance
         self.match_list = sorted(matches.items())  # Sort by address
 
-    def rowCount(self, parent=None) -> int:
+    def rowCount(self, parent=None) -> int:  # pylint:disable=unused-argument
         return len(self.match_list)
 
-    def columnCount(self, parent=None) -> int:
+    def columnCount(self, parent=None) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
     def headerData(self, section: int, orientation, role=None):
@@ -106,8 +107,6 @@ class QSignatureMatchesTable(QTableView):
             return
         addr, _name = self.model_obj.match_list[row]
         # Jump to the function address
-        from angrmanagement.logic import GlobalInfo
-
         GlobalInfo.main_window.workspace.jump_to(addr)
         # Close the dialog
         self.window().accept()
@@ -135,7 +134,7 @@ class SignatureMatchesDialog(QDialog):
         )
         self.setMinimumSize(self.sizeHint())
 
-    def sizeHint(self):
+    def sizeHint(self):  # pylint:disable=no-self-use
         return QSize(600, 400)
 
     def is_conflict(self, addr: int, name: str) -> bool:

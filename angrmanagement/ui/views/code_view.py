@@ -202,10 +202,12 @@ class CodeView(FunctionView):
             return
         then(GlobalInfo.ui_services.prompt_text("Statement Comment", "", text.replace("\n", " ")))
 
-    def ask_expr_comment(self, _addr: int, text: str, then: Callable[[str | None], None]) -> None:
+    def ask_expr_comment(  # pylint:disable=no-self-use
+        self, _addr: int, text: str, then: Callable[[str | None], None]
+    ) -> None:
         then(GlobalInfo.ui_services.prompt_text("Expression Comment", "", text))
 
-    def ask_pattern_name(self, then: Callable[[str | None], None]) -> None:
+    def ask_pattern_name(self, then: Callable[[str | None], None]) -> None:  # pylint:disable=no-self-use
         then(GlobalInfo.ui_services.prompt_text("Pattern", "Name of the call the pattern becomes:"))
 
     def on_flavors_changed(self) -> None:

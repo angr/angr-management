@@ -38,6 +38,7 @@ from angrmanagement.data.load_options import (
     CART_ENCKEY_ARGNAME,
     SYMBOL_PATH_ENTRY_TYPES,
     LoadChoiceError,
+    LoadSelection,
     arch_choices,
     arch_label,
     available_simos,
@@ -69,7 +70,7 @@ if TYPE_CHECKING:
 ADDRESS_CAPTIONS = (("base_addr", "Base address:"), ("entry_addr", "Entry address:"), ("offset", "Offset:"))
 
 
-class LoadBinaryScreen(ModalScreen["LoadSelection | None"]):
+class LoadBinaryScreen(ModalScreen[LoadSelection | None]):
     """Load a new binary: how to load the file a partial load has looked at."""
 
     DEFAULT_CSS = (
@@ -102,6 +103,8 @@ LoadBinaryScreen .facts { height: auto; }
         super().__init__()
         self.title_text = "Load a new binary"
         self.partial_ld = partial_ld
+        #: the architecture tree's node of the architecture the loader suggests
+        self._ideal_node: Any = None
         self.suggested_backend = suggested_backend
         self.suggested_os_name = suggested_os_name
         self.suggested_main_opts = suggested_main_opts or {}

@@ -45,7 +45,6 @@ if TYPE_CHECKING:
     from textual.screen import Screen
 
     from angrmanagement.data.analysis_options import AnalysesConfiguration
-    from angrmanagement.data.load_options import LoadOptions
     from angrmanagement.logic.ui_services import MessageLevel
     from angrmanagement.present.forms import Form
 

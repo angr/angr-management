@@ -126,7 +126,9 @@ AnalysisOptionsScreen .group { text-style: bold; }
         row = self.rows.get(editor)
         if row is None or self.current is None:
             return
-        row.option.value = value
+        # a row's option is a primitive one, which has a value
+        option: Any = row.option
+        option.value = value
         if is_language_option(self.current, row.option):
             self._ask_language(set_language(self.analyses, value))
 
@@ -190,7 +192,7 @@ AnalysisOptionsScreen .group { text-style: bold; }
         if row is not None and isinstance(event.value, int):
             self._set(event.select, row.choices[event.value][0])
 
-    def on_input_submitted(self, event: Input.Submitted) -> None:
+    def on_input_submitted(self, event: Input.Submitted) -> None:  # pylint:disable=no-self-use
         event.stop()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

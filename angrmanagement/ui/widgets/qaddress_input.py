@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 
 class QAddressInput(QLineEdit):
+    """A line edit for an address: a hexadecimal number or a function name."""
+
     def __init__(
         self, textchanged_callback: Callable | None, instance: Instance, parent=None, default: str | None = None
     ) -> None:
@@ -33,8 +35,8 @@ class QAddressInput(QLineEdit):
             return self._convert_to_addr(text)
         return None
 
-    def _is_valid_addr_or_label(self, input) -> bool:
-        r = self._convert_to_addr(input)
+    def _is_valid_addr_or_label(self, text) -> bool:
+        r = self._convert_to_addr(text)
         return r is not None
 
     def _convert_to_addr(self, input_):

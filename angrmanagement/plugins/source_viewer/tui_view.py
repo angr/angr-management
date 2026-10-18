@@ -123,7 +123,7 @@ class SourceFileWidget(ScrollView, can_focus=True):
         self.virtual_size = Size(max((len(line) for line in self.lines), default=0) + 12, len(self.lines))
 
     @property
-    def gutter(self) -> int:
+    def gutter_width(self) -> int:
         return len(str(len(self.lines))) + 3
 
     def render_line(self, y: int) -> Strip:
@@ -135,7 +135,7 @@ class SourceFileWidget(ScrollView, can_focus=True):
         line_no = index + 1
         presenter = self.view.presenter
         valid = line_no in presenter.source_map.valid_lines(self.filename)
-        number = str(line_no).rjust(self.gutter - 3)
+        number = str(line_no).rjust(self.gutter_width - 3)
         segments = [Segment(number, Style(bold=True) if valid else Style(dim=True))]
         marker = presenter.markers.get((self.filename, line_no))
         if marker is not None:
@@ -154,7 +154,9 @@ class SourceFileWidget(ScrollView, can_focus=True):
             pos = start + length
         if pos < len(text):
             body.append(Segment(text[pos:]))
-        line_strip = Strip.join([Strip(segments), Strip(body).crop(scroll_x, scroll_x + max(0, width - self.gutter))])
+        line_strip = Strip.join(
+            [Strip(segments), Strip(body).crop(scroll_x, scroll_x + max(0, width - self.gutter_width))]
+        )
         if line_no == self.cursor_line and self.has_focus:
             line_strip = line_strip.apply_style(Style(reverse=True))
         return line_strip.extend_cell_length(width).crop(0, width)
@@ -178,7 +180,7 @@ class SourceFileWidget(ScrollView, can_focus=True):
         if 1 <= line <= len(self.lines):
             self.cursor_line = line
             self.refresh()
-            if event.x < self.gutter:
+            if event.x < self.gutter_width:
                 # the Qt marker panel opens its menu on a click
                 self.action_marker_menu()
 
@@ -186,7 +188,7 @@ class SourceFileWidget(ScrollView, can_focus=True):
         menu = self.view.presenter.marker_menu(self.filename, self.cursor_line, self.refresh)
         if menu is not None:
             self.view.open_menu(
-                menu, (self.region.x + self.gutter, self.region.y + self.cursor_line - self.scroll_offset.y)
+                menu, (self.region.x + self.gutter_width, self.region.y + self.cursor_line - self.scroll_offset.y)
             )
 
     def action_comment(self) -> None:

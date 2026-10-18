@@ -164,15 +164,16 @@ class TestFunctionsTable(TuiTestCase):
             await settle(pilot)
             popup = app.screen
             assert isinstance(popup, MenuPopup) and popup.menu.text == "Column Menu"
-            assert [entry.text for entry in popup.items] == names and all(entry.checked for entry in popup.items)
+            entries: list[Any] = popup.items
+            assert [entry.text for entry in entries] == names and all(entry.checked for entry in entries)
             await pilot.press("escape")
             await settle(pilot)
             hidden = names.index("Binary") if "Binary" in names else 1
             table.header_menu().items()[hidden].trigger()
             await settle(pilot)
             assert len(table.columns) == len(names) - 1
-            assert [str(c.label).split(" ")[0] for c in table.columns.values()] == [
-                n.split(" ")[0] for i, n in enumerate(names) if i != hidden
+            assert [str(c.label).split(" ", maxsplit=1)[0] for c in table.columns.values()] == [
+                n.split(" ", maxsplit=1)[0] for i, n in enumerate(names) if i != hidden
             ]
             # the cells follow the shown columns, and the last shown column cannot be hidden
             assert len(table.get_row_at(0)) == len(names) - 1

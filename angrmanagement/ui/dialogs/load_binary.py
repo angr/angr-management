@@ -658,7 +658,7 @@ class LoadBinary(QDialog):
             path_item = QTableWidgetItem(path)
             symbol_paths_table.setItem(row, LoadBinary.PE_DEBUG_SYMBOLS_TABLE_COL_PATH, path_item)
 
-    def _browse_directory(self, path_edit: QLineEdit) -> None:
+    def _browse_directory(self, path_edit: QLineEdit) -> None:  # pylint:disable=no-self-use
         """
         Open a directory selection dialog and populate the path_edit field with the selected directory.
         """

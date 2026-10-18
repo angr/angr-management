@@ -4,7 +4,7 @@ sheets, the language questions), the forms of the small Qt dialogs (Jump to, Ren
 Breakpoint, Assemble Patch, Change hook, Function Documentation, Function), and the rest of phase 5's screens.
 """
 
-# pylint: disable=missing-class-docstring,protected-access
+# pylint: disable=missing-class-docstring,protected-access,no-self-use,unused-argument
 
 from __future__ import annotations
 
@@ -31,6 +31,7 @@ from textual.widgets import (
     TextArea,
     Tree,
 )
+from tui_pilot import kb_of  # pylint: disable=import-error
 
 import angrmanagement
 from angrmanagement.config import Conf
@@ -202,7 +203,8 @@ class TestRunAnalysis(DialogCase):
             assert question.title_text == "Enable Rust-specific analyses?"
             question.query_one("#button-0", Button).press()  # Yes
             await settle(pilot)
-            assert instance.project.am_obj._languages == ["rust"]
+            project: Any = instance.project.am_obj
+            assert project._languages == ["rust"]
             for name in RUST_DEPENDENT_ANALYSES:
                 assert configuration.by_name(name).enabled, name
             assert set(RUST_DEPENDENT_ANALYSES) <= set(screen.query_one("#analyses", SelectionList).selected)
@@ -341,14 +343,14 @@ class TestForms(DialogCase):
             view.presenter.infodock.select_instruction(self.MAIN + 1)
             view.presenter.popup_comment_dialog()
             await answer_form(pilot, "Set Comment", {"comment": "first line\nsecond line\n"})
-            assert app.workspace.main_instance.kb.comments[self.MAIN + 1] == "first line\nsecond line"
+            assert kb_of(app).comments[self.MAIN + 1] == "first line\nsecond line"
 
         run_app(scenario, interactive=True)
 
     def test_rename_label_refuses_a_name_with_a_space(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
             view: Any = app.view_widget("disassembly")
-            kb = app.workspace.main_instance.kb
+            kb = kb_of(app)
             view.presenter.infodock.select_label(self.CALL_PUTS)
             view.presenter.popup_rename_label_dialog()
             screen = await answer_form(pilot, f"Rename Label at {self.CALL_PUTS:#08x}", {"name": "a b"}, ok=False)
@@ -366,7 +368,8 @@ class TestForms(DialogCase):
             title = f"Assemble Patch at {self.CALL_PUTS:#x}"
             screen = await answer_form(pilot, title, {}, ok=False)
             # the instruction there, and its bytes
-            assert screen.editors["asm"].value == "call 0x400510"
+            asm_editor: Any = screen.editors["asm"]
+            assert asm_editor.value == "call 0x400510"
             screen = await answer_form(pilot, title, {"asm": "nop"}, ok=False)
             assert screen.values["bytes"] == "90 90 90 90 90"
             screen = await answer_form(pilot, title, {"pad": False}, ok=False)
@@ -466,8 +469,8 @@ class TestSmallScreens(DialogCase):
                     else:
                         assert isinstance(logo, Static) and "|___/" in str(logo.render())
                     assert angrmanagement.__version__ in str(screen.query_one("#version").render())
-                    credits = screen.query_one("#credits", Label)
-                    assert "link http://angr.io/" in str(credits.render().spans[0].style)
+                    credits_label = screen.query_one("#credits", Label)
+                    assert "link http://angr.io/" in str(credits_label.render().spans[0].style)
                     await pilot.press("escape")
                     await settle(pilot)
                     assert not isinstance(app.screen, AboutScreen)
@@ -574,7 +577,7 @@ class TestSmallScreens(DialogCase):
 
     def test_signature_matches_apply_and_keep_conflicting_names(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
-            kb = app.workspace.main_instance.kb
+            kb = kb_of(app)
             main = kb.functions["main"]
             sub = next(f for f in kb.functions.values() if f.is_default_name)
             matches = {main.addr: "not_main", sub.addr: "from_the_signature"}

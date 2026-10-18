@@ -255,11 +255,11 @@ class AmApp(App):
         View > Graph Picture: the disassembly the user worked in last as a picture, drawn by Qt where PySide6 is
         installed (picture mode); a braille thumbnail below tier 3.
         """
-        view = self.view_widget("disassembly")
-        if view is None or not hasattr(view, "show_picture"):
+        show_picture = getattr(self.view_widget("disassembly"), "show_picture", None)
+        if show_picture is None:
             self.show_status("Open a disassembly view first.")
             return
-        view.show_picture()
+        show_picture()
 
     def set_toolbar_visible(self, name: str, visible: bool) -> None:
         """Show or hide a toolbar (``debug-bar`` or ``feature-map``); the row goes when both are hidden."""

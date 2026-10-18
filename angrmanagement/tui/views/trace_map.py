@@ -63,8 +63,9 @@ class TraceMapWidget(Widget, can_focus=True):
 
     def compose(self) -> ComposeResult:
         if graphics_tier(getattr(self.app, "caps", None)):
-            self.picture = image_module().Image(placeholder(), id="trace-map-picture")
-            yield self.picture
+            picture = image_module().Image(placeholder(), id="trace-map-picture")
+            self.picture = picture
+            yield picture
 
     def update_picture(self) -> None:
         """Draw the picture again, where there is one."""

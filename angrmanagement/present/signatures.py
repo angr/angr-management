@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from angrmanagement.data.jobs.bindiff_matching import BindiffMatchingJob
 from angrmanagement.data.signatures import BINDIFF_FILES_QUESTION, SIGNATURE_FILES_QUESTION
@@ -27,7 +27,8 @@ def signature_match_conflict(instance: Instance, addr: int, name: str) -> bool:
     Whether applying ``name`` to the function at ``addr`` would overwrite a name the user or a better source gave
     it: the function has a name of its own that differs and is not a generic one (unknown*, unresolved*, sub_*).
     """
-    func = instance.kb.functions.get(addr)
+    kb: Any = instance.kb
+    func = kb.functions.get(addr)
     if func and not func.is_default_name:
         if func.name == name:
             return False

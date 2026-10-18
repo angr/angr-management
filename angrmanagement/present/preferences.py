@@ -84,9 +84,9 @@ def save_integration(register_url_scheme: bool, use_daemon: bool) -> None:
         # the current OS is not supported
         pass
     Conf.use_daemon = use_daemon
-    run_daemon = getattr(GlobalInfo.main_window, "_run_daemon", None)
-    if Conf.use_daemon and not GlobalInfo.client_id and run_daemon is not None:
-        run_daemon()
+    main_window: Any = GlobalInfo.main_window
+    if Conf.use_daemon and not GlobalInfo.client_id and hasattr(main_window, "_run_daemon"):
+        main_window._run_daemon()  # pylint:disable=protected-access
 
 
 #
@@ -163,12 +163,13 @@ def log_format_choices(fmt: str | None = None) -> tuple[bidict, str]:
     The log timestamp formats offered, as (a timestamp shown in the format -> the format), and the one shown now:
     the current format, the locale's time and the locale's date and time.
     """
-    fmt = Conf.log_timestamp_format if fmt is None else fmt
+    fmt = str(Conf.log_timestamp_format) if fmt is None else fmt
     ts = datetime.now()
     fmt_map = bidict({ts.strftime(i): i for i in [fmt, "%X", "%c"]})
-    if fmt not in fmt_map.inverse:
+    inverse = {name: shown for shown, name in fmt_map.items()}
+    if fmt not in inverse:
         fmt = fmt_map[ts.strftime(fmt)]
-    return fmt_map, fmt_map.inverse[fmt]
+    return fmt_map, inverse[fmt]
 
 
 def save_log_format(text: str, fmt_map: Mapping[str, str]) -> None:

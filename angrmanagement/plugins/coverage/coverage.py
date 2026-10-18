@@ -6,7 +6,7 @@ import logging
 import math
 import threading
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
@@ -123,7 +123,8 @@ class CoveragePlugin(BasePlugin):
         """
         # the function tables give a proxy of the function (FunctionTableEntry), which has no blocks
         if not hasattr(func, "block_addrs_set"):
-            func = self.workspace.main_instance.kb.functions.get_by_addr(func.addr)
+            workspace: Any = self.workspace
+            func = workspace.main_instance.kb.functions.get_by_addr(func.addr)
         func_bbls = func.block_addrs_set
         with self.coverage_lock:
             covered_bbls = self.bbl_coverage & func_bbls

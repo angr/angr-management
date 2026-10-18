@@ -85,8 +85,9 @@ class FeatureMapStrip(Widget):
     def compose(self) -> ComposeResult:
         # a tier 3 terminal shows the strip as a picture over the cells
         if graphics_tier(getattr(self.app, "caps", None)):
-            self.picture = image_module().Image(placeholder(), id="feature-map-picture")
-            yield self.picture
+            picture = image_module().Image(placeholder(), id="feature-map-picture")
+            self.picture = picture
+            yield picture
 
     #
     # Drawing

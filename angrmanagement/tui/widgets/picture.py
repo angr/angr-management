@@ -63,7 +63,8 @@ def set_picture(widget: Widget, image: Any) -> bool:
     """Show ``image`` in ``widget`` if it is an image widget; whether it was one."""
     module = image_module()
     if module is not None and isinstance(widget, module.Image):
-        widget.image = image
+        image_widget: Any = widget
+        image_widget.image = image
         return True
     return False
 

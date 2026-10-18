@@ -316,7 +316,10 @@ class PatchAssembler:
                     message = "Warning: Patch is shorter than original instruction"
             elif delta < 0:
                 message = "Warning: Patch exceeds original instruction length"
-        except keystone.KsError as ks_error:
+        except Exception as ks_error:  # pylint:disable=broad-exception-caught
+            # keystone.KsError, which unavailable() has made sure can be raised
+            if keystone is None or not isinstance(ks_error, keystone.KsError):
+                raise
             return AssembledPatch(b"", "Error: " + ks_error.message, False)
         return AssembledPatch(new_bytes, message, len(new_bytes) > 0)
 
@@ -327,13 +330,14 @@ class PatchAssembler:
         if new_bytes == self.original_bytes:
             return
         pm = self.instance.project.kb.patches
+        patches: Any = self.instance.patches
         existing = pm.get_patch(self.addr)
         if existing:
-            self.instance.patches.remove_patch(existing.addr)
-            self.instance.patches.am_event(removed={existing})
+            patches.remove_patch(existing.addr)
+            patches.am_event(removed={existing})
         patch = Patch(self.addr, new_bytes)
         pm.add_patch_obj(patch)
-        self.instance.patches.am_event(added={patch})
+        patches.am_event(added={patch})
 
     def form(self) -> Form:
         """The Assemble Patch dialog: the assembly, the bytes it makes, and whether to pad."""

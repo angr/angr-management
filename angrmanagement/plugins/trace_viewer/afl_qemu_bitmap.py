@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import networkx as nx
 from angr.knowledge_plugins.functions import Function
@@ -193,7 +193,8 @@ class AFLQemuBitmap:
     def _calc_function_info(self, func) -> None:
         # the function tables give a proxy of the function (FunctionTableEntry), which has no blocks
         if not hasattr(func, "block_addrs"):
-            func = self.workspace.main_instance.kb.functions.get_by_addr(func.addr)
+            workspace: Any = self.workspace
+            func = workspace.main_instance.kb.functions.get_by_addr(func.addr)
         node_hitcounts = self._node_hitcounts[func]
 
         block_addrs = list(func.block_addrs)

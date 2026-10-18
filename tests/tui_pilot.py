@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from textual.pilot import Pilot
+
+
+def kb_of(app: Any) -> Any:
+    """The knowledge base of the app's main instance (typed loosely: it is None before a project loads)."""
+    return app.workspace.main_instance.kb
 
 
 async def settle(pilot: Pilot, rounds: int = 4) -> None:

@@ -828,14 +828,13 @@ class DisassemblyTuiView(TuiView):
 
         async def flow() -> None:
             services: Any = GlobalInfo.ui_services
-            ask = getattr(services, "ask", None)
-            if ask is None:
+            if not hasattr(services, "ask"):
                 return
             background = current_theme(self).background
             screen = ImagePreviewScreen(
                 self.image_strips(), getattr(self.app, "caps", None), background, "Graph picture", large=True
             )
-            if await ask(screen, False):
+            if await services.ask(screen, False):
                 self.save_image(preview=False)
 
         run_flow = getattr(self.app, "run_flow", None)
@@ -851,11 +850,10 @@ class DisassemblyTuiView(TuiView):
                 return
             func = self.presenter.function.am_obj
             # what is about to be written, as a picture on a tier 3 terminal
-            ask = getattr(services, "ask", None)
-            if ask is not None and preview:
+            if hasattr(services, "ask") and preview:
                 background = current_theme(self).background
                 screen = ImagePreviewScreen(self.image_strips(), getattr(self.app, "caps", None), background)
-                if not await ask(screen, True):
+                if not await services.ask(screen, True):
                     return
             default = f"{func.name if func is not None else 'disassembly'}.svg"
             path = await services.ask_save_file("Save image...", default, "SVG files (*.svg)")

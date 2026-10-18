@@ -281,8 +281,10 @@ class TuiViewManager(BaseViewManager):
             if view is None:
                 continue
             pane_id = self.pane_id_of(view)
+            if pane_id is None:
+                continue
 
-            def activate(name: str = name, pane_id: str | None = pane_id) -> None:
+            def activate(name: str = name, pane_id: str = pane_id) -> None:
                 # not raise_view: that would show the bottom area the user hid
                 with contextlib.suppress(Exception):
                     self.area(name).active = pane_id

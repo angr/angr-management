@@ -15,7 +15,7 @@ import unittest
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
-from tui_pilot import settle, wait_for  # pylint: disable=import-error
+from tui_pilot import kb_of, settle, wait_for  # pylint: disable=import-error
 
 from angrmanagement.config import Conf
 from angrmanagement.daemon.client import ClientService
@@ -71,7 +71,8 @@ class AppCase(unittest.TestCase):
 class TestDaemonClient(AppCase):
     def test_url_actions_reach_the_app_and_bring_it_to_the_front(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
-            assert GlobalInfo.main_window is app and GlobalInfo.main_window.workspace is app.workspace
+            main_window: Any = GlobalInfo.main_window
+            assert main_window is app and main_window.workspace is app.workspace
             fronts: list[bool] = []
             app.bring_to_front = lambda: fronts.append(True)  # type: ignore[method-assign]
             service = ClientService()
@@ -80,7 +81,7 @@ class TestDaemonClient(AppCase):
             disasm: Any = app.view_widget("disassembly")
             await wait_for(pilot, lambda: disasm.presenter.function.am_obj.name == "authenticate")
             await asyncio.to_thread(service.exposed_commentat, MAIN, "from a URL")
-            await wait_for(pilot, lambda: app.workspace.main_instance.kb.comments.get(MAIN) == "from a URL")
+            await wait_for(pilot, lambda: kb_of(app).comments.get(MAIN) == "from a URL")
             assert len(fronts) == 2
 
         run_app(scenario)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule
@@ -119,7 +119,7 @@ class ExecutionStatisticsViewer(BasePlugin):
         simgr = self._simgr()
         if qt_frontend() or simgr is None or simgr.am_none:
             return []
-        project = self.instance.project.am_obj
+        project: Any = self.instance.project.am_obj
         try:
             block = project.factory.block(block_addr)
         except Exception:  # pylint:disable=broad-exception-caught

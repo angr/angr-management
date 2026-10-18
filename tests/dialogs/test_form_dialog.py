@@ -3,7 +3,7 @@ The Qt side of the shared dialog rules: the generic form dialog the Qt UI servic
 that now check with the shared rules (the breakpoint dialog's address box takes a function name).
 """
 
-# pylint: disable=missing-class-docstring,protected-access
+# pylint: disable=missing-class-docstring,protected-access,no-self-use,unused-argument
 
 from __future__ import annotations
 
@@ -82,11 +82,14 @@ class TestBreakpointDialog(unittest.TestCase):
         bp = Breakpoint(BreakpointType.Execute, 0x400100)
         dialog = BreakpointDialog(bp, workspace)
         # the box looked the name up on the workspace it was given, which has no project: AttributeError
-        dialog._address_box.setText("main")
-        assert dialog._address_box.target == instance.kb.functions["main"].addr
-        assert dialog._ok_button.isEnabled()
+        box: Any = dialog._address_box
+        ok_button: Any = dialog._ok_button
+        kb: Any = instance.kb
+        box.setText("main")
+        assert box.target == kb.functions["main"].addr
+        assert ok_button.isEnabled()
         dialog._on_ok_clicked()
-        assert bp.addr == instance.kb.functions["main"].addr
+        assert bp.addr == kb.functions["main"].addr
 
 
 if __name__ == "__main__":

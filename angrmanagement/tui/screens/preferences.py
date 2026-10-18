@@ -259,7 +259,7 @@ PreferencesScreen #colors { height: 1fr; }
         if event.checkbox.id == "mcp_server_auth_enabled":
             self.query_one("#mcp_server_auth_token", Input).disabled = not event.value
 
-    def on_input_submitted(self, event: Input.Submitted) -> None:
+    def on_input_submitted(self, event: Input.Submitted) -> None:  # pylint:disable=no-self-use
         event.stop()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

@@ -3,7 +3,7 @@ The bundled plugins in the terminal, on fauxware from angr/binaries: each is ena
 entry, view or hooks exercised, as the Qt frontend shows them.
 """
 
-# pylint: disable=missing-class-docstring,protected-access
+# pylint: disable=missing-class-docstring,protected-access,no-self-use,unused-argument
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from unittest.mock import patch
 
 from angr.analyses.decompiler.structured_codegen import FunctionCallNode
 from textual.widgets import Button, Input
+from tui_pilot import kb_of  # pylint: disable=import-error
 
 from angrmanagement.config import Conf
 from angrmanagement.config.color import Color
@@ -152,7 +153,7 @@ class TestSimplePlugins(PluginCase):
 
     def test_dependency_viewer_marks_sinks_in_the_functions_table(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
-            kb = app.workspace.main_instance.kb
+            kb = kb_of(app)
             # fauxware calls no sink; a function named after one stands in
             kb.functions["puts"].name = "system"
             plugin = await enable(app, pilot, "dependency_viewer")
@@ -193,7 +194,7 @@ class TestSimplePlugins(PluginCase):
     def test_varec_renames_with_the_predictions(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
             await enable(app, pilot, "varec")
-            app.workspace.decompile_function(app.workspace.main_instance.kb.functions["main"])
+            app.workspace.decompile_function(kb_of(app).functions["main"])
             await app.wait_for_jobs()
             code: Any = app.view_widget("pseudocode")
             await wait_for(pilot, lambda: not code.codegen.am_none)
@@ -225,7 +226,7 @@ class TestStatusAndMarks(PluginCase):
             plugin = await enable(app, pilot, "coverage_viewer")
             await pick_menu_entry(app, pilot, "Plugins", "Start Showing Coverage")
             assert plugin.running
-            main = app.workspace.main_instance.kb.functions["main"]
+            main = kb_of(app).functions["main"]
             plugin.update_coverage_from_list(list(main.block_addrs_set))
             await settle(pilot)
             plugins = app.workspace.plugins
@@ -265,7 +266,9 @@ class TestStatusAndMarks(PluginCase):
             assert [(m.text, m.addr) for m in active] == [("1", MAIN + 1)]
             assert plugin.passthrough_counts
             # the Qt annotation's menu: select the states, or move them to a stash
-            active[0].action()
+            action = active[0].action
+            assert action is not None
+            action()
             popup = await wait_for_screen(pilot, MenuPopup)
             assert [getattr(item, "caption", None) for item in popup.items] == ["Select", "Move To"]
 
@@ -279,7 +282,7 @@ class TestTraceViewer(PluginCase):
             disasm: Any = app.view_widget("disassembly")
             strip = next(w for w in disasm.plugin_widgets if type(w).__name__ == "TraceStrip")
             assert not strip.display
-            kb = app.workspace.main_instance.kb
+            kb = kb_of(app)
             main = kb.functions["main"]
             blocks = sorted(main.block_addrs_set)
             # a basic block trace of main, in the plugin's JSON form, at the binary's own base address
@@ -449,7 +452,7 @@ class TestPreciseDiffing(PluginCase):
 
 class TestCodePlugins(PluginCase):
     async def _main_in_pseudocode(self, app: AmApp, pilot: Pilot) -> Any:
-        app.workspace.decompile_function(app.workspace.main_instance.kb.functions["main"])
+        app.workspace.decompile_function(kb_of(app).functions["main"])
         await app.wait_for_jobs()
         code: Any = app.view_widget("pseudocode")
         await wait_for(pilot, lambda: not code.codegen.am_none and code.presenter.doc is not None)
@@ -462,14 +465,15 @@ class TestCodePlugins(PluginCase):
             node = next(
                 element.obj
                 for _start, element in code.codegen.map_pos_to_node.items()  # type: ignore[union-attr]
-                if isinstance(element.obj, FunctionCallNode) and getattr(element.obj.callee_func, "name", "") == "puts"
+                if isinstance(element.obj, FunctionCallNode)
+                and getattr(getattr(element.obj, "callee_func", None), "name", "") == "puts"
             )
             menu = code.presenter.context_menu(node)
             entries = {entry.text: entry for _path, entry in walk_entries(menu)}
             assert "Poison call globally" in entries
             app.workspace.raise_view(code)
             entries["Poison call globally"].action()
-            puts = app.workspace.main_instance.kb.functions["puts"]
+            puts = kb_of(app).functions["puts"]
             assert plugin.knowledge.is_poisoned_global(puts.addr)
             await app.wait_for_jobs()
 
@@ -483,7 +487,10 @@ class TestCodePlugins(PluginCase):
             for start, element in code.codegen.map_pos_to_node.items():  # type: ignore[union-attr]
                 if type(element.obj).__name__ != "CVariable":
                     continue
-                presenter.set_cursor(start) if hasattr(presenter, "set_cursor") else code.code.set_cursor(start)
+                if hasattr(presenter, "set_cursor"):
+                    presenter.set_cursor(start)
+                else:
+                    code.code.set_cursor(start)
                 presenter.expr2armasm(element.obj)
                 await settle(pilot)
                 if isinstance(app.screen, FormScreen):

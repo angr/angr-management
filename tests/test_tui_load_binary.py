@@ -3,7 +3,7 @@ The terminal's Load a new binary screen, on fixtures from angr/binaries: the thr
 the checks it makes before it accepts, the encryption key sub-screen, and the debug symbol entries of a PE file.
 """
 
-# pylint: disable=missing-class-docstring,protected-access
+# pylint: disable=missing-class-docstring,protected-access,no-self-use,unused-argument
 
 from __future__ import annotations
 
@@ -83,12 +83,15 @@ class TestOverview(LoadScreenCase):
             # the encryption key is only for CaRT
             assert screen.query_one("#enckey", Button).disabled
             node = screen.query_one("#arch-tree", Tree).cursor_node
-            assert node is not None and node.data.name == "AMD64"
+            assert node is not None and getattr(node.data, "name", None) == "AMD64"
             # the addresses the partial load found, switched off
             base = screen.query_one("#base_addr", Input)
             assert base.value == "0x400000" and base.disabled
             tabs = screen.query_one(TabbedContent)
-            assert [str(tab.label) for tab in tabs.query("ContentTab")] == ["Overview", "Dependencies (1)"]
+            assert [str(getattr(tab, "label", "")) for tab in tabs.query("ContentTab")] == [
+                "Overview",
+                "Dependencies (1)",
+            ]
             screen.query_one("#ok", Button).press()
             await settle(pilot)
             assert len(results) == 1
@@ -97,7 +100,7 @@ class TestOverview(LoadScreenCase):
             assert selection.skip_libs == {"libc.so.6"} and not selection.force_load_libs
             options = build_load_options(ld, selection)
             assert options.load_options["main_opts"]["backend"] == "elf"
-            assert options.simos.__name__ == "SimLinux"
+            assert getattr(options.simos, "__name__", None) == "SimLinux"
 
         run_screen(
             LoadBinaryScreen(ld, suggested_backend=type(ld.main_object), suggested_os_name=ld.main_object.os), scenario
@@ -184,10 +187,11 @@ class TestEncryptionKey(LoadScreenCase):
             await settle(pilot)
             key_screen = app.screen
             assert isinstance(key_screen, FormScreen) and key_screen.title_text == "Set an encryption key"
-            key_screen.editors["key"].value = "zz"
+            key_editor: Any = key_screen.editors["key"]
+            key_editor.value = "zz"
             await settle(pilot)
             assert str(key_screen.query_one("#status").render()) == "Valid"  # ASCII is a format too
-            key_screen.editors["key"].value = "0x00112233"
+            key_editor.value = "0x00112233"
             await settle(pilot)
             assert "Key in hex: 00 11 22 33" in str(key_screen.editors["as_hex"].render())
             key_screen.query_one("#ok", Button).press()
@@ -217,7 +221,7 @@ class TestDebugSymbols(LoadScreenCase):
 
         async def scenario(app: AmApp, pilot: Pilot, screen: LoadBinaryScreen, results: list[Any]) -> None:
             tabs = screen.query_one(TabbedContent)
-            assert "Debug Symbols" in [str(tab.label) for tab in tabs.query("ContentTab")]
+            assert "Debug Symbols" in [str(getattr(tab, "label", "")) for tab in tabs.query("ContentTab")]
             tabs.active = "symbols"
             await settle(pilot)
             # a server entry needs its URL, as in the Qt dialog

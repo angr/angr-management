@@ -120,7 +120,7 @@ class TestTierZero(AppCase):
             alternatives = [b for b in global_keymap().bindings if b.tier >= KITTY_KEYBOARD_TIER and b.alternative]
             assert len(alternatives) == 13
             for binding in alternatives:
-                key = Chord.parse(binding.alternative).to_textual()
+                key = Chord.parse(binding.alternative or "").to_textual()
                 assert bound.get(key, "").startswith(binding.action), (binding.chord, binding.alternative, key)
                 if not binding.is_sequence:
                     assert Chord.parse(binding.chord).to_textual() not in bound, binding.chord
@@ -128,7 +128,7 @@ class TestTierZero(AppCase):
             popup = await app.open_menu("File")
             await settle(pilot)
             assert isinstance(popup, MenuPopup)
-            rows = [option.prompt.plain for option in popup.option_list.options]
+            rows = [str(option.prompt) for option in popup.option_list.options]
             trace_row = next(row for row in rows if row.startswith("Load a trace file"))
             assert trace_row.endswith("Alt+T") and "Ctrl+Shift+T" not in trace_row
             assert next(row for row in rows if row.startswith("Save angr database as")).endswith("Alt+S")
@@ -200,7 +200,9 @@ class TestPictures(AppCase):
 
         async def scenario(app: AmApp, pilot: Pilot) -> None:
             # the feature map
-            assert isinstance(app.feature_map.picture, image_class) and app.feature_map.picture.is_mounted
+            feature_picture = app.feature_map.picture
+            assert feature_picture is not None and isinstance(feature_picture, image_class)
+            assert feature_picture.is_mounted
             picture = app.feature_map.picture_image()
             assert picture.size == (app.feature_map.size.width * 8, 16)
             # the minimap, over the graph's top left corner
@@ -232,11 +234,13 @@ class TestPictures(AppCase):
             app.show_graph_picture()
             await wait_for(pilot, lambda: isinstance(app.screen, ImagePreviewScreen))
             preview: Any = app.screen.query_one("#preview")
-            assert app.screen.large and isinstance(preview, image_class)
+            screen: Any = app.screen
+            assert screen.large and isinstance(preview, image_class)
             if qt_available():
                 strips = disasm.image_strips()
                 # drawn by Qt: a font's pixels a cell, not the cell drawing's three
-                assert preview.image.size == qt_picture(strips, Color(0, 0, 0)).size
+                drawn = qt_picture(strips, Color(0, 0, 0))
+                assert drawn is not None and preview.image.size == drawn.size
                 assert preview.image.size[0] > 3 * max(strip.cell_length for strip in strips)
                 # picture mode's offscreen QApplication does not make the plugins open Qt dialogs in the terminal
                 assert not qt_frontend()
