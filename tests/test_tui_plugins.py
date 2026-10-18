@@ -8,7 +8,6 @@ entry, view or hooks exercised, as the Qt frontend shows them.
 from __future__ import annotations
 
 import asyncio
-import functools
 import json
 import os
 import re
@@ -17,11 +16,11 @@ import unittest
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
+import tui_pilot  # pylint: disable=import-error
 from angr.analyses.decompiler.structured_codegen import FunctionCallNode
 from headless import run_without_qt  # pylint: disable=import-error
 from textual.widgets import Button, Input
 from tui_pilot import kb_of, settle  # pylint: disable=import-error
-from tui_pilot import wait_for as wait_until  # pylint: disable=import-error
 
 from angrmanagement.config import Conf
 from angrmanagement.config.color import Color
@@ -65,8 +64,9 @@ def run_app(scenario: Callable[[AmApp, Pilot], Awaitable[None]], binary: str | N
     asyncio.run(main())
 
 
-#: the plugins' views take longer to come up than the app's own, and are let settle once there
-wait_for = functools.partial(wait_until, rounds=400, then_settle=4)
+async def wait_for(pilot: Pilot, condition: Callable[[], bool], rounds: int = 400) -> None:
+    """Wait as tui_pilot does, longer by default, since the plugins' views come up slower, and let them settle."""
+    await tui_pilot.wait_for(pilot, condition, rounds, then_settle=4)
 
 
 async def wait_for_screen(pilot: Pilot, kind: type[Any]) -> Any:
@@ -402,7 +402,7 @@ class TestPreciseDiffing(PluginCase):
             picker.query_one("#ok", Button).press()
             load = await wait_for_screen(pilot, LoadBinaryScreen)
             load.query_one("#ok", Button).press()
-            await wait_until(pilot, lambda: plugin.current_revised_code is not None, rounds=3000, then_settle=4)
+            await wait_for(pilot, lambda: plugin.current_revised_code is not None, rounds=3000)
             await app.wait_for_jobs()
             await settle(pilot)
             vm = app.workspace.view_manager
@@ -434,9 +434,7 @@ class TestPreciseDiffing(PluginCase):
             await app.wait_for_jobs()
             code: Any = vm.first_view_in_category("pseudocode")
             diff_code: Any = plugin.current_revised_code
-            await wait_until(
-                pilot, lambda: not diff_code.codegen.am_none and not code.codegen.am_none, rounds=3000, then_settle=4
-            )
+            await wait_for(pilot, lambda: not diff_code.codegen.am_none and not code.codegen.am_none, rounds=3000)
             plugin.color_pseudocode_diff()
             highlights = code.extra_highlights + diff_code.extra_highlights
             assert {style for _start, _end, style in highlights} <= {"diff.added", "diff.deleted"}
