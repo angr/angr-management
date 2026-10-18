@@ -1,7 +1,7 @@
 """
 The pseudocode presenter on fauxware, without a window: the render model, the position-map helpers, rename, retype
 and comment round trips seen in codegen.text, the context menu, keys and commands, find, flavors, jumps, the options
-sheet and the pattern highlight.
+sheet, the pattern highlight, and the fold scopes (checked against the Qt editor's pyqodeng folding).
 """
 
 # pylint: disable=missing-class-docstring,protected-access,no-self-use
@@ -44,6 +44,7 @@ from angrmanagement.present.code import (
 )
 from angrmanagement.present.code_highlight import highlight_runs, kind_style, resolve_runs
 from angrmanagement.present.code_patterns import PatternLibraryModel
+from angrmanagement.present.folding import FoldMap
 from angrmanagement.present.menus import MenuEntry, MenuSeparator
 
 test_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "binaries", "tests")
@@ -665,6 +666,126 @@ class TestWorkspaceUses(FauxwareCodeCase):
         job.assert_called_once()
         assert job.call_args.args[1] is self.main
         add_job.assert_called_once_with(job.return_value)
+
+
+NESTED = """int f()
+{
+    if (a) {
+        b();
+    } else {
+        c();
+    }
+
+
+    while (1)
+    {
+        d();
+    }
+}
+"""
+
+
+def pyqodeng_scopes(text: str) -> tuple[list[int], dict[int, int]]:
+    """The fold levels and scopes the Qt pseudocode editor gives ``text``: pyqodeng's CharBasedFoldDetector."""
+    # pylint: disable=import-outside-toplevel
+    from pyqodeng.core.api import CharBasedFoldDetector, CodeEdit, FoldScope, SyntaxHighlighter, TextBlockHelper
+    from PySide6.QtWidgets import QApplication
+
+    _app = QApplication.instance() or QApplication([])
+
+    class Highlighter(SyntaxHighlighter):
+        def highlight_block(self, text, block):
+            pass
+
+    editor = CodeEdit()
+    highlighter = Highlighter(editor.document())
+    editor.modes.append(highlighter)
+    highlighter.fold_detector = CharBasedFoldDetector()
+    editor.setPlainText(text, "text/x-c", "utf-8")
+    highlighter.rehighlight()
+    levels: list[int] = []
+    scopes: dict[int, int] = {}
+    block = editor.document().firstBlock()
+    while block.isValid():
+        levels.append(TextBlockHelper.get_fold_lvl(block))
+        if TextBlockHelper.is_fold_trigger(block):
+            first, last = FoldScope(block).get_range()
+            if last > first:
+                scopes[first] = last
+        block = block.next()
+    editor.close()
+    return levels, scopes
+
+
+class TestFolding(FauxwareCodeCase):
+    def test_scopes_of_nested_blocks(self):
+        folds = FoldMap(NESTED.split("\n"))
+        # the signature folds the body and the while its block; "} else {" opens a level without closing one in
+        # pyqodeng's detector, so the if folds to the end of the function and the else one line further, as in Qt
+        assert folds.scopes == {0: 13, 2: 13, 4: 6, 9: 12}
+        assert folds.scope_of(3) == 2 and folds.scope_of(11) == 9 and folds.scope_of(7) == 2
+        folds.fold(2)
+        folds.fold(0)
+        assert folds.visible_rows() == [0, 14]
+        # unfolding a scope unfolds the scopes inside it, as FoldScope.unfold does
+        folds.unfold(0)
+        assert folds.folded == set() and len(folds.visible_rows()) == 15
+        folds.fold(9)
+        assert folds.is_hidden(11) and folds.reveal(11) and not folds.is_hidden(11)
+        folds.fold_all()
+        assert folds.visible_rows() == [0, 14]
+        folds.unfold_all()
+        assert folds.folded == set()
+
+    def test_the_scopes_are_the_qt_editors(self):
+        # every non-trivial function of fauxware, as the Qt pseudocode editor's folding panel folds it
+        texts = [NESTED, self.text]
+        for func in self.project.kb.functions.values():
+            if func.is_plt or func.is_simprocedure or func.is_alignment:
+                continue
+            dec = self.project.analyses.Decompiler(func, cfg=self.cfg.model)
+            if dec.codegen is not None and dec.codegen.text:
+                texts.append(dec.codegen.text)
+        assert len(texts) > 5
+        for text in texts:
+            lines = text.split("\n")
+            levels, scopes = pyqodeng_scopes(text)
+            folds = FoldMap(lines)
+            assert folds.levels == levels[: len(lines)], text
+            assert folds.scopes == scopes, text
+
+    def test_main_folds_under_its_signature(self):
+        doc = self.presenter.doc
+        folds = self.presenter.folds
+        assert doc is not None and folds is not None
+        # the one fold trigger of main is its signature, where the Qt editor draws its fold arrow
+        assert folds.scopes == {0: len(doc.lines) - 2}
+        row = next(i for i, line in enumerate(doc.lines) if "puts(" in line.text)
+        self.view.cursor = doc.position(row, 4)
+        self.presenter.toggle_fold()
+        assert folds.folded == {0}
+        self.presenter.toggle_fold()
+        assert folds.folded == set()
+        self.presenter.fold_all()
+        assert folds.folded == {0}
+        self.presenter.unfold_all()
+        assert folds.folded == set()
+        # new text unfolds everything
+        self.presenter.fold_all()
+        self.presenter.build_doc()
+        assert self.presenter.folds is not folds and self.presenter.folds.folded == set()
+
+    def test_fold_keys(self):
+        def actions(tier: int) -> dict[str | None, str]:
+            return {binding.textual_key(): binding.action for binding in pseudocode_keymap().for_tier(tier)}
+
+        for tier in (0, 2):
+            keys = actions(tier)
+            assert keys["minus"] == keys["plus"] == "toggle_fold"
+            # Shift+- reaches a terminal as "_", which stays the negation toggle
+            assert keys["underscore"] == "neg_constant"
+        assert actions(2)["ctrl+shift+minus"] == "fold_all" and actions(2)["ctrl+shift+plus"] == "unfold_all"
+        assert actions(0)["alt+minus"] == "fold_all" and actions(0)["alt+plus"] == "unfold_all"
 
 
 if __name__ == "__main__":

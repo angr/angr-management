@@ -72,7 +72,8 @@ from .base import FunctionPresenter, ask_text
 from .code_highlight import highlight_runs, kind_style
 from .code_options import DecompilationOptionsSheet
 from .find import FindBarState
-from .keymap import Binding, Keymap
+from .folding import FoldMap
+from .keymap import KITTY_KEYBOARD_TIER, Binding, Keymap
 from .menus import Menu, MenuEntry, MenuSeparator
 from .spans import Doc, Line, Span
 
@@ -576,6 +577,12 @@ def pseudocode_keymap() -> Keymap:
             Binding("Shift+F3", "find_previous", "Find previous", 2, "Shift+N"),
             Binding("Ctrl+=", "zoom_in", "Zoom in"),
             Binding("Ctrl+-", "zoom_out", "Zoom out"),
+            # the Qt editor's folding panel: Shift+- (Collapse) and Shift++ (Expand) both toggle the scope around the
+            # cursor; a terminal reports Shift+- as "_", which toggles negation here as in Qt, so - and + fold
+            Binding("-", "toggle_fold", "Fold or unfold the scope around the cursor"),
+            Binding("+", "toggle_fold", "Fold or unfold the scope around the cursor"),
+            Binding("Ctrl+Shift+-", "fold_all", "Fold every scope", KITTY_KEYBOARD_TIER, "Alt+-"),
+            Binding("Ctrl+Shift++", "unfold_all", "Unfold every scope", KITTY_KEYBOARD_TIER, "Alt++"),
             Binding("Shift+F10", "context_menu", "Context menu"),
             Binding("Return", "activate", "Follow the node under the cursor (a double click)"),
             Binding("Alt+Left", "jump_back", "Jump back", 2, "Ctrl+Left"),
@@ -768,6 +775,8 @@ class CodePresenter(FunctionPresenter):
         self.rendered = False
         #: the decompilation as spans, for frontends that draw spans (built by build_doc)
         self.doc: CodeDoc | None = None
+        #: the fold scopes of :attr:`doc` and which are folded, as the Qt editor's folding panel keeps them
+        self.folds: FoldMap | None = None
         #: layer name -> (function address, instruction addresses of each highlighted copy);
         #: kept as addresses so a highlight survives the pseudocode being regenerated
         self.highlight_layers: dict[str, tuple[int, list[frozenset[int]]]] = {}
@@ -861,6 +870,8 @@ class CodePresenter(FunctionPresenter):
     def build_doc(self, conf: Any = None) -> CodeDoc | None:
         """Make :attr:`doc` from the codegen shown (None when there is none) and return it."""
         self.doc = None if self.codegen.am_none else build_code_doc(self.codegen.am_obj, self.flavor, conf)
+        # new text unfolds everything, as it does in the Qt editor
+        self.folds = FoldMap([line.text for line in self.doc.lines]) if self.doc is not None else None
         return self.doc
 
     #
@@ -2255,6 +2266,28 @@ class CodePresenter(FunctionPresenter):
 
     def zoom_out(self) -> None:
         self._view_call("zoom_out")
+
+    #
+    # Folding
+    #
+
+    def toggle_fold(self) -> None:
+        """Fold the scope around the cursor, or unfold it, as the Qt editor's Collapse and Expand do."""
+        if self.folds is None or self.doc is None:
+            return
+        trigger = self.folds.scope_of(self.doc.row_column(self.cursor_position())[0])
+        if trigger is not None and self.folds.toggle(trigger):
+            self._view_call("folds_changed")
+
+    def fold_all(self) -> None:
+        if self.folds is not None:
+            self.folds.fold_all()
+            self._view_call("folds_changed")
+
+    def unfold_all(self) -> None:
+        if self.folds is not None:
+            self.folds.unfold_all()
+            self._view_call("folds_changed")
 
     #
     # AI

@@ -4,12 +4,13 @@ The pseudocode view of the terminal frontend.
 :class:`CodeTuiView` draws a :class:`~angrmanagement.present.code.CodePresenter`: a header line (back, forward, the
 function, and the summary, options and patterns panes and the flavor, as the Qt view's tool bar), the find bar, the
 decompiled text (:class:`CodeWidget`, one strip per line of the presenter's :class:`~angrmanagement.present.code.
-CodeDoc`, with a cursor and a selection), and a side panel whose tabs are the Qt view's docks: the decompilation
-options, the project's patterns and the function summary.
+CodeDoc`, with a cursor, a selection and the Qt editor's code folding), and a side panel whose tabs are the Qt
+view's docks: the decompilation options, the project's patterns and the function summary.
 """
 
 from __future__ import annotations
 
+import bisect
 import contextlib
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -72,13 +73,20 @@ CURSOR_STYLE = Style(reverse=True)
 SIDE_PANEL_WIDTH = 48
 #: The narrowest text the side panel may leave; a view narrower than both shows the options in a modal screen.
 MIN_TEXT_WIDTH = 60
+#: The fold marks in the gutter: an open scope, a folded one (pyqodeng's folding panel arrows).
+FOLD_OPEN = "▾"
+FOLD_CLOSED = "▸"
+FOLD_MARK_WIDTH = 1
 
 
 def line_number_width(doc: CodeDoc | None) -> int:
-    """The width of the line number gutter: the widest number and a space, as the Qt view's line number panel."""
+    """
+    The width of the gutter: a column of fold marks, as the Qt view's folding panel, then the widest line number and a
+    space, as its line number panel.
+    """
     if doc is None or not doc.lines:
         return 0
-    return len(str(len(doc.lines))) + 1
+    return FOLD_MARK_WIDTH + len(str(len(doc.lines))) + 1
 
 
 def column_ranges(doc: CodeDoc, start: int, end: int) -> dict[int, tuple[int, int]]:
@@ -154,9 +162,11 @@ class CodeHeader(HeaderBar):
 
 class CodeWidget(CodeSelectionMixin, ScrollView, can_focus=True):
     """
-    The decompiled text, one line per strip, with a gutter of line numbers. A cursor moves with the arrows, Home, End,
-    Page Up and Page Down, and with a click; Shift and a drag select. A double click follows the node, a right click
-    opens the context menu, and hovering over a call shows its prototype after a pause.
+    The decompiled text, one line per strip, with a gutter of fold marks and line numbers. A cursor moves with the
+    arrows, Home, End, Page Up and Page Down, and with a click; Shift and a drag select. A double click follows the
+    node, a right click opens the context menu, and hovering over a call shows its prototype after a pause. A click on
+    the fold marks folds or unfolds the scope of that line, as the Qt folding panel does; the lines a folded scope
+    hides are not drawn, and moving the cursor onto one unfolds it.
     """
 
     DEFAULT_CSS = """
@@ -190,12 +200,49 @@ class CodeWidget(CodeSelectionMixin, ScrollView, can_focus=True):
     def number_width(self) -> int:
         return line_number_width(self.doc)
 
+    @property
+    def rows(self) -> Sequence[int]:
+        """The lines of the document that are drawn, top to bottom: all but those folded away."""
+        doc = self.doc
+        if doc is None:
+            return []
+        folds = self.presenter.folds
+        if folds is None or len(folds.texts) != len(doc.lines):
+            return range(len(doc.lines))
+        return folds.visible_rows()
+
+    def screen_row(self, row: int) -> int:
+        """Where line ``row`` is drawn, counted from the top of the text; a hidden line is drawn as its trigger."""
+        rows = self.rows
+        return max(bisect.bisect_right(rows, row) - 1, 0)
+
     def rebuild(self) -> None:
         """The document changed: size the scroll area again and draw it."""
         doc = self.doc
         width = (doc.width + self.number_width + 1) if doc is not None else 0
-        self.virtual_size = Size(width, doc.height if doc is not None else 0)
+        self.virtual_size = Size(width, len(self.rows))
         self.highlights_changed()
+
+    def folds_changed(self) -> None:
+        """Scopes were folded or unfolded: a cursor folded away goes to the line that folds it, as in the Qt editor."""
+        doc, folds = self.doc, self.presenter.folds
+        if doc is not None and folds is not None:
+            row, col = doc.row_column(self.cursor)
+            if folds.is_hidden(row):
+                self.sel_anchor = None
+                self.cursor = doc.position(self.rows[self.screen_row(row)], col)
+                self.presenter.cursor_moved(self.cursor)
+        self.rebuild()
+        self.scroll_cursor_into_view()
+
+    def toggle_fold_at(self, row: int) -> None:
+        """Fold or unfold the scope line ``row`` is in."""
+        folds = self.presenter.folds
+        if folds is None:
+            return
+        trigger = folds.scope_of(row)
+        if trigger is not None and folds.toggle(trigger):
+            self.folds_changed()
 
     def highlights_changed(self) -> None:
         self._overlays = None
@@ -211,6 +258,9 @@ class CodeWidget(CodeSelectionMixin, ScrollView, can_focus=True):
         doc = self.doc
         length = doc.text_length if doc is not None else 0
         pos = max(0, min(pos, length))
+        folds = self.presenter.folds
+        if doc is not None and folds is not None and folds.reveal(doc.row_column(pos)[0]):
+            self.rebuild()
         if extend:
             if self.sel_anchor is None:
                 self.sel_anchor = self.cursor
@@ -238,7 +288,9 @@ class CodeWidget(CodeSelectionMixin, ScrollView, can_focus=True):
         if doc is None or not self.is_mounted:
             return
         row, col = doc.row_column(self.cursor)
-        self.scroll_to_region(Region(col + self.number_width, row, 1, 1), animate=False, immediate=True)
+        self.scroll_to_region(
+            Region(col + self.number_width, self.screen_row(row), 1, 1), animate=False, immediate=True
+        )
 
     def move(self, rows: int = 0, cols: int = 0, extend: bool = False) -> None:
         doc = self.doc
@@ -248,7 +300,9 @@ class CodeWidget(CodeSelectionMixin, ScrollView, can_focus=True):
             self.set_cursor(self.cursor + cols, extend)
             return
         row, col = doc.row_column(self.cursor)
-        self.set_cursor(doc.position(row + rows, col), extend)
+        shown = self.rows
+        target = max(0, min(self.screen_row(row) + rows, len(shown) - 1))
+        self.set_cursor(doc.position(shown[target], col), extend)
 
     #
     # Drawing
@@ -309,15 +363,24 @@ class CodeWidget(CodeSelectionMixin, ScrollView, can_focus=True):
             )
         return strip
 
+    def fold_mark(self, row: int) -> str:
+        """The gutter's fold mark of line ``row``: open or folded at a fold trigger, else a space."""
+        folds = self.presenter.folds
+        if folds is None or not folds.is_trigger(row):
+            return " "
+        return FOLD_CLOSED if row in folds.folded else FOLD_OPEN
+
     def render_line(self, y: int) -> Strip:
         width = self.size.width
         scroll_x, scroll_y = self.scroll_offset
-        row = scroll_y + y
+        shown = self.rows
         doc = self.doc
         gutter = self.number_width
-        if doc is None or row >= len(doc.lines):
+        if doc is None or not 0 <= scroll_y + y < len(shown):
             return Strip.blank(width, self.style_of(CODE_BACKGROUND))
-        numbers = Strip([Segment(f"{row + 1:>{gutter - 1}} ", self.style_of("palette_text bg:palette_window"))])
+        row = shown[scroll_y + y]
+        number = f"{row + 1:>{gutter - FOLD_MARK_WIDTH - 1}} "
+        numbers = Strip([Segment(self.fold_mark(row) + number, self.style_of("palette_text bg:palette_window"))])
         return Strip.join([numbers, self.text_strip(row, scroll_x, max(width - gutter, 0))])
 
     #
@@ -365,15 +428,31 @@ class CodeWidget(CodeSelectionMixin, ScrollView, can_focus=True):
         if doc is None or not doc.lines:
             return None
         scroll_x, scroll_y = self.scroll_offset
-        row = int(event.y) + scroll_y
+        shown = self.rows
+        visual = int(event.y) + scroll_y
         col = int(event.x) + scroll_x - self.number_width
-        if row >= len(doc.lines):
-            row = len(doc.lines) - 1
+        if visual >= len(shown):
+            row = shown[-1]
             col = doc.lines[row].width
+        else:
+            row = shown[max(visual, 0)]
         return doc.position(row, max(col, 0))
+
+    def fold_row_at(self, event: events.MouseEvent) -> int | None:
+        """The line whose fold mark is under the mouse, or None off the fold marks."""
+        shown = self.rows
+        visual = int(event.y) + self.scroll_offset.y
+        if self.doc is None or not 0 <= int(event.x) < FOLD_MARK_WIDTH or not 0 <= visual < len(shown):
+            return None
+        return shown[visual]
 
     def on_mouse_down(self, event: events.MouseDown) -> None:
         if event.button != 1:
+            return
+        fold_row = self.fold_row_at(event)
+        if fold_row is not None:
+            # the folding panel: a click folds or unfolds the scope of the line, and the cursor stays
+            self.toggle_fold_at(fold_row)
             return
         pos = self.position_at(event)
         if pos is None:
@@ -399,6 +478,8 @@ class CodeWidget(CodeSelectionMixin, ScrollView, can_focus=True):
             self.release_mouse()
 
     def on_click(self, event: events.Click) -> None:
+        if event.button == 1 and self.fold_row_at(event) is not None:
+            return
         pos = self.position_at(event)
         if pos is None:
             return
@@ -883,6 +964,10 @@ class CodeTuiView(TuiView):
 
     zoom_out = zoom_in
 
+    def folds_changed(self) -> None:
+        """The presenter folded or unfolded scopes (its fold keys)."""
+        self.code.folds_changed()
+
     def reload_patterns(self) -> None:
         self.side_panel.patterns.model.reload()
 
@@ -962,7 +1047,7 @@ class CodeTuiView(TuiView):
             return code.region.x + 4, code.region.y + 2
         row, col = doc.row_column(code.cursor)
         sx, sy = code.scroll_offset
-        return code.region.x + code.number_width + col - sx, code.region.y + row - sy + 1
+        return code.region.x + code.number_width + col - sx, code.region.y + code.screen_row(row) - sy + 1
 
     def open_context_menu(self, offset: tuple[int, int] | None = None) -> None:
         menu = self.presenter.context_menu()

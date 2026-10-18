@@ -1,7 +1,7 @@
 """
 The terminal pseudocode view, driven through Textual's pilot on fauxware: main's decompilation and its lines, the keys
-that rename, retype and comment, flavors, the context menu, find, hover, following a call, the side panels, and a
-snapshot at 200x60.
+that rename, retype and comment, flavors, the context menu, find, hover, following a call, folding, the side panels,
+and a snapshot at 200x60.
 """
 
 # pylint: disable=protected-access,missing-class-docstring,no-self-use,unused-argument
@@ -161,7 +161,8 @@ class TestShow(unittest.TestCase):
             assert presenter.chunks
             # the line numbers are drawn beside the text
             strip = view.code.render_line(0)
-            assert strip.text.startswith(" 1 int main(")
+            # after the fold mark of main's one scope, as the Qt folding panel draws it
+            assert strip.text.startswith("▾ 1 int main(")
 
         run_app(scenario)
 
@@ -472,6 +473,64 @@ class TestMenusAndFind(unittest.TestCase):
             assert view.code.selection_range() == (0, 3) and view.code.selected_text() == "int"
             view.presenter.copy()
             assert app.services.clipboard_text() == "int"
+
+        run_app(scenario)
+
+
+class TestFolding(unittest.TestCase):
+    def test_a_click_on_the_fold_mark_folds_and_unfolds(self):
+        async def scenario(app: AmApp, pilot: Pilot, view: CodeTuiView) -> None:
+            code = view.code
+            doc = view.presenter.doc
+            assert doc is not None
+            count = len(doc.lines)
+            assert code.render_line(1).text.startswith("  2 {")
+            cursor = code.cursor
+            await pilot.click(code, offset=(0, 0))
+            await settle(pilot)
+            # main folds under its signature: the body and the closing brace are not drawn, and the cursor stays
+            assert code.render_line(0).text.startswith("▸ 1 int main(")
+            assert code.render_line(1).text.startswith(f" {count} ")
+            assert list(code.rows) == [0, count - 1] and code.virtual_size.height == 2
+            assert code.cursor == cursor
+            # a click on the text below the last line puts the cursor on the last line shown, not a folded one
+            await pilot.click(code, offset=(10, 5))
+            await settle(pilot)
+            assert doc.row_column(code.cursor)[0] == count - 1
+            await pilot.click(code, offset=(0, 0))
+            await settle(pilot)
+            assert code.render_line(1).text.startswith("  2 {") and len(code.rows) == count
+
+        run_app(scenario)
+
+    def test_keys_fold_and_moving_into_a_folded_scope_unfolds_it(self):
+        async def scenario(app: AmApp, pilot: Pilot, view: CodeTuiView) -> None:
+            code = view.code
+            folds = view.presenter.folds
+            doc = view.presenter.doc
+            assert doc is not None and folds is not None
+            row = next(i for i, line in enumerate(doc.lines) if "puts(" in line.text)
+            code.focus()
+            code.set_cursor(doc.position(row, 4))
+            await pilot.press("minus")
+            await settle(pilot)
+            # the scope around the cursor folds, and the cursor goes to the line that folds it
+            assert folds.folded == {0} and doc.row_column(code.cursor)[0] == 0
+            # Down moves over what is folded
+            await pilot.press("down")
+            await settle(pilot)
+            assert doc.row_column(code.cursor)[0] == len(doc.lines) - 1 and folds.folded == {0}
+            await pilot.press("plus")
+            await settle(pilot)
+            assert folds.folded == set()
+            await pilot.press("ctrl+shift+minus")
+            await settle(pilot)
+            assert folds.folded == set(folds.scopes)
+            # a jump into a folded scope (find, a cross-reference, a click on a node elsewhere) unfolds it
+            code.set_cursor(doc.position(row, 4))
+            await settle(pilot)
+            assert folds.folded == set() and len(code.rows) == len(doc.lines)
+            assert code.render_line(row - code.scroll_offset.y).text.lstrip().startswith(f"{row + 1} ")
 
         run_app(scenario)
 
