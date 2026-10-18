@@ -7,8 +7,8 @@ import time
 from typing import TYPE_CHECKING
 
 import PySide6QtAds as QtAds
-from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer, QUrl
-from PySide6.QtGui import QDesktopServices, QGuiApplication, QIcon, QKeySequence, QShortcut, QWindow
+from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer
+from PySide6.QtGui import QIcon, QKeySequence, QShortcut, QWindow
 from PySide6.QtWidgets import (
     QDialog,
     QMainWindow,
@@ -252,7 +252,7 @@ class MainWindow(QMainWindow):
         new_state_dialog.exec_()
 
     def open_doc_link(self) -> None:
-        QDesktopServices.openUrl(QUrl(DOCUMENTATION_URL, QUrl.ParsingMode.TolerantMode))
+        GlobalInfo.ui_services.open_url(DOCUMENTATION_URL)
 
     def open_about_dialog(self) -> None:
         dlg = LoadAboutDialog()
@@ -503,7 +503,7 @@ class MainWindow(QMainWindow):
             text = url
             message = f"Copied to clipboard: {url}"
 
-        QGuiApplication.clipboard().setText(text)
+        GlobalInfo.ui_services.set_clipboard_text(text)
         self.statusBar().showMessage(message, 5000)
 
     #
