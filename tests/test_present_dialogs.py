@@ -12,6 +12,7 @@ import os
 import unittest
 from types import SimpleNamespace
 from typing import Any
+from unittest.mock import patch
 
 import angr
 import cle
@@ -31,6 +32,7 @@ from angrmanagement.data.load_options import (
     selection_from_choices,
     symbol_path_entry_error,
 )
+from angrmanagement.present import dialogs
 from angrmanagement.present.analysis_options import option_rows, set_language
 from angrmanagement.present.dialogs import (
     EncKeyFormat,
@@ -109,6 +111,7 @@ class TestBreakpoints(FauxwareCase):
 
 
 class TestPatches(FauxwareCase):
+    @unittest.skipIf(dialogs.keystone is None, "keystone is not installed (angr's keystone extra)")
     def test_assembling_pads_warns_and_refuses(self) -> None:
         assembler = PatchAssembler(self.instance, 0x400739)
         assert assembler.initial_text == "call 0x400510" and len(assembler.original_bytes) == 5
@@ -124,6 +127,17 @@ class TestPatches(FauxwareCase):
         # the form shows the bytes as it assembles
         check = assembler.form().checked({"asm": "nop", "pad": True, "bytes": ""})
         assert check.values == {"bytes": "90 90 90 90 90"}
+
+    def test_without_keystone_the_assembler_keeps_the_bytes_and_says_why(self) -> None:
+        with patch.object(dialogs, "keystone", None):
+            assembler = PatchAssembler(self.instance, 0x400739)
+        assert not assembler.can_assemble
+        result = assembler.assemble("nop", True)
+        assert (result.new_bytes, result.message, result.ok) == (
+            assembler.original_bytes,
+            "Keystone not installed",
+            False,
+        )
 
 
 class TestHooks(unittest.TestCase):

@@ -46,6 +46,7 @@ from angrmanagement.data.jobs import (
     RustTypeDBLoaderConfiguration,
 )
 from angrmanagement.logic import GlobalInfo
+from angrmanagement.present import dialogs
 from angrmanagement.present.analysis_options import RUST_DEPENDENT_ANALYSES
 from angrmanagement.present.dialogs import hook_templates
 from angrmanagement.present.preferences import PAGE_NAMES, color_entry_names, color_text, scheme_entry_values
@@ -353,6 +354,7 @@ class TestForms(DialogCase):
 
         run_app(scenario, interactive=True)
 
+    @unittest.skipIf(dialogs.keystone is None, "keystone is not installed (angr's keystone extra)")
     def test_assemble_patch_shows_the_bytes_and_pads(self) -> None:
         async def scenario(app: AmApp, pilot: Pilot) -> None:
             view: Any = app.view_widget("disassembly")
