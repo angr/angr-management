@@ -88,6 +88,9 @@ TUI_BINDINGS = Keymap(
 SHIFT_SHIFT_TIMEOUT = 1.0
 #: A job that ran at least this long (seconds) says so on the desktop when it ends while the terminal is not focused.
 NOTIFY_AFTER_SECONDS = 10.0
+#: How often, and how many times, exit() waits for a screen that is still mounting (about a second in all).
+EXIT_WAIT_SECONDS = 0.01
+EXIT_WAITS = 100
 
 
 class AmApp(App):
@@ -164,6 +167,7 @@ class AmApp(App):
         self.binary = binary
         self.caps = caps if caps is not None else caps_from_environment()
         self.interactive = interactive
+        self._exit_waits = 0
         self.shown_at_start = interactive
         self.scheme_name = theme_name or Conf.theme_name or "Light"
         self.am_theme = (
@@ -803,7 +807,18 @@ class AmApp(App):
         self.exit()
 
     def exit(self, *args: Any, **kwargs: Any) -> None:
-        """Leave the app; with a binary loaded, the tabs of every area are saved for the next one first."""
+        """
+        Leave the app; with a binary loaded, the tabs of every area are saved for the next one first.
+
+        A screen that is still mounting is let finish first: Textual's Select looks up its own children when it
+        mounts, and tearing the screen down under it raises NoMatches, which the user sees as a traceback on exit.
+        """
+        screen = self.screen_stack[-1] if self.screen_stack else None
+        if screen is not None and not screen.is_mounted and self._exit_waits < EXIT_WAITS:
+            self._exit_waits += 1
+            self.set_timer(EXIT_WAIT_SECONDS, lambda: self.exit(*args, **kwargs))
+            return
+        self._exit_waits = 0
         if not self.workspace.main_instance.project.am_none:
             try:
                 self.workspace.view_manager.save_tabs()

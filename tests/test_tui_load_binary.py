@@ -262,6 +262,27 @@ class TestDebugSymbols(LoadScreenCase):
         run_screen(LoadBinaryScreen(ld, suggested_backend=type(ld.main_object)), scenario)
 
 
+class TestExit(LoadScreenCase):
+    def test_exiting_while_the_screen_mounts_lets_it_finish(self) -> None:
+        # Textual's Select looks up its children when it mounts, so tearing the screen down under it raised
+        # NoMatches at exit. When during the mount the exit lands depends on the machine, hence the range of delays.
+        ld = partial_loader(FAUXWARE)
+
+        async def main(delay: float) -> None:
+            app = AmApp(caps=TerminalCaps(truecolor=True, forced_tier=2), interactive=False)
+            async with app.run_test(size=(160, 50)) as pilot:
+                await pilot.pause()
+                app.push_screen(LoadBinaryScreen(ld, suggested_backend=type(ld.main_object)))
+                await asyncio.sleep(delay)
+                app.exit()
+                # the app's own exit, not the shutdown run_test does after the scenario
+                await asyncio.wait_for(asyncio.shield(app._task), 30)
+                assert app.return_code == 0
+
+        for step in range(30):
+            asyncio.run(main(step * 0.002))
+
+
 class TestWhereItIsShown(LoadScreenCase):
     def test_a_binary_named_on_the_command_line_loads_with_the_defaults(self) -> None:
         # am-tui FILE, as the MCP load path, loads without asking; the File menu's Load asks (tests/test_tui_app.py)
