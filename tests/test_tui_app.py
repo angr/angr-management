@@ -694,7 +694,12 @@ class TestAnAppThatExited(TuiTestCase):
         # What may keep one app, and never more: IPython keeps the output capture of the app it was first imported
         # under, its one in-process shell keeps the latest kernel and so the latest app, and DataTable keeps its 32
         # latest style lookups, keyed by table. The middle app has none of these once that bounded cache is cleared.
-        DataTable._get_styles_to_render_cell.cache_clear()
+        # The cache is a private lru_cache (DataTable._get_styles_to_render_cell in textual 8.2.8), so clear every
+        # lru_cache on the class rather than name it: a textual that renames or drops it still runs this test.
+        for member in vars(DataTable).values():
+            cache_clear = getattr(member, "cache_clear", None)
+            if callable(cache_clear):
+                cache_clear()
         gc.collect()
         assert apps[1]() is None, "an app that exited is still alive"
 
