@@ -16,7 +16,7 @@ from angrmanagement.config.color import Color
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
-    from PIL.Image import Image
+    from PIL.Image import Image  # pyright: ignore[reportMissingImports]
     from rich.style import Style
 
 #: How many pixels across and down one terminal cell is drawn with.
@@ -32,7 +32,7 @@ def rgb(color: Color) -> tuple[int, int, int]:
 
 
 def new_image(width: int, height: int, background: Color) -> Image:
-    from PIL import Image as PilImage  # pylint:disable=import-outside-toplevel
+    from PIL import Image as PilImage  # pyright: ignore[reportMissingImports]  # pylint:disable=import-outside-toplevel
 
     return PilImage.new("RGB", (max(width, 1), max(height, 1)), rgb(background))
 
@@ -44,7 +44,7 @@ def placeholder(background: Color = BLACK) -> Image:
 
 def columns_image(colors: Sequence[Color], height: int) -> Image:
     """A picture ``height`` pixels high with one pixel column per colour."""
-    from PIL import ImageDraw  # pylint:disable=import-outside-toplevel
+    from PIL import ImageDraw  # pyright: ignore[reportMissingImports]  # pylint:disable=import-outside-toplevel
 
     image = new_image(len(colors), height, colors[0] if colors else BLACK)
     draw = ImageDraw.Draw(image)
@@ -65,7 +65,7 @@ def minimap_image(
     minimap: each block (``x, y, width, height`` in layout cells) filled, and the viewport's outline, over the
     background. ``colors`` are the background, the blocks and the viewport.
     """
-    from PIL import ImageDraw  # pylint:disable=import-outside-toplevel
+    from PIL import ImageDraw  # pyright: ignore[reportMissingImports]  # pylint:disable=import-outside-toplevel
 
     background, block, view = colors
     fx, fy = PIXELS_PER_CELL[0] / cell_scale[0], PIXELS_PER_CELL[1] / cell_scale[1]
@@ -92,7 +92,7 @@ def strips_image(strips: Sequence[Any], background: Color, cell: tuple[int, int]
     A picture of text, ``cell`` pixels a character: each cell its background, and a character's foreground as a bar
     across the middle of its cell, as a page of text looks from a distance.
     """
-    from PIL import ImageDraw  # pylint:disable=import-outside-toplevel
+    from PIL import ImageDraw  # pyright: ignore[reportMissingImports]  # pylint:disable=import-outside-toplevel
 
     width = max((strip.cell_length for strip in strips), default=1)
     image = new_image(width * cell[0], max(len(strips), 1) * cell[1], background)

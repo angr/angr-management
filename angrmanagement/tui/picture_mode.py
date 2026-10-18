@@ -21,7 +21,7 @@ from angrmanagement.tui.pictures import style_color
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from PIL.Image import Image
+    from PIL.Image import Image  # pyright: ignore[reportMissingImports]
 
 #: The font size of the text, in points.
 FONT_SIZE = 10
@@ -51,7 +51,7 @@ def qt_picture(strips: Sequence[Any], background: Color) -> Image | None:
     if not strips or not qt_available():
         return None
     # pylint:disable=import-outside-toplevel
-    from PIL import Image as PilImage
+    from PIL import Image as PilImage  # pyright: ignore[reportMissingImports]
     from PySide6.QtCore import QRectF, Qt
     from PySide6.QtGui import QBrush, QColor, QFont, QFontDatabase, QFontMetricsF, QImage, QPainter, QPen
     from PySide6.QtWidgets import QGraphicsScene
