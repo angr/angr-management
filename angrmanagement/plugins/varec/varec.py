@@ -67,7 +67,6 @@ class VaRec(BasePlugin):
         return "".join(random.choice(string.ascii_lowercase) for _ in range(n))
 
     def infer_variable_names(self) -> None:
-        # the workspace has no _get_or_create_pseudocode_view (it raised AttributeError at 37cbfea2)
         view = self.workspace._get_or_create_view("pseudocode")
         if view.codegen.am_none:
             GlobalInfo.ui_services.message(

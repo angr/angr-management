@@ -67,8 +67,7 @@ class BreakpointDialog(QDialog):
         self._type_radio_group.button(self.breakpoint.type.value).setChecked(True)
 
         layout.addWidget(QLabel("Address:", self), row, 0, Qt.AlignmentFlag.AlignRight)
-        # the instance: the box looks function names up in its knowledge base (it was given the workspace, which has
-        # none, so a name raised AttributeError)
+        # the box takes the instance, whose knowledge base it searches for a function name or a label
         self._address_box = QAddressInput(
             self._on_address_changed, self.workspace.main_instance, parent=self, default=f"{self.breakpoint.addr:#x}"
         )

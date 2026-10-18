@@ -400,7 +400,7 @@ class TestEdits(FauxwareCodeCase):
 
 
 class TestMenusAndKeys(FauxwareCodeCase):
-    # what the Qt context menu showed at 37cbfea2 for each kind of node of main
+    # what the Qt context menu shows for each kind of node of main
     COMMON = [
         "Comment...|;",
         "Create pattern from selection...|",

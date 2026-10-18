@@ -521,8 +521,8 @@ class QCCodeEdit(api.CodeEdit):
         self.action_llm_suggest_var_types = QAction("AI: Suggest Variable Types", self)
         self.action_llm_suggest_var_types.triggered.connect(self._llm_suggest_var_types)
 
-        # each group's list holds the actions it held at 37cbfea2, so a plugin that reads, extends or inserts into one
-        # finds what it always found
+        # each group's list holds the same actions as before the menus were shared, so a plugin that reads, extends or
+        # inserts into one finds what it always found
         separators: dict[str, QAction] = {}
         for group, keys in MENU_GROUPS.items():
             actions: list[QAction] = getattr(self, f"{group}_actions")

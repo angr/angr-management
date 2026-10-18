@@ -51,7 +51,7 @@ class ClientService(rpyc.Service):
     def exposed_commentat(self, addr: int, comment: str) -> None:
         if self.workspace is not None and addr is not None:
             gui_thread_schedule_async(GlobalInfo.main_window.bring_to_front)
-            # the comment is set on the UI thread (this called set_comment here and scheduled its result, None)
+            # set the comment on the UI thread, not on the connection's thread
             gui_thread_schedule_async(self.workspace.set_comment, args=(addr, comment))
 
     def exposed_custom_binary_aware_action(self, action, kwargs) -> None:  # pylint: disable=no-self-use

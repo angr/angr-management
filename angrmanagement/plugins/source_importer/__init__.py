@@ -45,7 +45,7 @@ class SourceImporterPlugin(BasePlugin):
             return
 
         def picked(result: str | None) -> None:
-            # a cancelled Qt dialog gave "", which was added as a source root
+            # a cancelled picker gives None or ""; neither is a source root
             if result:
                 self.source_paths.append(result)
 

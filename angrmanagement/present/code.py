@@ -2169,8 +2169,7 @@ class CodePresenter(FunctionPresenter):
                 break
         if the_node is None:
             return
-        # the plugin is registered under its short name; at 37cbfea2 the Qt editor asked for "AIL2ARM32", which no
-        # plugin is registered as, so the entry always failed
+        # plugins are registered under their short names, not their class names
         converter = self.workspace.plugins.get_plugin_instance_by_name("ail2asm")
         if converter is None:
             GlobalInfo.ui_services.message("warning", "AIL to ARM", "The AIL2ARM32 plugin is not active.")

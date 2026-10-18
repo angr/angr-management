@@ -245,7 +245,7 @@ class CoveragePlugin(BasePlugin):
             self.connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
             time.sleep(1)
 
-        # stopped before the connector came: there is nothing to ask it (this raised AttributeError on None)
+        # stopped before the connector came: there is no connector to ask
         if not self.running:
             return
 
@@ -288,7 +288,7 @@ class CoveragePlugin(BasePlugin):
     def _status_bar_method(self, name: str):
         """
         The status bar's ``name`` (progress or progress_done): the terminal app's own, or the Qt main window's status
-        bar's. The Qt main window has neither method itself, so at 37cbfea2 these calls raised AttributeError.
+        bar's, since the Qt main window has neither method itself.
         """
         main_window = self.workspace._main_window
         method = getattr(main_window, name, None)

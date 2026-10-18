@@ -339,7 +339,7 @@ class PreciseDiffPlugin(BasePlugin):
         cursor.setCharFormat(char_format)
 
     def _destroy_revised_view(self) -> None:
-        # set to None rather than deleted: a second load read the deleted attributes and raised AttributeError
+        # the attributes stay, set to None, because loading a revised binary again reads them
         if self.current_revised_view:
             self.workspace.remove_view(self.current_revised_view)
         self.current_revised_view = None

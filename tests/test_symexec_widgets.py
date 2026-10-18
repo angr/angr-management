@@ -26,7 +26,7 @@ class TestSymexecWidgets(ProjectOpenTestCase):
         return next(f.addr for f in kb.functions.values() if f.addr != self.project.entry and not f.is_plt)
 
     def test_new_state_is_made_at_its_address(self):
-        # at 37cbfea2 the dialog took kb.labels.lookup()'s None for an address, so every state started at the entry
+        # the state starts at the address the dialog was given, which no label names, not at the entry point
         addr = self.function_addr()
         dialog = NewState(self.workspace, self.instance, addr=addr)
         box = dialog.findChild(QDialogButtonBox)
