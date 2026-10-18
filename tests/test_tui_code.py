@@ -133,6 +133,15 @@ class TestShow(unittest.TestCase):
             app = AmApp(caps=TerminalCaps(truecolor=True, forced_tier=2), interactive=True)
             async with app.run_test(size=SIZE) as pilot:
                 await pilot.pause()
+                # the app gives the functions view the focus once it is mounted and drawn; on a slow machine (the
+                # windows-2022 runner) that came after the focus below and took it back, so wait for it first
+                functions = app.workspace.view_manager.first_view_in_category("functions")
+                assert functions is not None
+                for _ in range(300):
+                    if app.focused is not None and functions in app.focused.ancestors_with_self:
+                        break
+                    await pilot.pause(0.02)
+                assert app.focused is not None and functions in app.focused.ancestors_with_self
                 # something else has the focus, as the disassembly has when Tab is pressed there
                 other = app.screen.focus_chain[0]
                 other.focus()
