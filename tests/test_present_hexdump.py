@@ -405,7 +405,7 @@ class TestPatching(FauxwareHexCase):
         assert copy is not None
         copy.trigger()
         head = fixture_head(FAUXWARE, 4)
-        assert bytes(presenter._clipboard) == head
+        assert presenter._clipboard == head
         presenter.jump_to(start + 0x400)
         paste = find_entry(presenter.context_menu(), "Paste 4 bytes")
         assert paste is not None

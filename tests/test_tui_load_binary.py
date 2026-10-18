@@ -272,7 +272,9 @@ class TestExit(LoadScreenCase):
                 await asyncio.sleep(delay)
                 app.exit()
                 # the app's own exit, not the shutdown run_test does after the scenario
-                await asyncio.wait_for(asyncio.shield(app._task), 30)
+                task = app._task
+                assert task is not None
+                await asyncio.wait_for(asyncio.shield(task), 30)
                 assert app.return_code == 0
 
         for step in range(30):

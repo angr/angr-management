@@ -33,4 +33,5 @@ class SourceViewerPlugin(BasePlugin):
         workspace.add_view(self.source_viewer)
 
     def teardown(self) -> None:
-        self.workspace.remove_view(self.source_viewer)
+        if self.workspace is not None:
+            self.workspace.remove_view(self.source_viewer)

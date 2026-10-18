@@ -481,7 +481,9 @@ class TestInteractiveLoad(TuiTestCase):
             worker.append(app.workspace.job_manager._worker_thread)
             app.exit()
             # wait for the app's own exit, which the screen may still be mounting under
-            await asyncio.wait_for(asyncio.shield(app._task), 60)
+            task = app._task
+            assert task is not None
+            await asyncio.wait_for(asyncio.shield(task), 60)
 
         run_app(scenario, binary=None)
         assert worker and not worker[0].is_alive()
