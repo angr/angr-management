@@ -410,6 +410,22 @@ class TestWhileCfgRecoveryRuns(FauxwareDisasmCase):
         self.refuse_reads()
         assert self.instance.get_instruction_text_at(self.main.addr) is None
 
+    def test_the_views_refresh_only_when_recovery_stops_for_them(self):
+        calls: list = []
+        progress = {"reloaded": False}
+        with (
+            patch.object(self.workspace, "reload", lambda categories: calls.append(("reload", categories))),
+            patch.object(self.workspace, "refresh", lambda categories: calls.append(("refresh", categories))),
+        ):
+            self.refuse_reads()
+            self.workspace._refresh_cfg_views(progress)
+            assert not calls and not progress["reloaded"]
+            patch.stopall()
+            self.workspace._refresh_cfg_views(progress)
+            self.workspace._refresh_cfg_views(progress)
+        categories = ["disassembly", "functions"]
+        assert calls == [("reload", categories), ("refresh", categories)]
+
 
 class TestFind(FauxwareDisasmCase):
     def test_find_in_graph(self):

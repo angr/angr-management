@@ -174,28 +174,29 @@ class BaseWorkspace:
         """
         Reload once and then refresh in a loop, while the CFG job is running
         """
-        reloaded = False
+        progress = {"reloaded": False}
         while True:
             if not _container(self.main_instance.cfg).am_none:
-                if reloaded:
-                    gui_thread_schedule_async(
-                        self.refresh,
-                        kwargs={
-                            "categories": ["disassembly", "functions"],
-                        },
-                    )
-                else:
-                    gui_thread_schedule_async(
-                        self.reload,
-                        kwargs={
-                            "categories": ["disassembly", "functions"],
-                        },
-                    )
-                    reloaded = True
+                gui_thread_schedule_async(self._refresh_cfg_views, args=(progress,))
 
             time.sleep(0.3)
             if cfg_job.state not in {JobState.PENDING, JobState.RUNNING}:
                 break
+
+    def _refresh_cfg_views(self, progress: dict[str, bool]) -> None:
+        """
+        Reload the views that show the partial CFG the first time, then refresh them. CFG recovery is adding to the
+        functions they read, so they read only while it stops for them; when it does not stop in time, this tick is
+        skipped and the next one (0.3 s later) tries again.
+        """
+        with self.main_instance.analysis_gate.access() as granted:
+            if not granted:
+                return
+            if progress["reloaded"]:
+                self.refresh(categories=["disassembly", "functions"])
+            else:
+                self.reload(categories=["disassembly", "functions"])
+                progress["reloaded"] = True
 
     @contextmanager
     def _nav_tracking_suppressed(self):
