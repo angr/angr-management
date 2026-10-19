@@ -65,6 +65,18 @@ class FinishRaisingJob(InstanceJob):
         raise RuntimeError("this finish handler always fails")
 
 
+#: How long BlockedJob waits for its test to release it. A test always releases the job when it is done, so this only
+#: ends a job whose test never does, before pytest-timeout (900 s in CI) kills the process. It used to be 30 s, and a
+#: stop of 35 s (SIGSTOP on the xdist workers, which is what a stall of the macOS runner looks like to them; tests in
+#: flight there have run up to 60 s over their usual time) let the job time out and finish while its test still
+#: needed it running.
+BLOCKED_JOB_WAIT = 600
+
+#: How long a test waits for BlockedJob to start: the same two minutes conftest.py gives a pilot's wait, which covers
+#: those stalls, so a job that never starts fails the test in two minutes rather than ten.
+BLOCKED_JOB_START_WAIT = 120
+
+
 class BlockedJob(InstanceJob):
     """A job that runs until it is released."""
 
@@ -75,7 +87,7 @@ class BlockedJob(InstanceJob):
 
     def run(self, ctx: JobContext) -> None:
         self.started.set()
-        self.release.wait(30)
+        self.release.wait(BLOCKED_JOB_WAIT)
 
 
 class TestJobExceptionReporting(AngrManagementTestCase):
@@ -159,7 +171,7 @@ class TestJobExceptionReporting(AngrManagementTestCase):
         job = BlockedJob(self.main.workspace.main_instance, release)
         job_manager.add_job(job)
         try:
-            assert job.started.wait(30)
+            assert job.started.wait(BLOCKED_JOB_START_WAIT)
             with self.assertRaises(AssertionError) as caught:
                 join_all_jobs(job_manager, timeout=0.5)
         finally:
@@ -169,7 +181,7 @@ class TestJobExceptionReporting(AngrManagementTestCase):
         message = str(caught.exception)
         assert "('Blocked', 'RUNNING')" in message
         assert "'angr management job worker'" in message
-        assert "self.release.wait(30)" in message
+        assert "self.release.wait(BLOCKED_JOB_WAIT)" in message
 
 
 if __name__ == "__main__":
