@@ -56,9 +56,12 @@ if not _xdist_worker:
 # across one window ran 46 to 60 s over their usual time. Stopping the workers for 35 s with SIGSTOP fails tests the
 # same way on Linux. With this budget, of 29 waits there that spanned such a stop, 26 took 35 to 37 s and 3 took 77 s:
 # those three were one stop of all three workers as they started, on a loaded host, and they needed 42 s more after
-# it ended. All 29 passed. The longest single wait measured without a stop is 2.4 s, so this budget hides nothing: a
-# wait whose messages are really stuck still fails with the same WaitForScreenTimeout, two minutes in instead of half
-# a minute, and a wait that never returns is still cut off by pytest-timeout and its late stack dump (stack_dump.py).
+# it ended. All 29 passed. A stall of the host from any cause, not only a SIGSTOP, lengthens a wait the same way; with
+# no stop, the longest single wait on Linux was 2.4 s at a 1-minute load of about 20 on 20 cores, and 3.2 s in a run
+# that began as a load spike ended (1-minute load 52 at its start, 22 at its end).
+# So this budget hides nothing: a wait whose messages are really stuck still fails with the same WaitForScreenTimeout,
+# two minutes in instead of half a minute, and a wait that never returns is still cut off by pytest-timeout and its
+# late stack dump (stack_dump.py).
 PILOT_WAIT_TIMEOUT = 120.0
 
 
