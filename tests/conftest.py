@@ -47,6 +47,34 @@ if not _xdist_worker:
     os.environ[DIRECTORY_VARIABLE] = _stack_dir
     atexit.register(shutil.rmtree, _stack_dir, ignore_errors=True)
 
+# How long a Textual pilot waits for the app to handle the messages pending when the wait starts. Every pilot call --
+# pause, press, click -- and run_test() itself make this wait, and Textual gives it 30 s of wall-clock time with no
+# setting to change it (Pilot._wait_for_screen). The macOS runner (3 cores, xdist -n 3, not forked) stalls. In job
+# 117927088904 at 4e0bc3c1 it had six windows of 20 to 37 s in which no worker finished a test; in the one at 07:15
+# the three tests in flight took 1.8 to 3.9 times as long as in any other macOS run, and the terminal test among them
+# failed in run_test's first wait, before it had done anything. In the two macOS runs at 9e3efcd6, the tests in flight
+# across one window ran 46 to 60 s over their usual time. Stopping the workers for 35 s with SIGSTOP fails tests the
+# same way on Linux. With this budget, of 29 waits there that spanned such a stop, 26 took 35 to 37 s and 3 took 77 s:
+# those three were one stop of all three workers as they started, on a loaded host, and they needed 42 s more after
+# it ended. All 29 passed. The longest single wait measured without a stop is 2.4 s, so this budget hides nothing: a
+# wait whose messages are really stuck still fails with the same WaitForScreenTimeout, two minutes in instead of half
+# a minute, and a wait that never returns is still cut off by pytest-timeout and its late stack dump (stack_dump.py).
+PILOT_WAIT_TIMEOUT = 120.0
+
+
+def _lengthen_the_pilot_wait_budget() -> None:
+    from textual.pilot import Pilot  # pylint: disable=import-outside-toplevel
+
+    wait_for_screen = Pilot._wait_for_screen  # pylint: disable=protected-access
+
+    async def _wait_for_screen(self: Pilot, timeout: float = PILOT_WAIT_TIMEOUT) -> bool:
+        return await wait_for_screen(self, timeout)
+
+    Pilot._wait_for_screen = _wait_for_screen  # pylint: disable=protected-access
+
+
+_lengthen_the_pilot_wait_budget()
+
 _late_stack_dump = LateStackDump()
 
 
