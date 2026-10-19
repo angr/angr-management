@@ -10,6 +10,7 @@ import unittest
 from typing import TYPE_CHECKING
 
 from common import AngrManagementTestCase  # pylint: disable=import-error
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from angrmanagement.data.jobs.job import InstanceJob
@@ -97,6 +98,17 @@ class TestJobExceptionReporting(AngrManagementTestCase):
         # be readable from the body text on every platform
         assert "Failing" in boxes[0].text()
         assert "this job always fails" in boxes[0].text()
+
+    def test_the_message_box_is_not_modal(self) -> None:
+        # QMessageBox is application modal unless told otherwise, and on macOS Qt shows a modal box as a native alert
+        # whose show() starts [NSAlert runModal] from the next event-loop pass: the thread pumping events (a test's
+        # join_all_jobs, say) then stays in that modal loop until somebody clicks the alert
+        self._run(FailingJob(self.main.workspace.main_instance))
+
+        boxes = self._message_boxes()
+        assert len(boxes) == 1
+        assert boxes[0].windowModality() == Qt.WindowModality.NonModal
+        assert QApplication.activeModalWidget() is None
 
     def test_cancelled_job_is_not_reported(self) -> None:
         self._run(CancelledJob(self.main.workspace.main_instance))

@@ -73,6 +73,10 @@ class QtServices:
         box.setText(text)
         box.setStandardButtons(QMessageBox.StandardButton.Ok)
         box.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        # QMessageBox is application modal by default, and on macOS Qt shows a modal box as a native alert that runs
+        # its own modal loop from the next event-loop pass, which blocks whoever is pumping events until the user
+        # clicks it. A notice must not block anyone, so the box is not modal at all.
+        box.setWindowModality(Qt.WindowModality.NonModal)
         # shown without blocking: whoever reported this carries on, and nothing waits behind the box
         box.show()
 
