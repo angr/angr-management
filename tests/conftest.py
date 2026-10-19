@@ -18,6 +18,7 @@ import threading
 from functools import partial
 
 import pytest
+from stack_dump import DIRECTORY_VARIABLE, LateStackDump, left_behind  # pylint: disable=import-error
 
 # Keep the tests' configuration away from the user's: angr management reads and saves config.toml in this directory.
 # It is set at import, before any test module imports angrmanagement.config, and removed when the process that made
@@ -38,6 +39,40 @@ if _xdist_worker or not os.environ.get("ANGR_MANAGEMENT_CONFIG_DIR"):
 _ipython_dir = tempfile.mkdtemp(prefix="angr-management-test-ipython-")
 os.environ["IPYTHONDIR"] = _ipython_dir
 atexit.register(shutil.rmtree, _ipython_dir, ignore_errors=True)
+
+# Where a test that runs too long leaves every thread's stack before pytest-timeout kills its process (stack_dump.py
+# says why). The controller makes it before it starts any worker, and the workers inherit it.
+if not _xdist_worker:
+    _stack_dir = tempfile.mkdtemp(prefix="angr-management-test-stacks-")
+    os.environ[DIRECTORY_VARIABLE] = _stack_dir
+    atexit.register(shutil.rmtree, _stack_dir, ignore_errors=True)
+
+_late_stack_dump = LateStackDump()
+
+
+@pytest.hookimpl(optionalhook=True)
+def pytest_timeout_set_timer(item, settings):
+    """
+    Arm a stack dump for a tenth of the timeout before pytest-timeout fires. Returning None leaves pytest-timeout to
+    arm its own timer as usual.
+    """
+    directory = os.environ.get(DIRECTORY_VARIABLE)
+    if directory:
+        _late_stack_dump.arm(directory, item.nodeid, settings.timeout * 0.9)
+
+
+@pytest.hookimpl(optionalhook=True)
+def pytest_timeout_cancel_timer(item):  # pylint: disable=unused-argument
+    _late_stack_dump.disarm()
+
+
+def pytest_terminal_summary(terminalreporter, config):
+    """Print the stacks a killed test process left, on the controller, whose output is the one that is shown."""
+    if hasattr(config, "workerinput") or not os.environ.get(DIRECTORY_VARIABLE):
+        return
+    for dump in left_behind(os.environ[DIRECTORY_VARIABLE]):
+        terminalreporter.write_sep("=", "stacks of a test killed for running too long")
+        terminalreporter.write(dump)
 
 
 @pytest.fixture(autouse=True)

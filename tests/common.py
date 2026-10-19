@@ -2,16 +2,14 @@ from __future__ import annotations
 
 import os
 import pickle
-import sys
-import threading
 import time
-import traceback
 import unittest
 from typing import TYPE_CHECKING
 
 import angr
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
+from stack_dump import thread_stacks  # pylint: disable=import-error
 
 from angrmanagement.config import Conf
 from angrmanagement.logic import GlobalInfo
@@ -38,23 +36,14 @@ def create_qapp():
     return app
 
 
-def thread_stacks() -> str:
-    """Every thread's name and Python stack, innermost call last."""
-    names = {thread.ident: thread.name for thread in threading.enumerate()}
-    stacks = []
-    for ident, frame in sys._current_frames().items():  # pylint:disable=protected-access
-        stacks.append(f"Thread {names.get(ident, '?')!r} ({ident}):\n" + "".join(traceback.format_stack(frame)))
-    return "\n".join(stacks)
-
-
 def join_all_jobs(job_manager: JobManager, timeout: float = 60.0, wait_period: float = 0.05) -> None:
     """
     Wait as ``JobManager.join_all_jobs`` does, but fail after ``timeout`` seconds instead of waiting for ever.
 
-    The failure names the jobs still listed and holds every thread's stack. A test that hangs instead leaves nothing:
-    under xdist, pytest-timeout's stack dump goes to the worker's stderr, which the log never shows. A wait that
-    never comes back to this loop, such as a native modal loop entered from ``process_pending``, cannot be caught
-    here.
+    The failure names the jobs still listed and holds every thread's stack, and the test fails in a minute rather
+    than when pytest-timeout kills its process. A wait that never comes back to this loop, such as a native modal loop
+    entered from ``process_pending``, cannot be caught here; conftest.py's late stack dump (stack_dump.py) still
+    records every thread's stack before the process is killed.
     """
     executor = GlobalInfo.executor
     deadline = time.monotonic() + timeout
