@@ -127,7 +127,7 @@ class PatternSearchJob(InstanceJob):
             graph = dec.ail_graph
             if graph is None:
                 continue
-            entry = next((b for b in graph if b.addr == func.addr and b.idx is None), None)
+            entry = next((b for b in graph if b.addr == func.addr and b.idx == 0), None)
             if entry is None:
                 continue
             stream, matches = find_template_occurrences(self.pattern, graph, entry, kb=self.instance.kb)
