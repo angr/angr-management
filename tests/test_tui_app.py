@@ -275,7 +275,7 @@ class TestFunctionsTable(TuiTestCase):
                 # a first click puts the cursor on the cell; a click on the cell under the cursor activates the row
                 await pilot.click(table, offset=(8, 1 - table.scroll_offset.y))
                 await settle(pilot)
-                assert activated == []
+                assert not activated, activated
                 await pilot.click(table, offset=(8, 1 - table.scroll_offset.y), button=3)
                 await settle(pilot)
                 assert isinstance(app.screen, MenuPopup)
