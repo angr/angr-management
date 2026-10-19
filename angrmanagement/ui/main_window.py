@@ -764,9 +764,9 @@ class MainWindow(QMainWindow):
             Conf.last_used_directory,
             "All files (*);;Trace files (*.trace);;",
         )
-        Conf.last_used_directory = os.path.dirname(file_path)
         if not file_path:
             return
+        Conf.last_used_directory = os.path.dirname(file_path)
         self.load_trace_file(file_path)
 
     def load_signature_button(self) -> None:
@@ -976,6 +976,10 @@ class MainWindow(QMainWindow):
     def decompile_current_function(self) -> None:
         if self.workspace is not None:
             self.workspace.decompile_current_function()
+
+    def discover_patterns(self) -> None:
+        if self.workspace is not None:
+            self.workspace.show_pattern_discovery()
 
     def llm_refine_all(self) -> None:
         if self.workspace is not None:

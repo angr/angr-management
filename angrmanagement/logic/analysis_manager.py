@@ -14,6 +14,8 @@ from angrmanagement.data.jobs import (
     CodeTaggingJob,
     FlirtAnalysisConfiguration,
     FlirtSignatureRecognitionJob,
+    GoGlobalsRecoveryConfiguration,
+    GoGlobalsRecoveryJob,
     Job,
     OverviewConfiguration,
     PrototypeFindingJob,
@@ -56,6 +58,7 @@ class AnalysisManager(QObject):
                     CallingConventionRecoveryConfiguration,
                     RustSymbolRecoveryConfiguration,
                     RustTypeDBLoaderConfiguration,
+                    GoGlobalsRecoveryConfiguration,
                     VariableRecoveryConfiguration,
                 ]
             ]
@@ -105,6 +108,9 @@ class AnalysisManager(QObject):
 
         if conf["rust_typedb_loader"].enabled:
             self._schedule_job(RustTypeDBLoaderJob(instance))
+
+        if conf["go_globals_recovery"].enabled:
+            self._schedule_job(GoGlobalsRecoveryJob(instance))
 
         if conf["varec"].enabled:
             job = VariableRecoveryJob(

@@ -180,7 +180,8 @@ class LoadAngrDBJob(InstanceJob):
     def run(self, ctx: JobContext) -> None:
         ctx.set_progress(5)
 
-        angrdb = AngrDB()
+        # no connection pool: a pooled SQLite connection keeps the file open, and locked on Windows
+        angrdb = AngrDB(nullpool=True)
         try:
             proj = angrdb.load(
                 self.file_path, kb_names=self.kb_names, other_kbs=self.other_kbs, extra_info=self.extra_info

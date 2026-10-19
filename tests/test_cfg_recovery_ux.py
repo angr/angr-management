@@ -396,12 +396,12 @@ class TestLinearViewNormalization(CfgRecoveryUxTestCase):
 class TestAskBeforeNavigating(CfgRecoveryUxTestCase):
     def test_no_prompt_without_user_navigation(self):
         questions = []
-        orig_question = QMessageBox.question
-        QMessageBox.question = lambda *args, **kwargs: questions.append(args) or QMessageBox.StandardButton.Yes
+        orig_open = QMessageBox.open
+        QMessageBox.open = lambda box: questions.append(box.text()) or box.done(QMessageBox.StandardButton.Yes)
         try:
             self.run_cfg_job()
         finally:
-            QMessageBox.question = orig_question
+            QMessageBox.open = orig_open
 
         # no prompt: the view navigated to main and switched to the graph view
         assert not questions
@@ -416,8 +416,13 @@ class TestAskBeforeNavigating(CfgRecoveryUxTestCase):
 
         # pretend the user navigated during the job by forcing the flag through the completion path
         questions = []
-        orig_question = QMessageBox.question
-        QMessageBox.question = lambda *args, **kwargs: questions.append(args) or QMessageBox.StandardButton.No
+        orig_open = QMessageBox.open
+
+        def decline(box: QMessageBox) -> None:
+            questions.append(box.text())
+            box.done(QMessageBox.StandardButton.No)
+
+        QMessageBox.open = decline
 
         orig_started = workspace.on_cfg_recovery_started
 
@@ -429,7 +434,7 @@ class TestAskBeforeNavigating(CfgRecoveryUxTestCase):
         try:
             self.run_cfg_job()
         finally:
-            QMessageBox.question = orig_question
+            QMessageBox.open = orig_open
             workspace.on_cfg_recovery_started = orig_started
 
         # the user was asked and declined: the view stays in the linear viewer

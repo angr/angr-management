@@ -86,6 +86,8 @@ class DisassemblyView(SynchronizedFunctionView):
         super().__init__("disassembly", workspace, default_docking_position, instance)
 
         self.base_caption = "Disassembly"
+        #: instructions a pattern or a discovered family covers, painted in their own color
+        self.pattern_highlight_addrs: set[int] = set()
         self._disassembly_level = DisassemblyLevel.MachineCode
         self._show_minimap: bool = True
         self._show_address = True
@@ -96,6 +98,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._show_exception_edges = True
 
         self._prefer_graph = True
+        self._displaying_function = False
         self._current_view: QLinearDisassembly | QDisassemblyGraph | None = None
         self._last_objects_added_refresh: float = 0.0
 
@@ -358,6 +361,19 @@ class DisassemblyView(SynchronizedFunctionView):
             return
 
         super().keyPressEvent(event)
+
+    def highlight_pattern_addrs(self, addrs) -> None:
+        """Paint the instructions at ``addrs``, replacing any earlier pattern highlight."""
+        self.pattern_highlight_addrs = set(addrs)
+        self.redraw_current_graph()
+
+    def clear_pattern_highlight(self) -> bool:
+        """Drop the pattern highlight; returns whether there was one."""
+        had = bool(self.pattern_highlight_addrs)
+        self.pattern_highlight_addrs = set()
+        if had:
+            self.redraw_current_graph()
+        return had
 
     def redraw_current_graph(self, **kwargs) -> None:  # pylint: disable=unused-argument
         """
@@ -906,7 +922,9 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def jump_to(self, addr: int, src_ins_addr=None, use_animation: bool = False, is_real_addr: bool = False) -> bool:
         # Do not jump if addr is not in the binary
-        if not self.instance.project.am_none and self.instance.project.loader.find_object_containing(addr) is None:
+        if addr is None or (
+            not self.instance.project.am_none and self.instance.project.loader.find_object_containing(addr) is None
+        ):
             return False
 
         self.workspace.note_user_navigation()
@@ -1435,10 +1453,17 @@ class DisassemblyView(SynchronizedFunctionView):
         self.workspace.current_screen.am_subscribe(self.on_screen_changed)
         self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
         self.instance.cfb.am_subscribe(self._on_cfb_event)
-        self.function.am_subscribe(lambda: self.display_function(self.function.am_obj, send_event=False))
+        self.function.am_subscribe(self._on_function_event)
 
     def _on_breakpoints_updated(self, **kwargs) -> None:  # pylint:disable=unused-argument
         self.refresh()
+
+    def _on_function_event(self, **kwargs) -> None:  # pylint:disable=unused-argument
+        # the event was fired by _display_function itself; re-displaying would re-record the function head in the
+        # jump history and scroll away from the jump target
+        if self._displaying_function:
+            return
+        self.display_function(self.function.am_obj, send_event=False)
 
     def _unregister_events(self) -> None:
         self.infodock.selected_insns.am_unsubscribe(self.redraw_current_graph)
@@ -1469,7 +1494,11 @@ class DisassemblyView(SynchronizedFunctionView):
 
         self.function.am_obj = the_func
         if send_event:
-            self.function.am_event()
+            self._displaying_function = True
+            try:
+                self.function.am_event()
+            finally:
+                self._displaying_function = False
 
         # set status bar
         self._statusbar.function = the_func
@@ -1527,7 +1556,13 @@ class DisassemblyView(SynchronizedFunctionView):
         if self._current_view is not self._linear_viewer:
             function = locate_function(self.instance, code_addr)
             if function is not None:
-                self._display_function(function)
+                if (
+                    function is not self.function.am_obj
+                    or self._flow_graph.function_graph is None
+                    or self._flow_graph.function_graph.function is not function
+                ):
+                    # only switch functions when needed; re-displaying the current one scrolls to its head
+                    self._display_function(function)
                 instr_addr = function.addr_to_instruction_addr(code_addr)
                 if instr_addr is None:
                     instr_addr = code_addr

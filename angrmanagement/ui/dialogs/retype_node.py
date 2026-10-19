@@ -5,7 +5,11 @@ from typing import TYPE_CHECKING, Any
 import angr
 import pycparser
 from angr import SIM_TYPE_COLLECTIONS
-from angr.analyses.decompiler.structured_codegen.c import CConstruct, CFunction, CVariable
+from angr.analyses.decompiler.structured_codegen import (
+    CodegenNode,
+    FunctionNode,
+    VariableNode,
+)
 from angr.errors import AngrMissingTypeError
 from angr.sim_variable import SimVariable
 from angr.utils.types import dereference_simtype, make_type_reference
@@ -35,7 +39,7 @@ class TypeBox(QLineEdit):
         self.textChanged.connect(textchanged_callback)
         self.setFont(QFont(Conf.disasm_font))
 
-    def set_type(self, type_: SimType | None, cvariable: CVariable = None) -> None:
+    def set_type(self, type_: SimType | None, cvariable: VariableNode = None) -> None:
         if type_ is None:
             self.setText("")
             return
@@ -105,7 +109,7 @@ class RetypeNode(QDialog):
         self,
         instance: Instance,
         code_view: CodeView | None = None,
-        node: CConstruct | None = None,
+        node: CodegenNode | None = None,
         node_type=None,
         variable=None,
         parent=None,
@@ -160,9 +164,9 @@ class RetypeNode(QDialog):
 
         type_box = TypeBox(self._on_type_changed, predefined_types=self._get_predefined_types(), parent=self)
         if self._node is not None:
-            if isinstance(self._node, CVariable) and self._node.unified_variable and self._node_type is not None:
+            if isinstance(self._node, VariableNode) and self._node.unified_variable and self._node_type is not None:
                 type_box.set_type(self._node_type, cvariable=self._node)
-            elif isinstance(self._node, CFunction):
+            elif isinstance(self._node, FunctionNode):
                 type_box.setText(self._node.functy.c_repr(name=self._node.demangled_name, full=True, name_parens=False))
 
             type_box.selectAll()

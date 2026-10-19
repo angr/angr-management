@@ -84,7 +84,7 @@ jobs:
         run: |
           source .venv/bin/activate
           pytest -vv \
-            -n auto --splits 2 --group ${{ matrix.runner_id }} --splitting-algorithm=least_duration \
+            -n auto --timeout 900 --timeout-method=thread --splits 2 --group ${{ matrix.runner_id }} --splitting-algorithm=least_duration \
             --cov=angrmanagement --cov=tests --cov-report=xml \
             --junitxml=junit.xml -o junit_family=legacy \
             --store-durations --clean-durations --durations-path=test_durations.json \

@@ -62,4 +62,4 @@ jobs:
       - name: Sync dependencies
         run: uv sync -p 3.12
       - name: Run tests
-        run: uv run pytest -vv -n auto tests
+        run: uv run pytest -vv -n auto --timeout 900 --timeout-method=thread tests

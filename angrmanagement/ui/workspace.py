@@ -62,6 +62,7 @@ from .views import (
     LogView,
     MCPHistoryView,
     PatchesView,
+    PatternView,
     ProximityView,
     RegistersView,
     SearchView,
@@ -285,15 +286,30 @@ class Workspace:
         manually navigated anywhere during the recovery, ask before yanking the view away.
         """
         if self._user_navigated_during_cfg:
-            r = QMessageBox.question(
-                self.main_window,
-                "CFG recovery finished",
-                f"CFG recovery finished. Jump to {func.name} and switch to graph view?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.Yes,
-            )
-            if r != QMessageBox.StandardButton.Yes:
-                return
+            self._ask_navigate_to_function_after_cfg(func)
+            return
+        self._do_navigate_to_function_after_cfg(func)
+
+    def _ask_navigate_to_function_after_cfg(self, func: Function) -> None:
+        # modeless: a modal here would block whoever waits on the job queue (e.g., a headless test) forever
+        box = QMessageBox(
+            QMessageBox.Icon.Question,
+            "CFG recovery finished",
+            f"CFG recovery finished. Jump to {func.name} and switch to graph view?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            self.main_window,
+        )
+        box.setDefaultButton(QMessageBox.StandardButton.Yes)
+        box.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+
+        def on_finished(result: int) -> None:
+            if result == QMessageBox.StandardButton.Yes:
+                self._do_navigate_to_function_after_cfg(func)
+
+        box.finished.connect(on_finished)
+        box.open()
+
+    def _do_navigate_to_function_after_cfg(self, func: Function) -> None:
         self._user_navigated_during_cfg = False
         with self._nav_tracking_suppressed():
             view = self.view_manager.first_view_in_category("disassembly")
@@ -332,7 +348,7 @@ class Workspace:
         if current_view is None or not isinstance(current_view, FunctionView):
             # we don't have a current view or the current view does not have function-specific content. create a
             # disassembly view to display the selected function.
-            disasm_view = self._get_or_create_view("dissasembly", DisassemblyView)
+            disasm_view = self._get_or_create_view("disassembly", DisassemblyView)
             disasm_view.display_function(func)
             self.view_manager.raise_view(disasm_view)
         else:
@@ -609,7 +625,8 @@ class Workspace:
             return False
 
         self.plugins.handle_project_save(file_path)
-        angrdb = AngrDB(project=self.main_instance.project.am_obj)
+        # no connection pool: a pooled SQLite connection keeps the file open, and locked on Windows
+        angrdb = AngrDB(project=self.main_instance.project.am_obj, nullpool=True)
         extra_info = self.plugins.angrdb_store_entries()
         angrdb.dump(file_path, kbs=[self.main_instance.kb], extra_info=extra_info)
         self.main_instance.database_path = file_path
@@ -677,6 +694,66 @@ class Workspace:
         else:
             view = self._get_or_create_view("disassembly", DisassemblyView)
             view.decompile_current_function()
+
+    def on_patterns_changed(self) -> None:
+        """The project's patterns changed: refresh every view that lists them."""
+        for view in self.view_manager.views:
+            if isinstance(view, PatternView):
+                view.reload_library()
+            elif isinstance(view, CodeView):
+                view.reload_patterns()
+
+    def edit_pattern(self, stored) -> PatternView:
+        """Open a stored pattern in the pattern view."""
+        view = self._get_or_create_view("pattern", PatternView)
+        view.load_stored(stored)
+        self.raise_view(view)
+        return view
+
+    def highlight_in_disassembly(self, addrs) -> DisassemblyView | None:
+        """Paint the instructions at ``addrs`` in the disassembly view and show the first."""
+        view = self._get_or_create_view("disassembly", DisassemblyView)
+        view.highlight_pattern_addrs(addrs)
+        if addrs:
+            view.jump_to(min(addrs))
+        self.raise_view(view)
+        code_view = self.view_manager.first_view_in_category("pseudocode")
+        if code_view is not None:
+            # its Clear highlights clears this one too
+            code_view._update_clear_highlights()
+        return view
+
+    def show_pattern_discovery(self) -> PatternView | None:
+        """Open the pattern view on its Discover tab, where a discovery run is set up and started."""
+        if self.main_instance.project.am_none:
+            QMessageBox.warning(self._main_window, "Discover Patterns", "No project is loaded.")
+            return None
+        view = self._get_or_create_view("pattern", PatternView)
+        view.show_discover_tab()
+        self.raise_view(view)
+        return view
+
+    def discover_patterns(self) -> PatternView | None:
+        """Look for families of similar code in the function shown in the pseudocode view.
+
+        Shows a message box and does nothing else if no function is decompiled there.
+        """
+        title = "Discover Patterns"
+        if self.main_instance.project.am_none:
+            QMessageBox.warning(self._main_window, title, "No project is loaded.")
+            return None
+        code_view: CodeView | None = self.view_manager.first_view_in_category("pseudocode")
+        if code_view is None or code_view._function.am_none or code_view.codegen.am_none:
+            QMessageBox.warning(
+                self._main_window,
+                title,
+                "No function is currently decompiled in the pseudocode view.\n\nDecompile a function (F5) first.",
+            )
+            return None
+        view = self._get_or_create_view("pattern", PatternView)
+        self.raise_view(view)
+        view.discover(code_view._function.am_obj)
+        return view
 
     def _llm_refine_current_function(self, mode: str) -> None:
         """Run LLM refinement on the currently decompiled function.

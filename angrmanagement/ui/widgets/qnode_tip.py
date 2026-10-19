@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from angr.analyses.decompiler.structured_codegen.c import CFunctionCall
+from angr.analyses.decompiler.structured_codegen import (
+    FunctionCallNode,
+)
 from angr.calling_conventions import SimRegArg, SimStackArg
 from PySide6.QtCore import QPoint, Qt, QTimer
 from PySide6.QtGui import QFontMetrics, QGuiApplication, QTextOption
@@ -117,12 +119,12 @@ class QNodeTip(QFrame):
         self.hide()
 
     def _build_text(self, node) -> str | None:
-        if isinstance(node, CFunctionCall):
+        if isinstance(node, FunctionCallNode):
             return self._format_prototype(node)
         return None
 
     @staticmethod
-    def _format_prototype(node: CFunctionCall) -> str | None:
+    def _format_prototype(node: FunctionCallNode) -> str | None:
         func = node.callee_func
         if func is None or func.prototype is None:
             return None

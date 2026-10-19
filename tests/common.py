@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import pickle
 import unittest
 from typing import TYPE_CHECKING
 
@@ -28,6 +29,36 @@ def create_qapp():
         app = QApplication([])
         Conf.init_font_config()
     return app
+
+
+#: binary path -> the project as angr management left it after its initial analyses, pickled
+_ANALYZED_PROJECTS: dict[str, bytes] = {}
+
+
+def open_analyzed_project(main: MainWindow, binpath: str) -> angr.Project:
+    """Open ``binpath`` in ``main`` with its initial analyses done.
+
+    The first call in a process runs them as usual and keeps a pickled copy; later calls
+    restore the copy, which takes milliseconds instead of a CFG recovery. The workspace
+    skips analysis for a project that already has a CFG, so the CFG job's finish is replayed.
+    """
+    workspace = main.workspace
+    instance = workspace.main_instance
+    blob = _ANALYZED_PROJECTS.get(binpath)
+    if blob is None:
+        instance.project.am_obj = angr.Project(binpath, auto_load_libs=False)
+        instance.project.am_event()
+        workspace.job_manager.join_all_jobs()
+        _ANALYZED_PROJECTS[binpath] = pickle.dumps(instance.project.am_obj)
+        return instance.project.am_obj
+    proj = pickle.loads(blob)
+    instance.project.am_obj = proj
+    instance.project.am_event()
+    workspace.job_manager.join_all_jobs()
+    cfb = proj.analyses.CFB(kb=proj.kb)
+    workspace.analysis_manager._on_cfg_generated((proj.kb.cfgs["CFGFast"], cfb))
+    workspace.job_manager.join_all_jobs()
+    return proj
 
 
 class AngrManagementTestCase(unittest.TestCase):

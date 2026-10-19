@@ -129,6 +129,10 @@ def start_management(
 
     app = QProfilingApplication(sys.argv) if EVENT_PROFILING else QApplication(sys.argv)
 
+    # Qt calls Python overrides (paint(), event handlers) one at a time, and each must win the GIL
+    # back from any busy worker thread; at the default 5 ms interval a repaint can take seconds.
+    sys.setswitchinterval(0.0005)
+
     # set up custom GC logic; GC must not run on angr's worker/analysis threads.
     import gc as _gc
 

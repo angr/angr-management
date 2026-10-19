@@ -3,15 +3,15 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, Literal
 
-from angr.analyses.decompiler.structured_codegen import DummyStructuredCodeGenerator
-from angr.analyses.decompiler.structured_codegen.c import (
-    CConstant,
-    CFunctionCall,
-    CLabel,
-    CStructuredCodeGenerator,
-    CVariable,
+from angr.analyses.decompiler.edits import restore_user_edits
+from angr.analyses.decompiler.structured_codegen import (
+    BaseStructuredCodeGenerator,
+    ConstantNode,
+    DummyStructuredCodeGenerator,
+    FunctionCallNode,
+    LabelNode,
+    VariableNode,
 )
-from angr.analyses.decompiler.structured_codegen.rust import RustConstant, RustFunctionCall
 from angr.knowledge_plugins.functions.function import Function
 from angr.sim_variable import SimMemoryVariable
 from PySide6.QtCore import Qt
@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QMainWindow,
+    QTableWidget,
     QTextEdit,
     QToolButton,
     QVBoxLayout,
@@ -39,11 +40,15 @@ from angrmanagement.ui.toolbars import NavToolbar
 from angrmanagement.ui.widgets.qccode_edit import QCCodeEdit
 from angrmanagement.ui.widgets.qdecomp_options import QDecompilationOptions
 from angrmanagement.ui.widgets.qfind_bar import QFindBar
+from angrmanagement.ui.widgets.qpattern_library import QPatternLibrary
 
 from .view import FunctionView
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from angr.knowledge_plugins.variables.variable_manager import VariableManagerInternal
+    from PySide6.QtWidgets import QPushButton
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
@@ -115,7 +120,7 @@ class CodeView(FunctionView):
         self._function: ObjectContainer | Function = ObjectContainer(None, "The function to decompile")
         self.current_node = ObjectContainer(None, "Current selected C-code node")
         self.addr: ObjectContainer | int = ObjectContainer(0, "Current cursor address")
-        self.codegen: ObjectContainer | CStructuredCodeGenerator = ObjectContainer(
+        self.codegen: ObjectContainer | BaseStructuredCodeGenerator = ObjectContainer(
             None, "The currently-displayed codegen object"
         )
 
@@ -127,6 +132,9 @@ class CodeView(FunctionView):
         self._nav_toolbar: NavToolbar | None = None
         self._view_selector: QComboBox | None = None
         self._summary_textedit: QTextEdit | None = None
+        self._pattern_library: QPatternLibrary | None = None
+        self._clear_highlights_btn: QPushButton | None = None
+        self._patterns_dock: QDockWidget | None = None
         self._summary_dock: QDockWidget | None = None
 
         self.vars_must_struct: set[str] = set()
@@ -136,6 +144,12 @@ class CodeView(FunctionView):
         self._find_index: int = -1
         self._chunk_selections: list[QTextEdit.ExtraSelection] = []
         self._find_selections: list[QTextEdit.ExtraSelection] = []
+        #: layer name -> (function address, instruction addresses of each highlighted copy);
+        #: kept as addresses so a highlight survives the pseudocode being regenerated
+        self._highlight_layers: dict[str, tuple[int, list[frozenset[int]]]] = {}
+        #: patterns whose outlined calls are highlighted in whatever function is shown
+        self._highlighted_patterns: set[str] = set()
+        self._pattern_selections: list[QTextEdit.ExtraSelection] = []
 
         # kb.comments mirrored into the current codegen's stmt_comments: kb address -> stmt key
         self._mirrored_codegen = None
@@ -149,6 +163,7 @@ class CodeView(FunctionView):
         self._textedit.mouse_double_clicked.connect(self._on_mouse_doubleclicked)
         self._function.am_subscribe(self._on_new_function)
         self.codegen.am_subscribe(self._on_codegen_changes)
+        self.codegen.am_subscribe(self._on_codegen_for_patterns)
         self.addr.am_subscribe(self._on_new_addr)
         self.current_node.am_subscribe(self._on_new_node)
         self.instance.annotations.bookmarks.am_subscribe(self._on_bookmarks_changed)
@@ -204,7 +219,13 @@ class CodeView(FunctionView):
 
     @property
     def best_flavor(self) -> str:
-        return "rust" if not self.instance.project.am_none and self.instance.project.is_rust_binary else "pseudocode"
+        if self.instance.project.am_none:
+            return "pseudocode"
+        if self.instance.project.is_rust_binary:
+            return "rust"
+        if self.instance.project.is_go_binary:
+            return "go"
+        return "pseudocode"
 
     #
     # Public methods
@@ -228,6 +249,7 @@ class CodeView(FunctionView):
         flavor: str | None = None,
         reset_cache: bool = False,
         regen_clinic: bool = True,
+        on_finish: Callable[[], None] | None = None,
     ) -> None:
         if self._function.am_none:
             return
@@ -265,6 +287,8 @@ class CodeView(FunctionView):
                     self._last_function = self._function.am_obj
             self._maybe_preload_callees()
             self._maybe_auto_llm_refine()
+            if on_finish is not None:
+                on_finish()
 
         def decomp(*_) -> None:
             job = DecompileFunctionJob(
@@ -302,6 +326,145 @@ class CodeView(FunctionView):
         self._chunk_selections = [self._make_selection(start, end, color) for start, end in chunks]
         self._apply_extra_selections()
 
+    def highlight_pattern(self, func_addr: int, copies: list[frozenset[int]], layer: str = "discover") -> None:
+        """Band every line of ``func_addr``'s pseudocode that renders one of the copies' instructions.
+
+        Each ``layer`` is independent. The highlight waits for the function if it is still
+        being decompiled, follows the pseudocode when it is regenerated, and goes away when
+        another function is shown.
+        """
+        if copies:
+            self._highlight_layers[layer] = (func_addr, copies)
+        else:
+            self._highlight_layers.pop(layer, None)
+        self._rebuild_pattern_selections()
+
+    def set_pattern_highlight(self, name: str, on: bool) -> None:
+        """Band the named pattern's matches in whatever function is shown: the calls the
+        outlined ones became, found in the pseudocode itself, and the lines of the rest."""
+        if on:
+            self._highlighted_patterns.add(name)
+        else:
+            self._highlighted_patterns.discard(name)
+        self._rebuild_pattern_selections()
+
+    def is_pattern_highlighted(self, name: str) -> bool:
+        return name in self._highlighted_patterns
+
+    @property
+    def has_pattern_highlight(self) -> bool:
+        """Whether anything is highlighted: a Discover family, a pattern's matches, or either in the disassembly."""
+        return bool(self._highlight_layers or self._highlighted_patterns or self._disasm_pattern_addrs())
+
+    def _disasm_pattern_addrs(self) -> set[int]:
+        disasm = self.workspace.view_manager.first_view_in_category("disassembly")
+        return set(getattr(disasm, "pattern_highlight_addrs", ()))
+
+    def clear_pattern_highlight(self) -> bool:
+        """Drop every pattern highlight; returns whether there was any."""
+        had = bool(self._highlight_layers or self._highlighted_patterns)
+        disasm = self.workspace.view_manager.first_view_in_category("disassembly")
+        if disasm is not None and disasm.clear_pattern_highlight():
+            had = True
+        self._highlight_layers.clear()
+        self._highlighted_patterns.clear()
+        self._pattern_selections = []
+        self._apply_extra_selections()
+        self._update_clear_highlights()
+        if had:
+            self.reload_patterns()
+        return had
+
+    def _update_clear_highlights(self) -> None:
+        if self._clear_highlights_btn is not None:
+            self._clear_highlights_btn.setEnabled(self.has_pattern_highlight)
+
+    @property
+    def pattern_highlighted_lines(self) -> list[int]:
+        """Block numbers of the lines the pattern highlight covers."""
+        return [sel.cursor.blockNumber() for sel in self._pattern_selections]
+
+    def _highlight_addrs(self) -> set[int]:
+        """Every instruction address a highlight layer or a highlighted pattern asks for here."""
+        if self._function.am_none:
+            return set()
+        func_addr = self._function.am_obj.addr
+        addrs: set[int] = set()
+        for layer, (layer_func, copies) in list(self._highlight_layers.items()):
+            if layer_func != func_addr:
+                # another function is on screen
+                del self._highlight_layers[layer]
+                continue
+            addrs.update(*copies)
+        kb = self.instance.kb
+        for name in list(self._highlighted_patterns):
+            if kb is None or name not in kb.patterns:
+                self._highlighted_patterns.discard(name)
+                continue
+            stats = kb.patterns.stats(func_addr, name)
+            if stats is not None:
+                addrs.update(stats.call_addrs)
+                # an outlined match's statements are gone and match nothing; the rest still render
+                addrs.update(*stats.match_addrs)
+        return addrs
+
+    def _highlighted_call_names(self) -> set[str]:
+        kb = self.instance.kb
+        names = set()
+        for name in self._highlighted_patterns:
+            stored = kb.patterns.get(name) if kb is not None else None
+            if stored is not None:
+                names.add(stored.pattern.call_name)
+        return names
+
+    def _call_positions(self, call_names: set[str]) -> list[int]:
+        """Where the pseudocode calls any of ``call_names``. An applied pattern is a call to its
+        call name, so this needs neither the outliner pass's numbers nor a new decompilation."""
+        if not call_names or self.codegen.am_none:
+            return []
+        positions = []
+        for pos, elem in self.codegen.am_obj.map_pos_to_node.items():
+            obj = elem.obj
+            if not isinstance(obj, FunctionCallNode):
+                continue
+            target = obj.callee_func.name if obj.callee_func is not None else obj.callee_target
+            if isinstance(target, str) and target in call_names:
+                positions.append(pos)
+        return positions
+
+    def pattern_call_count(self, name: str) -> int:
+        """How many times the pseudocode on screen calls the named pattern's call name."""
+        kb = self.instance.kb
+        stored = kb.patterns.get(name) if kb is not None else None
+        if stored is None:
+            return 0
+        return len(self._call_positions({stored.pattern.call_name}))
+
+    def _rebuild_pattern_selections(self) -> None:
+        self._pattern_selections = []
+        addrs = self._highlight_addrs()
+        call_positions = self._call_positions(self._highlighted_call_names())
+        if (addrs or call_positions) and not self.codegen.am_none and self._doc is not None:
+            lines: dict[int, int] = {}
+            for pos in call_positions:
+                block = self._doc.findBlock(pos)
+                lines.setdefault(block.blockNumber(), block.position())
+            for pos, elem in self.codegen.am_obj.map_pos_to_node.items():
+                ins = (getattr(elem.obj, "tags", None) or {}).get("ins_addr")
+                if ins in addrs:
+                    block = self._doc.findBlock(pos)
+                    lines.setdefault(block.blockNumber(), block.position())
+            for pos in sorted(lines.values()):
+                sel = QTextEdit.ExtraSelection()
+                sel.cursor = self._textedit.textCursor()
+                sel.cursor.setPosition(pos)
+                sel.cursor.clearSelection()
+                sel.format.setBackground(Conf.pseudocode_pattern_highlight_color)
+                sel.format.setProperty(QTextFormat.Property.FullWidthSelection, True)
+                self._pattern_selections.append(sel)
+        self._apply_extra_selections()
+        self._update_clear_highlights()
+
     def refresh_bookmarks(self) -> None:
         self._apply_extra_selections()
 
@@ -313,6 +476,9 @@ class CodeView(FunctionView):
             return []
         selections = []
         for bookmark in self.instance.annotations.bookmarks:
+            owner = self._function_at(bookmark.addr)
+            if owner is not None and owner is not self._function.am_obj:
+                continue
             pos = self._doc.find_closest_node_pos(bookmark.addr)
             if pos is None:
                 continue
@@ -443,7 +609,9 @@ class CodeView(FunctionView):
         return sel
 
     def _apply_extra_selections(self) -> None:
-        self._textedit.setExtraSelections(self._bookmark_selections() + self._chunk_selections + self._find_selections)
+        self._textedit.setExtraSelections(
+            self._pattern_selections + self._bookmark_selections() + self._chunk_selections + self._find_selections
+        )
 
     def variable_manager(self, func_addr: int | Literal["global"] | None = None) -> VariableManagerInternal | None:
         if self.codegen is None or self.codegen.am_none:
@@ -468,40 +636,74 @@ class CodeView(FunctionView):
         if already_moved:
             return
 
-        # get closest node for ins
-        new_text_pos = self._doc.find_closest_node_pos(self.addr.am_obj) if self._doc is not None else None
+        addr = self.addr.am_obj
 
-        if new_text_pos is not None:
-            # set the new cursor position
-            textedit = self.textedit
-            cursor = textedit.textCursor()
-            cursor.setPosition(new_text_pos)
-            textedit.setTextCursor(cursor)
-            if focus:
-                textedit.setFocus()
-                self._focus_core(True, None)
-        else:
-            # try to find the right function
-            try:
-                block_addr, _ = self.instance.cfb.floor_item(self.addr.am_obj)
-            except KeyError:
-                return
-            block = self.instance.cfg.get_any_node(block_addr)
-            if block is not None:
-                func = self.instance.kb.functions[block.function_address]
-                if func is not self._function.am_obj:
-                    self._function.am_obj = func
-                    self._function.am_event(focus_addr=self.addr.am_obj, focus=focus)
-                else:
-                    log.error(
-                        "There is a block which is in the current function but find_closest_node_pos failed on it"
-                    )
+        # the address may belong to another function (e.g., jumping back across a call); the nearest rendered
+        # position is only meaningful within the current function
+        func = self._function_at(addr)
+        if func is not None and func is not self._function.am_obj:
+            self._function.am_obj = func
+            self._function.am_event(focus_addr=addr, focus=focus)
+            return
+
+        new_text_pos = self._doc.find_closest_node_pos(addr) if self._doc is not None else None
+        if new_text_pos is None:
+            if func is not None:
+                log.error("There is a block which is in the current function but find_closest_node_pos failed on it")
+            return
+
+        # set the new cursor position
+        textedit = self.textedit
+        cursor = textedit.textCursor()
+        cursor.setPosition(new_text_pos)
+        textedit.setTextCursor(cursor)
+        if focus:
+            textedit.setFocus()
+            self._focus_core(True, None)
+
+    def _function_at(self, addr: int) -> Function | None:
+        """
+        The function owning the block that contains addr, or None if unknown.
+        """
+        if self.instance.cfb.am_none or self.instance.cfg.am_none:
+            return None
+        try:
+            block_addr, _ = self.instance.cfb.floor_item(addr)
+        except KeyError:
+            return None
+        block = self.instance.cfg.get_any_node(block_addr)
+        if block is None or block.function_address not in self.instance.kb.functions:
+            return None
+        return self.instance.kb.functions[block.function_address]
 
     def _on_new_node(self, **kwargs) -> None:  # pylint: disable=unused-argument
         self.addr.am_obj = self._textedit.get_src_to_inst()
         self.addr.am_event(already_moved=True)
 
     # pylint: disable=unused-argument
+    def reload_patterns(self) -> None:
+        if self._pattern_library is not None:
+            self._pattern_library.reload()
+
+    def _on_patterns_applied(self) -> None:
+        """Patterns turned on or off from this view's dock: show their effect on this function now."""
+        if not self._function.am_none:
+            self.decompile(reset_cache=True)
+
+    def _on_codegen_for_patterns(self, **_) -> None:
+        # the outliner pass's numbers change with every decompilation, and the text the
+        # pattern highlight points into has been regenerated
+        self.reload_patterns()
+        self._rebuild_pattern_selections()
+
+    @property
+    def patterns_dock(self) -> QDockWidget | None:
+        return self._patterns_dock
+
+    @property
+    def patterns_table(self) -> QTableWidget | None:
+        return None if self._pattern_library is None else self._pattern_library.table
+
     def _on_codegen_changes(self, already_regenerated: bool = False, event: str | None = None, **kwargs) -> None:
         """
         The callback function that triggers an update of the codegen.
@@ -562,7 +764,15 @@ class CodeView(FunctionView):
                 self.codegen.am_obj = new_codegen
                 update_var_types = True
             elif event == "retype_function":
-                self.decompile(reset_cache=True)
+                # dropping the variable manager is what makes the new prototype take effect; it also drops every
+                # rename and manual type, so put the snapshot back once the new variables exist
+                user_edits = kwargs.get("user_edits") or {}
+
+                def restore_edits() -> None:
+                    if restore_user_edits(self.instance.kb, self._function.addr, user_edits)[0]:
+                        self.codegen.am_event()
+
+                self.decompile(reset_cache=True, on_finish=restore_edits if user_edits else None)
                 update_var_types = True
 
             if not update_var_types:
@@ -599,7 +809,7 @@ class CodeView(FunctionView):
             # restore the scroll position
             self._textedit.verticalScrollBar().setValue(scroll_pos)
 
-        if self.codegen.flavor in {"pseudocode", "rust"}:
+        if self.codegen.flavor in {"pseudocode", "rust", "go"}:
             self._options.show()
         else:
             self._options.hide()
@@ -670,37 +880,26 @@ class CodeView(FunctionView):
         cursor = self._textedit.textCursor()
         pos = cursor.position()
         selected_node = self._doc.get_node_at_position(pos)
-        if selected_node is not None:
-            if isinstance(selected_node, CFunctionCall):
-                # decompile this new function
-                if selected_node.callee_func is not None:
-                    self._navigate_to_function(selected_node.tags["ins_addr"], selected_node.callee_func)
-            elif isinstance(selected_node, CConstant):
-                # jump to highlighted constants
-                if selected_node.reference_values is not None and selected_node.value is not None:
-                    for v in selected_node.reference_values.values():
-                        if isinstance(v, Function):
-                            self._navigate_to_function(selected_node.tags["ins_addr"], v)
-                            return
-                    self.workspace.jump_to(selected_node.value)
-            elif isinstance(selected_node, CVariable):
-                var = selected_node.variable
-                if var and isinstance(var, SimMemoryVariable):
-                    self.workspace.jump_to(var.addr)
-            elif isinstance(selected_node, CLabel) and "ins_addr" in selected_node.tags:
-                self.workspace.jump_to(selected_node.tags["ins_addr"])
-            elif isinstance(selected_node, RustFunctionCall):
-                # decompile this new function
-                if selected_node.callee_func is not None:
-                    self._navigate_to_function(selected_node.tags["ins_addr"], selected_node.callee_func)
-            elif isinstance(selected_node, RustConstant):  # noqa: SIM102
-                # jump to highlighted constants
-                if selected_node.reference_values is not None and selected_node.value is not None:
-                    for v in selected_node.reference_values.values():
-                        if isinstance(v, Function):
-                            self._navigate_to_function(selected_node.tags["ins_addr"], v)
-                            return
-                    self.workspace.jump_to(selected_node.value)
+        if selected_node is None:
+            return
+        if isinstance(selected_node, FunctionCallNode):
+            # decompile this new function
+            if selected_node.callee_func is not None:
+                self._navigate_to_function(selected_node.tags["ins_addr"], selected_node.callee_func)
+        elif isinstance(selected_node, ConstantNode):
+            # jump to highlighted constants
+            if selected_node.reference_values is not None and selected_node.value is not None:
+                for v in selected_node.reference_values.values():
+                    if isinstance(v, Function):
+                        self._navigate_to_function(selected_node.tags["ins_addr"], v)
+                        return
+                self.workspace.jump_to(selected_node.value)
+        elif isinstance(selected_node, VariableNode):
+            var = selected_node.variable
+            if var and isinstance(var, SimMemoryVariable):
+                self.workspace.jump_to(var.addr)
+        elif isinstance(selected_node, LabelNode) and "ins_addr" in selected_node.tags:
+            self.workspace.jump_to(selected_node.tags["ins_addr"])
 
     def jump_to(self, addr: int, src_ins_addr=None) -> bool:  # pylint:disable=unused-argument
         if addr == self.addr.am_obj:
@@ -733,14 +932,16 @@ class CodeView(FunctionView):
         key = event.key()
         if key == Qt.Key_Tab:
             # Switch back to disassembly view
-            self.workspace.jump_to(self.addr.am_obj)
+            self.workspace.jump_to(self._disassembly_target_addr())
             return True
         elif key == Qt.Key_G:
             # jump to window
             self.popup_jumpto_dialog()
             return True
         elif key == Qt.Key_Escape:
-            self.jump_back()
+            # the first Escape dismisses a pattern highlight; with none shown it navigates back
+            if not self.clear_pattern_highlight():
+                self.jump_back()
             return True
         elif key == Qt.Key_Space and not self.codegen.am_none:
             flavor = self.codegen.flavor
@@ -752,6 +953,17 @@ class CodeView(FunctionView):
             return True
 
         return super().keyPressEvent(event)
+
+    def _disassembly_target_addr(self) -> int | None:
+        """
+        The address the disassembly view should show for the current cursor; falls back to the function head when the
+        cursor address is unset or points outside the binary (e.g., a synthesized node tagged with address 0).
+        """
+        addr = self.addr.am_obj
+        loader = self.instance.project.loader if not self.instance.project.am_none else None
+        if isinstance(addr, int) and addr and (loader is None or loader.find_object_containing(addr) is not None):
+            return addr
+        return self._function.addr if not self._function.am_none else None
 
     def _update_available_views(self, available) -> None:
         for _ in range(self._view_selector.count()):
@@ -793,6 +1005,27 @@ class CodeView(FunctionView):
         options_dock.setWidget(self._options)
         options_dock.setVisible(False)
 
+        # the project's patterns, with what the outliner pass did with each here
+        self._pattern_library = QPatternLibrary(
+            self.workspace,
+            self.instance,
+            on_edit=self.workspace.edit_pattern,
+            current_func=lambda: None if self._function.am_none else self._function.am_obj.addr,
+            on_apply=self._on_patterns_applied,
+            highlight=(self.is_pattern_highlighted, self.set_pattern_highlight),
+            code_view=lambda: self,
+        )
+        self._patterns_dock = QDockWidget("Patterns", window)
+        self._patterns_dock.setWidget(self._pattern_library)
+        self._clear_highlights_btn = self._pattern_library.add_button(
+            "Clear highlights", self.clear_pattern_highlight, "Remove every pattern highlight from the pseudocode (Esc)"
+        )
+        self._clear_highlights_btn.setEnabled(False)
+        # the numbers may have changed while the dock was hidden
+        self._patterns_dock.visibilityChanged.connect(lambda visible: visible and self.reload_patterns())
+        window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self._patterns_dock)
+        self._patterns_dock.setVisible(False)
+
         # function summary dock
         self._summary_textedit = QTextEdit()
         self._summary_textedit.setReadOnly(True)
@@ -819,6 +1052,9 @@ class CodeView(FunctionView):
         options_toggle_btn = QToolButton()
         options_toggle_btn.setDefaultAction(options_dock.toggleViewAction())
         status_layout.addWidget(options_toggle_btn)
+        patterns_toggle_btn = QToolButton()
+        patterns_toggle_btn.setDefaultAction(self._patterns_dock.toggleViewAction())
+        status_layout.addWidget(patterns_toggle_btn)
         status_layout.addWidget(self._view_selector)
         status_layout.setContentsMargins(3, 3, 3, 3)
         status_layout.setSpacing(3)

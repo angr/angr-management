@@ -60,6 +60,11 @@ class PropertyType(Enum):
 T = TypeVar("T")
 
 
+def _is_locked(item) -> bool:
+    """A read-only check box or combo box: one without text anyone might want to copy."""
+    return getattr(item, "readonly", False) and item.type in (PropertyType.BOOL, PropertyType.COMBO)
+
+
 class PropertyItem:
     """
     Base PropertyItem. Don't use this directly.
@@ -316,6 +321,9 @@ class PropertyModel(QAbstractItemModel):
         if role == Qt.ItemDataRole.CheckStateRole and column == 1 and item.type == PropertyType.BOOL:
             return Qt.CheckState.Checked if item.value else Qt.CheckState.Unchecked
 
+        if role == Qt.ItemDataRole.ForegroundRole and _is_locked(item):
+            return QApplication.palette().color(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text)
+
         # Show modified properties in bold.
         if role == Qt.ItemDataRole.FontRole and item.type != PropertyType.GROUP and item.value != item.initial_value:
             font = QFont()
@@ -334,6 +342,10 @@ class PropertyModel(QAbstractItemModel):
             return Qt.ItemFlag.NoItemFlags
         item = index.internalPointer()
         flags = Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
+        if _is_locked(item):
+            # a read-only check box or choice offers nothing to do; say so instead of
+            # letting the click through and refusing it
+            return flags
         if index.column() == 1 and item.type != PropertyType.GROUP:
             flags |= Qt.ItemFlag.ItemIsEditable
         if item.type == PropertyType.BOOL:

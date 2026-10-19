@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from angr.analyses.decompiler.structured_codegen.c import (
-    CClosingObject,
-    CConstant,
-    CFunction,
-    CFunctionCall,
-    CLabel,
-    CStructField,
-    CVariable,
+from angr.analyses.decompiler.structured_codegen import (
+    ClosingObjectNode,
+    ConstantNode,
+    FunctionCallNode,
+    FunctionNode,
+    LabelNode,
+    StructFieldNode,
+    VariableNode,
 )
 from angr.sim_type import SimType
 from PySide6.QtGui import QTextDocument
@@ -123,12 +123,12 @@ class QCodeDocument(QTextDocument):
         if self._codegen is None or self._codegen.am_none or self._codegen.map_ast_to_pos is None:
             return None
 
-        if isinstance(node, CConstant):
+        if isinstance(node, ConstantNode):
             starts = self._codegen.map_ast_to_pos.get(node.value, None)
             if starts is None:
                 return []
 
-        elif isinstance(node, CVariable):
+        elif isinstance(node, VariableNode):
             if node.unified_variable is not None:
                 starts = self._codegen.map_ast_to_pos.get(node.unified_variable, None)
             else:
@@ -136,21 +136,21 @@ class QCodeDocument(QTextDocument):
             if starts is None:
                 return []
 
-        elif isinstance(node, CFunctionCall):
+        elif isinstance(node, FunctionCallNode):
             starts = self._codegen.map_ast_to_pos.get(
                 node.callee_func if node.callee_func is not None else node.callee_target, None
             )
             if starts is None:
                 return []
 
-        elif isinstance(node, CStructField):
+        elif isinstance(node, StructFieldNode):
             key = (node.struct_type, node.offset)
             starts = self._codegen.map_ast_to_pos.get(key, None)
 
             if starts is None:
                 return []
 
-        elif isinstance(node, CClosingObject | CFunction | SimType | CLabel):
+        elif isinstance(node, ClosingObjectNode | FunctionNode | SimType | LabelNode):
             starts = self._codegen.map_ast_to_pos.get(node, None)
 
             if starts is None:
