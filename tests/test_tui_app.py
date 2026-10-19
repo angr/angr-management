@@ -669,9 +669,8 @@ class TestExitWithTheLogListener(TuiTestCase):
         handler = LogDumpHandler(apps[0].workspace.main_instance)
         handed: list[Any] = []
         record = logging.LogRecord("angrmanagement.tests", logging.WARNING, __file__, 0, "late", None, None)
-        with patch(
-            "angrmanagement.present.log.gui_thread_schedule_async",
-            lambda func, args=None, kwargs=None: handed.append(args),
+        with patch.object(
+            log_presenter_module, "gui_thread_schedule_async", lambda func, args=None, kwargs=None: handed.append(args)
         ):
             thread = threading.Thread(target=handler.emit, args=(record,), daemon=True)
             thread.start()
@@ -686,9 +685,13 @@ class TestExitWithTheLogListener(TuiTestCase):
         apps: list[AmApp] = []
         found: list[Any] = []
         schedule = log_presenter_module.gui_thread_schedule_async
+        message = "a record handed over while the views close"
 
         def schedule_and_note_the_executor(func, args=None, kwargs=None) -> None:
-            found.append(GlobalInfo._executor)
+            # other records may reach the log view while the app runs (from angr, a plugin, or the app itself, and
+            # under --forked the process's first instance receives every root-logger record): note only this one
+            if args and getattr(args[0], "content", None) == message:
+                found.append(GlobalInfo._executor)
             schedule(func, args, kwargs)
 
         async def scenario(app: AmApp, pilot: Pilot) -> None:
@@ -697,7 +700,7 @@ class TestExitWithTheLogListener(TuiTestCase):
             view_manager: Any = app.workspace.view_manager
             close_views = view_manager.close_views
             handler = LogDumpHandler(app.workspace.main_instance)
-            record = logging.LogRecord("angrmanagement.tests", logging.WARNING, __file__, 0, "late", None, None)
+            record = logging.LogRecord("angrmanagement.tests", logging.WARNING, __file__, 0, message, None, None)
 
             def close_views_after_a_record() -> None:
                 # the log listener's thread hands the record over, as it would
