@@ -6,10 +6,11 @@ Test cases for how the workspace reports job exceptions.
 
 from __future__ import annotations
 
+import threading
 import unittest
 from typing import TYPE_CHECKING
 
-from common import AngrManagementTestCase  # pylint: disable=import-error
+from common import AngrManagementTestCase, join_all_jobs  # pylint: disable=import-error
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QMessageBox
 
@@ -64,6 +65,19 @@ class FinishRaisingJob(InstanceJob):
         raise RuntimeError("this finish handler always fails")
 
 
+class BlockedJob(InstanceJob):
+    """A job that runs until it is released."""
+
+    def __init__(self, instance, release: threading.Event) -> None:
+        super().__init__("Blocked", instance)
+        self.started = threading.Event()
+        self.release = release
+
+    def run(self, ctx: JobContext) -> None:
+        self.started.set()
+        self.release.wait(30)
+
+
 class TestJobExceptionReporting(AngrManagementTestCase):
     """Test that a failed job is reported to the user without stalling the job queue."""
 
@@ -87,7 +101,8 @@ class TestJobExceptionReporting(AngrManagementTestCase):
     def _run(self, *jobs) -> None:
         for job in jobs:
             self.main.workspace.job_manager.add_job(job)
-        self.main.workspace.job_manager.join_all_jobs()
+        # fails with every thread's stack instead of hanging until pytest-timeout kills the worker
+        join_all_jobs(self.main.workspace.job_manager)
 
     def test_failed_job_shows_a_message_box(self) -> None:
         self._run(FailingJob(self.main.workspace.main_instance))
@@ -139,6 +154,24 @@ class TestJobExceptionReporting(AngrManagementTestCase):
 
         assert finished == [job]
         assert job not in job_manager.jobs
+
+    def test_a_join_that_does_not_end_fails_with_every_thread_stack(self) -> None:
+        job_manager = self.main.workspace.job_manager
+        release = threading.Event()
+        job = BlockedJob(self.main.workspace.main_instance, release)
+        job_manager.add_job(job)
+        try:
+            assert job.started.wait(30)
+            with self.assertRaises(AssertionError) as caught:
+                join_all_jobs(job_manager, timeout=0.5)
+        finally:
+            release.set()
+        join_all_jobs(job_manager)
+
+        message = str(caught.exception)
+        assert "('Blocked', 'RUNNING')" in message
+        assert "'angr management job worker'" in message
+        assert "self.release.wait(30)" in message
 
 
 if __name__ == "__main__":

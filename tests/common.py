@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import os
 import pickle
+import sys
+import threading
+import time
+import traceback
 import unittest
 from typing import TYPE_CHECKING
 
@@ -10,11 +14,13 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from angrmanagement.config import Conf
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.main_window import MainWindow
 from angrmanagement.ui.qt_frontend import install_qt_frontend
 
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
+    from angrmanagement.logic.jobmanager import JobManager
     from angrmanagement.ui.workspace import Workspace
 
 test_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "binaries", "tests")
@@ -30,6 +36,42 @@ def create_qapp():
         install_qt_frontend()
         Conf.init_font_config()
     return app
+
+
+def thread_stacks() -> str:
+    """Every thread's name and Python stack, innermost call last."""
+    names = {thread.ident: thread.name for thread in threading.enumerate()}
+    stacks = []
+    for ident, frame in sys._current_frames().items():  # pylint:disable=protected-access
+        stacks.append(f"Thread {names.get(ident, '?')!r} ({ident}):\n" + "".join(traceback.format_stack(frame)))
+    return "\n".join(stacks)
+
+
+def join_all_jobs(job_manager: JobManager, timeout: float = 60.0, wait_period: float = 0.05) -> None:
+    """
+    Wait as ``JobManager.join_all_jobs`` does, but fail after ``timeout`` seconds instead of waiting for ever.
+
+    The failure names the jobs still listed and holds every thread's stack. A test that hangs instead leaves nothing:
+    under xdist, pytest-timeout's stack dump goes to the worker's stderr, which the log never shows. A wait that
+    never comes back to this loop, such as a native modal loop entered from ``process_pending``, cannot be caught
+    here.
+    """
+    executor = GlobalInfo.executor
+    deadline = time.monotonic() + timeout
+    last_has_job = time.monotonic()
+    while True:
+        executor.process_pending()
+        now = time.monotonic()
+        if job_manager.jobs:
+            last_has_job = now
+        elif now - last_has_job > wait_period:
+            return
+        if now > deadline:
+            raise AssertionError(
+                f"the job queue did not empty within {timeout} s; still listed: "
+                f"{[(job.name, job.state.name) for job in job_manager.jobs]}\n\n{thread_stacks()}"
+            )
+        time.sleep(0.001)
 
 
 #: binary path -> the project as angr management left it after its initial analyses, pickled
