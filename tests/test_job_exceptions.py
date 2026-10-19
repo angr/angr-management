@@ -115,9 +115,7 @@ class TestJobExceptionReporting(AngrManagementTestCase):
         assert "this job always fails" in boxes[0].text()
 
     def test_the_message_box_is_not_modal(self) -> None:
-        # QMessageBox is application modal unless told otherwise, and on macOS Qt shows a modal box as a native alert
-        # whose show() starts [NSAlert runModal] from the next event-loop pass: the thread pumping events (a test's
-        # join_all_jobs, say) then stays in that modal loop until somebody clicks the alert
+        # a modal box would block whoever pumps events on macOS; QtServices.notify says why
         self._run(FailingJob(self.main.workspace.main_instance))
 
         boxes = self._message_boxes()
