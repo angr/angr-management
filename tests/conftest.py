@@ -5,6 +5,8 @@ from __future__ import annotations
 # breaking fastmcp import and causing test_mcp_server to skip depending on collection order.
 import atexit
 import contextlib
+import importlib.metadata
+import inspect
 import os
 import shutil
 import tempfile
@@ -68,10 +70,25 @@ PILOT_WAIT_TIMEOUT = 120.0
 def _lengthen_the_pilot_wait_budget() -> None:
     from textual.pilot import Pilot  # pylint: disable=import-outside-toplevel
 
-    wait_for_screen = Pilot._wait_for_screen  # pylint: disable=protected-access
+    # It is a private method. When a Textual release changes it, fail here and say so: not with a bare AttributeError,
+    # and never by leaving the budget at 30 s.
+    wait_for_screen = getattr(Pilot, "_wait_for_screen", None)
+    parameter = None
+    if wait_for_screen is not None:
+        parameter = inspect.signature(wait_for_screen).parameters.get("timeout")
+    if (
+        not inspect.iscoroutinefunction(wait_for_screen)
+        or parameter is None
+        or parameter.kind not in (parameter.POSITIONAL_OR_KEYWORD, parameter.KEYWORD_ONLY)
+    ):
+        raise RuntimeError(
+            "tests/conftest.py lengthens the budget of Textual's Pilot._wait_for_screen(timeout=...), which "
+            f"Textual {importlib.metadata.version('textual')} does not have in that form; update "
+            "_lengthen_the_pilot_wait_budget"
+        )
 
     async def _wait_for_screen(self: Pilot, timeout: float = PILOT_WAIT_TIMEOUT) -> bool:
-        return await wait_for_screen(self, timeout)
+        return await wait_for_screen(self, timeout=timeout)
 
     Pilot._wait_for_screen = _wait_for_screen  # pylint: disable=protected-access
 
