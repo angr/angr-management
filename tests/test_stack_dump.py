@@ -62,3 +62,18 @@ def test_a_test_that_ends_in_time_leaves_nothing(tmp_path) -> None:
 
     assert not left_behind(tmp_path)
     assert not list(tmp_path.iterdir())
+
+
+def test_a_later_process_does_not_remove_an_earlier_one_s_dump(tmp_path) -> None:
+    # a replacement xdist worker can get the pid of the one that was killed, as both objects here share one pid
+    killed, replacement = LateStackDump(), LateStackDump()
+    try:
+        killed.arm(tmp_path, "tests/test_example.py::test_stuck", 0.1)
+        dumps = _wait_for_a_dump(tmp_path, "test_stuck")
+        replacement.arm(tmp_path, "tests/test_example.py::test_quick", 30)
+        replacement.disarm()
+
+        assert len(dumps) == 1
+        assert left_behind(tmp_path) == dumps
+    finally:
+        killed.disarm()

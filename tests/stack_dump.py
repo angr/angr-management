@@ -16,6 +16,7 @@ import os
 import sys
 import threading
 import traceback
+import uuid
 from pathlib import Path
 
 #: the directory, made by the controller (or the only process) and inherited by every xdist worker
@@ -44,7 +45,9 @@ class LateStackDump:
         """Write every thread's stack to a new file in ``directory`` unless :meth:`disarm` is called within ``after``
         seconds."""
         self.disarm()
-        self._path = Path(directory) / f"{os.getpid()}.txt"
+        # named for this arm alone: a replacement xdist worker can get a killed worker's pid, and its disarm must not
+        # remove the killed worker's dump
+        self._path = Path(directory) / f"{os.getpid()}-{uuid.uuid4().hex}.txt"
         self._timer = threading.Timer(after, self._write, (self._path, test, after))
         self._timer.name = "late stack dump"
         self._timer.daemon = True
