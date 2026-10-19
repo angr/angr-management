@@ -1,24 +1,27 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
-    QFileDialog,
     QFrame,
     QGroupBox,
     QListWidget,
     QListWidgetItem,
-    QMessageBox,
     QPushButton,
     QVBoxLayout,
 )
 
-from angrmanagement.plugins import load_plugin_description
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.present.plugins import (
+    PLUGIN_FILE_QUESTION,
+    add_plugins_from_file,
+    apply_plugin_choices,
+    plugin_rows,
+)
 
 if TYPE_CHECKING:
     from angrmanagement.plugins import PluginDescription, PluginManager
@@ -80,12 +83,9 @@ class LoadPlugins(QDialog):
         self.main_layout.addWidget(frame)
 
     def _populate_installed_plugin_list(self) -> None:
-        for _, desc in self._pm.loaded_plugins.items():
+        for desc, active in plugin_rows(self._pm):
             plugin_item = QPluginListWidgetItem(plugin_desc=desc)
-            if self._pm.get_plugin_instance_by_name(desc.shortname) is not None:
-                plugin_item.setCheckState(Qt.CheckState.Checked)
-            else:
-                plugin_item.setCheckState(Qt.CheckState.Unchecked)
+            plugin_item.setCheckState(Qt.CheckState.Checked if active else Qt.CheckState.Unchecked)
             self._installed_plugin_list.addItem(plugin_item)
 
     def _init_widgets(self) -> None:
@@ -108,31 +108,20 @@ class LoadPlugins(QDialog):
 
     def _on_ok_clicked(self) -> None:
         list_items: list[QPluginListWidgetItem] = self._installed_plugin_list.findItems("*", Qt.MatchFlag.MatchWildcard)
-        for i in list_items:
-            checked = i.checkState() == Qt.CheckState.Checked
-
-            if checked and self._pm.get_plugin_instance_by_name(i.plugin_desc.shortname) is None:
-                self._pm.activate_plugin_by_name(i.plugin_desc.shortname)
-            elif not checked and self._pm.get_plugin_instance_by_name(i.plugin_desc.shortname) is not None:
-                self._pm.deactivate_plugin_by_name(i.plugin_desc.shortname)
-
-        self._pm.save_enabled_plugins_to_config()
+        apply_plugin_choices(
+            self._pm, {i.plugin_desc.shortname: i.checkState() == Qt.CheckState.Checked for i in list_items}
+        )
         self.close()
 
     def _on_load_clicked(self) -> None:
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Open a plugin description file (plugin.toml)", "", "Toml files (*.toml)"
-        )
-        if not file_path:
+        files = GlobalInfo.ui_services.pick_open_files(*PLUGIN_FILE_QUESTION, False)
+        if not files:
             return
-        plugins = load_plugin_description(str(Path(file_path).parent))
-
+        plugins = add_plugins_from_file(self._pm, files[0])
         if not plugins:
-            QMessageBox.warning(self, "Error", "File contained no plugin descriptions")
+            GlobalInfo.ui_services.message("warning", "Error", "File contained no plugin descriptions")
             return
-
         for plugin in plugins:
             plugin_item = QPluginListWidgetItem(plugin_desc=plugin)
             plugin_item.setCheckState(Qt.CheckState.Unchecked)
-            self._pm.loaded_plugins[plugin.shortname] = plugin
             self._installed_plugin_list.addItem(plugin_item)

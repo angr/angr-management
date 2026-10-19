@@ -1,14 +1,10 @@
 from __future__ import annotations
 
-import enum
-import logging
-from datetime import datetime
 from itertools import chain
-from typing import TYPE_CHECKING, get_args
+from typing import TYPE_CHECKING
 
-from bidict import bidict
 from PySide6.QtCore import QSize, QSortFilterProxyModel, Qt
-from PySide6.QtGui import QColor, QStandardItem, QStandardItemModel
+from PySide6.QtGui import QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractScrollArea,
     QCheckBox,
@@ -34,11 +30,24 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.config import Conf, save_config
-from angrmanagement.config.color_schemes import BASE_SCHEME, COLOR_SCHEMES
-from angrmanagement.config.config_manager import ENTRIES
-from angrmanagement.logic import GlobalInfo
-from angrmanagement.logic.url_scheme import AngrUrlScheme
-from angrmanagement.mcp import MCPServerManager
+from angrmanagement.config.color import Color
+from angrmanagement.present.preferences import (
+    FONT_ENTRIES,
+    color_entry_names,
+    current_theme_values,
+    generate_auth_token,
+    known_model_names,
+    log_format_choices,
+    save_integration,
+    save_llm,
+    save_log_format,
+    save_mcp,
+    save_theme,
+    scheme_entry_values,
+    theme_choices,
+    url_scheme_state,
+)
+from angrmanagement.present.theme import CUSTOM_SCHEME_NAME
 from angrmanagement.ui.css import refresh_theme
 from angrmanagement.ui.widgets.qfont_option import QFontOption
 from angrmanagement.ui.widgets.qproperty_editor import (
@@ -103,37 +112,18 @@ class Integration(Page):
         self.setLayout(layout)
 
     def _load_config(self) -> None:
-        scheme = AngrUrlScheme()
-        try:
-            registered, register_as = scheme.is_url_scheme_registered()
+        supported, registered, register_as = url_scheme_state()
+        if supported:
             self._url_scheme_chk.setChecked(registered)
-            self._url_scheme_text.setText(str(register_as) if registered else "")
-        except NotImplementedError:
+            self._url_scheme_text.setText(register_as)
+        else:
             # the current OS is not supported
             self._url_scheme_chk.setDisabled(True)
 
         self._daemon_chk.setChecked(Conf.use_daemon)
 
     def save_config(self) -> None:
-        scheme = AngrUrlScheme()
-        try:
-            registered, _ = scheme.is_url_scheme_registered()
-            if registered != self._url_scheme_chk.isChecked():
-                # we need to do something
-                if self._url_scheme_chk.isChecked():
-                    scheme.register_url_scheme()
-                else:
-                    scheme.unregister_url_scheme()
-        except NotImplementedError:
-            # the current OS is not supported
-            pass
-
-        Conf.use_daemon = self._daemon_chk.isChecked()
-        if Conf.use_daemon and not GlobalInfo.client_id and GlobalInfo.main_window is not None:
-            GlobalInfo.main_window._run_daemon()
-
-
-CUSTOM_SCHEME_NAME = "Custom"
+        save_integration(self._url_scheme_chk.isChecked(), self._daemon_chk.isChecked())
 
 
 class ThemeAndColors(Page):
@@ -160,7 +150,7 @@ class ThemeAndColors(Page):
         page_layout.addWidget(QLabel("Load Theme:"), 0, 0)
         self._schemes_combo = QComboBox(self)
         current_theme_idx = 0
-        for idx, name in enumerate(sorted(COLOR_SCHEMES) + [CUSTOM_SCHEME_NAME]):
+        for idx, name in enumerate(theme_choices()):
             if name == Conf.theme_name:
                 current_theme_idx = idx
             self._schemes_combo.addItem(name)
@@ -173,13 +163,12 @@ class ThemeAndColors(Page):
         page_layout.addWidget(self._base_scheme, 1, 1)
 
         root = GroupPropertyItem("root")
-        for ce in ENTRIES:
-            if ce.type_ is QColor:
-                prop = ColorPropertyItem(ce.name, getattr(Conf, ce.name))
-                root.addChild(prop)
-                self._colors_to_save[ce.name] = (ce, prop)
-            elif issubclass(ce.type_, enum.Enum):
-                self._conf_to_save[ce.name] = ce.value
+        for name in color_entry_names():
+            prop = ColorPropertyItem(name, getattr(Conf, name))
+            root.addChild(prop)
+            self._colors_to_save[name] = prop
+        # start from the current values, so saving keeps them unless a colour scheme sets these entries
+        self._conf_to_save = dict(current_theme_values()[1])
 
         self._model = PropertyModel(root)
         self._tree = QPropertyEditor()
@@ -188,15 +177,16 @@ class ThemeAndColors(Page):
         page_layout.addWidget(self._tree, 2, 0, 1, 2)
 
     def _load_color_scheme(self, name: str) -> None:
-        if name not in COLOR_SCHEMES:
+        scheme = scheme_entry_values(name)
+        if not scheme:
             return
 
         self._model.beginResetModel()
-        scheme = COLOR_SCHEMES[name] if name == BASE_SCHEME else {**COLOR_SCHEMES[BASE_SCHEME], **COLOR_SCHEMES[name]}
         for prop, value in scheme.items():
             if prop in self._colors_to_save:
-                row = self._colors_to_save[prop][1]
-                row.value = value
+                row = self._colors_to_save[prop]
+                # the schemes hold neutral values; the property editor edits QColors
+                row.value = value.to_qcolor() if isinstance(value, Color) else value
             if prop in self._conf_to_save:
                 self._conf_to_save[prop] = value
         self._model.endResetModel()
@@ -207,13 +197,12 @@ class ThemeAndColors(Page):
             self._base_scheme.setText(text)
 
     def save_config(self) -> None:
-        # pylint: disable=assigning-non-slot
-        Conf.theme_name = self._schemes_combo.currentText()
-        Conf.base_theme_name = self._base_scheme.text()
-        for ce, row in self._colors_to_save.values():
-            setattr(Conf, ce.name, row.value)
-        for name, value in self._conf_to_save.items():
-            setattr(Conf, name, value)
+        save_theme(
+            self._schemes_combo.currentText(),
+            self._base_scheme.text(),
+            {name: row.value for name, row in self._colors_to_save.items()},
+            self._conf_to_save,
+        )
 
 
 class Style(Page):
@@ -237,16 +226,10 @@ class Style(Page):
         log_format_layout.addWidget(log_format_lbl)
 
         self.log_format_entry = QComboBox(self)
-        fmt: str = Conf.log_timestamp_format
-        ts = datetime.now()
-        self._fmt_map = bidict({ts.strftime(i): i for i in [fmt, "%X", "%c"]})
-        # fmt must be in _fmt_map.inverse for this to work
-        if fmt not in self._fmt_map.inverse:
-            fmt = self._fmt_map[ts.strftime(fmt)]
+        self._fmt_map, shown = log_format_choices()
         for i in self._fmt_map:
             self.log_format_entry.addItem(i)
-        # pylint: disable=unsubscriptable-object
-        self.log_format_entry.setCurrentText(self._fmt_map.inverse[fmt])
+        self.log_format_entry.setCurrentText(shown)
         self.log_format_entry.setEditable(True)
         log_format_layout.addWidget(self.log_format_entry)
         page_layout.addLayout(log_format_layout)
@@ -256,46 +239,15 @@ class Style(Page):
         fonts_layout = QGridLayout()
         fonts_group_box.setLayout(fonts_layout)
         page_layout.addWidget(fonts_group_box)
-        entries = [
-            ("Application Font", "ui_default_font"),
-            ("Tabular View Font", "tabular_view_font"),
-            ("Disassembly Font", "disasm_font"),
-            ("SymExc Font", "symexec_font"),
-            ("Code Font", "code_font"),
-        ]
-        self._fonts_widgets = [(QLabel(f"{name}:"), QFontOption(key, self)) for name, key in entries]
+        self._fonts_widgets = [(QLabel(f"{name}:"), QFontOption(key, self)) for name, key in FONT_ENTRIES]
         add_to_grid(fonts_layout, 2, chain(*self._fonts_widgets))
 
         page_layout.addStretch()
 
     def save_config(self) -> None:
-        fmt = self.log_format_entry.currentText()
-        if fmt:
-            Conf.log_timestamp_format = self._fmt_map.get(fmt, fmt)
+        save_log_format(self.log_format_entry.currentText(), self._fmt_map)
         for _, font_picker in self._fonts_widgets:
             font_picker.update()
-
-
-_log = logging.getLogger(__name__)
-
-_known_model_names: list[str] | None = None
-
-
-def _get_known_model_names() -> list[str]:
-    """Return a sorted list of model names that pydantic-ai supports."""
-    global _known_model_names  # pylint:disable=global-statement
-    if _known_model_names is not None:
-        return _known_model_names
-    try:
-        from pydantic_ai.models import KnownModelName  # pylint: disable=import-outside-toplevel
-
-        value = getattr(KnownModelName, "__value__", KnownModelName)
-        names = get_args(value)
-        _known_model_names = sorted(str(n) for n in names) if names else []
-    except (ImportError, AttributeError):
-        _log.debug("Failed to load pydantic-ai model names", exc_info=True)
-        _known_model_names = []
-    return _known_model_names
 
 
 class LLMSettings(Page):
@@ -332,7 +284,7 @@ class LLMSettings(Page):
         self._model_combo.lineEdit().setPlaceholderText("e.g. gpt-4o, claude-sonnet-4-20250514, ollama/llama3")
 
         # Populate with known pydantic-ai model names
-        model_names = _get_known_model_names()
+        model_names = known_model_names()
         source_model = QStandardItemModel()
         for name in model_names:
             source_model.appendRow(QStandardItem(name))
@@ -398,36 +350,19 @@ class LLMSettings(Page):
         self._auto_summarize_chk.setChecked(Conf.llm_auto_summarize)
 
     def save_config(self) -> None:
-        Conf.llm_model = self._model_combo.currentText().strip()
-        Conf.llm_api_key = self._api_key_edit.text().strip()
-        Conf.llm_api_base = self._api_base_edit.text().strip()
-        Conf.llm_preload_callees = self._preload_chk.isChecked()
-        Conf.llm_auto_rename_variables = self._auto_rename_vars_chk.isChecked()
-        Conf.llm_auto_rename_function = self._auto_rename_func_chk.isChecked()
-        Conf.llm_auto_retype_variables = self._auto_retype_vars_chk.isChecked()
-        Conf.llm_auto_summarize = self._auto_summarize_chk.isChecked()
-        self._sync_llm_client_to_project()
-
-    def _sync_llm_client_to_project(self) -> None:
-        if self.workspace is None:
-            return
-        instance = self.workspace.main_instance
-        if instance is None or instance.project.am_none:
-            return
-        model = Conf.llm_model
-        if model:
-            try:
-                from angr.llm_client import LLMClient  # pylint: disable=import-outside-toplevel
-
-                instance.project.am_obj.llm_client = LLMClient(
-                    model=model,
-                    api_key=Conf.llm_api_key or None,
-                    api_base=Conf.llm_api_base or None,
-                )
-            except ImportError:
-                pass
-        else:
-            instance.project.am_obj.llm_client = None
+        save_llm(
+            {
+                "llm_model": self._model_combo.currentText(),
+                "llm_api_key": self._api_key_edit.text(),
+                "llm_api_base": self._api_base_edit.text(),
+                "llm_preload_callees": self._preload_chk.isChecked(),
+                "llm_auto_rename_variables": self._auto_rename_vars_chk.isChecked(),
+                "llm_auto_rename_function": self._auto_rename_func_chk.isChecked(),
+                "llm_auto_retype_variables": self._auto_retype_vars_chk.isChecked(),
+                "llm_auto_summarize": self._auto_summarize_chk.isChecked(),
+            },
+            self.workspace,
+        )
 
 
 class MCPSettings(Page):
@@ -512,7 +447,7 @@ class MCPSettings(Page):
         self._token_edit.setEnabled(checked)
 
     def _on_generate_token(self) -> None:
-        self._token_edit.setText(MCPServerManager.generate_auth_token())
+        self._token_edit.setText(generate_auth_token())
 
     def _load_config(self) -> None:
         self._port_spin.setValue(Conf.mcp_server_port)
@@ -523,11 +458,15 @@ class MCPSettings(Page):
         self._token_edit.setEnabled(Conf.mcp_server_auth_enabled)
 
     def save_config(self) -> None:
-        Conf.mcp_server_port = self._port_spin.value()
-        Conf.mcp_server_autostart = self._autostart_chk.isChecked()
-        Conf.mcp_server_history_limit = self._history_limit_spin.value()
-        Conf.mcp_server_auth_enabled = self._auth_chk.isChecked()
-        Conf.mcp_server_auth_token = self._token_edit.text().strip()
+        save_mcp(
+            {
+                "mcp_server_port": self._port_spin.value(),
+                "mcp_server_autostart": self._autostart_chk.isChecked(),
+                "mcp_server_history_limit": self._history_limit_spin.value(),
+                "mcp_server_auth_enabled": self._auth_chk.isChecked(),
+                "mcp_server_auth_token": self._token_edit.text(),
+            }
+        )
 
 
 class Preferences(QDialog):

@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QFrame, QHeaderView, QSizePolicy, QTableWidget, QTableWidgetItem, QVBoxLayout
 
+from angrmanagement.present.symexec import CONSTRAINT_COLUMNS, constraint_rows
+
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
 
@@ -13,7 +15,7 @@ class QConstraintViewer(QFrame):
     `QConstraintViewer` in `StateInspector`
     """
 
-    COLUMNS = ["Constraint", "Cardinality", "Depth", "# Variables"]
+    COLUMNS = CONSTRAINT_COLUMNS
 
     def __init__(self, state, parent, workspace: Workspace) -> None:
         super().__init__(parent)
@@ -34,13 +36,11 @@ class QConstraintViewer(QFrame):
             return
 
         self.table.setRowCount(0)
-        for constraint in self._state.solver.constraints:
+        for cells in constraint_rows(self._state):
             count = self.table.rowCount()
             self.table.insertRow(count)
-            self.table.setItem(count, 0, QTableWidgetItem(constraint.shallow_repr()))
-            self.table.setItem(count, 1, QTableWidgetItem(str(constraint.cardinality)))
-            self.table.setItem(count, 2, QTableWidgetItem(str(constraint.depth)))
-            self.table.setItem(count, 3, QTableWidgetItem(str(len(list(constraint.leaf_asts())))))
+            for col, text in enumerate(cells):
+                self.table.setItem(count, col, QTableWidgetItem(text))
 
     #
     # Private methods

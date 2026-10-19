@@ -13,7 +13,6 @@ from unittest.mock import patch
 import cle
 from common import AngrManagementTestCase, create_qapp, test_location  # pylint: disable=import-error
 
-from angrmanagement.data.jobs import loading
 from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.ui.dialogs.load_binary import LoadBinary
 from angrmanagement.ui.dialogs.set_encryption_key import key_to_hex
@@ -241,9 +240,10 @@ class TestLoadBinaryJobCart(AngrManagementTestCase):
                 "lib_opts": {kwargs["suggested_main_filename"]: {"backend": "elf"}},
             }, None
 
+        # the job asks through GlobalInfo.ui_services, which in the Qt frontend shows these two dialogs
         with (
-            patch.object(loading, "SetEncryptionKeyDialog", FakeEncryptionKeyDialog),
-            patch.object(loading.LoadBinary, "run", staticmethod(fake_load_binary_run)),
+            patch("angrmanagement.ui.dialogs.set_encryption_key.SetEncryptionKeyDialog", FakeEncryptionKeyDialog),
+            patch.object(LoadBinary, "run", staticmethod(fake_load_binary_run)),
         ):
             self.main.workspace.job_manager.add_job(LoadBinaryJob(self.main.workspace.main_instance, ELF_CART_PATH))
             self.main.workspace.job_manager.join_all_jobs()

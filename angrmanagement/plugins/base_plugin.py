@@ -4,6 +4,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from angrmanagement.config.color import Color
+
 _l = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
@@ -15,6 +17,7 @@ if TYPE_CHECKING:
     from PySide6.QtWidgets import QGraphicsSceneMouseEvent
 
     from angrmanagement.config.config_entry import ConfigurationEntry
+    from angrmanagement.present.marks import Mark
     from angrmanagement.ui.views import code_view, disassembly_view
     from angrmanagement.ui.widgets.qblock import QBlock
     from angrmanagement.ui.widgets.qinst_annotation import QInstructionAnnotation
@@ -22,6 +25,35 @@ if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
 
 # pylint: disable=no-self-use,unused-argument
+
+
+def to_color(color: Any) -> Color | None:
+    """
+    A colour a plugin returned, as a neutral :class:`Color`: a Color as it is, a QColor (anything with red(), green(),
+    blue() and alpha()) converted, None or anything else as None.
+    """
+    if color is None or isinstance(color, Color):
+        return color
+    if all(hasattr(color, name) for name in ("red", "green", "blue", "alpha")):
+        return Color.from_qcolor(color)
+    return None
+
+
+def qt_frontend() -> bool:
+    """
+    Whether the Qt frontend runs in this process: a QApplication exists and the main window, if there is one, is a Qt
+    widget. A plugin with Qt widgets of its own shows them only then; in the terminal, the neutral hooks carry what it
+    shows. The terminal app can have a QApplication too, offscreen, for its picture mode; its main window is no widget.
+    """
+    import sys  # pylint:disable=import-outside-toplevel
+
+    from angrmanagement.logic import GlobalInfo  # pylint:disable=import-outside-toplevel
+
+    widgets = sys.modules.get("PySide6.QtWidgets")
+    if widgets is None or widgets.QApplication.instance() is None:
+        return False
+    main_window = GlobalInfo.main_window
+    return main_window is None or isinstance(main_window, widgets.QWidget)
 
 
 class BasePlugin:
@@ -95,6 +127,46 @@ class BasePlugin:
     def color_func(self, func) -> QColor | None:
         return None
 
+    #
+    # Toolkit-neutral UI callbacks. Both frontends call these; the defaults route to the Qt-era hooks above, so a
+    # plugin written for Qt keeps working in the terminal, and a new plugin can implement only these.
+    #
+
+    def insn_style(self, addr: int, selected: bool, view) -> Color | None:
+        """The background of the instruction at ``addr``; by default :meth:`color_insn`'s answer as a Color."""
+        return to_color(self.color_insn(addr, selected, view))
+
+    def block_style(self, addr: int) -> Color | None:
+        """The background of the block at ``addr``; by default :meth:`color_block`'s answer as a Color."""
+        return to_color(self.color_block(addr))
+
+    def func_style(self, func) -> Color | None:
+        """The background of ``func`` in function lists; by default :meth:`color_func`'s answer as a Color."""
+        return to_color(self.color_func(func))
+
+    def decorate_insn(self, addr: int, view) -> Iterable[Mark]:
+        """Marks to show beside the instruction at ``addr`` (badges, counters, ...)."""
+        return []
+
+    def block_marks(self, block_addr: int, view) -> Iterable[Mark]:
+        """
+        Marks for the instructions of the block at ``block_addr``; each mark's ``addr`` names its instruction. The Qt
+        frontend draws them as instruction annotations, the terminal beside the instruction, so a new plugin shows in
+        both.
+        """
+        return []
+
+    def handle_activate_insn(self, addr: int, button: str, view) -> bool:
+        """
+        The user clicked (``button`` is ``"left"`` or ``"right"``) or pressed Enter (``"left"``) on the instruction at
+        ``addr``; return True to stop the view from handling it.
+        """
+        return False
+
+    def status_bar_text(self) -> str | None:
+        """A short text for the status bar, or None. The neutral counterpart of :meth:`status_bar_permanent_widgets`."""
+        return None
+
     def draw_insn(self, qinsn: QInstruction, painter: QPainter) -> None:
         pass
 
@@ -102,7 +174,12 @@ class BasePlugin:
         pass
 
     def instrument_disassembly_view(self, dview: disassembly_view.DisassemblyView) -> None:
-        pass
+        """
+        Called with each disassembly view. Both frontends call it with their own view object: the Qt
+        ``DisassemblyView``, or the terminal's ``DisassemblyTuiView``. Their shared state is ``dview.presenter``, the
+        :class:`angrmanagement.present.disasm.DisasmPresenter`; reach for Qt widgets only after checking which one
+        you got.
+        """
 
     def instrument_code_view(self, cview: code_view.CodeView) -> None:
         pass
@@ -116,8 +193,8 @@ class BasePlugin:
     def handle_raise_view(self, view) -> None:
         pass
 
-    # iterable of tuples (icon, tooltip)
-    TOOLBAR_BUTTONS: list[tuple[QIcon, str]] = []
+    # iterable of tuples (icon, tooltip); the icon is a QIcon or the name of an icon (see angrmanagement.ui.icons)
+    TOOLBAR_BUTTONS: list[tuple[QIcon | str, str]] = []
 
     def handle_click_toolbar(self, idx: int) -> None:
         pass

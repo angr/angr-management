@@ -6,6 +6,7 @@ from PySide6.QtCore import QRectF
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
 from angrmanagement.config import Conf
+from angrmanagement.present.block_tree.disasm_nodes import AlignmentNode
 
 from .qgraph_object import QCachedGraphicsItem
 
@@ -18,8 +19,12 @@ class QAlignmentBlock(QCachedGraphicsItem):
 
     SPACING = 20
 
-    def __init__(self, instance: Instance, addr: int, size: int, disasm_view, parent=None) -> None:
+    def __init__(
+        self, instance: Instance, addr: int, size: int, disasm_view, parent=None, node: AlignmentNode | None = None
+    ) -> None:
         super().__init__(parent=parent)
+        #: the summary's text
+        self.node = node if node is not None else AlignmentNode(addr, size)
 
         self.instance = instance
         self.addr = addr
@@ -73,11 +78,11 @@ class QAlignmentBlock(QCachedGraphicsItem):
     #
 
     def _init_widgets(self) -> None:
-        self._addr_item = QGraphicsSimpleTextItem(f"{self.addr:08x}", self)
+        self._addr_item = QGraphicsSimpleTextItem(self.node.addr_text, self)
         self._addr_item.setBrush(Conf.disasm_view_node_address_color)
         self._addr_item.setFont(Conf.disasm_font)
 
-        self._content_item = QGraphicsSimpleTextItem(f"[alignment_chunk]: {self.size:#x} bytes", self)
+        self._content_item = QGraphicsSimpleTextItem(self.node.text, self)
         self._content_item.setBrush(Conf.disasm_view_alignment_color)
         self._content_item.setFont(Conf.disasm_font)
 

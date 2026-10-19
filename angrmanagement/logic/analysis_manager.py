@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QObject, Signal
-
 from angrmanagement.data.analysis_options import AnalysesConfiguration
 from angrmanagement.data.jobs import (
     APIDeobfuscationConfiguration,
@@ -29,20 +27,20 @@ from angrmanagement.data.jobs import (
     VariableRecoveryJob,
 )
 
+from .signal import Signal
 
-class AnalysisManager(QObject):
+
+class AnalysisManager:
     """
     Manager of analyses.
     """
 
-    cfg_generated = Signal()
-    cc_recovered = Signal(object)
-    functions_tagged = Signal()
-    variable_recovered = Signal(object)
-
     def __init__(self, workspace):
-        super().__init__()
         self.workspace = workspace
+        self.cfg_generated = Signal(name="cfg_generated")
+        self.cc_recovered = Signal(object, name="cc_recovered")
+        self.functions_tagged = Signal(name="functions_tagged")
+        self.variable_recovered = Signal(object, name="variable_recovered")
 
     def get_default_analyses_configuration(self) -> AnalysesConfiguration:
         return AnalysesConfiguration(

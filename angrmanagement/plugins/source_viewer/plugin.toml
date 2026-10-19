@@ -10,4 +10,4 @@ long_description = ""
 platforms = ["windows", "linux", "macos"]
 min_angr_version = "9.0.0.0"
 author = "The angr team"
-entrypoints = ["source_viewer_plugin.py"]
+entrypoints = ["plugin.py"]

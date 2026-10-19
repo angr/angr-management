@@ -27,6 +27,8 @@ dependencies = [
   "binsync==5.15.4",
   "rpyc",
   "qtconsole",
+  "platformdirs",
+  "textual>=8.2",
 ]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -42,6 +44,7 @@ bintrace = ["bintrace"]
 unicorn = ["angr[unicorn]"]
 llm = ["angr[llm]", "uvicorn"]
 keystone = ["angr[keystone]"]
+tui = ["textual-image"]
 
 [dependency-groups]
 dev = [
@@ -68,13 +71,18 @@ testing = [
   "pytest-durations",
   "pytest-profiling",
   "pytest-split",
+  # 1.0.0 sets syrupy 4's `_file_extension`, which syrupy 5 renamed, so with syrupy 5 or 6 it looks for `.raw`
+  # snapshots and never finds the stored `.svg` ones. 1.1.0 pins syrupy 4.8.0 (and so pytest 8), which reads them.
+  "pytest-textual-snapshot>=1.1.0",
   "pytest-timeout",
   "pytest-xdist",
+  "textual-image",
 ]
 
 [project.scripts]
 am = "angrmanagement.__main__:main"
 angr-management = "angrmanagement.__main__:main"
+am-tui = "angrmanagement.tui.__main__:main"
 
 [tool.setuptools]
 include-package-data = true

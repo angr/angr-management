@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING
 import angr
 import angr.flirt
 from angr.flirt import FLIRT_SIGNATURES_BY_ARCH, FlirtSignature
-from PySide6.QtWidgets import QFileDialog
 
 from angrmanagement.config import Conf
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.utils.env import app_root, is_pyinstaller
 
 from .object_container import ObjectContainer
@@ -113,6 +113,11 @@ class WrappedFlirtSignature(Signature):
         )
 
 
+#: The file pickers' arguments: caption, directory, name filter, multiple.
+SIGNATURE_FILES_QUESTION = ("Load FLIRT signature files", "", "FLIRT signature files (*.sig);;All files (*)", True)
+BINDIFF_FILES_QUESTION = ("Load binaries to bindiff from", "", "Object Files (*.a *.o);;All files (*)", True)
+
+
 class SignatureManager:
     """
     Manager of function signatures.
@@ -151,27 +156,18 @@ class SignatureManager:
         for sig in sigs:
             sig.apply_signature(self, dry_run, ignore_addresses)
 
-    def select_bindiff_base_files(self) -> list[str] | None:
+    def select_bindiff_base_files(self) -> list[str] | None:  # pylint:disable=no-self-use
         """
-        Open a dialog to select binaries for bindiff analysis.
-        Returns the list of selected filenames, or None if cancelled.
+        Ask the user for binaries for bindiff analysis. Returns the list of selected filenames, or None if cancelled.
         """
-        filenames, _ = QFileDialog.getOpenFileNames(
-            None,
-            "Load binaries to bindiff from",
-            "",
-            "Object Files (*.a *.o);;All files (*)",
-        )
+        filenames = GlobalInfo.ui_services.pick_open_files(*BINDIFF_FILES_QUESTION)
         return filenames if filenames else None
 
-    def load_signatures(self) -> None:
-        # open a dialog to select signatures files
-        filenames, _ = QFileDialog.getOpenFileNames(
-            None,
-            "Load FLIRT signature files",
-            "",
-            "FLIRT signature files (*.sig);;All files (*)",
-        )
+    def load_signatures(self, filenames: list[str] | None = None) -> None:
+        """Load FLIRT signature files: ``filenames``, or the ones the user picks when it is None."""
+        if filenames is None:
+            # open a dialog to select signatures files
+            filenames = GlobalInfo.ui_services.pick_open_files(*SIGNATURE_FILES_QUESTION)
         for filename in filenames:
             basename = os.path.basename(filename)
             meta_path = filename[: filename.rindex(".")] + ".meta" if "." in basename else None

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtGui import QKeySequence
+from angrmanagement.present.shell import build_ai_menu
 
-from .menu import Menu, MenuEntry, MenuSeparator
+from .menu import Menu
 
 if TYPE_CHECKING:
     from angrmanagement.ui.main_window import MainWindow
@@ -12,47 +12,9 @@ if TYPE_CHECKING:
 
 class AIMenu(Menu):
     """
-    THe menu for AI-assisted features.
+    The menu for AI-assisted features; its entries are those of :func:`~angrmanagement.present.shell.build_ai_menu`.
     """
 
     def __init__(self, main_window: MainWindow) -> None:
-        super().__init__("A&I", parent=main_window)
-        self.entries.extend(
-            [
-                MenuEntry(
-                    "Refine &All",
-                    main_window.llm_refine_all,
-                    shortcut=QKeySequence("Ctrl+I"),
-                ),
-                MenuSeparator(),
-                MenuEntry(
-                    "Suggest &Variable Names",
-                    main_window.llm_suggest_variable_names,
-                ),
-                MenuEntry(
-                    "Suggest &Function Name",
-                    main_window.llm_suggest_function_name,
-                ),
-                MenuEntry(
-                    "Suggest Variable &Types",
-                    main_window.llm_suggest_variable_types,
-                ),
-                MenuEntry(
-                    "&Summarize Function",
-                    main_window.llm_summarize_function,
-                ),
-                MenuSeparator(),
-                MenuEntry(
-                    "Start &MCP Server",
-                    main_window.start_mcp_server,
-                ),
-                MenuEntry(
-                    "Sto&p MCP Server",
-                    main_window.stop_mcp_server,
-                ),
-                MenuEntry(
-                    "&Copy MCP Server URL",
-                    main_window.copy_mcp_url,
-                ),
-            ],
-        )
+        built = build_ai_menu(main_window)
+        super().__init__(built.caption, built.entries, parent=main_window)

@@ -1,28 +1,17 @@
 from __future__ import annotations
 
-import bisect
-import contextlib
 import logging
-import time
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
-from angr.block import Block
-from angr.knowledge_plugins.cfg import MemoryData
-from archinfo.arch_arm import get_real_address_if_arm, is_arm_arch
 from PySide6.QtCore import QPoint, Qt, Signal
-from PySide6.QtGui import QAction, QCursor, QKeySequence, QShortcut
-from PySide6.QtWidgets import QApplication, QHBoxLayout, QMenu, QMessageBox, QVBoxLayout
+from PySide6.QtGui import QCursor, QKeySequence, QShortcut
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QMenu, QVBoxLayout
 
-from angrmanagement.config import Conf
-from angrmanagement.data.annotations import CommentKind
-from angrmanagement.data.function_graph import FunctionGraph
-from angrmanagement.data.highlight_region import SynchronizedHighlightRegion
-from angrmanagement.data.search import BytePattern, Searcher, SearchError
 from angrmanagement.logic import GlobalInfo
-from angrmanagement.logic.commands import ViewCommand
-from angrmanagement.logic.disassembly import InfoDock, JumpHistory
-from angrmanagement.logic.threads import gui_thread_schedule_async, needs_gui_thread
+from angrmanagement.present import disasm as present_disasm
+from angrmanagement.present.dialogs import func_doc_target
+from angrmanagement.present.disasm import DisasmPresenter, register_disasm_commands
 from angrmanagement.ui.dialogs.assemble_patch import AssemblePatchDialog
 from angrmanagement.ui.dialogs.dependson import DependsOn
 from angrmanagement.ui.dialogs.func_doc import FuncDocDialog
@@ -50,153 +39,133 @@ from angrmanagement.ui.widgets import (
 from angrmanagement.ui.widgets.block_code_objects import QVariableObj
 from angrmanagement.ui.widgets.qfind_bar import QFindBar
 from angrmanagement.ui.widgets.qinline_comment_editor import QInlineCommentEditor
-from angrmanagement.ui.widgets.qinst_annotation import QBreakAnnotation, QHookAnnotation
-from angrmanagement.utils import get_label_text, locate_function
+from angrmanagement.ui.widgets.qinst_annotation import QBreakAnnotation, QHookAnnotation, QMarkAnnotation
 
 from .view import SynchronizedFunctionView
 
 if TYPE_CHECKING:
-    import re
-
     import PySide6
     from angr.knowledge_plugins import VariableManager
-    from angr.knowledge_plugins.functions import Function
 
     from angrmanagement.data.instance import Instance, ObjectContainer
-    from angrmanagement.logic.disassembly.info_dock import OperandDescriptor
+    from angrmanagement.logic.disassembly import InfoDock, JumpHistory
     from angrmanagement.ui.workspace import Workspace
 
 
 _l = logging.getLogger(__name__)
 
-# the minimum interval (in seconds) between two viewport refreshes triggered by incremental CFB object additions
-# during CFG recovery
-MIN_OBJECTS_ADDED_REFRESH_INTERVAL = 0.25
+#: the presenter's, re-exported for code that imports it here; it throttles the listing's refreshes during CFG recovery
+MIN_OBJECTS_ADDED_REFRESH_INTERVAL = present_disasm.MIN_OBJECTS_ADDED_REFRESH_INTERVAL
+
+
+def _forward(name: str, doc: str | None = None):
+    """A property that reads and writes the presenter's attribute ``name``."""
+
+    def fget(self):
+        return getattr(self.presenter, name)
+
+    def fset(self, value) -> None:
+        setattr(self.presenter, name, value)
+
+    return property(fget, fset, doc=doc or f"The presenter's ``{name}``.")
 
 
 class DisassemblyView(SynchronizedFunctionView):
     """
     Disassembly View
+
+    The state and the actions are the :class:`~angrmanagement.present.disasm.DisasmPresenter`'s (``self.presenter``);
+    this class adds the Qt controls, dialogs, menus and keys, and forwards the rest.
     """
 
     view_visibility_changed = Signal()
     disassembly_level_changed = Signal(DisassemblyLevel)
 
+    FIND_HIGHLIGHT_LIMIT = DisasmPresenter.FIND_HIGHLIGHT_LIMIT
+    FIND_MODE_TEXT = DisasmPresenter.FIND_MODE_TEXT
+    FIND_MODE_TEXT_INSN = DisasmPresenter.FIND_MODE_TEXT_INSN
+    FIND_MODE_BYTES = DisasmPresenter.FIND_MODE_BYTES
+
+    presenter: DisasmPresenter
+
     def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        super().__init__("disassembly", workspace, default_docking_position, instance)
-
-        self.base_caption = "Disassembly"
-        #: instructions a pattern or a discovered family covers, painted in their own color
-        self.pattern_highlight_addrs: set[int] = set()
-        self._disassembly_level = DisassemblyLevel.MachineCode
-        self._show_minimap: bool = True
-        self._show_address = True
-        self._show_variable = True
-        # whether we want to show identifier or not
-        self._show_variable_ident = False
-        # whether we want to show exception edges and all nodes that are only reachable through exception edges
-        self._show_exception_edges = True
-
-        self._prefer_graph = True
-        self._displaying_function = False
-        self._current_view: QLinearDisassembly | QDisassemblyGraph | None = None
-        self._last_objects_added_refresh: float = 0.0
+        presenter = DisasmPresenter(workspace, instance, default_docking_position)
+        super().__init__("disassembly", workspace, default_docking_position, instance, presenter=presenter)
+        presenter.level_changed.connect(self.disassembly_level_changed.emit)
+        presenter.view_visibility_changed.connect(self.view_visibility_changed.emit)
 
         self._statusbar = None
-        self.jump_history: JumpHistory = JumpHistory()
-        self.infodock = InfoDock(self)
-        self._variable_recovery_flavor = "fast"
-        self.variable_manager: VariableManager | None = None
-
         self._insn_menu: DisasmInsnContextMenu | None = None
         self._label_menu: DisasmLabelContextMenu | None = None
-
-        self._insn_addr_on_context_menu = None
         self._inline_comment_editor: QInlineCommentEditor | None = None
 
         self.width_hint = 800
         self.height_hint = 800
 
         self._find_bar: QFindBar | None = None
-        self._find_matches: list[tuple[int, str]] = []
-        self._find_data_matches: dict[int, int] = {}  # match addr -> owning data item addr
-        self._find_matches_capped: bool = False
-        self._find_index: int = -1
-        self._find_highlighted: bool = False
-        self._find_text_cache: dict[int, list[tuple[int, str, bytes]]] = {}
-        self._in_find_refresh: bool = False
 
         self._init_widgets()
         self._init_menus()
-        self._register_events()
+        presenter.attach(self)
         self._init_shortcuts()
 
     @classmethod
     def register_commands(cls, workspace: Workspace) -> None:
         """
-        Register commands that can be run for this view.
+        Register commands that can be run for this view. They run on the focused view's presenter.
         """
-        workspace.command_manager.register_commands(
-            [
-                ViewCommand("disassembly_view_" + action.__name__, "Disassembly: " + caption, action, cls, workspace)
-                for caption, action in [
-                    ("Comment", cls.begin_inline_comment),
-                    ("Comment (multi-line)...", cls.popup_comment_dialog),
-                    ("Comment: Set as function comment", cls.set_function_comment),
-                    ("Comment: Toggle repeatable", cls.toggle_repeatable_comment),
-                    ("Toggle Bookmark", cls.toggle_bookmark_at_selection),
-                    ("Jump Back", cls.jump_back),
-                    ("Jump Forward", cls.jump_forward),
-                    ("Jump To", cls.popup_jumpto_dialog),
-                    ("Toggle Addresses", cls.toggle_show_address),
-                    ("Toggle Exception Edges", cls.toggle_show_exception_edges),
-                    ("Toggle Graph/Linear view", cls.toggle_disasm_view),
-                    ("Toggle Minimap", cls.toggle_show_minimap),
-                    ("Toggle Smart Highlighting", cls.toggle_smart_highlighting),
-                    ("Toggle Variable Identifiers", cls.toggle_show_variable_identifier),
-                    ("Toggle Variables", cls.toggle_show_variable),
-                    ("Find", cls.show_find_bar),
-                    ("Find Next", cls.find_next),
-                    ("Find Previous", cls.find_previous),
-                    ("View AIL", cls.set_disassembly_level_ail),
-                    ("View Lifter IR", cls.set_disassembly_level_lifter_ir),
-                    ("View Machine Code", cls.set_disassembly_level_machine_code),
-                ]
-            ]
-        )
+        register_disasm_commands(workspace)
+
+    #
+    # The presenter's state
+    #
+
+    infodock: InfoDock = _forward("infodock")  # type: ignore[assignment]
+    jump_history: JumpHistory = _forward("jump_history")  # type: ignore[assignment]
+    variable_manager: VariableManager | None = _forward("variable_manager")  # type: ignore[assignment]
+    pattern_highlight_addrs: set[int] = _forward(  # type: ignore[assignment]
+        "pattern_highlight_addrs", "instructions a pattern or a discovered family covers, painted in their own color"
+    )
+    _insn_addr_on_context_menu = _forward("insn_addr_on_context_menu")
+    _current_view = _forward("_current_view")
+    _prefer_graph = _forward("_prefer_graph")
+    _displaying_function = _forward("_displaying_function")
+    _disassembly_level = _forward("_disassembly_level")
+    _show_minimap = _forward("_show_minimap")
+    _show_address = _forward("_show_address")
+    _show_variable = _forward("_show_variable")
+    _show_variable_ident = _forward("_show_variable_ident")
+    _show_exception_edges = _forward("_show_exception_edges")
+    _find_matches = _forward("_find_matches")
+    _find_data_matches = _forward("_find_data_matches")
+    _find_matches_capped = _forward("_find_matches_capped")
+    _find_index = _forward("_find_index")
+    _find_highlighted = _forward("_find_highlighted")
+    _find_text_cache = _forward("_find_text_cache")
+    _in_find_refresh = _forward("_in_find_refresh")
+    _variable_recovery_flavor = _forward("_variable_recovery_flavor")
 
     @property
     def disassembly_level(self):
-        return self._disassembly_level
+        return self.presenter.disassembly_level
 
-    @needs_gui_thread
     def set_disassembly_level(self, level: DisassemblyLevel) -> None:
-        self._disassembly_level = level
-        self._flow_graph.set_disassembly_level(level)
-        self._linear_viewer.set_disassembly_level(level)
-        self.disassembly_level_changed.emit(level)
-        self.redraw_current_graph()
+        self.presenter.set_disassembly_level(level)
 
     def set_disassembly_level_ail(self) -> None:
-        self.set_disassembly_level(DisassemblyLevel.AIL)
+        self.presenter.set_disassembly_level_ail()
 
     def set_disassembly_level_lifter_ir(self) -> None:
-        self.set_disassembly_level(DisassemblyLevel.LifterIR)
+        self.presenter.set_disassembly_level_lifter_ir()
 
     def set_disassembly_level_machine_code(self) -> None:
-        self.set_disassembly_level(DisassemblyLevel.MachineCode)
+        self.presenter.set_disassembly_level_machine_code()
 
     def reload(self) -> None:
-        old_infodock = self.infodock.copy()
-
-        self.infodock.initialize()
-
-        # Reload the current graph to make sure it gets the latest information, such as variables.
-        self._reload_current_function_if_changed()
-        self._current_view.reload(old_infodock=old_infodock)
+        self.presenter.reload()
 
     def refresh(self) -> None:
-        self._current_view.refresh()
+        self.presenter.refresh()
 
     def save_image_to(self, path) -> None:
         if self._flow_graph is not None:
@@ -215,41 +184,35 @@ class DisassemblyView(SynchronizedFunctionView):
 
     @property
     def show_minimap(self):
-        return self._show_minimap
+        return self.presenter.show_minimap
 
     @property
     def smart_highlighting(self):
-        if self._flow_graph is None:
-            return False
-        if self.infodock is None:
-            return False
-        return self.infodock.smart_highlighting
+        return self.presenter.smart_highlighting
 
     @property
     def show_address(self):
-        return self._show_address
+        return self.presenter.show_address
 
     @property
     def show_variable(self):
-        return self._show_variable
+        return self.presenter.show_variable
 
     @property
     def show_variable_identifier(self):
-        return self._show_variable_ident
+        return self.presenter.show_variable_identifier
 
     @property
     def show_exception_edges(self):
-        return self._show_exception_edges
+        return self.presenter.show_exception_edges
 
     @property
     def variable_recovery_flavor(self):
-        return self._variable_recovery_flavor
+        return self.presenter.variable_recovery_flavor
 
     @variable_recovery_flavor.setter
     def variable_recovery_flavor(self, v) -> None:
-        if v in ("fast", "accurate") and v != self._variable_recovery_flavor:
-            self._variable_recovery_flavor = v
-            # TODO: Rerun the variable recovery analysis and update the current view
+        self.presenter.variable_recovery_flavor = v
 
     @property
     def current_graph(self) -> QLinearDisassembly | QDisassemblyGraph:
@@ -258,7 +221,7 @@ class DisassemblyView(SynchronizedFunctionView):
 
         :return:    Linear viewer or flow graph.
         """
-        return self._current_view
+        return self.presenter.current_graph
 
     @property
     def current_function(self) -> ObjectContainer:
@@ -299,12 +262,10 @@ class DisassemblyView(SynchronizedFunctionView):
         self.instance.set_comment_callback = v
 
     def on_cc_recovered(self, func_addr: int) -> None:
-        if not self.function.am_none and self.function.addr == func_addr:
-            self.reload()
+        self.presenter.on_cc_recovered(func_addr)
 
     def on_variable_recovered(self, func_addr: int) -> None:
-        if not self.function.am_none and self.function.addr == func_addr:
-            self.reload()
+        self.presenter.on_variable_recovered(func_addr)
 
     #
     # Events
@@ -364,79 +325,40 @@ class DisassemblyView(SynchronizedFunctionView):
 
     def highlight_pattern_addrs(self, addrs) -> None:
         """Paint the instructions at ``addrs``, replacing any earlier pattern highlight."""
-        self.pattern_highlight_addrs = set(addrs)
-        self.redraw_current_graph()
+        self.presenter.highlight_pattern_addrs(addrs)
 
     def clear_pattern_highlight(self) -> bool:
         """Drop the pattern highlight; returns whether there was one."""
-        had = bool(self.pattern_highlight_addrs)
-        self.pattern_highlight_addrs = set()
-        if had:
-            self.redraw_current_graph()
-        return had
+        return self.presenter.clear_pattern_highlight()
 
-    def redraw_current_graph(self, **kwargs) -> None:  # pylint: disable=unused-argument
+    def redraw_current_graph(self, **kwargs) -> None:
         """
         Redraw the graph currently in display.
-
-        :return:    None
         """
-        self._current_view.redraw()
+        self.presenter.redraw_current_graph(**kwargs)
 
     def on_screen_changed(self) -> None:
-        self._current_view.refresh()
+        self.presenter.on_screen_changed()
 
     def _reload_current_function_if_changed(self) -> None:
-        if self._flow_graph.function_graph is not None:
-            func_addr = self._flow_graph.function_graph.function.addr
-
-            try:
-                func = self.instance.kb.functions.get_by_addr(func_addr)
-            except KeyError:
-                func = None
-
-            if self._flow_graph.function_graph.function is not func:
-                self._display_function(func)
-
-            if func is None:
-                self._jump_to(func_addr)
+        self.presenter.reload_current_function_if_changed()
 
     def _on_cfb_event(self, **kwargs) -> None:
-        if not kwargs:
-            self._find_text_cache.clear()
-            if self.instance.project.am_none:
-                # the binary was closed: clear both the graph and linear viewer
-                self.function.am_obj = None
-                self._flow_graph.function_graph = None
-                self._linear_viewer.reload()
-                return
-            self._reload_current_function_if_changed()
-            self._linear_viewer.reload()
-        elif "objects_added" in kwargs:
-            # incremental event during CFG recovery; note that this may run on the job worker thread
-            now = time.monotonic()
-            if now - self._last_objects_added_refresh < MIN_OBJECTS_ADDED_REFRESH_INTERVAL:
-                return
-            self._last_objects_added_refresh = now
-            gui_thread_schedule_async(self._refresh_linear_viewer_on_objects_added, args=(kwargs["objects_added"],))
+        self.presenter.on_cfb_event(**kwargs)
 
     def _refresh_linear_viewer_on_objects_added(self, objects) -> None:
         """
         Refresh the linear viewer if any of the newly added CFB objects land within the visible address range.
         """
-        if self._current_view is not self._linear_viewer:
-            return
-        addr_range = self._linear_viewer.visible_addr_range()
-        if addr_range is None:
-            return
-        range_start, range_end = addr_range
-        if any(addr < range_end and addr + max(obj.size or 1, 1) > range_start for addr, obj in objects):
-            self._linear_viewer.refresh_objects()
+        self.presenter.refresh_linear_viewer_on_objects_added(objects)
 
     def on_synchronized_cursor_address_changed(self) -> None:
         """
         Handle synchronized cursor address change event. Note that other views use real addresses while jump_to() uses
         odd addresses for ARM-THUMB mode instructions. We process the address here in case it's ARM.
+
+        The presenter has the same method: in Qt this view is the synchronized participant, in the terminal the
+        presenter is, and each guards the update with its own flag, so the body cannot be shared by delegating.
         """
         assert not self._processing_synchronized_cursor_update
         self._processing_synchronized_cursor_update = True
@@ -445,6 +367,28 @@ class DisassemblyView(SynchronizedFunctionView):
                 self.jump_to(self.sync_state.cursor_address, is_real_addr=True)
         finally:
             self._processing_synchronized_cursor_update = False
+
+    #
+    # What the presenter asks of its view
+    #
+
+    def show_control(self, control) -> None:
+        """Show ``control`` (the flow graph or the linear viewer) instead of the other."""
+        other = self._linear_viewer if control is self._flow_graph else self._flow_graph
+        other.hide()
+        control.show()
+
+    def control_switched(self, control) -> None:
+        self.focus_control(control)
+
+    def focus_control(self, control) -> None:  # pylint:disable=no-self-use
+        control.setFocus()
+
+    def set_status_function(self, func) -> None:
+        self._statusbar.function = func
+
+    def show_instruction(self, insn_addr, insn_pos=None, use_animation: bool | None = None) -> None:
+        self.presenter.show_instruction(insn_addr, insn_pos=insn_pos, use_animation=use_animation)
 
     #
     # UI
@@ -503,26 +447,19 @@ class DisassemblyView(SynchronizedFunctionView):
         """
         Enable or disable the resume-CFG-recovery entries of the given context menu based on the current state.
         """
-        if self.workspace.can_resume_cfg_recovery(addr):
-            menu.resume_cfg_here_entry.enable()
-        else:
-            menu.resume_cfg_here_entry.disable()
-        if self.workspace.can_resume_cfg_recovery():
-            menu.resume_cfg_full_entry.enable()
-        else:
-            menu.resume_cfg_full_entry.disable()
+        self.presenter.update_resume_cfg_entries(menu, addr)
 
     def resume_cfg_from(self, addr: int) -> None:
-        self.workspace.resume_cfg_recovery(addr)
+        self.presenter.resume_cfg_from(addr)
 
     def resume_cfg_full(self) -> None:
-        self.workspace.resume_cfg_recovery_full()
+        self.presenter.resume_cfg_full()
 
     def rename_selected_object(self) -> None:
         """
         Opens dialog for renaming the currently selected QBlockCodeObj
         """
-        obj = self.infodock.selected_block_tree_node
+        obj = self.infodock.selected_block_tree_node.am_obj
         if isinstance(obj, QVariableObj):
             dlg = RenameDialog("Rename Variable", obj.obj.name, self)
             dlg.exec_()
@@ -534,34 +471,26 @@ class DisassemblyView(SynchronizedFunctionView):
         """
         Redefine selected data as code
         """
-        if self.infodock.selected_labels:
-            self.workspace.define_code(next(iter(self.infodock.selected_labels)))
+        self.presenter.define_code()
 
     def undefine_code(self) -> None:
         """
         Undefine selected instruction as code, mark it as data
         """
-        if self.infodock.selected_insns:
-            self.workspace.undefine_code(next(iter(self.infodock.selected_insns)))
+        self.presenter.undefine_code()
 
     def get_context_menu_for_selected_object(self) -> Menu | QMenu | None:
         """
-        Returns a QMenu object for the currently selected QBlockCodeObj
+        Returns the menu for the currently selected block tree node
         """
-        obj = self.infodock.selected_block_tree_node
-        if isinstance(obj, tuple) and len(obj) == 2:
-            ty, addr = obj
-            if ty == "func_name":
-                self._label_menu.addr = addr
-                return self._label_menu
-        if isinstance(obj, QVariableObj):
-            rename_act = QAction("Re&name", self)
-            rename_act.triggered.connect(self.rename_selected_object)
-            mnu = QMenu()
-            mnu.addActions([rename_act])
-            return mnu
-        else:
-            return None
+        obj = self.infodock.selected_block_tree_node.am_obj
+        if isinstance(obj, tuple) and len(obj) == 2 and obj[0] == "func_name":
+            self._label_menu.addr = obj[1]
+            return self._label_menu
+        return self.presenter.get_context_menu_for_selected_object()
+
+    def get_selected_operand_info(self):
+        return self._flow_graph.get_selected_operand_info()
 
     def show_context_menu_for_selected_object(self) -> None:
         """
@@ -633,37 +562,16 @@ class DisassemblyView(SynchronizedFunctionView):
         """
         Edit the comment shown as a header block above the containing function.
         """
-        if addr is None:
-            addr = self._comment_address_in_selection()
-        if addr is None:
-            return
-        kb = self.instance.kb
-        if kb is None:
-            return
-        func = kb.functions.floor_func(addr)
-        if func is None:
-            return
-        self.instance.annotations.set_kind(func.addr, CommentKind.FUNCTION)
-        self.begin_inline_comment(func.addr)
+        self.presenter.set_function_comment(addr)
 
     def toggle_repeatable_comment(self, addr: int | None = None) -> None:
         """
         Flip the comment at ``addr`` between repeatable and its default kind.
         """
-        if addr is None:
-            addr = self._comment_address_in_selection()
-        if addr is None:
-            return
-        annotations = self.instance.annotations
-        is_repeatable = annotations.kind_of(addr) == CommentKind.REPEATABLE
-        annotations.set_kind(addr, None if is_repeatable else CommentKind.REPEATABLE)
-        annotations.notify_comments_changed(addr)
-        self.refresh()
+        self.presenter.toggle_repeatable_comment(addr)
 
     def toggle_bookmark_at_selection(self) -> None:
-        addr = self._comment_address_in_selection()
-        if addr is not None:
-            self.workspace.toggle_bookmark(addr)
+        self.presenter.toggle_bookmark_at_selection()
 
     def popup_newstate_dialog(self) -> None:
         addr = self._instruction_address_in_selection()
@@ -690,23 +598,11 @@ class DisassemblyView(SynchronizedFunctionView):
             return
         block = self._flow_graph._insaddr_to_block.get(instr_addr, None)
         if block:
-            instr = block.addr_to_insns[instr_addr]
-            if instr is None or instr.insn.type != "call":
+            found = func_doc_target(block.addr_to_insns[instr_addr])
+            if found is None:
                 return
-            out_targets = instr.out_branch.targets
-            if len(out_targets) != 1:
-                return
-
-            target = next(iter(out_targets))
-            operand = instr.get_operand(0)
-
-            doc_tuple = GlobalInfo.library_docs.get_docstring_for_func_name(operand.text)
-            if doc_tuple is None:
-                doc_string = f"Cannot find local documentation for function {operand.text}."
-                url = "http://"
-                ftype = "<>"
-                doc_tuple = (doc_string, url, ftype)
-            dialog = FuncDocDialog(self.instance, addr=target, name=operand.text, doc_tuple=doc_tuple, parent=self)
+            target, name, doc_tuple = found
+            dialog = FuncDocDialog(self.instance, addr=target, name=name, doc_tuple=doc_tuple, parent=self)
             dialog.show()
 
     def popup_dependson_dialog(self, addr: int | None = None, use_operand: bool = False, func: bool = False):
@@ -715,12 +611,7 @@ class DisassemblyView(SynchronizedFunctionView):
             if r is not None:
                 _, addr, operand = r
             else:
-                QMessageBox.critical(
-                    self,
-                    "No operand",
-                    "Please select an operand first.",
-                    buttons=QMessageBox.StandardButton.Ok,
-                )
+                GlobalInfo.ui_services.message("critical", "No operand", "Please select an operand first.")
                 return
         else:
             if addr is None:
@@ -752,16 +643,7 @@ class DisassemblyView(SynchronizedFunctionView):
             )
 
     def parse_operand_and_popup_xref_dialog(self, ins_addr, operand) -> None:
-        if operand is not None:
-            if operand.variable is not None:
-                # Display cross references to this variable
-                self.popup_xref_dialog(addr=ins_addr, variable=operand.variable)
-            elif operand.is_constant:
-                # Display cross references to an address
-                self.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_value)
-            elif operand.is_constant_memory:
-                # Display cross references to an address
-                self.popup_xref_dialog(addr=ins_addr, dst_addr=operand.constant_memory_value)
+        self.presenter.parse_operand_and_popup_xref_dialog(ins_addr, operand)
 
     def popup_xref_dialog(self, addr: int | None = None, variable=None, dst_addr=None) -> None:
         if variable is not None:
@@ -793,114 +675,49 @@ class DisassemblyView(SynchronizedFunctionView):
     #
 
     def toggle_disasm_view(self, prefer: bool = True) -> None:
-        if self._flow_graph.isHidden():
-            # Show flow graph
-            self.display_disasm_graph(prefer)
-        else:
-            # Show linear viewer
-            self.display_linear_viewer(prefer)
+        self.presenter.toggle_disasm_view(prefer)
 
-    @needs_gui_thread
     def display_disasm_graph(self, prefer: bool = True) -> None:
-        if prefer:
-            self._prefer_graph = True
+        self.presenter.display_disasm_graph(prefer)
 
-        self._linear_viewer.hide()
-        self._current_view = self._flow_graph
-        self._flow_graph.show()
-
-        if self.infodock.selected_insns:
-            # display the currently selected instruction
-            self._jump_to(next(iter(self.infodock.selected_insns)))
-        elif self.function.am_obj is not None:
-            self._flow_graph.show_instruction(self.function.addr)
-
-        self._flow_graph.setFocus()
-        self.view_visibility_changed.emit()
-        self._flow_graph.refresh()
-        self._refresh_find_matches_for_view_switch()
-
-    @needs_gui_thread
     def display_linear_viewer(self, prefer: bool = True) -> None:
-        if prefer:
-            self._prefer_graph = False
-
-        self._flow_graph.hide()
-        self._current_view = self._linear_viewer
-        self._linear_viewer.show()
-
-        if self.infodock.selected_insns:
-            # display the currently selected instruction
-            self._linear_viewer.show_instruction(next(iter(self.infodock.selected_insns)))
-        elif self.function.am_obj is not None:
-            self._linear_viewer.show_instruction(self.function.addr)
-
-        self._linear_viewer.setFocus()
-        self.view_visibility_changed.emit()
-        self._linear_viewer.refresh()
-        self._refresh_find_matches_for_view_switch()
+        self.presenter.display_linear_viewer(prefer)
 
     def display_function(self, function, send_event=True) -> None:
-        if function is None:
-            return
-        self.workspace.note_user_navigation()
-        self.jump_history.jump_to(function.addr)
-        self._display_function(function, send_event=send_event)
+        self.presenter.display_function(function, send_event=send_event)
 
     def decompile_current_function(self) -> None:
-        if self.function.am_obj is not None:
-            try:
-                curr_ins = next(iter(self.infodock.selected_insns))
-            except StopIteration:
-                curr_ins = None
-
-            self.workspace.decompile_function(self.function.am_obj, curr_ins=curr_ins)
+        self.presenter.decompile_current_function()
 
     def toggle_show_minimap(self, show_minimap: bool | None = None) -> None:
         """
         Toggle minimap display preference
         """
-        if show_minimap is None:
-            show_minimap = not self._show_minimap
-        self._show_minimap = show_minimap
-        self._current_view.refresh()
+        self.presenter.toggle_show_minimap(show_minimap)
 
     def toggle_smart_highlighting(self, enabled: bool | None = None) -> None:
         """
         Toggle between the smart highlighting mode and the text-based highlighting mode.
         """
-        if enabled is None:
-            enabled = not self.infodock.smart_highlighting
-        self.infodock.smart_highlighting = enabled
-        self._flow_graph.refresh()
-        self._linear_viewer.refresh()
+        self.presenter.toggle_smart_highlighting(enabled)
 
     def toggle_show_address(self, show_address: bool | None = None) -> None:
         """
         Toggle whether addresses are shown on disassembly graph.
         """
-        if show_address is None:
-            show_address = not self._show_address
-        self._show_address = show_address
-        self._current_view.refresh()
+        self.presenter.toggle_show_address(show_address)
 
     def toggle_show_variable(self, show_variable: bool | None = None) -> None:
         """
         Toggle whether variables are shown on disassembly graph.
         """
-        if show_variable is None:
-            show_variable = not self._show_variable
-        self._show_variable = show_variable
-        self._current_view.refresh()
+        self.presenter.toggle_show_variable(show_variable)
 
     def toggle_show_variable_identifier(self, show_ident: bool | None = None) -> None:
         """
         Toggle whether variable identifiers are shown on disassembly graph.
         """
-        if show_ident is None:
-            show_ident = not self._show_variable_ident
-        self._show_variable_ident = show_ident
-        self._current_view.refresh()
+        self.presenter.toggle_show_variable_identifier(show_ident)
 
     def toggle_show_exception_edges(self, show_exception_edges: bool | None = None) -> None:
         """
@@ -910,87 +727,27 @@ class DisassemblyView(SynchronizedFunctionView):
         :param bool show_exception_edges:   Whether exception edges should be shown or not.
         :return:                            None
         """
-
-        if show_exception_edges != self._show_exception_edges:
-            self._show_exception_edges = show_exception_edges
-
-            # reset the function graph
-            if self._flow_graph.function_graph is not None:
-                self._flow_graph.function_graph.exception_edges = show_exception_edges
-                self._flow_graph.function_graph.clear_cache()
-                self._flow_graph.reload()
+        self.presenter.toggle_show_exception_edges(show_exception_edges)
 
     def jump_to(self, addr: int, src_ins_addr=None, use_animation: bool = False, is_real_addr: bool = False) -> bool:
-        # Do not jump if addr is not in the binary
-        if addr is None or (
-            not self.instance.project.am_none and self.instance.project.loader.find_object_containing(addr) is None
-        ):
-            return False
-
-        self.workspace.note_user_navigation()
-
-        # Record the current instruction address
-        if src_ins_addr is not None:
-            self.jump_history.record_address(src_ins_addr)
-
-        self.jump_history.jump_to(addr)
-        self._jump_to(addr, use_animation=use_animation, is_real_addr=is_real_addr)
-
-        return True
+        return self.presenter.jump_to(
+            addr, src_ins_addr=src_ins_addr, use_animation=use_animation, is_real_addr=is_real_addr
+        )
 
     def jump_back(self) -> None:
-        addr = self.jump_history.backtrack()
-        if addr is not None:
-            self.workspace.note_user_navigation()
-            self._jump_to(addr, use_animation=False)
+        self.presenter.jump_back()
 
     def jump_forward(self) -> None:
-        addr = self.jump_history.forwardstep()
-        if addr is not None:
-            self.workspace.note_user_navigation()
-            self._jump_to(addr, use_animation=False)
+        self.presenter.jump_forward()
 
     def jump_to_history_position(self, pos: int) -> None:
-        addr = self.jump_history.step_position(pos)
-        if addr is not None:
-            self.workspace.note_user_navigation()
-            self._jump_to(addr, use_animation=False)
+        self.presenter.jump_to_history_position(pos)
 
     def select_label(self, label_addr) -> None:
-        self.infodock.select_label(label_addr)
+        self.presenter.select_label(label_addr)
 
     def rename_label(self, addr: int, new_name: str, is_func: bool = False, full_refresh: bool = False) -> None:
-        if self._flow_graph.disasm is not None:
-            is_renaming = False
-
-            kb = self._flow_graph.disasm.kb
-            if is_func:
-                func = kb.functions.get_by_addr(addr)
-                is_renaming = True
-                if new_name:
-                    func.name = new_name
-                else:
-                    # restore to the default name
-                    func.name = f"sub_{addr:x}"
-            else:
-                if new_name == "":
-                    if addr in kb.labels:
-                        del kb.labels[addr]
-                else:
-                    if addr in kb.labels:
-                        is_renaming = True
-                    kb.labels[addr] = new_name
-
-            # callback first
-            if self.instance.label_rename_callback:
-                self.instance.label_rename_callback(addr=addr, new_name=new_name)
-
-            if full_refresh:
-                # redraw the entire graph. required if a data address is renamed.
-                self._flow_graph.refresh()
-            else:
-                # redraw the current block
-                self._flow_graph.update_label(addr, is_renaming=is_renaming)
+        self.presenter.rename_label(addr, new_name, is_func=is_func, full_refresh=full_refresh)
 
     def avoid_addr_in_exec(self, addr: int) -> None:
         self.workspace._get_or_create_view("symexec", SymexecView).avoid_addr_in_exec(addr)
@@ -999,22 +756,23 @@ class DisassemblyView(SynchronizedFunctionView):
         self.workspace._get_or_create_view("symexec", SymexecView).find_addr_in_exec(addr)
 
     def run_induction_variable_analysis(self) -> None:
-        if self._flow_graph.induction_variable_analysis:
-            self._flow_graph.induction_variable_analysis = None
-        else:
-            analyses = self.instance.project.analyses
-            ana = analyses.AffineRelationAnalysis(self._flow_graph._function_graph.function)
-            self._flow_graph.induction_variable_analysis = ana
-        self._flow_graph.refresh()
+        self.presenter.run_induction_variable_analysis()
 
     def fetch_qblock_annotations(self, qblock):
         addr_to_annotations = defaultdict(list)
         if self.instance.project.am_none:
             # the project may be momentarily unset while a binary is being loaded or closed
             return QBlockAnnotations(addr_to_annotations, parent=qblock, disasm_view=self)
-        for annotations_ in self.workspace.plugins.build_qblock_annotations(qblock):
-            addr_to_annotations[annotations_.addr].append(annotations)
+        plugins = self.workspace.plugins
+        for annotations_ in plugins.build_qblock_annotations(qblock):
+            addr_to_annotations[annotations_.addr].append(annotations_)
+        # neutral marks from plugins written for both frontends
+        for mark in plugins.block_marks(qblock.addr, self):
+            if mark.addr is not None:
+                addr_to_annotations[mark.addr].append(QMarkAnnotation(mark.addr, mark))
         for addr in qblock.addr_to_insns:
+            for mark in plugins.decorate_insn(addr, self):
+                addr_to_annotations[addr].append(QMarkAnnotation(addr, mark))
             if addr in self.instance.project._sim_procedures:
                 hook_annotation = QHookAnnotation(addr)
                 addr_to_annotations[addr].append(hook_annotation)
@@ -1031,359 +789,36 @@ class DisassemblyView(SynchronizedFunctionView):
         return QBlockAnnotations(addr_to_annotations, parent=qblock, disasm_view=self)
 
     #
-    # Find in view
+    # Find in view: the presenter's, with the Qt find bar
     #
-
-    # highlighting every hit of a very common mnemonic would repaint the whole function
-    FIND_HIGHLIGHT_LIMIT = 512
-
-    FIND_MODE_TEXT = "Text"
-    FIND_MODE_TEXT_INSN = "Text (instruction only)"
-    FIND_MODE_BYTES = "Byte pattern"
 
     def show_find_bar(self) -> None:
         """
         Open the incremental find bar. In graph mode it searches the current function; in linear mode it searches every
         function with at least one instruction on the displayed page, plus the data items on the page.
         """
-        self._find_text_cache.clear()
-        self._find_bar.activate()
-        self._update_find_matches()
+        self.presenter.show_find_bar()
 
     def find_next(self) -> None:
-        self._step_find_match(1)
+        self.presenter.find_next()
 
     def find_previous(self) -> None:
-        self._step_find_match(-1)
-
-    def _find_scope_functions(self) -> list[Function]:
-        if self.instance.project.am_none:
-            return []
-        if self._current_view is self._linear_viewer:
-            functions = []
-            for func_addr in self._linear_viewer.visible_function_addrs:
-                with contextlib.suppress(KeyError):
-                    functions.append(self.instance.kb.functions.get_by_addr(func_addr))
-            return functions
-        func = self.function.am_obj
-        return [func] if func is not None else []
-
-    def _function_details(self, searcher: Searcher, func: Function) -> list[tuple[int, str, bytes]]:
-        cached = self._find_text_cache.get(func.addr)
-        if cached is None:
-            cached = list(searcher.iter_instruction_details(func))
-            self._find_text_cache[func.addr] = cached
-        return cached
-
-    def _visible_data_items(self) -> list[tuple[int, bytes, str]]:
-        """
-        ``(address, bytes, label)`` for every data item on the displayed linear page.
-        """
-        if self._current_view is not self._linear_viewer or self.instance.project.am_none:
-            return []
-        items = []
-        for addr, memory_data in self._linear_viewer.visible_memory_data:
-            data = b""
-            if memory_data.content:
-                data = bytes(memory_data.content)[: memory_data.size or None]
-            if memory_data.size and len(data) < memory_data.size:
-                with contextlib.suppress(KeyError):
-                    data += bytes(
-                        self.instance.project.loader.memory.load(addr + len(data), memory_data.size - len(data))
-                    )
-            if not data:
-                continue
-            items.append((addr, data, get_label_text(addr, self.instance.kb) or ""))
-        return items
-
-    def _collect_text_matches(
-        self, regex: re.Pattern, instructions_only: bool
-    ) -> tuple[list[tuple[int, str]], dict[int, int]]:
-        matches: list[tuple[int, str]] = []
-        data_matches: dict[int, int] = {}
-        limit = Conf.find_match_limit
-        searcher = Searcher(self.instance.project.am_obj, kb=self.instance.kb)
-        comments = self.instance.kb.comments if not instructions_only else None
-        for func in self._find_scope_functions():
-            for addr, text, _ in self._function_details(searcher, func):
-                comment = comments.get(addr) if comments is not None else None
-                if comment:
-                    text = f"{text} ; {comment}"
-                if regex.search(text):
-                    if len(matches) >= limit:
-                        self._find_matches_capped = True
-                        break
-                    matches.append((addr, text))
-            if self._find_matches_capped:
-                break
-        if not instructions_only and not self._find_matches_capped:
-            for addr, data, label in self._visible_data_items():
-                text = f"{label} {data.decode('latin-1')}".strip()
-                if regex.search(text):
-                    if len(matches) >= limit:
-                        self._find_matches_capped = True
-                        break
-                    matches.append((addr, text))
-                    data_matches[addr] = addr
-        matches.sort(key=lambda match: match[0])
-        return matches, data_matches
-
-    def _collect_byte_matches(self, pattern: BytePattern) -> tuple[list[tuple[int, str]], dict[int, int]]:
-        matches: list[tuple[int, str]] = []
-        data_matches: dict[int, int] = {}
-        limit = Conf.find_match_limit
-        searcher = Searcher(self.instance.project.am_obj, kb=self.instance.kb)
-
-        # collect the byte pieces of the scope: every instruction, plus the visible data items
-        pieces: list[tuple[int, bytes, bool, str]] = []  # (addr, bytes, is_data, text)
-        seen_addrs: set[int] = set()
-        for func in self._find_scope_functions():
-            for addr, text, raw in self._function_details(searcher, func):
-                if raw and addr not in seen_addrs:
-                    seen_addrs.add(addr)
-                    pieces.append((addr, raw, False, text))
-        for item_addr, data, _ in self._visible_data_items():
-            if item_addr not in seen_addrs:
-                pieces.append((item_addr, data, True, ""))
-        pieces.sort(key=lambda piece: piece[0])
-
-        # merge contiguous pieces into runs so the pattern can match across instruction and instruction/data boundaries
-        runs: list[tuple[int, bytearray, list[tuple[int, bool, str]]]] = []
-        for addr, raw, is_data, text in pieces:
-            if runs and addr == runs[-1][0] + len(runs[-1][1]):
-                runs[-1][1].extend(raw)
-                runs[-1][2].append((addr, is_data, text))
-            elif runs and addr < runs[-1][0] + len(runs[-1][1]):
-                continue  # e.g. a block shared by two scope functions
-            else:
-                runs.append((addr, bytearray(raw), [(addr, is_data, text)]))
-
-        capped = False
-        seen_anchors: set[int] = set()
-        for run_start, run_bytes, units in runs:
-            unit_starts = [unit[0] for unit in units]
-            for match_addr in pattern.finditer(bytes(run_bytes), base=run_start):
-                unit_addr, is_data, text = units[bisect.bisect_right(unit_starts, match_addr) - 1]
-                # instruction matches are anchored at the instruction containing the match start
-                if not is_data and unit_addr in seen_anchors:
-                    continue
-                if len(matches) >= limit:
-                    capped = True
-                    break
-                if is_data:
-                    offset = match_addr - run_start
-                    matches.append((match_addr, run_bytes[offset : offset + len(pattern)].hex(" ")))
-                    data_matches[match_addr] = unit_addr
-                else:
-                    seen_anchors.add(unit_addr)
-                    matches.append((unit_addr, text))
-            if capped:
-                break
-        self._find_matches_capped = capped
-        matches.sort(key=lambda match: match[0])
-        return matches, data_matches
-
-    def _compute_find_matches(self) -> tuple[list[tuple[int, str]], dict[int, int]] | None:
-        """
-        Compute the match list for the find bar's current mode and query. Returns None if the query is malformed (with
-        the error flagged on the bar).
-        """
-        self._find_matches_capped = False
-        query = self._find_bar.query
-        if not query or self.instance.project.am_none:
-            self._find_bar.set_error(False)
-            return [], {}
-        if self._find_bar.mode == self.FIND_MODE_BYTES:
-            try:
-                pattern = BytePattern.parse(query)
-            except SearchError:
-                self._find_bar.set_error(True)
-                return None
-            self._find_bar.set_error(False)
-            return self._collect_byte_matches(pattern)
-        regex = self._find_bar.compile_query(loose_whitespace=True)
-        if regex is None:
-            return None
-        return self._collect_text_matches(regex, instructions_only=self._find_bar.mode == self.FIND_MODE_TEXT_INSN)
+        self.presenter.find_previous()
 
     def _update_find_matches(self) -> None:
-        self._find_bar.set_text_options_visible(self._find_bar.mode != self.FIND_MODE_BYTES)
-        self._find_index = -1
-        self._find_matches = []
-        self._find_data_matches = {}
-        result = self._compute_find_matches()
-        if result is not None:
-            self._find_matches, self._find_data_matches = result
-        if not self._find_matches:
-            self._clear_find_highlights()
-            self._find_bar.set_match_status(0, 0)
-        elif self._current_view is self._linear_viewer:
-            # do not move the viewport while typing; the current match starts at the first match
-            # at or after the top of the page
-            self._find_index = self._first_match_at_or_after_viewport_top()
-            self._apply_find_highlights()
-        else:
-            self._step_find_match(1)
+        self.presenter.update_find_matches()
 
     def _on_linear_viewport_changed(self) -> None:
-        """
-        Re-apply the find query to the functions that are visible after the linear view scrolled.
-        """
-        if (
-            self._find_bar is None
-            or self._find_bar.isHidden()
-            or self._current_view is not self._linear_viewer
-            or self._in_find_refresh
-            or not self._find_bar.query
-        ):
-            return
-        self._in_find_refresh = True
-        try:
-            self._refresh_find_matches()
-        finally:
-            self._in_find_refresh = False
-
-    def _refresh_find_matches_for_view_switch(self) -> None:
-        """
-        The find scope depends on the display mode, so recompute the matches when the view toggles between graph and
-        linear (without navigating).
-        """
-        if self._find_bar is None or self._find_bar.isHidden() or not self._find_bar.query or self._in_find_refresh:
-            return
-        self._in_find_refresh = True
-        try:
-            self._refresh_find_matches()
-        finally:
-            self._in_find_refresh = False
-
-    def _refresh_find_matches(self) -> None:
-        result = self._compute_find_matches()
-        if result is None:
-            return
-        current_addr = (
-            self._find_matches[self._find_index][0] if 0 <= self._find_index < len(self._find_matches) else None
-        )
-        self._find_matches, self._find_data_matches = result
-        if not self._find_matches:
-            self._find_index = -1
-            self._clear_find_highlights()
-            self._find_bar.set_match_status(0, 0)
-            return
-        addrs = [addr for addr, _ in self._find_matches]
-        self._find_index = (
-            addrs.index(current_addr) if current_addr in addrs else self._first_match_at_or_after_viewport_top()
-        )
-        self._apply_find_highlights()
-
-    def _first_match_at_or_after_viewport_top(self) -> int:
-        top = self._linear_viewer.first_visible_instruction_addr
-        if top is None:
-            return 0
-        return next((i for i, (addr, _) in enumerate(self._find_matches) if addr >= top), 0)
-
-    def _apply_find_highlights(self) -> None:
-        """Apply the highlight set and the match counter for the current match list, without moving the viewport."""
-        highlighted = self._find_insn_highlight_set()
-        if 0 <= self._find_index < len(self._find_matches):
-            current = self._find_matches[self._find_index][0]
-            if current not in self._find_data_matches:
-                highlighted.add(current)
-        self._find_highlighted = True
-        self.infodock.unselect_all_labels()
-        self.infodock.selected_insns.am_obj = highlighted
-        self.infodock.selected_insns.am_event()
-        self._find_bar.set_match_status(self._find_index, len(self._find_matches), capped=self._find_matches_capped)
-
-    def _find_insn_highlight_set(self) -> set[int]:
-        return {
-            addr for addr, _ in self._find_matches[: self.FIND_HIGHLIGHT_LIMIT] if addr not in self._find_data_matches
-        }
-
-    def _step_find_match(self, delta: int) -> None:
-        if not self._find_matches:
-            self._find_bar.set_match_status(0, 0)
-            return
-        self._find_index = (self._find_index + delta) % len(self._find_matches)
-        addr = self._find_matches[self._find_index][0]
-
-        highlighted = self._find_insn_highlight_set()
-        data_item_addr = self._find_data_matches.get(addr)
-        self._find_highlighted = True
-        if data_item_addr is not None:
-            # a data match: highlight the data item's label, keep the instruction highlights
-            self.infodock.select_label(data_item_addr)
-            self.infodock.selected_insns.am_obj = highlighted
-            self.infodock.selected_insns.am_event()
-        else:
-            highlighted.add(addr)
-            self.infodock.unselect_all_labels()
-            self.infodock.selected_insns.am_obj = highlighted
-            self.set_synchronized_cursor_address(get_real_address_if_arm(self.instance.project.arch, addr))
-            self.infodock.selected_insns.am_event(insn_addr=addr)
-        # navigating may scroll the linear view, which re-applies the query and remaps _find_index
-        self._current_view.show_instruction(addr, use_animation=False)
-        self._find_bar.set_match_status(self._find_index, len(self._find_matches), capped=self._find_matches_capped)
-
-    def _clear_find_highlights(self) -> None:
-        if self._find_highlighted:
-            self._find_highlighted = False
-            self.infodock.unselect_all_instructions()
-            self.infodock.unselect_all_labels()
+        self.presenter.on_linear_viewport_changed()
 
     def _on_find_bar_closed(self) -> None:
-        self._find_text_cache.clear()
-        # keep only the current match selected
-        if self._find_highlighted and 0 <= self._find_index < len(self._find_matches):
-            addr = self._find_matches[self._find_index][0]
-            self._find_highlighted = False
-            if addr in self._find_data_matches:
-                # the data item's label selection is the current match; drop the rest
-                self.infodock.unselect_all_instructions()
-            else:
-                self.infodock.selected_insns.am_obj = {addr}
-                self.infodock.selected_insns.am_event(insn_addr=addr)
-        else:
-            self._clear_find_highlights()
-        self._find_matches = []
-        self._find_data_matches = {}
-        self._find_index = -1
-        self._current_view.setFocus()
+        self.presenter.on_find_bar_closed()
 
-    def _on_insn_selection_changed(self, **kwargs) -> None:
-        """
-        In linear view, make the current function follow the selected instruction so the status bar and function-scoped
-        actions refer to the function that was actually clicked.
-        """
-        if self._current_view is not self._linear_viewer or self.instance.project.am_none:
-            return
-        insn_addr = kwargs.get("insn_addr")
-        if insn_addr is None:
-            return
-        func = None
-        func_addr = self._linear_viewer.function_addr_of_instruction(insn_addr)
-        if func_addr is not None:
-            with contextlib.suppress(KeyError):
-                func = self.instance.kb.functions.get_by_addr(func_addr)
-        if func is None:
-            func = locate_function(self.instance, insn_addr)
-        if func is None or (not self.function.am_none and self.function.am_obj.addr == func.addr):
-            return
-        # update quietly: firing the container event would navigate away and clear the selection
-        self.function.am_obj = func
-        self._statusbar.function = func
-
-    def update_highlight_regions_for_synchronized_views(self, **kwargs) -> None:  # pylint: disable=unused-argument
+    def update_highlight_regions_for_synchronized_views(self, **kwargs) -> None:
         """
         Highlight each selected instruction in synchronized views.
         """
-        regions = []
-        is_arm = is_arm_arch(self.instance.project.arch) if not self.instance.project.am_none else False
-        for addr in self.infodock.selected_insns:
-            s = self._get_instruction_size(addr)
-            if s is not None:
-                real_addr = addr & 0xFFFF_FFFE if is_arm else addr
-                regions.append(SynchronizedHighlightRegion(real_addr, s))
-        self.set_synchronized_highlight_regions(regions)
+        self.presenter.update_highlight_regions_for_synchronized_views(**kwargs)
 
     #
     # Initialization
@@ -1395,6 +830,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self._statusbar = QDisasmStatusBar(self, parent=self)
 
         self._find_bar = QFindBar(self, modes=[self.FIND_MODE_TEXT, self.FIND_MODE_TEXT_INSN, self.FIND_MODE_BYTES])
+        self.presenter.find_bar = self._find_bar
         self._find_bar.query_changed.connect(self._update_find_matches)
         self._find_bar.find_next.connect(self.find_next)
         self._find_bar.find_previous.connect(self.find_previous)
@@ -1425,6 +861,7 @@ class DisassemblyView(SynchronizedFunctionView):
         self.workspace.plugins.instrument_disassembly_view(self)
 
     def _init_menus(self) -> None:
+        # the menus call this view, which forwards what is not Qt to the presenter
         self._insn_menu = DisasmInsnContextMenu(self)
         self._label_menu = DisasmLabelContextMenu(self)
         self._unknown_menu = DisasmUnknownContextMenu(self)
@@ -1439,46 +876,10 @@ class DisassemblyView(SynchronizedFunctionView):
             shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
 
     def _register_events(self) -> None:
-        # redraw the current graph if instruction/operand selection changes
-        self.infodock.selected_insns.am_subscribe(self.redraw_current_graph)
-        self.infodock.selected_insns.am_subscribe(self.update_highlight_regions_for_synchronized_views)
-        self.infodock.selected_insns.am_subscribe(self._on_insn_selection_changed)
-        self.infodock.selected_operands.am_subscribe(self.redraw_current_graph)
-        self.infodock.selected_blocks.am_subscribe(self.redraw_current_graph)
-        self.infodock.hovered_block.am_subscribe(self.redraw_current_graph)
-        self.infodock.hovered_edge.am_subscribe(self.redraw_current_graph)
-        self.infodock.selected_labels.am_subscribe(self.redraw_current_graph)
-        self.infodock.selected_variables.am_subscribe(self.redraw_current_graph)
-        self.infodock.selected_block_tree_node.am_subscribe(self.redraw_current_graph)
-        self.workspace.current_screen.am_subscribe(self.on_screen_changed)
-        self.instance.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
-        self.instance.cfb.am_subscribe(self._on_cfb_event)
-        self.function.am_subscribe(self._on_function_event)
-
-    def _on_breakpoints_updated(self, **kwargs) -> None:  # pylint:disable=unused-argument
-        self.refresh()
-
-    def _on_function_event(self, **kwargs) -> None:  # pylint:disable=unused-argument
-        # the event was fired by _display_function itself; re-displaying would re-record the function head in the
-        # jump history and scroll away from the jump target
-        if self._displaying_function:
-            return
-        self.display_function(self.function.am_obj, send_event=False)
+        self.presenter.register_events()
 
     def _unregister_events(self) -> None:
-        self.infodock.selected_insns.am_unsubscribe(self.redraw_current_graph)
-        self.infodock.selected_insns.am_unsubscribe(self.update_highlight_regions_for_synchronized_views)
-        self.infodock.selected_insns.am_unsubscribe(self._on_insn_selection_changed)
-        self.infodock.selected_operands.am_unsubscribe(self.redraw_current_graph)
-        self.infodock.selected_blocks.am_unsubscribe(self.redraw_current_graph)
-        self.infodock.hovered_block.am_unsubscribe(self.redraw_current_graph)
-        self.infodock.hovered_edge.am_unsubscribe(self.redraw_current_graph)
-        self.infodock.selected_labels.am_unsubscribe(self.redraw_current_graph)
-        self.infodock.selected_variables.am_unsubscribe(self.redraw_current_graph)
-        self.infodock.selected_block_tree_node.am_unsubscribe(self.redraw_current_graph)
-        self.workspace.current_screen.am_unsubscribe(self.on_screen_changed)
-        self.instance.breakpoint_mgr.breakpoints.am_unsubscribe(self._on_breakpoints_updated)
-        self.instance.cfb.am_unsubscribe(self._on_cfb_event)
+        self.presenter.unregister_events()
 
     def closeEvent(self, event) -> None:
         self._unregister_events()
@@ -1489,166 +890,37 @@ class DisassemblyView(SynchronizedFunctionView):
     #
 
     def _display_function(self, the_func, send_event=True) -> None:
-        if the_func is not None:
-            self.set_synchronized_cursor_address(the_func.addr)
-
-        self.function.am_obj = the_func
-        if send_event:
-            self._displaying_function = True
-            try:
-                self.function.am_event()
-            finally:
-                self._displaying_function = False
-
-        # set status bar
-        self._statusbar.function = the_func
-
-        # variable recovery
-        variable_manager = self.instance.project.kb.variables
-        self.variable_manager = variable_manager
-        self.infodock.variable_manager = variable_manager
-
-        # clear existing selected instructions and operands
-        self.infodock.clear_selection()
-
-        if self._flow_graph.function_graph is None or self._flow_graph.function_graph.function is not the_func:
-            self._flow_graph.function_graph = (
-                None
-                if the_func is None
-                else FunctionGraph(
-                    function=the_func,
-                    exception_edges=self.show_exception_edges,
-                )
-            )
-        elif self._current_view is self._flow_graph and the_func is not None:
-            self._flow_graph.show_instruction(the_func.addr)
-
-        if the_func is not None:
-            if not the_func.block_addrs_set:
-                # the function has no blocks yet (e.g., it was created at a call site during CFG recovery before its
-                # body has been traced); an empty graph view is useless - show the location in the linear view
-                # instead, without changing the user's graph-view preference
-                if self._current_view is not self._linear_viewer:
-                    self.display_linear_viewer(prefer=False)
-            elif self._prefer_graph and self._current_view is self._linear_viewer:
-                # restore the preferred graph view (e.g., after a block-less function was routed to the linear view)
-                self.display_disasm_graph(prefer=False)
-
-        if self._current_view is self._linear_viewer and the_func is not None:
-            self._linear_viewer.navigate_to_addr(the_func.addr)
-
-        console_view = self.workspace.view_manager.first_view_in_category("console")
-        if console_view is not None:
-            console_view.set_current_function(the_func)
+        self.presenter.display_function_without_history(the_func, send_event=send_event)
 
     def _jump_to(self, addr: int, use_animation: bool = False, is_real_addr: bool = False) -> bool:
-        if self._prefer_graph and self._current_view is self._linear_viewer:
-            self.display_disasm_graph(prefer=False)
-
-        # real_addr is the address in RAM regardless of the ARM/THUMB mode
-        # code_addr is an address that guarantees to hit the correct instruction
-        real_addr = addr
-        code_addr = addr
-        is_arm = is_arm_arch(self.instance.project.arch) if not self.instance.project.am_none else False
-        if is_arm and is_real_addr and code_addr & 1 == 0:
-            code_addr = addr + 1  # ensures we always hit the middle of an instruction regardless of ARM/THUMB
-
-        if self._current_view is not self._linear_viewer:
-            function = locate_function(self.instance, code_addr)
-            if function is not None:
-                if (
-                    function is not self.function.am_obj
-                    or self._flow_graph.function_graph is None
-                    or self._flow_graph.function_graph.function is not function
-                ):
-                    # only switch functions when needed; re-displaying the current one scrolls to its head
-                    self._display_function(function)
-                instr_addr = function.addr_to_instruction_addr(code_addr)
-                if instr_addr is None:
-                    instr_addr = code_addr
-                self.infodock.select_instruction(instr_addr, unique=True, use_animation=use_animation)
-                return True
-
-            # it does not belong to any function - we need to switch to linear view mode
-            self.display_linear_viewer(prefer=False)
-
-        try:
-            _, item = self.instance.cfb.floor_item(code_addr)
-            if (
-                code_addr != real_addr
-                and isinstance(item, MemoryData)
-                and (code_addr < item.addr or code_addr >= item.addr + item.size)
-            ):
-                # expect code but found memory data - try the real address instead
-                _, item = self.instance.cfb.floor_item(real_addr)
-
-            if isinstance(item, MemoryData) and addr < (item.addr + item.size):
-                self.infodock.select_label(item.addr)
-            elif isinstance(item, Block) and item.size and code_addr < (item.addr + item.size):
-                addr = max(a for a in item.instruction_addrs if a <= code_addr)
-                self.infodock.select_instruction(addr, unique=True, use_animation=use_animation)
-                return True  # select_instruction will navigate
-        except KeyError:
-            pass
-
-        self._linear_viewer.navigate_to_addr(addr)
-        return True
+        return self.presenter.jump_to_without_history(addr, use_animation=use_animation, is_real_addr=is_real_addr)
 
     #
     # Utils
     #
 
+    def address_in_selection(self) -> tuple[str, int] | None:
+        """What the selection points at, as ``(kind, address)``; the context menus ask for it."""
+        return self._address_in_selection()
+
     def _address_in_selection(self) -> tuple[str, int] | None:
-        if self._insn_addr_on_context_menu is not None:
-            return "insn", self._insn_addr_on_context_menu
-        if len(self.infodock.selected_operands) == 1:
-            selected_operand: OperandDescriptor = next(iter(self.infodock.selected_operands.values()))
-            if selected_operand.num_value is not None:
-                return "operand", selected_operand.num_value
-        if len(self.infodock.selected_insns) == 1:
-            return "insn", next(iter(self.infodock.selected_insns))
-        if len(self.infodock.selected_labels) == 1:
-            return "insn", next(iter(self.infodock.selected_labels))
-        if (
-            isinstance(self.infodock.selected_block_tree_node.am_obj, tuple)
-            and len(self.infodock.selected_block_tree_node.am_obj) == 2
-        ):
-            ty, addr = self.infodock.selected_block_tree_node.am_obj
-            if ty == "func_name":
-                return ty, addr
-        return None
+        return self.presenter.address_in_selection()
 
     def _comment_address_in_selection(self) -> int | None:
         """
         The address to comment on: the selected instruction, or the function whose name is selected.
         """
-        addr = self._instruction_address_in_selection()
-        if addr is not None:
-            return addr
-        selection = self._address_in_selection()
-        if selection is not None and selection[0] == "func_name":
-            return selection[1]
-        return None
+        return self.presenter.comment_address_in_selection()
 
     def _commit_inline_comment(self, addr: int, text: str) -> None:
         self._inline_comment_editor = None
-        self.workspace.set_comment(addr, text)
+        self.presenter.set_comment(addr, text)
 
     def _instruction_address_in_selection(self) -> int | None:
-        if self._insn_addr_on_context_menu is not None:
-            return self._insn_addr_on_context_menu
-        if len(self.infodock.selected_insns) == 1:
-            return next(iter(self.infodock.selected_insns))
-        if len(self.infodock.selected_labels) == 1:
-            return next(iter(self.infodock.selected_labels))
-        return None
+        return self.presenter.instruction_address_in_selection()
 
     def _get_instruction_size(self, addr: int) -> int | None:
-        kb = self.instance.project.kb
-        f = kb.functions.floor_func(addr)
-        if f is None:
-            return None
-        return f.instruction_size(addr)
+        return self.presenter.get_instruction_size(addr)
 
     @property
     def flow_graph(self):

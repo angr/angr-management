@@ -3,10 +3,6 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING
 
-from angr.analyses.decompiler import DECOMPILATION_PRESETS
-from angr.analyses.decompiler.decompilation_options import options as dec_options
-from angr.analyses.decompiler.optimization_passes import get_optimization_passes
-from angr.analyses.decompiler.peephole_optimizations import EXPR_OPTS, MULTI_STMT_OPTS, STMT_OPTS
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import (
     QComboBox,
@@ -18,6 +14,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from angrmanagement.present import code_options
+from angrmanagement.present.code_options import default_preset_name, preset_names, value_kind
 from angrmanagement.ui.widgets.qproperty_editor import (
     BoolPropertyItem,
     ComboPropertyItem,
@@ -37,20 +35,21 @@ if TYPE_CHECKING:
 
 
 def map_option_to_property(option: DecompilationOption, current_val):
-    if option.candidate_values is not None:
+    kind = value_kind(option)
+    if kind == "choice":
         return ComboPropertyItem(
             option.NAME, current_val, option.candidate_values, description=option.DESCRIPTION, option=option
         )
-    elif issubclass(option.value_type, bool):
+    elif kind == "bool":
         return BoolPropertyItem(option.NAME, current_val, description=option.DESCRIPTION, option=option)
-    elif issubclass(option.value_type, float):
+    elif kind == "float":
         minimum, maximum = sys.float_info.min, sys.float_info.max
         if hasattr(option, "value_range") and option.value_range is not None:
             minimum, maximum = option.value_range
         return FloatPropertyItem(
             option.NAME, current_val, minimum, maximum, description=option.DESCRIPTION, option=option
         )
-    elif issubclass(option.value_type, int):
+    elif kind == "int":
         minimum = -(2**31)
         maximum = 2**31 - 1
         if hasattr(option, "value_range") and option.value_range is not None:
@@ -152,28 +151,26 @@ class QDecompilationOptions(QWidget):
         return [(item.extra["option"], item.value) for item in self._qoptions]
 
     def get_default_options(self):  # pylint: disable=no-self-use
-        return dec_options
+        return code_options.default_options()
+
+    def _plugin_passes(self) -> list:
+        return list(self._code_view.workspace.plugins.optimization_passes())
 
     def get_default_passes(self):
         if self._instance is None or self._instance.project.am_none:
             return []
-        default_preset = DECOMPILATION_PRESETS[self._preset_cmb.currentText()]
-        return default_preset.get_optimization_passes(
-            self._instance.project.arch, self._instance.project.simos.name
-        ) + [x for x, de in self._code_view.workspace.plugins.optimization_passes() if de]
+        return code_options.default_passes(self._instance, self._plugin_passes(), self._preset_cmb.currentText())
 
     def get_all_passes(self):
         if self._instance is None or self._instance.project.am_none:
             return []
-        return get_optimization_passes(self._instance.project.arch, self._instance.project.simos.name) + [
-            x for x, _ in self._code_view.workspace.plugins.optimization_passes()
-        ]
+        return code_options.all_passes(self._instance, self._plugin_passes())
 
     def get_default_peephole_opts(self):  # pylint: disable=no-self-use
-        return MULTI_STMT_OPTS + STMT_OPTS + EXPR_OPTS
+        return code_options.default_peephole_opts()
 
     def get_all_peephole_opts(self):  # pylint: disable=no-self-use
-        return MULTI_STMT_OPTS + STMT_OPTS + EXPR_OPTS
+        return code_options.all_peephole_opts()
 
     def _init_widgets(self) -> None:
         preset_lyt = QHBoxLayout()
@@ -182,11 +179,9 @@ class QDecompilationOptions(QWidget):
 
         preset_lyt.addWidget(QLabel("Preset:"))
         self._preset_cmb = QComboBox()
-        presets = sorted([n for n in DECOMPILATION_PRESETS if n != "default"])
+        presets = preset_names()
         self._preset_cmb.addItems(presets)
-        self._preset_cmb.setCurrentIndex(
-            next(i for i, n in enumerate(presets) if DECOMPILATION_PRESETS[n] is DECOMPILATION_PRESETS["default"])
-        )
+        self._preset_cmb.setCurrentIndex(presets.index(default_preset_name()))
         self._preset_cmb.activated.connect(lambda: self.reload(force=True))
         preset_lyt.addWidget(self._preset_cmb, 1)
 

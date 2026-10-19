@@ -5,13 +5,15 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any
 
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QClipboard, QCursor, QGuiApplication, QIcon, QKeySequence
 from PySide6.QtWidgets import QAbstractItemView, QTableView
 
 from angrmanagement.consts import IMG_LOCATION
-from angrmanagement.logic.threads import gui_thread_schedule_async
-from angrmanagement.ui.menus.log_menu import LogMenu
+from angrmanagement.present.log import BENCHMARK_LEVEL, LogPresenter, LogTableModel
+from angrmanagement.present.log import level_to_text as _level_to_text
+
+from .qt_table import QtTableModelAdapter
 
 if TYPE_CHECKING:
     import PySide6
@@ -47,73 +49,47 @@ class QLogIcons:
         return cls.ERROR
 
 
-class QLogTableModel(QAbstractTableModel):
+class QLogTableModel(QtTableModelAdapter):
     """
-    Implements a table model for log items.
+    Qt model over a :class:`~angrmanagement.present.log.LogTableModel`; the first column shows the level's icon.
     """
 
-    Headers = ["", "Timestamp", "Source", "Content"]
-    COL_ICON = 0
-    COL_TIMESTAMP = 1
-    COL_SOURCE = 2
-    COL_CONTENT = 3
+    Headers = LogTableModel.Headers
+    COL_ICON = LogTableModel.COL_ICON
+    COL_TIMESTAMP = LogTableModel.COL_TIMESTAMP
+    COL_SOURCE = LogTableModel.COL_SOURCE
+    COL_CONTENT = LogTableModel.COL_CONTENT
 
-    def __init__(self, log_widget: QLogWidget = None) -> None:
-        super().__init__()
+    table_model: LogTableModel
+
+    def __init__(self, log_widget: QLogWidget | None = None, log_model: LogTableModel | None = None) -> None:
+        super().__init__(log_model if log_model is not None else LogTableModel(), use_table_font=False)
         self._log_widget = log_widget
-        self._log: list[LogRecord] = []
 
     @property
     def log(self) -> list[LogRecord]:
-        return self._log
+        return self.table_model.log
 
-    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:
-        return len(self._log)
-
-    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:
-        return len(self.Headers)
-
-    def headerData(self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...) -> Any:
-        if role != Qt.ItemDataRole.DisplayRole:
-            return None
-        if section < len(self.Headers):
-            return self.Headers[section]
-        return None
-
-    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
+    def data(self, index, role=None) -> Any:
         if not index.isValid():
             return None
-        row = index.row()
-        if row >= len(self.log):
-            return None
-        log = self.log[row]
         col = index.column()
-
-        if role == Qt.ItemDataRole.DisplayRole:
-            return self._get_column_text(log, col)
-        elif role == Qt.ItemDataRole.DecorationRole and col == QLogTableModel.COL_ICON:
-            return self._get_column_icon(log)
-        elif role == Qt.ItemDataRole.TextAlignmentRole:
+        if role == Qt.ItemDataRole.DecorationRole and col == self.COL_ICON:
+            record = self.table_model.row(index.row())
+            return self._get_column_icon(record) if record is not None else None
+        if role == Qt.ItemDataRole.TextAlignmentRole:
             return Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft
-
-        return None
-
-    @staticmethod
-    def _get_column_text(log: LogRecord, col: int) -> Any:
-        mapping = {
-            QLogTableModel.COL_TIMESTAMP: lambda x: str(x.timestamp),
-            QLogTableModel.COL_SOURCE: lambda x: str(x.source),
-            QLogTableModel.COL_CONTENT: lambda x: str(x.content),
-        }
-        func = mapping.get(col)
-        if func is None:
+        if role == Qt.ItemDataRole.DisplayRole and col == self.COL_ICON:
+            # the icon says it
             return None
-        return func(log)
+        if role in (Qt.ItemDataRole.ForegroundRole, Qt.ItemDataRole.ToolTipRole):
+            return None
+        return super().data(index, role)
 
     @staticmethod
     def _get_column_icon(log: LogRecord) -> QIcon | None:
         mapping = {
-            1: QLogIcons.benchmark(),
+            BENCHMARK_LEVEL: QLogIcons.benchmark(),
             logging.WARNING: QLogIcons.warning(),
             logging.ERROR: QLogIcons.error(),
             logging.CRITICAL: QLogIcons.error(),
@@ -122,21 +98,10 @@ class QLogTableModel(QAbstractTableModel):
 
     @staticmethod
     def level_to_text(loglevel: int) -> str:
-        mapping = {
-            1: "BENCHMARK",
-            logging.DEBUG: "DEBUG",
-            logging.INFO: "INFO",
-            logging.WARNING: "WARNING",
-            logging.ERROR: "ERROR",
-            logging.CRITICAL: "CRITICAL",
-        }
-        return mapping.get(loglevel, "")
+        return _level_to_text(loglevel)
 
     def add_record(self, log_record: LogRecord) -> None:
-        num_records = len(self._log)
-        self.beginInsertRows(QModelIndex(), num_records, num_records)
-        self._log.append(log_record)
-        self.endInsertRows()
+        self.table_model.add_record(log_record)
 
 
 class QLogWidget(QTableView):
@@ -144,13 +109,18 @@ class QLogWidget(QTableView):
     Log table. Displays log messages.
     """
 
-    def __init__(self, log_view) -> None:
+    def __init__(self, log_view, presenter: LogPresenter | None = None) -> None:
         super().__init__()
 
         self.log_view = log_view
+        self._owns_presenter = presenter is None
+        self.presenter = presenter if presenter is not None else LogPresenter(log_view.workspace, log_view.instance)
+        # the copy actions also fill the X11 selection, as this table always did
+        self.presenter.clipboard_writer = self._copy_to_clipboard
         # True if we want the log panel to automatically scroll to bottom
         self._auto_scroll: bool = True
-        self._context_menu = LogMenu(self).qmenu()
+        # the context menu last shown; the QMenu has no other owner while it is open
+        self._context_menu = None
 
         hheader = self.horizontalHeader()
         vheader = self.verticalHeader()
@@ -162,7 +132,7 @@ class QLogWidget(QTableView):
         vheader.setDefaultSectionSize(20)
         self.setShowGrid(False)
 
-        self.model: QLogTableModel = QLogTableModel(self)
+        self.model: QLogTableModel = QLogTableModel(self, self.presenter.model)
 
         self.setModel(self.model)
 
@@ -171,83 +141,53 @@ class QLogWidget(QTableView):
 
         self.doubleClicked.connect(self._on_double_clicked)
 
-        self.log_view.instance.log.am_subscribe(self._on_new_logrecord)
+        self.presenter.model.about_to_change.connect(self._before_row_insert)
+        self.presenter.model.changed.connect(self._after_row_insert)
 
     #
     # Public methods
     #
 
     def clear_log(self) -> None:
-        self.log_view.instance.log.am_obj = []
-        self.log_view.instance.log.am_event()
+        self.presenter.clear_log()
+
+    def _selected_rows(self) -> list[int]:
+        return [index.row() for index in self.selectionModel().selectedRows()]
 
     def copy_selected(self) -> None:
-        content = []
-        selection = self.selectionModel().selectedRows()
-        for row_index in selection:
-            record = self.model.log[row_index.row()]
-            content.append(
-                f"{QLogTableModel.level_to_text(record.level)} | "
-                f"{str(record.timestamp)} | "
-                f"{record.source} | "
-                f"{record.content}"
-            )
-        self._copy_to_clipboard(os.linesep.join(content))
+        self.presenter.copy_selected(self._selected_rows())
 
     def copy_selected_messages(self) -> None:
-        content = []
-        selection = self.selectionModel().selectedRows()
-        for row_index in selection:
-            content.append(self.model.log[row_index.row()].content)
-        self._copy_to_clipboard(os.linesep.join(content))
+        self.presenter.copy_selected_messages(self._selected_rows())
 
     def copy_all(self) -> None:
-        content = []
-        for record in self.model.log:
-            content.append(
-                f"{QLogTableModel.level_to_text(record.level)} | "
-                f"{str(record.timestamp)} | "
-                f"{record.source} | "
-                f"{record.content}"
-            )
-        self._copy_to_clipboard(os.linesep.join(content))
+        self.presenter.copy_all()
 
     def copy_all_messages(self) -> None:
-        content = [record.content for record in self.model.log]
-        self._copy_to_clipboard(os.linesep.join(content))
+        self.presenter.copy_all_messages()
 
     #
     # Events
     #
 
     def closeEvent(self, event) -> None:
-        self.log_view.instance.log.am_unsubscribe(self._on_new_logrecord)
+        self.presenter.model.about_to_change.disconnect(self._before_row_insert)
+        self.presenter.model.changed.disconnect(self._after_row_insert)
+        if self._owns_presenter:
+            self.presenter.close()
         super().closeEvent(event)
 
     def contextMenuEvent(self, _: PySide6.QtGui.QContextMenuEvent) -> None:
+        menu = self.presenter.log_menu(self._selected_rows())
+        menu.parent = self
+        self._context_menu = menu.qmenu(cached=False)
         self._context_menu.popup(QCursor.pos())
 
-    def _on_new_logrecord(self, log_record: LogRecord = None) -> None:
-        gui_thread_schedule_async(self._on_new_logrecord_core, (log_record,))
-
-    def _on_new_logrecord_core(self, log_record: LogRecord = None) -> None:
-        self._before_row_insert()
-
-        if log_record is None:
-            # reload
-            self.model.layoutAboutToBeChanged.emit()
-            self.model._log = self.log_view.instance.log[::]
-            self.model.layoutChanged.emit()
-        else:
-            self.model.add_record(log_record)
-
-        self._after_row_insert()
-
-    def _before_row_insert(self) -> None:
+    def _before_row_insert(self, *_args) -> None:
         scrollbar = self.verticalScrollBar()
         self._auto_scroll = scrollbar.value() == scrollbar.maximum()
 
-    def _after_row_insert(self) -> None:
+    def _after_row_insert(self, *_args) -> None:
         if self._auto_scroll:
             self.scrollToBottom()
 

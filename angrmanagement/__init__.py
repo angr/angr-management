@@ -32,7 +32,6 @@ def _boot(project=None, response=None):
     import glob
     import os
 
-    from PySide6.QtCore import QThread
     from PySide6.QtGui import QFontDatabase, QIcon
     from PySide6.QtWidgets import QApplication
 
@@ -44,10 +43,13 @@ def _boot(project=None, response=None):
     icon_location = os.path.join(IMG_LOCATION, "angr.png")
     QApplication.setWindowIcon(QIcon(icon_location))
 
+    from .ui.qt_frontend import install_qt_frontend  # pylint:disable=import-outside-toplevel
+
+    install_qt_frontend()
+
     from .config import Conf
 
     Conf.attempt_importing_initial_config()
-    from .logic import GlobalInfo
     from .ui.awesome_tooltip_event_filter import QAwesomeTooltipEventFilter
     from .ui.css import refresh_theme  # import .ui after showing the splash screen since it's going to take time
     from .ui.main_window import MainWindow
@@ -61,7 +63,6 @@ def _boot(project=None, response=None):
     # install the global tooltip filter
     app.installEventFilter(QAwesomeTooltipEventFilter(app))
 
-    GlobalInfo.gui_thread = QThread.currentThread()
     main_window = MainWindow(app=app)
     if project is not None:
         main_window.workspace.main_instance.project.am_obj = project

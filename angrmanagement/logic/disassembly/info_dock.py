@@ -34,11 +34,24 @@ class InfoDock:
     """
     Stores information associated to a disassembly view. Such information will be shared between the graph view and the
     linear view.
+
+    :param owner:       What the selection reports to: an object with ``instance``,
+                        ``set_synchronized_cursor_address(addr)``,
+                        ``show_instruction(addr, insn_pos=, use_animation=)``, ``published_view_state`` and
+                        ``notify_view_state_updated()``; the disassembly presenter, or a view that has them.
+    :param disasm_view: The frontend's view, which display nodes call for context menus and jumps; the owner if
+                        not given. ``InfoDock(disasm_view=view)``, the call before there was an owner, makes the view
+                        both.
     """
 
-    def __init__(self, disasm_view) -> None:
+    def __init__(self, owner=None, disasm_view=None) -> None:
         super().__init__()
-        self.disasm_view = disasm_view
+        if owner is None:
+            owner = disasm_view
+        if owner is None:
+            raise TypeError("InfoDock needs an owner or a disasm_view")
+        self.owner = owner
+        self.disasm_view = disasm_view if disasm_view is not None else owner
 
         self.induction_variable_analysis = None
         self.variable_manager = None
@@ -73,7 +86,7 @@ class InfoDock:
         self.hovered_block.am_obj = None
 
     def copy(self) -> InfoDock:
-        r = InfoDock(self.disasm_view)
+        r = InfoDock(self.owner, self.disasm_view)
         r.variable_manager = self.variable_manager
         r.highlight_mode = self.highlight_mode
         r.selected_insns.am_obj = set(self.selected_insns.am_obj)
@@ -109,9 +122,9 @@ class InfoDock:
         self._update_published_view_state()
 
     def select_instruction(self, insn_addr, unique: bool = True, insn_pos=None, use_animation: bool = True) -> None:
-        arch = self.disasm_view.instance.project.arch
+        arch = self.owner.instance.project.arch
         real_addr = get_real_address_if_arm(arch, insn_addr)
-        self.disasm_view.set_synchronized_cursor_address(real_addr)
+        self.owner.set_synchronized_cursor_address(real_addr)
 
         self.unselect_all_labels()
         self.unselect_block_tree_node()
@@ -122,7 +135,7 @@ class InfoDock:
                 self.selected_insns.add(insn_addr)
             else:
                 self.selected_insns.add(insn_addr)
-            self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos, use_animation=use_animation)
+            self.owner.show_instruction(insn_addr, insn_pos=insn_pos, use_animation=use_animation)
             self.selected_insns.am_event(insn_addr=insn_addr)
 
         self._update_published_view_state()
@@ -140,7 +153,7 @@ class InfoDock:
         self._update_published_view_state()
 
     def select_ail_statement(self, stmt_addr, unique: bool = True) -> None:
-        self.disasm_view.set_synchronized_cursor_address(stmt_addr[0])
+        self.owner.set_synchronized_cursor_address(stmt_addr[0])
 
         self.unselect_all_labels()
         self.unselect_all_instructions()
@@ -198,9 +211,9 @@ class InfoDock:
             self.selected_operands.am_event()
 
     def select_label(self, label_addr) -> None:
-        arch = self.disasm_view.instance.project.arch
+        arch = self.owner.instance.project.arch
         real_addr = get_real_address_if_arm(arch, label_addr)
-        self.disasm_view.set_synchronized_cursor_address(real_addr)
+        self.owner.set_synchronized_cursor_address(real_addr)
 
         # only one label can be selected at a time
         # also, clear selection of instructions and operands
@@ -266,7 +279,7 @@ class InfoDock:
             return False
         else:
             self.select_operand(insn_addr, operand_idx, operand, unique=unique)
-            self.disasm_view.current_graph.show_instruction(insn_addr, insn_pos=insn_pos)
+            self.owner.show_instruction(insn_addr, insn_pos=insn_pos)
             return True
 
     def select_variable(self, unified_variable: SimVariable, unique: bool = True) -> None:
@@ -382,5 +395,5 @@ class InfoDock:
             self.select_block_tree_node(obj)
 
     def _update_published_view_state(self) -> None:
-        self.disasm_view.published_view_state.cursors = self.selected_insns.union(self.selected_labels)
-        self.disasm_view.notify_view_state_updated()
+        self.owner.published_view_state.cursors = self.selected_insns.union(self.selected_labels)
+        self.owner.notify_view_state_updated()

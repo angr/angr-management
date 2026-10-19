@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from angr import SimState
     from angr.knowledge_plugins import Function
 
-    from angrmanagement.ui.workspace import Workspace
+    from angrmanagement.logic.workspace import BaseWorkspace
 
 
 try:
@@ -34,7 +34,7 @@ class BintraceDebugger(Debugger):
     Trace playback debugger.
     """
 
-    def __init__(self, trace: BintraceTrace, workspace: Workspace) -> None:
+    def __init__(self, trace: BintraceTrace, workspace: BaseWorkspace) -> None:
         super().__init__(workspace)
         assert bintrace is not None
         assert isinstance(trace, BintraceTrace)

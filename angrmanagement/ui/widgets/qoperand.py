@@ -3,11 +3,10 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from angr.analyses.disassembly import ConstantOperand, MemoryOperand, RegisterOperand, Value
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtWidgets import QApplication, QGraphicsSimpleTextItem
 
-from angrmanagement.logic.disassembly.info_dock import OperandDescriptor, OperandHighlightMode
+from angrmanagement.present.block_tree.disasm_nodes import OperandNode
 
 from .qgraph_object import QCachedGraphicsItem
 
@@ -18,6 +17,11 @@ log = logging.getLogger(__name__)
 
 
 class QOperand(QCachedGraphicsItem):
+    """
+    One operand of an instruction on the scene: the text items of an :class:`OperandNode`, which owns the text, the
+    variable and the branch target.
+    """
+
     BRANCH_TARGETS_SPACING = 5
     LABEL_VARIABLE_SPACING = 5
     VARIABLE_IDENT_SPACING = 5
@@ -37,6 +41,7 @@ class QOperand(QCachedGraphicsItem):
         branch_targets,
         config,
         parent=None,
+        node: OperandNode | None = None,
     ) -> None:
         super().__init__(parent=parent)
 
@@ -53,24 +58,30 @@ class QOperand(QCachedGraphicsItem):
         self.is_indirect_branch = is_indirect_branch
         self.branch_targets = branch_targets
 
-        self._branch_target: int | None = None
-
-        # the variable involved
-        self.variable = None
-
         self._config = config
+        #: the text of the operand and what it refers to
+        self.node = (
+            node
+            if node is not None
+            else OperandNode(
+                instance,
+                func_addr,
+                disasm,
+                infodock,
+                insn,
+                operand,
+                operand_index,
+                is_branch_target,
+                is_indirect_branch,
+                branch_targets,
+            )
+        )
 
         # "widgets"
-        self._label = None
         self._label_item: QGraphicsSimpleTextItem | None = None
-        self._variable_label = None
         self._variable_label_item: QGraphicsSimpleTextItem | None = None
-        self._variable_ident = None
         self._variable_ident_item: QGraphicsSimpleTextItem | None = None
-        self._branch_targets = None
-        self._branch_targets_text = None
         self._branch_targets_item: QGraphicsSimpleTextItem | None = None
-        self._is_target_func = None
 
         self._width = None
         self._height = None
@@ -78,50 +89,69 @@ class QOperand(QCachedGraphicsItem):
         self._init_widgets()
 
     #
-    # Properties
+    # Properties: the node's
     #
 
     @property
     def text(self):
-        return self._label
+        return self.node.text
+
+    @property
+    def variable(self):
+        """The variable involved."""
+        return self.node.variable
 
     @property
     def is_constant(self):
-        return isinstance(self.operand, ConstantOperand)
+        return self.node.is_constant
 
     @property
     def constant_value(self):
-        if self.is_constant:
-            return self.operand.cs_operand.imm
-        return None
+        return self.node.constant_value
 
     @property
     def is_constant_memory(self):
-        return (
-            isinstance(self.operand, MemoryOperand)
-            and len(self.operand.values) == 1
-            and isinstance(self.operand.values[0], Value)
-            and isinstance(self.operand.values[0].val, int)
-        )
+        return self.node.is_constant_memory
 
     @property
     def constant_memory_value(self):
-        if self.is_constant_memory:
-            return self.operand.values[0].val
-        return None
+        return self.node.constant_memory_value
 
     @property
     def selected(self):
-        return self.infodock.is_operand_selected(self.insn.addr, self.operand_index)
+        return self.node.selected
 
     @property
     def operand_descriptor(self):
-        return OperandDescriptor(
-            self.text,
-            self.constant_value,
-            func_addr=self.func_addr,
-            variable_ident=self.variable.ident if self.variable is not None else None,
-        )
+        return self.node.operand_descriptor
+
+    @property
+    def _branch_target(self) -> int | None:
+        return self.node.branch_target
+
+    @property
+    def _is_target_func(self):
+        return self.node.is_target_func
+
+    @property
+    def _label(self):
+        return self.node.label
+
+    @property
+    def _variable_label(self):
+        return self.node.variable_label
+
+    @property
+    def _variable_ident(self):
+        return self.node.variable_ident
+
+    @property
+    def _branch_targets(self):
+        return self.node.branch_targets_shown
+
+    @property
+    def _branch_targets_text(self):
+        return self.node.branch_targets_text
 
     #
     # Event handlers
@@ -143,16 +173,8 @@ class QOperand(QCachedGraphicsItem):
             super().mousePressEvent(event)
 
     def mouseDoubleClickEvent(self, event) -> None:
-        button = event.button()
-        if button == Qt.MouseButton.LeftButton:
-            if self._branch_target is not None:
-                self.disasm_view.jump_to(self._branch_target, src_ins_addr=self.insn.addr, use_animation=True)
-                return
-            if self.is_constant:
-                self.disasm_view.jump_to(self.constant_value, src_ins_addr=self.insn.addr, use_animation=True)
-                return
-            if self.is_constant_memory:
-                self.disasm_view.jump_to(self.constant_memory_value, src_ins_addr=self.insn.addr, use_animation=True)
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.node.activate_double("left", self.disasm_view.jump_to)
         else:
             super().mouseDoubleClickEvent(event)
 
@@ -172,227 +194,59 @@ class QOperand(QCachedGraphicsItem):
             self._branch_targets_item.setVisible(visible)
 
     def refresh(self) -> None:
+        self.node.refresh()
         self._init_widgets()
         self.recalculate_size()
 
     def paint(self, painter, option, widget) -> None:  # pylint: disable=unused-argument
-        # Background
-        if self.selected:
-            painter.setPen(self._config.disasm_view_operand_select_color)
-            painter.setBrush(self._config.disasm_view_operand_select_color)
+        # Background: selected, or highlighted as equal to a selected operand
+        background = self.node.background_style()
+        if background:
+            color = getattr(self._config, background)
+            painter.setPen(color)
+            painter.setBrush(color)
             painter.drawRect(0, 0, self.width, self.height)
-        else:
-            for _, selected_operand_desc in self.infodock.selected_operands.items():
-                if self._equals_for_highlighting_purposes(selected_operand_desc):
-                    painter.setBrush(self._config.disasm_view_operand_highlight_color)
-                    painter.setPen(self._config.disasm_view_operand_highlight_color)
-                    painter.drawRect(0, 0, self.width, self.height)
-                    break
 
     #
     # Private methods
     #
 
-    def _branch_target_for_operand(self, operand, branch_targets):
-        if not branch_targets:
-            return None
-
-        if len(branch_targets) == 1:
-            return next(iter(branch_targets))
-
-        # there are more than one targets
-        # we pick the one that complies with the operand's text
-        # my solution is pretty hackish...
-
-        imm = self.constant_value
-        if imm is not None and imm in branch_targets:
-            # problem solved
-            return imm
-        else:
-            # umm why?
-            pass
-
-        # try to render it
-        rendered = operand.render()[0]
-        for t in branch_targets:
-            if rendered in (f"{t:x}", f"{t:#x}"):
-                return t
-            if t == rendered:
-                return t
-
-        # ouch not sure what to do
-        log.warning('Cannot determine branch targets for operand "%s". Please report on GitHub.', rendered)
-        # return a random one
-        return next(iter(branch_targets))
-
-    @staticmethod
-    def _first_n_branch_targets(branch_targets, n):
-        if not branch_targets:
-            return []
-
-        return list(branch_targets)[:n]
+    def _remove_item(self, item: QGraphicsSimpleTextItem | None) -> None:
+        if item is not None and (scene := self.scene()) is not None:
+            scene.removeItem(item)
 
     def _init_widgets(self) -> None:
-        if self.is_branch_target:
-            # a branch instruction
-
-            is_target_func = bool(self.branch_targets and next(iter(self.branch_targets)) in self.disasm.kb.functions)
-
-            self._label = self.operand.render()[0]
-            self._is_target_func = is_target_func
-
-            if self.is_indirect_branch:
-                # indirect jump
-                self._branch_targets = self.branch_targets
-                first_n_targets = self._first_n_branch_targets(self._branch_targets, 3)
-                if first_n_targets:
-                    targets = []
-                    for t in first_n_targets:
-                        txt = None
-                        if is_target_func:
-                            # try to get a function
-                            try:
-                                target_func = self.disasm.kb.functions.get_by_addr(t)
-                                txt = target_func.demangled_name
-                            except KeyError:
-                                pass
-                        # is the address a label?
-                        if txt is None and t in self.disasm.kb.labels:
-                            txt = self.disasm.kb.labels[t]
-                        if txt is None:
-                            # use the hex text
-                            txt = f"{t:#08x}"
-                        targets.append(txt)
-                    self._branch_targets_text = "[ " + ", ".join(targets) + " ]"
-                else:
-                    self._branch_targets_text = "[ unknown ]"
-
-                if self._branch_targets and len(self._branch_targets) == 1:
-                    self._branch_target = next(iter(self._branch_targets))
-
-            else:
-                self._branch_target = self._branch_target_for_operand(self.operand, self.branch_targets)
-
-        else:
-            # not a branch
-
-            formatting = {}
-            if isinstance(self.operand, MemoryOperand):
-                variable_sort = "memory"
-            elif isinstance(self.operand, RegisterOperand):
-                variable_sort = "register"
-            else:
-                variable_sort = None
-
-            # without displaying variable
-            self._label = self.operand.render(formatting=formatting)[0]
-
-            if variable_sort and self.variable_manager is not None:
-                # try find the corresponding variable
-                variable_and_offsets = self.variable_manager[self.func_addr].find_variables_by_insn(
-                    self.insn.addr, variable_sort
-                )
-                if variable_and_offsets:
-                    variable, offset = self._pick_variable(variable_and_offsets)
-
-                    if variable is not None:
-                        self.variable = variable
-                        self._variable_ident = f"<{variable.ident}>"
-                        if offset is None:
-                            offset = 0
-
-                        variable_str = variable.name
-
-                        ident = (self.insn.addr, "operand", self.operand_index)
-                        if "custom_values_str" not in formatting:
-                            formatting["custom_values_str"] = {}
-                        if variable_sort == "memory":
-                            custom_value_str = f"{variable_str}" if offset == 0 else f"{variable_str}[{offset}]"
-                        else:
-                            custom_value_str = ""
-
-                        ##
-                        # Hacks
-                        ##
-                        if self.infodock.induction_variable_analysis is not None:
-                            r = self.infodock.induction_variable_analysis.variables.get(variable.ident, None)
-                            if r is not None and r.expr.__class__.__name__ == "InductionExpr":
-                                custom_value_str = f"i*{r.expr.stride}+{r.expr.init}"
-                            if (
-                                r is not None
-                                and r.expr.__class__.__name__ == "Add"
-                                and r.expr.operands[0].__class__.__name__ == "InductionExpr"
-                            ):
-                                custom_value_str = (
-                                    f"i*{r.expr.operands[0].stride}+"
-                                    "{r.expr.operands[0].init + r.expr.operands[1].value}"
-                                )
-
-                        formatting["custom_values_str"][ident] = custom_value_str
-
-                        if "show_prefix" not in formatting:
-                            formatting["show_prefix"] = {}
-                        formatting["show_prefix"][ident] = "False"
-
-                        if "values_style" not in formatting:
-                            formatting["values_style"] = {}
-                        formatting["values_style"][ident] = "curly"
-
-                    # with variable displayed
-                    if variable_sort == "memory":
-                        self._variable_label = self.operand.render(formatting=formatting)[0]
-                    else:
-                        self._variable_label = ""
-
-        if self._branch_target or self._branch_targets:
-            if self._is_target_func:
-                label_color = self._config.disasm_view_target_addr_color
-            else:
-                label_color = self._config.disasm_view_antitarget_addr_color
-        else:
-            if self.is_constant:
-                label_color = self._config.disasm_view_operand_constant_color
-            else:
-                label_color = self._config.disasm_view_operand_color
+        node = self.node
 
         # label
         # [rax]
-        if self._label_item is not None:
-            if self.scene() is not None:
-                self.scene().removeItem(self._label_item)
-            self._label_item = None
-        self._label_item = QGraphicsSimpleTextItem(self._label, self)
+        self._remove_item(self._label_item)
+        self._label_item = QGraphicsSimpleTextItem(node.label, self)
         self._label_item.setFont(self._config.disasm_font)
-        self._label_item.setBrush(label_color)
+        self._label_item.setBrush(getattr(self._config, node.label_style))
 
         # variable
         # {s_10}
-        if self._variable_label_item is not None:
-            if self.scene() is not None:
-                self.scene().removeItem(self._variable_label_item)
-            self._variable_label_item = None
-        if self._variable_label:
-            self._variable_label_item = QGraphicsSimpleTextItem(self._variable_label, self)
+        self._remove_item(self._variable_label_item)
+        self._variable_label_item = None
+        if node.variable_label:
+            self._variable_label_item = QGraphicsSimpleTextItem(node.variable_label, self)
             self._variable_label_item.setFont(self._config.disasm_font)
             self._variable_label_item.setBrush(self._config.disasm_view_variable_label_color)
 
         # additional branch targets
-        if self._branch_targets_item is not None:
-            if self.scene() is not None:
-                self.scene().removeItem(self._branch_targets_item)
-            self._branch_targets_item = None
-        if self._branch_targets_text:
-            self._branch_targets_item = QGraphicsSimpleTextItem(self._branch_targets_text, self)
+        self._remove_item(self._branch_targets_item)
+        self._branch_targets_item = None
+        if node.branch_targets_text:
+            self._branch_targets_item = QGraphicsSimpleTextItem(node.branch_targets_text, self)
             self._branch_targets_item.setFont(self._config.disasm_font)
             self._branch_targets_item.setBrush(self._config.disasm_view_branch_target_text_color)
 
         # variable identifier
-        if self._variable_ident_item is not None:
-            if self.scene() is not None:
-                self.scene().removeItem(self._variable_ident_item)
-            self._variable_ident_item = None
-        if self.variable is not None and self.disasm_view.show_variable_identifier:
-            self._variable_ident_item = QGraphicsSimpleTextItem(self._variable_ident, self)
+        self._remove_item(self._variable_ident_item)
+        self._variable_ident_item = None
+        if node.variable is not None and self.disasm_view.show_variable_identifier:
+            self._variable_ident_item = QGraphicsSimpleTextItem(node.variable_ident, self)
             self._variable_ident_item.setFont(self._config.disasm_font)
             self._variable_ident_item.setBrush(self._config.disasm_view_variable_ident_color)
 
@@ -400,6 +254,7 @@ class QOperand(QCachedGraphicsItem):
 
     def _layout_items_and_update_size(self) -> None:
         x, y = 0, 0
+        assert self._label_item is not None
 
         # label
         self._label_item.setPos(x, y)
@@ -435,101 +290,13 @@ class QOperand(QCachedGraphicsItem):
         return QRectF(0, 0, self._width, self._height)
 
     def _pick_variable(self, variable_and_offsets):
-        """
-        Pick the corresponding variable for the current operand.
-
-        :param list variable_and_offsets:   A list of variables and the offsets into each variable.
-        :return:                            A tuple of variable and the offset.
-        :rtype:                             tuple
-        """
-
-        if isinstance(self.operand, MemoryOperand):
-            if len(variable_and_offsets) > 1:
-                log.error("Instruction %#x has two memory operands. Please report it on GitHub.", self.insn.addr)
-            return variable_and_offsets[0]
-
-        elif isinstance(self.operand, RegisterOperand):
-            # there might be multiple register-type variables for an instruction. pick the right one is... not easy
-
-            the_reg = self.operand.register
-            if the_reg is None:
-                # huh, it does not have a Register child
-                return None, None
-
-            reg_name = the_reg.reg
-            arch = self.instance.project.arch
-
-            if len(variable_and_offsets) == 1:
-                # only one candidate...
-                var, offset = variable_and_offsets[0]
-                if arch.registers[reg_name][0] == var.reg:
-                    return var, offset
-                return None, None
-
-            if self.operand_index > 0:
-                # this is the source operand
-                # which variable is read here?
-                for var, offset in variable_and_offsets:
-                    if arch.registers[reg_name][0] == var.reg and self._variable_has_access(
-                        var, self.insn.addr, "read"
-                    ):
-                        return var, offset
-
-                log.debug(
-                    "Cannot find any source variable for operand %d at instruction %#x.",
-                    self.operand_index,
-                    self.insn.addr,
-                )
-                return None, None
-
-            # this is the destination operand
-            # which variable is written here?
-            for var, offset in variable_and_offsets:
-                if arch.registers[reg_name][0] == var.reg and self._variable_has_access(var, self.insn.addr, "write"):
-                    return var, offset
-
-            log.debug(
-                "Cannot find any destination variable for operand %d at instruction %#x.",
-                self.operand_index,
-                self.insn.addr,
-            )
-            # just return the first one
-            return None, None
-
-        else:
-            # what's this type? why am I here?
-            log.error("_pick_variable: Unsupported operand type %s.", self.operand.__class__)
-
-            return None, None
+        return self.node.pick_variable(variable_and_offsets)
 
     def _variable_has_access(self, variable, ins_addr, access_type):
-        if variable not in self.variable_manager[self.func_addr]._variable_accesses:
-            log.error("Variable %s does not have any accessing records.", variable)
-            return False
-
-        accesses = self.variable_manager[self.func_addr]._variable_accesses[variable]
-        return any(access.location.ins_addr == ins_addr and access.access_type == access_type for access in accesses)
+        return self.node.variable_has_access(variable, ins_addr, access_type)
 
     def _equals_for_highlighting_purposes(self, other):
         """
-
         :param OperandDescriptor other: The other operand to compare with.
-        :return:
         """
-
-        if other is None:
-            return False
-
-        highlight_mode = self.infodock.highlight_mode
-
-        if highlight_mode == OperandHighlightMode.SAME_TEXT or self.variable is None:
-            # when there is no related variable, we highlight as long as they have the same text
-            return other.text == self.text
-        elif (
-            highlight_mode == OperandHighlightMode.SAME_IDENT
-            and self.variable is not None
-            and other.variable_ident is not None
-        ):
-            return self.func_addr == other.func_addr and self.variable.ident == other.variable_ident
-
-        return False
+        return self.node.equals_for_highlighting_purposes(other)

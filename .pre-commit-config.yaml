@@ -1,4 +1,4 @@
-exclude: ^angrmanagement/vendor
+exclude: ^(angrmanagement/vendor|tests/__snapshots__/)
 repos:
 
 #

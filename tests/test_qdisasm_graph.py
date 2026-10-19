@@ -4,9 +4,12 @@ from __future__ import annotations
 import os
 import sys
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import angr
-from common import AngrManagementTestCase, test_location
+from common import AngrManagementTestCase, open_analyzed_project, test_location
+from refused_gate import refuse_gate_reads
 
 from angrmanagement.ui.views import DisassemblyView
 
@@ -69,6 +72,30 @@ class TestQDisassemblyGraph(AngrManagementTestCase):
         entry_block = next((b for b in flow_graph.blocks if b.addr == func.addr), None)
         assert entry_block is not None
         assert isinstance(entry_block.disasm, angr.analyses.decompiler.clinic.Clinic)
+
+    def test_a_layout_put_off_until_cfg_recovery_is_done_selects_what_was_selected(self):
+        main = self.main
+        proj = open_analyzed_project(main, os.path.join(test_location, "x86_64", "fauxware"))
+        func = proj.kb.functions["main"]
+        disasm_view = main.workspace._get_or_create_view("disassembly", DisassemblyView)
+        disasm_view.display_disasm_graph()
+        disasm_view.display_function(func)
+        flow_graph = disasm_view.flow_graph
+        insn = sorted(addr for block in func.blocks for addr in block.instruction_addrs)[3]
+        # another view's infodock, as when the graph takes over from the linear view
+        old_infodock = SimpleNamespace(selected_insns=SimpleNamespace(am_obj={insn}))
+        disasm_view.infodock.clear_selection()
+
+        # CFG recovery does not stop for the layout: it is put off until the recovery is done
+        deferred = refuse_gate_reads(main.workspace.main_instance.analysis_gate, self.addCleanup)
+        flow_graph.reload(old_infodock)
+        patch.stopall()
+        assert not flow_graph.blocks
+        assert deferred == [flow_graph.reload]
+
+        deferred[0]()
+        assert flow_graph.blocks
+        assert insn in disasm_view.infodock.selected_insns
 
 
 if __name__ == "__main__":

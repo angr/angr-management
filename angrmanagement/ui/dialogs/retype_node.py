@@ -2,22 +2,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import angr
-import pycparser
-from angr import SIM_TYPE_COLLECTIONS
 from angr.analyses.decompiler.structured_codegen import (
     CodegenNode,
     FunctionNode,
     VariableNode,
 )
-from angr.errors import AngrMissingTypeError
-from angr.sim_variable import SimVariable
-from angr.utils.types import dereference_simtype, make_type_reference
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QFont, Qt
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 from angrmanagement.config import Conf
+from angrmanagement.present.code import parse_type_text, type_text
 
 if TYPE_CHECKING:
     from angr.sim_type import SimType
@@ -40,14 +35,7 @@ class TypeBox(QLineEdit):
         self.setFont(QFont(Conf.disasm_font))
 
     def set_type(self, type_: SimType | None, cvariable: VariableNode = None) -> None:
-        if type_ is None:
-            self.setText("")
-            return
-        if cvariable is not None and isinstance(cvariable.unified_variable, SimVariable):
-            type_str = type_.c_repr(name=cvariable.unified_variable.name)
-        else:
-            type_str = type_.c_repr(name="foobar")
-        self.setText(type_str)
+        self.setText(type_text(type_, cvariable))
 
     @property
     def type_str(self):
@@ -71,33 +59,7 @@ class TypeBox(QLineEdit):
         or only specify a type string, like "char". This method first attempts to parse the string as a variable
         declaration, and when it fails, it will parse the string as a pure type string.
         """
-
-        # parse as a variable declaration
-        declaration = type_str
-        if not declaration.endswith(";"):
-            declaration += ";"
-        try:
-            defns = angr.sim_type.parse_defns(declaration, predefined_types=self._predefined_types)
-        except pycparser.c_parser.ParseError:
-            defns = {}
-        if len(defns) == 1:
-            return True, "", next(iter(defns.values()))
-
-        try:
-            parsed_type = angr.sim_type.parse_type(type_str, predefined_types=self._predefined_types)
-        except pycparser.c_parser.ParseError:
-            return False, "Invalid type declaration string", None
-
-        # once the type is parsed, try to convert it into a type reference and see if it resolves
-        ref_type = make_type_reference(parsed_type)
-
-        # try to dereference it using known type collections
-
-        try:
-            deref_type = dereference_simtype(ref_type, list(SIM_TYPE_COLLECTIONS.values()))
-            return True, "", deref_type
-        except AngrMissingTypeError as ex:
-            return False, f"Unknown type {ex.missing_type}", None
+        return parse_type_text(type_str, self._predefined_types)
 
 
 class RetypeNode(QDialog):

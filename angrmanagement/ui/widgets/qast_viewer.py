@@ -212,7 +212,7 @@ class QASTViewer(QFrame):
                     var_name = ast.args[0]
                     self._ast_str = var_name
                 else:
-                    self._ast_str = ast.__repr__(max_depth=1)
+                    self._ast_str = ast.shallow_repr(max_depth=1)
 
     def _determine_size(self) -> None:
         self._height = Conf.symexec_font_height

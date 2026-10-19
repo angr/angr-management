@@ -9,13 +9,13 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QMessageBox,
     QPushButton,
     QRadioButton,
     QVBoxLayout,
     QWidget,
 )
 
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.utils.func import function_prototype_str
 
 if TYPE_CHECKING:
@@ -177,12 +177,11 @@ class DependsOn(QDialog):
                 self.arg = int(self._arg_box.text())
             except ValueError:
                 # invalid argument index
-                QMessageBox(self).critical(
-                    self,
+                GlobalInfo.ui_services.message(
+                    "critical",
                     "Invalid argument index",
-                    f'The given function argument index "{self._arg_box.text()}" is unsupported.',
+                    f'The given function argument index "{self._arg_box.text()}" is unsupported. '
                     "Only integers are allowed.",
-                    buttons=QMessageBox.Ok,
                 )
                 return
         else:

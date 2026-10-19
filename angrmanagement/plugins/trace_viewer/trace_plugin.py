@@ -1,26 +1,30 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QApplication, QFileDialog, QInputDialog, QLineEdit, QMessageBox
-
+from angrmanagement.config.color import Color
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule_async
-from angrmanagement.plugins.base_plugin import BasePlugin
+from angrmanagement.plugins.base_plugin import BasePlugin, qt_frontend
+from angrmanagement.present.marks import Mark
 from angrmanagement.utils.io import download_url, isurl
 
 from .afl_qemu_bitmap import AFLQemuBitmap
 from .multi_trace import MultiTrace
-from .qtrace_viewer import QTraceViewer
 from .trace_statistics import TraceStatistics
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from angrmanagement.data.object_container import ObjectContainer
     from angrmanagement.ui.workspace import Workspace
+
+
+def _qcolor(color: Any) -> Any:
+    """A colour the trace gives (neutral, or a QColor the Qt strip read from its legend) as a QColor."""
+    return color.to_qcolor() if isinstance(color, Color) else color
 
 
 class TraceViewer(BasePlugin):
@@ -43,7 +47,10 @@ class TraceViewer(BasePlugin):
     def teardown(self) -> None:
         # I don't really know a better way to do this. tbh allowing arbitrary widget additions is probably intractable
         for trace_viewer in self._viewers:
-            trace_viewer.hide()
+            if qt_frontend():
+                trace_viewer.hide()
+            else:
+                trace_viewer.remove()
 
     #
     # Forwarding properties
@@ -66,6 +73,10 @@ class TraceViewer(BasePlugin):
         view = self.workspace.view_manager.first_view_in_category("disassembly")
         if view is not None:
             view.redraw_current_graph()
+        for strip in self._viewers:
+            refresh_trace = getattr(strip, "refresh_trace", None)
+            if refresh_trace is not None:
+                refresh_trace()
         # refresh function table
         view = self.workspace.view_manager.first_view_in_category("functions")
         if view is not None:
@@ -112,13 +123,23 @@ class TraceViewer(BasePlugin):
     GRAPH_TRACE_LEGEND_SPACING = 20
 
     def instrument_disassembly_view(self, dview) -> None:
-        trace_viewer = QTraceViewer(self.workspace, dview, parent=dview)
-        self._viewers.append(trace_viewer)
+        if qt_frontend():
+            from .qtrace_viewer import QTraceViewer  # pylint:disable=import-outside-toplevel
 
-        dview.layout().addWidget(trace_viewer)
-        trace_viewer.hide()
+            trace_viewer = QTraceViewer(self.workspace, dview, parent=dview)
+            self._viewers.append(trace_viewer)
 
-    def color_block(self, addr: int):
+            dview.layout().addWidget(trace_viewer)
+            trace_viewer.hide()
+            return
+        # the terminal's disassembly view: the trace strip beside the graph
+        from .tui_strip import TraceStrip  # pylint:disable=import-outside-toplevel
+
+        strip = TraceStrip(self.workspace, dview)
+        self._viewers.append(strip)
+        dview.add_plugin_widget(strip)
+
+    def block_style(self, addr: int):
         if not self.multi_trace.am_none:
             if isinstance(self.multi_trace.am_obj, MultiTrace) and not self.multi_trace.is_active_tab:
                 return None
@@ -126,6 +147,9 @@ class TraceViewer(BasePlugin):
         return None
 
     def handle_click_block(self, qblock, event) -> bool:
+        from PySide6.QtCore import Qt  # pylint:disable=import-outside-toplevel
+        from PySide6.QtWidgets import QApplication  # pylint:disable=import-outside-toplevel
+
         btn = event.button()
 
         if (
@@ -154,11 +178,20 @@ class TraceViewer(BasePlugin):
         if strata is not None:
             legend_x = 0 - self.GRAPH_TRACE_LEGEND_WIDTH - self.GRAPH_TRACE_LEGEND_SPACING
             for i, w in strata:
-                color = self.trace.get_mark_color(qinsn.insn.addr, i)
+                color = _qcolor(self.trace.get_mark_color(qinsn.insn.addr, i))
                 painter.setPen(color)
                 painter.setBrush(color)
                 painter.drawRect(legend_x, 0, w, qinsn.height)
                 legend_x += w
+
+    def decorate_insn(self, addr: int, view) -> list[Mark]:
+        """How often the trace passed the instruction, as a mark: the terminal's form of the Qt legend strata."""
+        if qt_frontend() or self.trace.am_none:
+            return []
+        if isinstance(self.multi_trace.am_obj, MultiTrace) and not self.multi_trace.is_active_tab:
+            return []
+        count = self.trace.get_count(addr)
+        return [Mark(f"{count}×", "disasm.mark.trace", "before", 1)] if count > 0 else []
 
     def _gen_strata(self, addr: int):
         if not self.trace.am_none:
@@ -179,7 +212,7 @@ class TraceViewer(BasePlugin):
     # features for the functions view
     #
 
-    def color_func(self, func):
+    def func_style(self, func):
         if not self.multi_trace.am_none:
             if isinstance(self.multi_trace.am_obj, MultiTrace):
                 if self.multi_trace.is_active_tab:
@@ -192,8 +225,8 @@ class TraceViewer(BasePlugin):
 
         if not self.trace.am_none:
             if func.addr in self.trace.func_addr_in_trace:
-                return QColor(0xF0, 0xE7, 0xDA)
-            return QColor(0xEE, 0xEE, 0xEE)
+                return Color(0xF0, 0xE7, 0xDA)
+            return Color(0xEE, 0xEE, 0xEE)
         return None
 
     FUNC_COLUMNS = ("Coverage",)
@@ -243,160 +276,151 @@ class TraceViewer(BasePlugin):
 
         mapping.get(idx)()
 
-    def add_trace(self, trace_path=None, base_addr=None) -> None:
-        trace, base_addr = self._open_trace(trace_path, base_addr)
-        if trace is None or base_addr is None:
-            return
+    # The questions below take a continuation, so that they ask through the UI services in either frontend: the Qt
+    # dialogs answer at once, the terminal's screens when the user does.
 
-        self._add_trace(trace, base_addr)
+    def add_trace(self, trace_path=None, base_addr=None) -> None:
+        def then(trace, base) -> None:
+            if trace is not None and base is not None:
+                self._add_trace(trace, base)
+
+        self._open_trace(trace_path, base_addr, then)
 
     def reset_trace(self) -> None:
         self.trace.am_obj = None
         self.trace.am_event()
+
         self.multi_trace.am_obj = None
         self.multi_trace.am_event()
 
     def open_bitmap_multi_trace(self, trace_path=None, base_addr=None) -> None:
-        r = self._open_bitmap_multi_trace(trace_path, base_addr)
-        if r is None:
-            return
-        trace, base_addr = r
-        self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, base_addr)
-        self.multi_trace.am_event()
+        def then(trace, base) -> None:
+            self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, base)
+            self.multi_trace.am_event()
+
+        self._open_bitmap_multi_trace(trace_path, base_addr, then)
 
     def open_inverted_bitmap_multi_trace(self, trace_path=None, base_addr=None) -> None:
-        r = self._open_bitmap_multi_trace(trace_path, base_addr)
-        if r is None:
-            return
-        trace, base_addr = r
-        self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, base_addr, bits_inverted=True)
-        self.multi_trace.am_event()
+        def then(trace, base) -> None:
+            self.multi_trace.am_obj = AFLQemuBitmap(self.workspace, trace, base, bits_inverted=True)
+            self.multi_trace.am_event()
+
+        self._open_bitmap_multi_trace(trace_path, base_addr, then)
 
     def reset_bitmap(self) -> None:
         self.multi_trace.am_obj = None
         self.multi_trace.am_event()
 
-    def _open_bitmap_multi_trace(self, trace_path, base_addr):
+    @staticmethod
+    def _message(title: str, text: str) -> None:
+        GlobalInfo.ui_services.message("critical", title, text)
+
+    def _download(self, url: str) -> bytes | None:
+        try:
+            return download_url(url, parent=self.workspace._main_window, to_file=False)
+        except InvalidURLError:
+            self._message("Downloading failed", "angr management failed to download the file. The URL is invalid.")
+        except UnexpectedStatusCodeError as ex:
+            self._message(
+                "Downloading failed",
+                "angr management failed to retrieve the header of the file. "
+                f"The HTTP request returned an unexpected status code {ex.status_code}.",
+            )
+        return None
+
+    def _open_bitmap_multi_trace(self, trace_path, base_addr, then: Callable[[Any, int], None]) -> None:
+        """Get the bitmap at ``trace_path`` (asked for when None) and its base address (asked for when None)."""
         if trace_path is None:
-            trace_path = self._open_trace_dialog(tfilter="")
-            if trace_path is None:
-                return None
-
+            self._open_trace_dialog(
+                "", lambda path: self._open_bitmap_multi_trace(path, base_addr, then) if path is not None else None
+            )
+            return
         if base_addr is None:
-            base_addr = self._open_baseaddr_dialog(0x4000000000)
-            if base_addr is None:
-                return None
-
+            self._open_baseaddr_dialog(
+                0x4000000000,
+                lambda base: self._open_bitmap_multi_trace(trace_path, base, then) if base is not None else None,
+            )
+            return
         if isurl(trace_path):
-            try:
-                trace = download_url(trace_path, parent=self.workspace._main_window, to_file=False)
-            except InvalidURLError:
-                QMessageBox.critical(
-                    self.workspace._main_window,
-                    "Downloading failed",
-                    "angr management failed to download the file. The URL is invalid.",
-                )
-                return None
-            except UnexpectedStatusCodeError as ex:
-                QMessageBox.critical(
-                    self.workspace._main_window,
-                    "Downloading failed",
-                    "angr management failed to retrieve the header of the file. "
-                    f"The HTTP request returned an unexpected status code {ex.status_code}.",
-                )
-                return None
+            trace = self._download(trace_path)
+            if trace is None:
+                return
         else:
             with open(trace_path, "rb") as f:
                 trace = f.read()
+        then(trace, base_addr)
 
-        return trace, base_addr
-
-    def _open_trace(self, trace_path, base_addr):
+    def _open_trace(self, trace_path, base_addr, then: Callable[[Any, Any], None]) -> None:
         if trace_path is None:
-            return self._open_json_trace_dialog()
+            self._open_json_trace_dialog(then)
+            return
+        if isurl(trace_path):
+            trace_bytes = self._download(trace_path)
+            trace = json.loads(trace_bytes) if trace_bytes is not None else None
         else:
-            if isurl(trace_path):
-                try:
-                    trace_bytes = download_url(trace_path, parent=self.workspace._main_window, to_file=False)
-                    trace = json.loads(trace_bytes)
-                except InvalidURLError:
-                    QMessageBox.critical(
-                        self.workspace._main_window,
-                        "Downloading failed",
-                        "angr management failed to download the file. The URL is invalid.",
-                    )
-                    trace = None
-                except UnexpectedStatusCodeError as ex:
-                    QMessageBox.critical(
-                        self.workspace._main_window,
-                        "Downloading failed",
-                        "angr management failed to retrieve the header of the file. "
-                        f"The HTTP request returned an unexpected status code {ex.status_code}.",
-                    )
-                    trace = None
-            else:
-                with open(trace_path) as f:
-                    trace = json.load(f)
+            with open(trace_path) as f:
+                trace = json.load(f)
+        if base_addr is None:
+            self._open_baseaddr_dialog(0x4000000000, lambda base: then(trace, base))
+            return
+        then(trace, base_addr)
 
-            if base_addr is None:
-                base_addr = self._open_baseaddr_dialog(0x4000000000)
+    @staticmethod
+    def _open_trace_dialog(tfilter, then: Callable[[str | None], None]) -> None:
+        def picked(files: list[str]) -> None:
+            file_path = files[0] if files else ""
+            try:
+                with open(file_path, "rb") as f:
+                    f.read(1)
+            except FileNotFoundError:
+                then(None)
+                return
+            then(file_path)
 
-            return trace, base_addr
+        GlobalInfo.ui_services.pick_open_files_async("Open a trace", "", tfilter, False, picked)
 
-    def _open_trace_dialog(self, tfilter):
-        file_path, _ = QFileDialog.getOpenFileName(None, "Open a trace", "", tfilter)
-        try:
-            with open(file_path, "rb") as f:
-                f.read(1)
-        except FileNotFoundError:
-            return None
+    @staticmethod
+    def _open_baseaddr_dialog(default_base, then: Callable[[int | None], None]) -> None:
+        def answered(base_addr: str | None) -> None:
+            try:
+                then(int(base_addr or "", 16))
+            except ValueError:
+                then(None)
 
-        return file_path
-
-    def _open_baseaddr_dialog(self, default_base):
-        base_addr, _ = QInputDialog.getText(
-            None, "Input Trace Base Address", "Base Address:", QLineEdit.Normal, hex(default_base)
+        GlobalInfo.ui_services.prompt_text_async(
+            "Input Trace Base Address", "Base Address:", hex(default_base), answered
         )
-        try:
-            return int(base_addr, 16)
-        except ValueError:
-            return None
 
-    def _open_json_trace_dialog(self) -> tuple[list[int] | None, int | None]:
-        # project = self.workspace.instance.project
-        trace_file_name = self._open_trace_dialog(tfilter="json (*.json)")
+    def _open_json_trace_dialog(self, then: Callable[[Any, Any], None]) -> None:
+        def picked(trace_file_name: str | None) -> None:
+            if trace_file_name is None:
+                then(None, None)
+                return
+            with open(trace_file_name) as f:
+                trace = json.load(f)
+            if not isinstance(trace, dict):
+                self._message(
+                    "Incorrect trace format", "Failed to open the JSON trace. We expect the JSON trace to be a dict."
+                )
+                then(None, None)
+                return
+            if "bb_addrs" not in trace:
+                self._message(
+                    "Incorrect trace format",
+                    "Failed to open the JSON trace. We expect the JSON trace to contain the field 'bb_addrs'.",
+                )
+                then(None, None)
+                return
+            if not isinstance(trace["bb_addrs"], list):
+                self._message(
+                    "Incorrect trace format",
+                    "Failed to open the JSON trace. We expect the JSON trace bb_addrs field to be a list of integers.",
+                )
+                then(None, None)
+                return
+            self._open_baseaddr_dialog(0x4000000000, lambda base: then(trace, base))
 
-        if trace_file_name is None:
-            return None, None
-
-        with open(trace_file_name) as f:
-            trace = json.load(f)
-
-        if not isinstance(trace, dict):
-            QMessageBox.critical(
-                self.workspace._main_window,
-                "Incorrect trace format",
-                "Failed to open the JSON trace. We expect the JSON trace to be a dict.",
-            )
-            return None, None
-        elif "bb_addrs" not in trace:
-            QMessageBox.critical(
-                self.workspace._main_window,
-                "Incorrect trace format",
-                "Failed to open the JSON trace. We expect the JSON trace to contain the field 'bb_addrs'.",
-            )
-            return None, None
-        elif not isinstance(trace["bb_addrs"], list):
-            QMessageBox.critical(
-                self.workspace._main_window,
-                "Incorrect trace format",
-                "Failed to open the JSON trace. We expect the JSON trace bb_addrs field to be a list of integers.",
-            )
-            return None, None
-
-        base_addr = self._open_baseaddr_dialog(0x4000000000)
-
-        return trace, base_addr
+        self._open_trace_dialog("json (*.json)", picked)
 
     def _add_trace(self, trace, base_addr) -> None:
         if self.multi_trace.am_obj is None:

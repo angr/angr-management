@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING
 
 from PySide6 import QtWidgets
 
-if TYPE_CHECKING:
-    from angr.analyses.data_dep import BaseDepNode
+from angrmanagement.present.data_dep import search_nodes
 
+if TYPE_CHECKING:
     from angrmanagement.ui.widgets.qdatadepgraph_block import QDataDepGraphBlock
 
 
@@ -57,22 +57,8 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
         Iterate through matching nodes
         """
 
-        def _node_predicate(node: BaseDepNode):
-            nonlocal val_as_int
-            nonlocal addr_as_int
-
-            matches = True
-
-            if val_as_int:
-                matches &= node.value == val_as_int
-            if addr_as_int:
-                matches &= node.ins_addr == addr_as_int
-            if self._curr_name_text:
-                matches &= self._curr_name_text in str(node)
-            return matches
-
         self._error_lbl.hide()
-
+        error = ""
         if (
             self._curr_value_text != self._value_line_edit.text()
             or self._curr_addr_text != self._address_line_edit.text()
@@ -82,17 +68,13 @@ class QDataDepGraphSearch(QtWidgets.QDialog):
             self._curr_addr_text = self._address_line_edit.text() if self._address_line_edit.text() else ""
             self._curr_value_text = self._value_line_edit.text() if self._value_line_edit.text() else ""
             self._curr_name_text = self._name_line_edit.text() if self._name_line_edit.text() else ""
-            try:
-                val_as_int = int(self._curr_value_text, 16) if self._curr_value_text else None
-                addr_as_int = int(self._curr_addr_text, 16) if self._curr_addr_text else None
-            except ValueError:
-                self._error_lbl.setText("Input must be in hexadecimal format!")
-                self._error_lbl.show()
+            blocks = {n.node: n for n in self._data_dep_graph.nodes}
+            found, error = search_nodes(blocks, self._curr_name_text, self._curr_value_text, self._curr_addr_text)
+            self._rel_nodes = [blocks[node] for node in found]
 
-            self._rel_nodes = [n for n in self._data_dep_graph.nodes if _node_predicate(n.node)]
         if len(self._rel_nodes) == 0:
-            # No matching nodes, display an error
-            self._error_lbl.setText("No nodes match the given search criteria.")
+            # No matching nodes (or criteria that are not hex), display an error
+            self._error_lbl.setText(error or "No nodes match the given search criteria.")
             self._error_lbl.show()
             return
         curr_search_node = self._safe_node_retrieval()

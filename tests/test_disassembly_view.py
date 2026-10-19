@@ -320,7 +320,7 @@ class TestKeyboardShortcuts(TestDisassemblyViewBase):
 
         with (
             self._mock_infodock_selection(control, **selection_kwargs),
-            patch("angrmanagement.ui.widgets.qdisasm_base_control.QMessageBox.critical") as mock_msgbox,
+            patch("PySide6.QtWidgets.QMessageBox.critical") as mock_msgbox,
         ):
             control.keyPressEvent(QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_X, Qt.KeyboardModifier.NoModifier))
 

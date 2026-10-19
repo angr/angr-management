@@ -17,6 +17,7 @@ from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, Breakp
 from angrmanagement.data.signatures import SignatureManager
 from angrmanagement.data.trace import Trace
 from angrmanagement.errors import ContainerAlreadyRegisteredError
+from angrmanagement.logic.analysis_gate import AnalysisGate
 from angrmanagement.logic.debugger import DebuggerListManager, DebuggerManager
 
 from .log import LogRecord, initialize
@@ -60,10 +61,10 @@ class Instance:
         self._container_defaults = {}
 
         # where this binary is coming from - if it's loaded from a URL, then original_binary_path will be the URL
-        self.original_binary_path = None
+        self.original_binary_path: str | None = None
         # where this binary is now - if it's loaded from a URL, then binary_path will be its temporary location on the
         # local machine
-        self.binary_path = None
+        self.binary_path: str | None = None
         self.register_container("project", lambda: None, angr.Project | None, "The current angr project")
         self.register_container("simgrs", list, list[angr.SimulationManager], "Global simulation managers list")
         self.register_container("states", list, list[angr.SimState], "Global states list")
@@ -81,6 +82,8 @@ class Instance:
         self.signature_mgr = SignatureManager(self)
         self.debugger_list_mgr = DebuggerListManager()
         self.debugger_mgr = DebuggerManager(self.debugger_list_mgr)
+        #: what the UI thread waits on to read what CFG recovery is still changing
+        self.analysis_gate = AnalysisGate()
 
         self.project.am_subscribe(self.initialize)
 
@@ -90,7 +93,7 @@ class Instance:
         self._insn_backcolor_callback: Callable[[int, bool], None] | None = None  # (addr, is_selected)
         self._label_rename_callback: Callable[[int, str], None] | None = None  # (addr, new_name)
         self._set_comment_callback: Callable[[int, str], None] | None = None  # (addr, comment_text)
-        self.handle_comment_changed_callback: Callable[[int, str, bool, bool, bool], None] | None = None
+        self.handle_comment_changed_callback: Callable[[int, str, str, bool, bool], object] | None = None
 
         # Setup logging
         initialize(self)
@@ -188,7 +191,8 @@ class Instance:
         Get the text representation of an instruction at `addr`.
 
         :param int addr:    Address of the instruction.
-        :return:            Text representation of the instruction, or None if no instruction can be found there.
+        :return:            Text representation of the instruction, or None if no instruction can be found there (or a
+                            running CFG recovery did not stop for the read).
         :rtype:             Optional[str]
         """
 
@@ -206,10 +210,14 @@ class Instance:
                 # TODO: Support getting disassembly from pypcode
                 return "..."
 
-            for insn in obj.capstone.insns:
-                if insn.address == addr:
-                    insn_piece = Instruction(insn, None, project=self.project)
-                    return insn_piece.render()[0]
+            # disassembling uses the capstone handle a running CFG recovery uses
+            with self.analysis_gate.access() as granted:
+                if not granted:
+                    return None
+                for insn in obj.capstone.insns:
+                    if insn.address == addr:
+                        insn_piece = Instruction(insn, None, project=self.project)
+                        return insn_piece.render()[0]
         return None
 
     def delete_hook(self, addr: int) -> None:

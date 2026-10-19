@@ -1,19 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from angr.analyses.decompiler.structured_codegen import (
     FunctionCallNode,
 )
-from angr.calling_conventions import SimRegArg, SimStackArg
 from PySide6.QtCore import QPoint, Qt, QTimer
 from PySide6.QtGui import QFontMetrics, QGuiApplication, QTextOption
 from PySide6.QtWidgets import QFrame, QPlainTextEdit, QVBoxLayout, QWidget
 
 from angrmanagement.config import Conf
-
-if TYPE_CHECKING:
-    from angr.sim_type import SimTypeFunction
+from angrmanagement.present.code import format_prototype
 
 _MAX_WIDTH_PX = 900
 _SHOW_DELAY_MS = 700
@@ -125,38 +120,7 @@ class QNodeTip(QFrame):
 
     @staticmethod
     def _format_prototype(node: FunctionCallNode) -> str | None:
-        func = node.callee_func
-        if func is None or func.prototype is None:
-            return None
-
-        proto: SimTypeFunction = func.prototype
-        name = func.demangled_name or func.name or "sub"
-        ret = proto.returnty.c_repr() if proto.returnty else "void"
-
-        parts = []
-        args = proto.args or ()
-        arg_names = proto.arg_names or ()
-
-        arg_locs = None
-        cc = func.calling_convention
-        if cc is not None and args:
-            arg_locs = cc.arg_locs(proto)
-
-        for i, arg_type in enumerate(args):
-            arg_name = arg_names[i] if i < len(arg_names) and arg_names[i] else f"a{i}"
-            arg_str = f"{arg_type.c_repr()} {arg_name}"
-            if arg_locs is not None and i < len(arg_locs):
-                loc = arg_locs[i]
-                if isinstance(loc, SimRegArg):
-                    arg_str += f" @ <{loc.reg_name}>"
-                elif isinstance(loc, SimStackArg):
-                    arg_str += f" @ <stack+{loc.stack_offset:#x}>"
-            parts.append(arg_str)
-
-        if proto.variadic:
-            parts.append("...")
-
-        return f"{ret} {name}({', '.join(parts)})"
+        return format_prototype(node)
 
     def _on_timeout(self) -> None:
         if self._pending_pos is not None:

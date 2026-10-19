@@ -6,12 +6,12 @@ import logging
 import math
 import threading
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from PySide6.QtGui import QColor
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from angrmanagement.config import Conf
+from angrmanagement.config.color import Color
 from angrmanagement.errors import UnexpectedStatusCodeError
 from angrmanagement.logic.threads import gui_thread_schedule, gui_thread_schedule_async
 from angrmanagement.plugins import BasePlugin
@@ -32,7 +32,7 @@ except ImportError:
 
 def generate_light_gradients(color, number: int, lightness: int = 20):
     """
-    return a List of QColors, where the colors are ordered in terms of
+    return a List of colors, where the colors are ordered in terms of
     lightness (last is given as color) the rest (total of number) are
     each lightness (%) lighter.
     """
@@ -64,12 +64,14 @@ class CoveragePlugin(BasePlugin):
         if self.connector is None:
             self.workspace.log("Unable to retrieve plugin ChessConnector")
 
-        self.slacrs_instance = self.connector.slacrs_instance()
+        # without the connector there is no Slacrs instance yet; listen_for_events waits for both
+        self.slacrs_instance = self.connector.slacrs_instance() if self.connector is not None else None
         if self.slacrs_instance is None:
             self.workspace.log("Unable to retrieve Slacrs instance")
 
-        self.dark_theme_color = QColor(0, 20, 147)
-        self.light_theme_color = QColor(225, 174, 0)
+        # neutral colours, which both frontends draw (block_style, func_style)
+        self.dark_theme_color = Color(0, 20, 147)
+        self.light_theme_color = Color(225, 174, 0)
         self.hit_color = self.dark_theme_color if Conf.theme_name == "dark" else self.light_theme_color
         self.num_gradients = 16
         self.gradients = generate_light_gradients(self.hit_color, self.num_gradients, lightness=int(100 / 16))
@@ -111,20 +113,25 @@ class CoveragePlugin(BasePlugin):
     def stop(self) -> None:
         self.running = False
         gui_thread_schedule(self._refresh_gui)
-        if self.workspace._main_window is not None:
-            gui_thread_schedule_async(self.workspace._main_window.progress_done)
+        done = self._status_bar_method("progress_done")
+        if done is not None:
+            gui_thread_schedule_async(done)
 
     def _coverage_of_func(self, func):
         """
         return (set of covered_bbls, and num_of_function_bbls)
         """
+        # the function tables give a proxy of the function (FunctionTableEntry), which has no blocks
+        if not hasattr(func, "block_addrs_set"):
+            workspace: Any = self.workspace
+            func = workspace.main_instance.kb.functions.get_by_addr(func.addr)
         func_bbls = func.block_addrs_set
         with self.coverage_lock:
             covered_bbls = self.bbl_coverage & func_bbls
 
         return covered_bbls, len(func_bbls)
 
-    def color_block(self, addr: int):
+    def block_style(self, addr: int):
         if not self.running:
             return None
         with self.coverage_lock:
@@ -132,7 +139,7 @@ class CoveragePlugin(BasePlugin):
                 return self.dark_theme_color if Conf.theme_name == "dark" else self.light_theme_color
         return None
 
-    def color_func(self, func):
+    def func_style(self, func):
         if not self.running:
             return None
 
@@ -238,6 +245,10 @@ class CoveragePlugin(BasePlugin):
             self.connector = self.workspace.plugins.get_plugin_instance_by_name("ChessConnector")
             time.sleep(1)
 
+        # stopped before the connector came: there is no connector to ask
+        if not self.running:
+            return
+
         while not self.slacrs_instance and self.running:
             self.slacrs_instance = self.connector.slacrs_instance()
             time.sleep(1)
@@ -274,6 +285,18 @@ class CoveragePlugin(BasePlugin):
                 session.close()
             self.set_status("Fuzzing coverage updated", 100.0)
 
+    def _status_bar_method(self, name: str):
+        """
+        The status bar's ``name`` (progress or progress_done): the terminal app's own, or the Qt main window's status
+        bar's, since the Qt main window has neither method itself.
+        """
+        main_window = self.workspace._main_window
+        method = getattr(main_window, name, None)
+        if method is None:
+            method = getattr(getattr(main_window, "_status_bar", None), name, None)
+        return method
+
     def set_status(self, status: str, percentage: float) -> None:
-        if self.workspace._main_window is not None:
-            gui_thread_schedule_async(self.workspace._main_window.progress, (status, percentage))
+        progress = self._status_bar_method("progress")
+        if progress is not None:
+            gui_thread_schedule_async(progress, (status, percentage))

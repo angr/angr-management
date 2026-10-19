@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QGraphicsItemGroup,
     QGraphicsScene,
     QGraphicsView,
-    QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -18,6 +17,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from angrmanagement.logic import GlobalInfo
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
@@ -171,14 +172,7 @@ class QTraceViewer(QWidget):
         input_id = current_trace_stats.input_id
 
         inputSeed = self.multi_trace.am_obj.get_input_seed_for_id(input_id)
-        msgText = f"{inputSeed}"
-        msgDetails = f"Input for [{current_trace_stats.id}]"
-        msgbox = QMessageBox()
-        msgbox.setWindowTitle("Seed Input")
-        msgbox.setDetailedText(msgDetails)
-        msgbox.setText(msgText)
-        msgbox.setStandardButtons(QMessageBox.StandardButton.Ok)
-        msgbox.exec()
+        GlobalInfo.ui_services.message("info", "Seed Input", f"{inputSeed}\n\nInput for [{current_trace_stats.id}]")
 
     def _switch_current_trace(self, row) -> None:
         if self.listView.rowCount() <= 0:
@@ -434,7 +428,8 @@ class QTraceViewer(QWidget):
             bbl_addr = position.bbl_addr
             func_name = position.func_name
             log.debug("Draw function %x, %s", bbl_addr, func_name)
-            color = self.trace.get_func_color(func_name)
+            # the trace's colours are neutral; the scene paints QColors
+            color = self.trace.get_func_color(func_name).to_qcolor()
             self.trace_func.addToGroup(
                 self.traceScene.addRect(
                     x, y, self.TRACE_FUNC_WIDTH, self.trace_func_unit_height, QPen(color), QBrush(color)

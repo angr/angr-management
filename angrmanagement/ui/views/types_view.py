@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from angr.sim_type import ALL_TYPES, SimStruct, SimUnion, TypeRef
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
 from angrmanagement.data.object_container import ObjectContainer
+from angrmanagement.present.types import ParsedTypes, add_types, own_typedefs
 from angrmanagement.ui.dialogs.type_editor import CTypeEditor
 from angrmanagement.ui.widgets.qtypedef import QCTypeDef
 
@@ -113,14 +113,7 @@ class TypesView(FunctionView):
 
         # Load persistent types or function-specific types from types store
         types_store = self.current_typestore
-        already_repped = {
-            f"struct {ty.name}" if isinstance(ty.type, SimStruct) else f"union {ty.name}"
-            for ty in types_store.iter_own()
-            if isinstance(ty, TypeRef) and isinstance(ty.type, (SimStruct, SimUnion))
-        }
-        for ty in types_store.iter_own():
-            if ty.name in already_repped:
-                continue
+        for ty in own_typedefs(types_store):
             widget = QCTypeDef(self._layout.parent(), ty, types_store, self)
             self._layout.insertWidget(self._layout.count() - 1, widget)
             self.typedefs.append(widget)
@@ -135,43 +128,9 @@ class TypesView(FunctionView):
         )
         dialog.exec_()
 
-        types_store = self.current_typestore
-
-        for name, ty in dialog.main_result + dialog.side_result:
-            if name in ALL_TYPES:
-                continue
-            if name is None and isinstance(ty, (SimStruct, SimUnion)) and ty.name != "<anon>":
-                name = ty.name
-            if name is None:
-                name = types_store.unique_type_name()
-            else:
-                name = name.removeprefix("struct ").removeprefix("union ")
-
-            new_ty = ty.type if isinstance(ty, TypeRef) else ty
-            new_ref = ty if isinstance(ty, TypeRef) else TypeRef(name, ty).with_arch(self.instance.project.arch)
-            if name in types_store:
-                new_ref = types_store[name]
-                new_ref.type = new_ty
-            else:
-                types_store[name] = new_ref
-
-            sname = f"struct {name}"
-            if isinstance(new_ty, SimStruct):
-                if sname in types_store:
-                    types_store[sname].type = new_ty
-                else:
-                    types_store[sname] = TypeRef(sname, new_ty).with_arch(self.instance.project.arch)
-            elif sname in types_store:
-                types_store.pop(sname)
-
-            uname = f"union {name}"
-            if isinstance(new_ty, SimUnion):
-                if uname in types_store:
-                    types_store[uname].type = new_ty
-                else:
-                    types_store[uname] = TypeRef(uname, new_ty).with_arch(self.instance.project.arch)
-            elif uname in types_store:
-                types_store.pop(uname)
+        add_types(
+            self.current_typestore, self.instance.project.arch, ParsedTypes(dialog.main_result, dialog.side_result)
+        )
 
         # reload
         self.reload()

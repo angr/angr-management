@@ -7,6 +7,8 @@ from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout
 from traitlets.config.configurable import MultipleInstanceError
 
+from angrmanagement.present.console import base_namespace, console_namespace, function_namespace
+
 from .view import InstanceView
 
 if TYPE_CHECKING:
@@ -42,18 +44,7 @@ class ConsoleView(InstanceView):
         if self._ipython_widget is None:
             return
 
-        import angr  # pylint: disable=import-outside-toplevel,multiple-imports
-        import cle
-
-        namespace = {
-            "angr": angr,
-            "claripy": angr.claripy,
-            "cle": cle,
-            "workspace": self.workspace,
-            "instance": self.instance,
-            "project": self.instance.project,
-        }
-        self._ipython_widget.push_namespace(namespace)
+        self._ipython_widget.push_namespace(console_namespace(self.workspace, self.instance))
 
     def push_namespace(self, namespace) -> None:
         if self._ipython_widget is None:
@@ -77,14 +68,7 @@ class ConsoleView(InstanceView):
         return QSize(0, 50)
 
     def _init_widgets(self) -> None:
-        import angr  # pylint: disable=import-outside-toplevel,multiple-imports
-        import cle
-
-        namespace = {
-            "angr": angr,
-            "claripy": angr.claripy,
-            "cle": cle,
-        }
+        namespace = base_namespace()
 
         from angrmanagement.ui.widgets.qipython_widget import QIPythonWidget  # pylint:disable=import-outside-toplevel
 
@@ -113,10 +97,4 @@ class ConsoleView(InstanceView):
                 view.refresh()
 
     def set_current_function(self, func) -> None:
-        self.push_namespace(
-            {
-                "func": func,
-                "function": func,
-                "function_": func,  # deprecated
-            }
-        )
+        self.push_namespace(function_namespace(func))

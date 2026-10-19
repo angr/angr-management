@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import QVBoxLayout
 
+from angrmanagement.present.functions import FunctionsPresenter
 from angrmanagement.ui.widgets.qfunction_table import QFunctionTable
 
 from .view import InstanceView
@@ -18,13 +19,21 @@ class FunctionsView(InstanceView):
     View displaying functions in the project.
     """
 
+    presenter: FunctionsPresenter
+
     def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        super().__init__("functions", workspace, default_docking_position, instance)
+        super().__init__(
+            "functions",
+            workspace,
+            default_docking_position,
+            instance,
+            FunctionsPresenter(workspace, instance, default_docking_position),
+        )
 
         self.base_caption = "Functions"
         self._function_table: QFunctionTable
 
-        self.instance.cfg.am_subscribe(self.reload)
+        # the presenter reloads the table when the CFG changes
 
         self._init_widgets()
 
@@ -39,20 +48,18 @@ class FunctionsView(InstanceView):
     #
 
     def reset_cache_and_refresh(self) -> None:
-        # XXX: yes this is bad, however, the cache is not being updated properly and is documented
-        # in https://github.com/angr/angr-management/pull/1023. Until that is fixed, this is what we got.
-        self._function_table._table_view._model._data_cache = {}
+        self._function_table._table_view._model.clear_data_cache()
         self.refresh()
 
     def refresh(self) -> None:
         self._function_table.refresh()
 
     def reload(self) -> None:
-        if not self.instance.cfg.am_none:
-            self._function_table.function_manager = self.instance.kb.functions
-        else:
-            # the project was closed (or no CFG yet): clear the table
-            self._function_table.function_manager = None
+        self.presenter.reload()
+
+    def closeEvent(self, event) -> None:
+        self.presenter.close()
+        super().closeEvent(event)
 
     def subscribe_func_select(self, callback) -> None:
         """
@@ -67,7 +74,8 @@ class FunctionsView(InstanceView):
     #
 
     def _init_widgets(self) -> None:
-        self._function_table = QFunctionTable(self, self.instance, selection_callback=self._on_function_selected)
+        # the presenter tells the workspace when a function is chosen
+        self._function_table = QFunctionTable(self, self.instance, presenter=self.presenter)
 
         vlayout = QVBoxLayout()
         vlayout.addWidget(self._function_table)

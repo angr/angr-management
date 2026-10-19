@@ -2,39 +2,26 @@ from __future__ import annotations
 
 import os
 import shutil
-import tempfile
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QHeaderView,
-    QInputDialog,
     QLabel,
-    QLineEdit,
-    QMessageBox,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
 )
 
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.present.archive import ArchiveNode, archive_tree, extract_member
 from angrmanagement.utils.archive import (
     Archive,
     ArchiveError,
-    ArchiveInvalidPassword,
     ArchiveMember,
-    ArchivePasswordRequired,
     get_archive_object,
 )
-
-
-def _format_size(size: int) -> str:
-    s: float = size
-    for unit in ("B", "KB", "MB", "GB"):
-        if s < 1024:
-            return f"{s:.0f} {unit}" if unit == "B" else f"{s:.1f} {unit}"
-        s /= 1024
-    return f"{s:.1f} TB"
 
 
 class ArchiveLoaderDialog(QDialog):
@@ -83,38 +70,28 @@ class ArchiveLoaderDialog(QDialog):
     def _populate_tree(self) -> None:
         if self._archive_obj is None:
             return
-
         try:
             members = self._archive_obj.list_members()
-            members.sort(key=lambda m: m.name)
         except ArchiveError as e:
             self._err = str(e)
             return
 
-        nodes: dict[str, QTreeWidgetItem] = {}
+        def add(node: ArchiveNode, parent: QTreeWidgetItem | None) -> None:
+            item = QTreeWidgetItem()
+            item.setText(0, node.name)
+            item.setData(0, Qt.ItemDataRole.UserRole, node.member)
+            if node.member is not None:
+                item.setText(1, node.size_text)
+                item.setTextAlignment(1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            if parent is None:
+                self._tree.addTopLevelItem(item)
+            else:
+                parent.addChild(item)
+            for child in node.children:
+                add(child, item)
 
-        for member in members:
-            parts = member.name.split("/")
-            for i, part in enumerate(parts):
-                key = "/".join(parts[: i + 1])
-                if key in nodes:
-                    continue
-                item = QTreeWidgetItem()
-                item.setText(0, part)
-                is_file = i == len(parts) - 1
-                if is_file:
-                    item.setData(0, Qt.ItemDataRole.UserRole, member)
-                    item.setText(1, _format_size(member.size))
-                    item.setTextAlignment(1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-                else:
-                    item.setData(0, Qt.ItemDataRole.UserRole, None)
-                if i == 0:
-                    self._tree.addTopLevelItem(item)
-                else:
-                    parent_key = "/".join(parts[:i])
-                    nodes[parent_key].addChild(item)
-                nodes[key] = item
-
+        for root in archive_tree(members):
+            add(root, None)
         self._tree.expandAll()
 
     def _on_selection_changed(self, current: QTreeWidgetItem, _previous: QTreeWidgetItem) -> None:
@@ -145,29 +122,19 @@ class ArchiveLoaderDialog(QDialog):
                 password = self._prompt_for_password(member)
                 if password is None:
                     return
-
-            try:
-                self._temp_dir = tempfile.mkdtemp(prefix="angr_management_archive_")
-                self.extracted_file_path = self._archive_obj.extract(member.name, self._temp_dir, password=password)
-
-                # Sanity check
-                if not os.path.isfile(self.extracted_file_path):
-                    self.extracted_file_path = None
-                    raise ArchiveError("Extracted path is not a file")
-
-            except ArchivePasswordRequired:
-                self._cleanup_extraction()
+            result = extract_member(self._archive_obj, member, password)
+            if result.outcome == "password":
                 member = ArchiveMember(member.name, member.size, encrypted=True)
                 continue
-            except ArchiveInvalidPassword as e:
-                self._cleanup_extraction()
-                QMessageBox.warning(self, "Incorrect Password", str(e))
+            if result.outcome == "wrong":
+                GlobalInfo.ui_services.message("warning", "Incorrect Password", result.message)
                 continue
-            except ArchiveError as e:
-                QMessageBox.critical(self, "Extraction Error", f"Failed to extract file: {e}")
+            if result.outcome == "error":
+                GlobalInfo.ui_services.message("critical", "Extraction Error", result.message)
                 self.cleanup()
                 return
-
+            self._temp_dir = result.temp_dir
+            self.extracted_file_path = result.path
             if password is not None:
                 self._password = password
             break
@@ -176,16 +143,9 @@ class ArchiveLoaderDialog(QDialog):
         self.accept()
 
     def _prompt_for_password(self, member: ArchiveMember) -> str | None:
-        password, ok = QInputDialog.getText(
-            self,
-            "Archive Password",
-            f"Password required for {member.name}:",
-            QLineEdit.EchoMode.Password,
-            self._password or "",
+        return GlobalInfo.ui_services.prompt_password(
+            "Archive Password", f"Password required for {member.name}:", self._password or ""
         )
-        if not ok:
-            return None
-        return password
 
     def _cleanup_extraction(self) -> None:
         if self._temp_dir and os.path.isdir(self._temp_dir):
@@ -200,7 +160,7 @@ class ArchiveLoaderDialog(QDialog):
 
     def exec(self) -> int:
         if self._err is not None:
-            QMessageBox.critical(self, "Error", self._err)
+            GlobalInfo.ui_services.message("critical", "Error", self._err)
             return QDialog.DialogCode.Rejected
         return super().exec()
 

@@ -1,24 +1,30 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from inspect import isfunction
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QContextMenuEvent, QCursor
-from PySide6.QtWidgets import QAbstractItemView, QInputDialog, QMenu, QMessageBox, QTreeWidget, QTreeWidgetItem
+from PySide6.QtWidgets import QAbstractItemView, QMenu, QTreeWidget, QTreeWidgetItem
+
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.present.symexec import create_stash, drop_states, move_states, paste_states, stash_states
 
 if TYPE_CHECKING:
     from angr import SimState
 
 
 class SimgrViewerAbstractTreeItem(QTreeWidgetItem):
+    """A row of the stash tree."""
+
     def handle_context_menu_event(self, event: QContextMenuEvent):
         """Handles right-click actions on the specific QTreeWidgetItem that was clicked in the view"""
         raise NotImplementedError
 
 
 class StashTreeItem(SimgrViewerAbstractTreeItem):
+    """A stash and, under it, its states."""
+
     def __init__(self, stash_name: str, simgr_viewer) -> None:
         self.simgr_viewer = simgr_viewer
         self.stash_name = stash_name
@@ -36,9 +42,7 @@ class StashTreeItem(SimgrViewerAbstractTreeItem):
 
     def refresh(self) -> None:
         self.takeChildren()
-        for state in self.simgr_viewer.simgr.stashes[self.stash_name]:
-            if self.stash_name == "errored" and getattr(state, "state", None):
-                state = state.state
+        for state in stash_states(self.simgr_viewer.simgr, self.stash_name):
             self.addChild(StateTreeItem(state, self.simgr_viewer))
         self.setText(0, f"{self.stash_name} ({len(self.states)})")
 
@@ -62,7 +66,7 @@ class StashTreeItem(SimgrViewerAbstractTreeItem):
 
     def cut_states(self) -> None:
         self.simgr_viewer.state_clipboard = [s.state for s in self]
-        self.simgr_viewer.simgr.drop(stash=self.stash_name, filter_func=lambda state: state in self.states)
+        drop_states(self.simgr_viewer.simgr, self.stash_name, list(self.states))
         self.refresh()
 
     def delete_stash(self, *args, **kwargs) -> None:  # pylint: disable=unused-argument
@@ -79,6 +83,8 @@ class StashTreeItem(SimgrViewerAbstractTreeItem):
 
 
 class StateTreeItem(SimgrViewerAbstractTreeItem):
+    """A state of a stash."""
+
     def __init__(self, state, simgr_viewer) -> None:
         self.state = state
         self.simgr_viewer: QSimulationManagerViewer = simgr_viewer
@@ -118,6 +124,8 @@ class StateTreeItem(SimgrViewerAbstractTreeItem):
 
 
 class QSimulationManagerViewer(QTreeWidget):
+    """The stash tree of a simulation manager, with a clipboard of states."""
+
     state_clipboard: list[SimState]
 
     def __init__(self, simgr, parent=None) -> None:
@@ -150,31 +158,26 @@ class QSimulationManagerViewer(QTreeWidget):
     def delete_selected_states(self) -> None:
         stash_to_states = self._stash_to_selected_states()
         for stash_name, states in stash_to_states.items():
-            self.simgr.drop(stash=stash_name, filter_func=lambda state, state_set=states: state in state_set)
+            drop_states(self.simgr, stash_name, states)
             self.get_stash_tree_item(stash_name).refresh()
 
     def paste_from_clipboard(self, stash_name: str) -> None:
-        self.simgr.populate(stash_name, self.state_clipboard)
+        paste_states(self.simgr, stash_name, self.state_clipboard)
         self.get_stash_tree_item(stash_name).refresh()
 
     def move_to_stash(self, stash_name: str):
         lambda_str = ""
-        lambda_func = None
         while True:
-            lambda_str, accepted = QInputDialog.getText(
-                self, "Move state from active to here", "Condition lambda", text=lambda_str
+            answer = GlobalInfo.ui_services.prompt_text(
+                "Move state from active to here", "Condition lambda", lambda_str
             )
-            if not accepted:
+            if answer is None:
                 return
-            try:
-                lambda_func = eval(lambda_str)  # pylint: disable=eval-used
-                if not isfunction(lambda_func):
-                    raise ValueError
-            except Exception as e:  # pylint: disable=broad-except
-                QMessageBox.critical(self, "Exception!", str(e))
-                continue
-            break
-        self.simgr.move(from_stash="active", to_stash=stash_name, filter_func=lambda_func)
+            lambda_str = answer
+            error = move_states(self.simgr, stash_name, lambda_str)
+            if error is None:
+                return
+            GlobalInfo.ui_services.message("critical", "Exception!", error)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         item = self.itemAt(event.pos())
@@ -186,21 +189,15 @@ class QSimulationManagerViewer(QTreeWidget):
             menu.exec_(QCursor.pos())
 
     def _create_new_stash(self, *args, **kwargs) -> None:  # pylint: disable=unused-argument
-        stash_name, accepted = QInputDialog.getText(self, "Stash name", "Blah")
+        stash_name = GlobalInfo.ui_services.prompt_text("Stash name", "Blah")
 
-        if not accepted or stash_name.strip() == "":
-            # The user didn't provide a stash name
+        if stash_name is None:
             return
-
-        if stash_name in self.simgr.stashes:
-            QMessageBox.critical(
-                None,
-                "Duplicate stash name",
-                f"A stash with the name {stash_name} already exists in the current simulation manager.",
-            )
-            return
-        self.simgr._stashes[stash_name] = []
-        self.refresh()
+        error = create_stash(self.simgr, stash_name)
+        if error:
+            GlobalInfo.ui_services.message("critical", "Duplicate stash name", error)
+        elif error is None:
+            self.refresh()
 
     def refresh(self, **kwargs) -> None:
         if kwargs.get("src", "") != "simgr_viewer":

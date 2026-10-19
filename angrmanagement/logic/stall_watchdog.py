@@ -5,8 +5,6 @@ import threading
 import time
 import traceback
 
-from PySide6.QtCore import Qt, QTimer
-
 
 class StallWatchdog:
     """
@@ -14,6 +12,9 @@ class StallWatchdog:
     """
 
     def __init__(self, app, tick_ms=20, stall_ms=100):
+        # only the Qt frontend starts the watchdog; keep the module importable without Qt
+        from PySide6.QtCore import Qt, QTimer  # pylint:disable=import-outside-toplevel
+
         self._stall = stall_ms / 1000
         self._last = time.perf_counter()
         self._main = threading.main_thread().ident

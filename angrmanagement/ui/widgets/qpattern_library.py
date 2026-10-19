@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING
 
-from angr.knowledge_plugins.patterns import StoredPattern
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
-    QFileDialog,
     QHBoxLayout,
     QHeaderView,
     QMenu,
@@ -19,8 +16,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.present.patterns import delete_stored, export_stored, import_stored, toggle_stored
+
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from angr.knowledge_plugins.patterns import StoredPattern
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.views.code_view import CodeView
@@ -299,9 +301,7 @@ class QPatternLibrary(QWidget):
     #
 
     def toggle(self, stored: StoredPattern) -> None:
-        self.instance.kb.patterns.set_enabled(stored.name, not stored.enabled)
-        state = "on" if stored.enabled else "off"
-        self._changed(f"{stored.name} is {state}; it applies the next time a function is decompiled")
+        self._changed(toggle_stored(self.instance, stored))
 
     @property
     def pending(self) -> dict[str, bool]:
@@ -336,19 +336,14 @@ class QPatternLibrary(QWidget):
         return True
 
     def delete(self, stored: StoredPattern) -> None:
-        self.instance.kb.patterns.remove(stored.name)
-        self._changed(f"deleted {stored.name}")
+        self._changed(delete_stored(self.instance, stored))
 
     def export(self, stored: StoredPattern, path: str) -> None:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(stored.to_dict(), f, indent=1)
-        self._status(f"exported {stored.name} to {path}")
+        self._status(export_stored(stored, path))
 
     def import_(self, path: str) -> StoredPattern:
-        with open(path, encoding="utf-8") as f:
-            stored = StoredPattern.from_dict(json.load(f))
-        self.instance.kb.patterns.store(stored)
-        self._changed(f"imported {stored.name} from {path}")
+        stored, message = import_stored(self.instance, path)
+        self._changed(message)
         return stored
 
     def _changed(self, message: str) -> None:
@@ -377,11 +372,11 @@ class QPatternLibrary(QWidget):
         stored = self.selection()
         if stored is None:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Export pattern", f"{stored.name}.json", "JSON (*.json)")
+        path = GlobalInfo.ui_services.pick_save_file("Export pattern", f"{stored.name}.json", "JSON (*.json)")
         if path:
             self.export(stored, path)
 
     def _on_import_clicked(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(self, "Import pattern", "", "JSON (*.json)")
-        if path:
-            self.import_(path)
+        paths = GlobalInfo.ui_services.pick_open_files("Import pattern", "", "JSON (*.json)", False)
+        if paths:
+            self.import_(paths[0])

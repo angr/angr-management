@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from angr.sim_type import normalize_cpp_function_name
-from PySide6.QtGui import QColor, Qt
 from sortedcontainers import SortedDict
 
+from angrmanagement.config.color import Color
 from angrmanagement.plugins.base_plugin import BasePlugin
 
 from .sinks import VulnerabilityType, sink_manager
@@ -20,9 +20,10 @@ class DependencyViewer(BasePlugin):
 
         self.covered_blocks = SortedDict()
 
-        self.sink_color = Qt.GlobalColor.yellow
+        # neutral colours, which both frontends draw (insn_style, func_style); Qt's yellow
+        self.sink_color = Color(255, 255, 0)
 
-    def color_insn(self, addr: int, selected, disasm_view) -> QColor | None:
+    def insn_style(self, addr: int, selected, view) -> Color | None:
         if not selected:
             try:
                 block_addr = next(self.covered_blocks.irange(maximum=addr, reverse=True))
@@ -30,7 +31,7 @@ class DependencyViewer(BasePlugin):
                 return None
             block_size = self.covered_blocks[block_addr]
             if block_addr <= addr < block_addr + block_size:
-                return QColor(0xA5, 0xD0, 0xF3)
+                return Color(0xA5, 0xD0, 0xF3)
         return None
 
     FUNC_COLUMNS = ("Vuln Sink",)
@@ -52,7 +53,7 @@ class DependencyViewer(BasePlugin):
         vuln_type, sink = vulntype_and_sinks[0]
         return 1, VulnerabilityType.to_string(vuln_type)
 
-    def color_func(self, func) -> QColor | None:
+    def func_style(self, func) -> Color | None:
         # test if we have a match
         match = sink_manager.has_function_sink(func.demangled_name)
         if match:

@@ -16,6 +16,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.present.signatures import apply_signature_matches, signature_match_conflict
+
 if TYPE_CHECKING:
     from angr.flirt import FlirtSignature
 
@@ -38,10 +41,10 @@ class QSignatureMatchesTableModel(QAbstractTableModel):
         self.instance = instance
         self.match_list = sorted(matches.items())  # Sort by address
 
-    def rowCount(self, parent=None) -> int:
+    def rowCount(self, parent=None) -> int:  # pylint:disable=unused-argument
         return len(self.match_list)
 
-    def columnCount(self, parent=None) -> int:
+    def columnCount(self, parent=None) -> int:  # pylint:disable=unused-argument
         return len(self.Headers)
 
     def headerData(self, section: int, orientation, role=None):
@@ -66,17 +69,7 @@ class QSignatureMatchesTableModel(QAbstractTableModel):
             elif col == self.COL_NAME:
                 return name
             elif col == self.COL_CONFLICT:
-                # Check if function has a non-default name
-                func = self.instance.kb.functions.get(addr)
-                if func and not func.is_default_name:
-                    # Check if the name matches what we're trying to apply (not a conflict)
-                    if func.name == name:
-                        return ""
-                    # Check if the name is actually a "generic" name that shouldn't count as a conflict
-                    name_lower = func.name.lower()
-                    if not name_lower.startswith(("unknown", "unresolved", "sub_")):
-                        return "✓"
-                return ""
+                return "✓" if signature_match_conflict(self.instance, addr, name) else ""
         return None
 
 
@@ -114,8 +107,6 @@ class QSignatureMatchesTable(QTableView):
             return
         addr, _name = self.model_obj.match_list[row]
         # Jump to the function address
-        from angrmanagement.logic import GlobalInfo
-
         GlobalInfo.main_window.workspace.jump_to(addr)
         # Close the dialog
         self.window().accept()
@@ -143,17 +134,11 @@ class SignatureMatchesDialog(QDialog):
         )
         self.setMinimumSize(self.sizeHint())
 
-    def sizeHint(self):
+    def sizeHint(self):  # pylint:disable=no-self-use
         return QSize(600, 400)
 
     def is_conflict(self, addr: int, name: str) -> bool:
-        func = self.instance.kb.functions.get(addr)
-        if func and not func.is_default_name:
-            if func.name == name:
-                return False
-            name_lower = func.name.lower()
-            return not name_lower.startswith(("unknown", "unresolved", "sub_"))
-        return False
+        return signature_match_conflict(self.instance, addr, name)
 
     def _init_widgets(self) -> None:
         table = QSignatureMatchesTable(self.matches, self.instance, self)
@@ -195,12 +180,7 @@ class SignatureMatchesDialog(QDialog):
 
     def _on_apply_functions(self) -> None:
         """Handle Apply Functions button click."""
-        ignore_addresses = set()
-
-        if self.ignore_radio.isChecked():
-            for addr, name in self.matches.items():
-                if self.is_conflict(addr, name):
-                    ignore_addresses.add(addr)
-
-        self.signature_mgr.apply_signatures([self.sig], dry_run=False, ignore_addresses=ignore_addresses)
+        apply_signature_matches(
+            self.signature_mgr, self.instance, self.sig, self.matches, self.ignore_radio.isChecked()
+        )
         self.accept()

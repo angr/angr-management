@@ -18,10 +18,8 @@ from common import AngrManagementTestCase, test_location  # pylint: disable=impo
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QTreeWidgetItem
 
-from angrmanagement.ui.dialogs.archive_loader import (
-    ArchiveLoaderDialog,
-    _format_size,
-)
+from angrmanagement.present.archive import format_size
+from angrmanagement.ui.dialogs.archive_loader import ArchiveLoaderDialog
 from angrmanagement.utils.archive import (
     ArchiveError,
     ArchiveInvalidPassword,
@@ -44,24 +42,24 @@ ELF_MAGIC = b"\x7fELF"
 
 
 class TestFormatSize(unittest.TestCase):
-    """Test _format_size utility function."""
+    """Test format_size utility function."""
 
     def test_bytes(self):
         """Test formatting of byte-sized values."""
-        assert _format_size(0) == "0 B"
-        assert _format_size(512) == "512 B"
-        assert _format_size(1023) == "1023 B"
+        assert format_size(0) == "0 B"
+        assert format_size(512) == "512 B"
+        assert format_size(1023) == "1023 B"
 
     def test_kilobytes(self):
         """Test formatting of kilobyte-sized values."""
-        assert _format_size(1024) == "1.0 KB"
-        assert _format_size(1536) == "1.5 KB"
+        assert format_size(1024) == "1.0 KB"
+        assert format_size(1536) == "1.5 KB"
 
     def test_larger_units(self):
         """Test formatting of MB, GB, and TB values."""
-        assert _format_size(1024 * 1024) == "1.0 MB"
-        assert _format_size(1024**3) == "1.0 GB"
-        assert _format_size(1024**4) == "1.0 TB"
+        assert format_size(1024 * 1024) == "1.0 MB"
+        assert format_size(1024**3) == "1.0 GB"
+        assert format_size(1024**4) == "1.0 TB"
 
 
 class TestArchiveClasses(unittest.TestCase):
@@ -321,7 +319,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         assert item is not None
         dlg._tree.setCurrentItem(item)
         with patch(
-            "angrmanagement.ui.dialogs.archive_loader.QInputDialog.getText",
+            "PySide6.QtWidgets.QInputDialog.getText",
             return_value=(ENC_ZIP_PASSWORD, True),
         ) as prompt:
             dlg._on_accept()
@@ -338,7 +336,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         assert item is not None
         dlg._tree.setCurrentItem(item)
         with patch(
-            "angrmanagement.ui.dialogs.archive_loader.QInputDialog.getText",
+            "PySide6.QtWidgets.QInputDialog.getText",
             return_value=("", False),
         ):
             dlg._on_accept()
@@ -354,10 +352,10 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         dlg._tree.setCurrentItem(item)
         with (
             patch(
-                "angrmanagement.ui.dialogs.archive_loader.QInputDialog.getText",
+                "PySide6.QtWidgets.QInputDialog.getText",
                 side_effect=[("wrong", True), (ENC_ZIP_PASSWORD, True)],
             ) as prompt,
-            patch("angrmanagement.ui.dialogs.archive_loader.QMessageBox.warning") as warning,
+            patch("PySide6.QtWidgets.QMessageBox.warning") as warning,
         ):
             dlg._on_accept()
         assert prompt.call_count == 2
@@ -422,7 +420,7 @@ class TestArchiveLoaderDialog(AngrManagementTestCase):
         """Test that exec() returns Rejected when archive has error."""
         dlg = ArchiveLoaderDialog(self._not_archive_path, parent=self.main)
         assert dlg._err is not None
-        with patch("angrmanagement.ui.dialogs.archive_loader.QMessageBox.critical"):
+        with patch("PySide6.QtWidgets.QMessageBox.critical"):
             result = dlg.exec()
         assert result == QDialog.DialogCode.Rejected
         dlg.close()

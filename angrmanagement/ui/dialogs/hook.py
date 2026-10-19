@@ -17,6 +17,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from angrmanagement.present.dialogs import hook_templates
+
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
 
@@ -34,8 +36,7 @@ class HookDialog(QDialog):
         self.workspace = workspace
         self.state = None  # output
         self._addr = addr
-        self.templates = {}
-        self._add_templates(hex(addr))
+        self.templates = hook_templates(addr)
         self._function_box = None
         self._ok_button = None
         self.setWindowTitle("Change hook")
@@ -46,39 +47,6 @@ class HookDialog(QDialog):
     #
     # Private methods
     #
-
-    def _add_templates(self, addr: int) -> None:
-        self.templates["base"] = f"""\
-@project.hook(addr={addr}, length=0)
-def hook(state):
-    ..."""
-
-        self.templates["assertion"] = f"""\
-@project.hook(addr={addr}, length=0)
-def assertion(state):
-    state.add_constraints(
-        ...
-    )"""
-
-        self.templates["disable unicorn"] = f"""\
-@project.hook(addr={addr}, length=0)
-def disable_unicorn(state):
-    state.options.discard("UNICORN")
-    state.options.discard("UNICORN_HANDLE_TRANSMIT_SYSCALL")
-    state.options.discard("UNICORN_SYM_REGS_SUPPORT")
-    state.options.discard("UNICORN_TRACK_BBL_ADDRS")
-    state.options.discard("UNICORN_TRACK_STACK_POINTERS")
-"""
-
-        self.templates["enable unicorn"] = f"""\
-@project.hook(addr={addr}, length=0)
-def enable_unicorn(state):
-    state.options.add("UNICORN")
-    state.options.add("UNICORN_HANDLE_TRANSMIT_SYSCALL")
-    state.options.add("UNICORN_SYM_REGS_SUPPORT")
-    state.options.add("UNICORN_TRACK_BBL_ADDRS")
-    state.options.add("UNICORN_TRACK_STACK_POINTERS")
-"""
 
     def update_function(self, template) -> None:
         self._function_box.setPlainText(template, mime_type="text/x-python", encoding="utf-8")

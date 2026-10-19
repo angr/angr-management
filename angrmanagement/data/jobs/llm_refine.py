@@ -4,7 +4,6 @@ import logging
 from typing import TYPE_CHECKING
 
 from angr.errors import AngrAIError
-from PySide6.QtWidgets import QMessageBox
 
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule_async
@@ -48,12 +47,7 @@ class LLMRefineJob(InstanceJob):
 
     @staticmethod
     def _show_error_msgbox(message: str) -> None:
-        msgbox = QMessageBox(GlobalInfo.main_window)
-        msgbox.setWindowTitle("LLM Refinement Error")
-        msgbox.setText(message)
-        msgbox.setIcon(QMessageBox.Icon.Critical)
-        msgbox.setStandardButtons(QMessageBox.StandardButton.Ok)
-        msgbox.exec_()
+        GlobalInfo.ui_services.message("critical", "LLM Refinement Error", message)
 
     def run(self, ctx: JobContext) -> None:
         project = self.instance.project.am_obj

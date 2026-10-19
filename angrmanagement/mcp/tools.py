@@ -24,7 +24,7 @@ from angr.mcp.serializers import (
 )
 from fastmcp.exceptions import ToolError
 
-from angrmanagement.data.jobs import DecompileFunctionJob, VariableRecoveryJob
+from angrmanagement.logic.headless_workspace import submit_background_decompilation
 from angrmanagement.logic.threads import gui_thread_schedule, gui_thread_schedule_async
 
 if TYPE_CHECKING:
@@ -380,20 +380,7 @@ def register_read_tools(server: FastMCP, workspace: Workspace) -> None:
 
 def _submit_background_decompilation(workspace: Workspace, func: Function) -> None:
     """Queue a decompilation of the given function without touching any views."""
-    instance = workspace.main_instance
-
-    def submit_decomp(*_args, **_kwargs) -> None:
-        job = DecompileFunctionJob(instance, func, cfg=instance.cfg, flavor=PSEUDOCODE_FLAVOR)
-        workspace.job_manager.add_job(job)
-
-    if func.ran_cca is False and (func.prototype is None or func.is_prototype_guessed is True):
-        # run calling convention analysis for this function first, like the pseudocode view does
-        options = instance.analysis_configuration["varec"].to_dict() if instance.analysis_configuration else {}
-        options["workers"] = 0
-        varrec_job = VariableRecoveryJob(instance, **options, on_finish=submit_decomp, func_addr=func.addr)
-        workspace.job_manager.add_job(varrec_job)
-    else:
-        submit_decomp()
+    submit_background_decompilation(workspace.main_instance, workspace.job_manager, func)
 
 
 def register_project_tools(server: FastMCP, workspace: Workspace) -> None:

@@ -180,7 +180,7 @@ class TestOpenCloseGuards(AngrManagementTestCase):
         self._load()
         instance = self.main.workspace.main_instance
         before = instance.project.am_obj
-        with patch("angrmanagement.ui.main_window.QMessageBox.warning") as warn:
+        with patch("PySide6.QtWidgets.QMessageBox.warning") as warn:
             self.main.load_file(os.path.join(test_location, "x86_64", "true"))
         for _ in range(10):
             QApplication.processEvents()
@@ -191,7 +191,7 @@ class TestOpenCloseGuards(AngrManagementTestCase):
         self._load()
         instance = self.main.workspace.main_instance
         assert not instance.project.am_none
-        with patch.object(QMessageBox, "exec_", return_value=QMessageBox.StandardButton.Yes):
+        with patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes):
             self.main.close_project()
         for _ in range(10):
             QApplication.processEvents()
@@ -200,7 +200,7 @@ class TestOpenCloseGuards(AngrManagementTestCase):
     def test_close_project_cancelled_keeps_project(self):
         self._load()
         instance = self.main.workspace.main_instance
-        with patch.object(QMessageBox, "exec_", return_value=QMessageBox.StandardButton.No):
+        with patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.No):
             self.main.close_project()
         assert not instance.project.am_none
 
@@ -220,7 +220,7 @@ class TestMCPAutostart(AngrManagementTestCase):
         original_port = Conf.mcp_server_port
         Conf.mcp_server_port = port
         try:
-            with patch("angrmanagement.ui.main_window.QMessageBox.critical") as critical:
+            with patch("PySide6.QtWidgets.QMessageBox.critical") as critical:
                 # returns immediately: the autostart is deferred onto the event loop, not run inline
                 self.main._run_mcp(use_mcp=True)
                 assert self.main.mcp_server_manager is None
@@ -241,6 +241,93 @@ class TestMCPAutostart(AngrManagementTestCase):
         finally:
             Conf.mcp_server_port = original_port
             sock.close()
+
+
+class TestMainWindowEventReceiver(AngrManagementTestCase):
+    def test_one_receiver_and_the_old_import_path(self):
+        # the receiver used to be defined in main_window, and the event imported there, so code outside angr
+        # management may import either from there
+        from angrmanagement.logic import GlobalInfo  # pylint: disable=import-outside-toplevel
+        from angrmanagement.ui import main_window  # pylint: disable=import-outside-toplevel
+        from angrmanagement.ui.qt_executor import (  # pylint: disable=import-outside-toplevel
+            ExecuteCodeEvent,
+            QExecuteCodeEventReceiver,
+        )
+
+        assert main_window.QExecuteCodeEventReceiver is QExecuteCodeEventReceiver
+        assert main_window.ExecuteCodeEvent is ExecuteCodeEvent
+        # a second main window keeps the receiver events may already be posted to
+        receiver = GlobalInfo.event_receiver
+        assert isinstance(receiver, QExecuteCodeEventReceiver)
+        second = main_window.MainWindow(show=False)
+        try:
+            assert GlobalInfo.event_receiver is receiver
+        finally:
+            second.close()
+
+
+class TestLoadTraceFile(AngrManagementTestCase):
+    """File > Load a new trace...: the errors are boxes on the main window, and only a loaded trace is recent."""
+
+    FAUXWARE = os.path.join(test_location, "x86_64", "fauxware")
+
+    def test_errors(self):
+        cases = [
+            ("https://example.com/state.trace", "Unsupported Action"),
+            ("/nonexistent/state.trace", "File not found"),
+            (self.FAUXWARE, "Unable to load trace file"),  # not a pickle
+        ]
+        for path, title in cases:
+            with (
+                patch("PySide6.QtWidgets.QMessageBox.critical") as critical,
+                patch.object(self.main, "_recent_file") as recent,
+            ):
+                self.main.load_trace_file(path)
+            critical.assert_called_once()
+            assert critical.call_args.args[:2] == (self.main, title)
+            recent.assert_not_called()
+
+    def test_loaded_state(self):
+        state = object()
+        with (
+            patch("angrmanagement.present.shell.pickle.load", return_value=state),
+            patch.object(self.main.workspace, "view_data_dependency_graph") as view,
+            patch.object(self.main, "_recent_file") as recent,
+            patch("PySide6.QtWidgets.QMessageBox.critical") as critical,
+        ):
+            self.main.load_trace_file(self.FAUXWARE)
+        view.assert_called_once_with({"end_state": state, "start_addr": None, "end_addr": None, "block_addrs": None})
+        recent.assert_called_once_with(self.FAUXWARE)
+        critical.assert_not_called()
+
+
+class TestDebugToolbar(AngrManagementTestCase):
+    def test_buttons(self):
+        from angrmanagement.present.debug_bar import action_states  # pylint: disable=import-outside-toplevel
+        from angrmanagement.ui.toolbars import DebugToolbar  # pylint: disable=import-outside-toplevel
+
+        toolbar = self.main.toolbar_manager.active[DebugToolbar]
+        assert isinstance(toolbar, DebugToolbar)
+        shown = [
+            "|" if a.isSeparator() else (a.text(), a.toolTip())
+            for a in toolbar.qtoolbar().actions()
+            if a.isSeparator() or a.text()
+        ]
+        # the captions and tooltips the Qt toolbar had before it read them from DEBUG_ACTIONS
+        assert shown == [
+            ("Continue-Backward", "Reverse-Continue"),
+            ("Step-Backward", "Reverse-Step"),
+            ("Continue", "Continue"),
+            ("Halt", "Halt"),
+            ("Step", "Step"),
+            ("Step Over", "Step Over"),
+            "|",
+            ("Launch", "New Debugger"),
+            ("Stop", "Stop Debugging"),
+        ]
+        toolbar._update_state()
+        for name, (enabled, _visible) in action_states(None).items():
+            assert toolbar._cached_actions[toolbar._acts_by_name[name]].isEnabled() == enabled, name
 
 
 if __name__ == "__main__":

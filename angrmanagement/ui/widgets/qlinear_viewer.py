@@ -43,7 +43,8 @@ class QLinearDisassemblyView(QSaveableGraphicsView):
         super().__init__(parent=parent)
 
         self.area: QLinearDisassembly = area
-        self._scene = QGraphicsScene(0, 0, self.width(), self.height())
+        # parented to the view, so Qt deletes it with the view, on its thread, not the cyclic collector wherever it runs
+        self._scene = QGraphicsScene(0, 0, self.width(), self.height(), self)
         self.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self.setScene(self._scene)
         self.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
@@ -100,9 +101,9 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         # The first line that is rendered of the first object in self.objects. Start from 0.
         self._start_line_in_object = 0
 
-        self._disasms = SmartLRUCache(maxsize=1024)
-        self._ail_disasms = SmartLRUCache(maxsize=1024)
         self.objects = SmartLRUCache(maxsize=1024, evict=self._on_object_eviction)
+        #: False during a walk CFG recovery did not stop for (see prepare_objects)
+        self._read_functions = True
 
         self.verticalScrollBar().actionTriggered.connect(self._on_vertical_scroll_bar_triggered)
 
@@ -291,8 +292,7 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         self.objects.clear()
         self._addr_to_region_offset.clear()
         self._offset_to_region.clear()
-        self._disasms.clear()
-        self._ail_disasms.clear()
+        self.disasm_view.presenter.clear_linear_disasm_cache()
         self._offset = None
         self._max_offset = None
         self._start_line_in_object = 0
@@ -421,10 +421,16 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
         previous offset) and a following refresh retries.
         """
         prev_offset = self._offset
-        try:
-            self._prepare_objects(offset, start_line=start_line, adjust_start_line=adjust_start_line)
-        except (RuntimeError, KeyError, IndexError):
-            self._offset = prev_offset
+        # CFG recovery may be adding to the functions shown: read them only while it stops for us (blocks not made
+        # yet show as raw bytes until a later refresh otherwise)
+        with self.disasm_view.presenter.reading_functions() as granted:
+            self._read_functions = granted
+            try:
+                self._prepare_objects(offset, start_line=start_line, adjust_start_line=adjust_start_line)
+            except (RuntimeError, KeyError, IndexError):
+                self._offset = prev_offset
+            finally:
+                self._read_functions = True
 
     @timethis
     def _prepare_objects(self, offset: int, start_line: int = 0, adjust_start_line: bool = False) -> None:
@@ -638,9 +644,10 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
         if isinstance(obj, Block):
             cfg = self.cfg
-            if isinstance(cfg, ObjectContainer) and cfg.am_none:
-                # during CFG recovery, blocks may land in the CFB before the (partial) CFG model is first published;
-                # render them as raw bytes for now - they will be re-rendered once the CFG is available
+            if not self._read_functions or (isinstance(cfg, ObjectContainer) and cfg.am_none):
+                # during CFG recovery, blocks may land in the CFB before the (partial) CFG model is first published,
+                # or the recovery did not stop for this walk; render them as raw bytes for now - they will be
+                # re-rendered on a later refresh
                 return False, QUnknownBlock(self.instance, obj_addr, obj.bytes, disasm_view=self.disasm_view)
             cfg_node = self.cfg.get_any_node(obj_addr, force_fastpath=True)
             if cfg_node is not None:
@@ -729,14 +736,6 @@ class QLinearDisassembly(QDisassemblyBaseControl, QAbstractScrollArea):
 
     def _get_disasm(self, func: Function) -> Clinic | Disassembly | None:
         """
-        Get disassembly analysis object for a given function
+        Get disassembly analysis object for a given function; the presenter keeps them
         """
-        if self._disassembly_level is DisassemblyLevel.AIL:
-            if func.addr not in self._ail_disasms:
-                self._ail_disasms[func.addr] = self.instance.project.analyses.Clinic(func)
-            return self._ail_disasms[func.addr]
-
-        if func.addr not in self._disasms:
-            include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
-            self._disasms[func.addr] = self.instance.project.analyses.Disassembly(function=func, include_ir=include_ir)
-        return self._disasms[func.addr]
+        return self.disasm_view.presenter.linear_disasm(func, self._disassembly_level)

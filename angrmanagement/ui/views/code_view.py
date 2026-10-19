@@ -3,17 +3,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, Literal
 
-from angr.analyses.decompiler.edits import restore_user_edits
-from angr.analyses.decompiler.structured_codegen import (
-    BaseStructuredCodeGenerator,
-    ConstantNode,
-    DummyStructuredCodeGenerator,
-    FunctionCallNode,
-    LabelNode,
-    VariableNode,
-)
-from angr.knowledge_plugins.functions.function import Function
-from angr.sim_variable import SimMemoryVariable
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QShortcut, QTextCursor, QTextFormat
 from PySide6.QtWidgets import (
@@ -30,10 +19,11 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.config import Conf
-from angrmanagement.data.jobs import DecompileFunctionJob, LLMPreloadCalleesJob, LLMRefineJob, VariableRecoveryJob
-from angrmanagement.data.object_container import ObjectContainer
-from angrmanagement.logic.commands import ViewCommand
-from angrmanagement.logic.disassembly import JumpHistory
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.present.code import (
+    CodePresenter,
+    register_code_commands,
+)
 from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.ui.documents import QCodeDocument
 from angrmanagement.ui.toolbars import NavToolbar
@@ -47,88 +37,53 @@ from .view import FunctionView
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from angr.knowledge_plugins.functions.function import Function
     from angr.knowledge_plugins.variables.variable_manager import VariableManagerInternal
     from PySide6.QtWidgets import QPushButton
 
     from angrmanagement.data.instance import Instance
+    from angrmanagement.data.object_container import ObjectContainer
     from angrmanagement.ui.workspace import Workspace
 
 log = logging.getLogger(__name__)
 
 
-def _snap_comment_addr(codegen, addr: int) -> int:
-    """
-    Pick the key under which a statement comment for ``addr`` actually renders inline.
+def _forward(name: str, doc: str | None = None):
+    """A property that reads and writes the presenter's attribute ``name``."""
 
-    ``stmt_comments`` is consumed when a line ends, keyed by the *last* address-tagged construct on
-    that line, so a key that is merely the nearest rendered address is often not enough: it ends up
-    in the decompiler's "Orphaned comments" block instead. Map ``addr`` onto the line that renders
-    it, then take the last address on that line.
-    """
-    addr_to_pos = getattr(codegen, "map_addr_to_pos", None)
-    pos_to_addr = getattr(codegen, "map_pos_to_addr", None)
-    text = getattr(codegen, "text", None)
-    if addr_to_pos is None or pos_to_addr is None or not text:
-        return addr
+    def fget(self):
+        return getattr(self.presenter, name)
 
-    # not codegen.map_addr_to_pos.get_nearest_pos(): it gives up when the address is outside the
-    # rendered range, which is exactly the common case for a prologue instruction
-    entries = [(ins_addr, elem.posmap_pos) for ins_addr, elem in addr_to_pos.items()]
-    if not entries:
-        return addr
-    below = [e for e in entries if e[0] <= addr]
-    pos = below[-1][1] if below else entries[0][1]
+    def fset(self, value) -> None:
+        setattr(self.presenter, name, value)
 
-    line_start = text.rfind("\n", 0, pos) + 1
-    line_end = text.find("\n", pos)
-    if line_end == -1:
-        line_end = len(text)
-
-    posmap = pos_to_addr._posmap
-    last = None
-    for p in posmap.irange(minimum=line_start, maximum=line_end):
-        tags = getattr(posmap[p].obj, "tags", None) or {}
-        ins_addr = tags.get("ins_addr")
-        if isinstance(ins_addr, int):
-            last = ins_addr
-    return addr if last is None else last
-
-
-def _floor_comment_addr(codegen, addr: int) -> int:
-    """The key angr's own edit layer would have used. Only needed to recognize its writes."""
-    insmap = getattr(codegen, "map_addr_to_pos", None)
-    if insmap is None:
-        return addr
-    rendered = [ins_addr for ins_addr, _ in insmap.items()]
-    if not rendered or addr in set(rendered):
-        return addr
-    below = [a for a in rendered if a < addr]
-    return max(below) if below else addr
+    return property(fget, fset, doc=doc or f"The presenter's ``{name}``.")
 
 
 class CodeView(FunctionView):
     """
     A view to display pseudocode or source code. You should control this view by manipulating and observing its four
     ObjectContainers: .addr, .current_node, .codegen, and .function.
+
+    The state and the actions are the :class:`~angrmanagement.present.code.CodePresenter`'s (``self.presenter``);
+    this class adds the Qt text editor, docks, dialogs and keys, and forwards the rest.
     """
 
+    presenter: CodePresenter
+
     def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        super().__init__("pseudocode", workspace, default_docking_position, instance)
+        presenter = CodePresenter(workspace, instance, default_docking_position)
+        super().__init__("pseudocode", workspace, default_docking_position, instance, presenter=presenter)
 
         self.base_caption = "Pseudocode"
 
-        self._function: ObjectContainer | Function = ObjectContainer(None, "The function to decompile")
-        self.current_node = ObjectContainer(None, "Current selected C-code node")
-        self.addr: ObjectContainer | int = ObjectContainer(0, "Current cursor address")
-        self.codegen: ObjectContainer | BaseStructuredCodeGenerator = ObjectContainer(
-            None, "The currently-displayed codegen object"
-        )
+        self.current_node: ObjectContainer = presenter.current_node
+        self.addr: ObjectContainer | int = presenter.addr
+        self.codegen: Any = presenter.codegen
 
-        self._last_function: Function | None = None
         self._textedit: QCCodeEdit | None = None
         self._doc: QCodeDocument | None = None
         self._options: QDecompilationOptions | None = None
-        self.jump_history: JumpHistory = JumpHistory()
         self._nav_toolbar: NavToolbar | None = None
         self._view_selector: QComboBox | None = None
         self._summary_textedit: QTextEdit | None = None
@@ -137,23 +92,10 @@ class CodeView(FunctionView):
         self._patterns_dock: QDockWidget | None = None
         self._summary_dock: QDockWidget | None = None
 
-        self.vars_must_struct: set[str] = set()
-
         self._find_bar: QFindBar | None = None
-        self._find_matches: list[tuple[int, int]] = []
-        self._find_index: int = -1
         self._chunk_selections: list[QTextEdit.ExtraSelection] = []
         self._find_selections: list[QTextEdit.ExtraSelection] = []
-        #: layer name -> (function address, instruction addresses of each highlighted copy);
-        #: kept as addresses so a highlight survives the pseudocode being regenerated
-        self._highlight_layers: dict[str, tuple[int, list[frozenset[int]]]] = {}
-        #: patterns whose outlined calls are highlighted in whatever function is shown
-        self._highlighted_patterns: set[str] = set()
         self._pattern_selections: list[QTextEdit.ExtraSelection] = []
-
-        # kb.comments mirrored into the current codegen's stmt_comments: kb address -> stmt key
-        self._mirrored_codegen = None
-        self._mirrored_comments: dict[int, int] = {}
 
         self._init_widgets()
         self._init_shortcuts()
@@ -178,25 +120,26 @@ class CodeView(FunctionView):
     @classmethod
     def register_commands(cls, workspace: Workspace) -> None:
         """
-        Register commands that can be run for this view.
+        Register commands that can be run for this view. They run on the focused view's presenter.
         """
-        workspace.command_manager.register_commands(
-            [
-                ViewCommand("code_view_" + action.__name__, "Pseudocode: " + caption, action, cls, workspace)
-                for caption, action in [
-                    ("Find", cls.show_find_bar),
-                    ("Find Next", cls.find_next),
-                    ("Find Previous", cls.find_previous),
-                ]
-            ]
-        )
+        register_code_commands(workspace)
 
     def _focus_core(self, focus: bool, focus_addr: int | None) -> None:
-        if focus:
-            self.focus()
-        if focus_addr is not None:
-            self.addr.am_obj = focus_addr
-            self.addr.am_event(focus=True)
+        self.presenter.focus_core(focus, focus_addr)
+
+    #
+    # The presenter's state
+    #
+
+    jump_history = _forward("jump_history")
+    vars_must_struct: set[str] = _forward("vars_must_struct")  # type: ignore[assignment]
+    _last_function = _forward("last_function")
+    _find_matches = _forward("find_matches")
+    _find_index = _forward("find_index")
+    _highlight_layers = _forward("highlight_layers")
+    _highlighted_patterns = _forward("highlighted_patterns")
+    _mirrored_codegen = _forward("mirrored_codegen")
+    _mirrored_comments = _forward("mirrored_comments")
 
     #
     # Properties
@@ -215,27 +158,101 @@ class CodeView(FunctionView):
         """
         Return the current flavor of the codegen. This is just a convenient wrapper around self.codegen.flavor.
         """
-        return self.codegen.flavor if not self.codegen.am_none else None
+        return self.presenter.flavor
 
     @property
     def best_flavor(self) -> str:
-        if self.instance.project.am_none:
-            return "pseudocode"
-        if self.instance.project.is_rust_binary:
-            return "rust"
-        if self.instance.project.is_go_binary:
-            return "go"
-        return "pseudocode"
+        return self.presenter.best_flavor
+
+    #
+    # What the presenter asks of its view
+    #
+
+    def cursor_position(self) -> int:
+        return self._textedit.textCursor().position() if self._textedit is not None else 0
+
+    def selection_range(self) -> tuple[int, int]:
+        cursor = self._textedit.textCursor()
+        return cursor.selectionStart(), cursor.selectionEnd()
+
+    def selected_text(self) -> str:
+        return self._textedit.textCursor().selectedText()
+
+    def plain_text(self) -> str:
+        return self._textedit.toPlainText()
+
+    def set_cursor_position(self, pos: int) -> None:
+        cursor = self._textedit.textCursor()
+        cursor.setPosition(pos)
+        self._textedit.setTextCursor(cursor)
+
+    def select_range(self, start: int, end: int) -> None:
+        cursor = self._textedit.textCursor()
+        cursor.setPosition(start)
+        cursor.setPosition(end, QTextCursor.MoveMode.KeepAnchor)
+        self._textedit.setTextCursor(cursor)
+
+    def focus_text(self) -> None:
+        self._textedit.setFocus()
+
+    def ask_comment(self, addr: int, text: str, multiline: bool, then: Callable[[str | None], None]) -> None:
+        """A one-line comment is edited in the editor floating at the cursor; a longer one in a dialog."""
+        if not multiline:
+            self._textedit.begin_inline_comment(addr, text)
+            return
+        then(GlobalInfo.ui_services.prompt_text("Statement Comment", "", text.replace("\n", " ")))
+
+    def ask_expr_comment(  # pylint:disable=no-self-use
+        self, _addr: int, text: str, then: Callable[[str | None], None]
+    ) -> None:
+        then(GlobalInfo.ui_services.prompt_text("Expression Comment", "", text))
+
+    def ask_pattern_name(self, then: Callable[[str | None], None]) -> None:  # pylint:disable=no-self-use
+        then(GlobalInfo.ui_services.prompt_text("Pattern", "Name of the call the pattern becomes:"))
+
+    def on_flavors_changed(self) -> None:
+        self._update_available_views(self.presenter.available_flavors)
+
+    def on_chunks_changed(self) -> None:
+        self.highlight_chunks(self.presenter.chunks)
+
+    def on_pattern_highlight_changed(self) -> None:
+        self._rebuild_pattern_selections()
+
+    def on_pattern_highlight_cleared(self) -> None:
+        self._pattern_selections = []
+        self._apply_extra_selections()
+        self._update_clear_highlights()
+
+    def on_find_matches_changed(self) -> None:
+        color = Conf.disasm_view_operand_highlight_color
+        self._find_selections = [self._make_selection(start, end, color) for start, end in self._find_matches]
+        self._apply_extra_selections()
+
+    def find_bar_closed(self) -> None:
+        self._textedit.setFocus()
+
+    def close_view_requested(self) -> None:
+        self.close()
+
+    def copy(self) -> None:
+        self._textedit.copy()
+
+    def select_all(self) -> None:
+        self._textedit.selectAll()
+
+    def zoom_in(self) -> None:
+        self._textedit.zoomIn()
+
+    def zoom_out(self) -> None:
+        self._textedit.zoomOut()
 
     #
     # Public methods
     #
 
     def reload(self) -> None:
-        if self.instance.project.am_none:
-            return
-        self._options.reload(force=True)
-        self.vars_must_struct = set()
+        self.presenter.reload()
 
     def set_codeedit_palette(self, palette):
         if self._textedit is not None:
@@ -251,75 +268,15 @@ class CodeView(FunctionView):
         regen_clinic: bool = True,
         on_finish: Callable[[], None] | None = None,
     ) -> None:
-        if self._function.am_none:
-            return
-
-        if flavor is None:
-            flavor = self.best_flavor if self.codegen.am_none else self.codegen.flavor
-
-        if clear_prototype:
-            # clear the existing function prototype
-            self._function.prototype = None
-            self._function.ran_cca = False
-
-        if reset_cache:
-            self.instance.kb.decompilations.discard((self._function.addr, flavor))
-            variables = self.instance.kb.dec_variables
-            if variables.has_function_manager(self._function.addr):
-                del variables[self._function.addr]
-
-        def decomp_ready(*args, **kwargs) -> None:  # pylint:disable=unused-argument
-            # this code is _partially_ duplicated from _on_new_function. be careful!
-            all_flavors = self.instance.kb.decompilations.all_flavors(self._function.addr)
-            self._update_available_views(all_flavors)
-            available = self.instance.kb.decompilations.available_flavors(self._function.addr)
-            if available:
-                chosen_flavor = flavor if flavor in available else available[0]
-                cached = self.instance.kb.decompilations[(self._function.addr, chosen_flavor)]
-                if cached is not None:
-                    self.codegen.am_obj = cached.codegen
-                    self.codegen.am_event(already_regenerated=True)
-                    self._focus_core(focus, focus_addr)
-                    if focus_addr is not None:
-                        self.jump_history.record_address(focus_addr)
-                    else:
-                        self.jump_history.record_address(self._function.am_obj.addr)
-                    self._last_function = self._function.am_obj
-            self._maybe_preload_callees()
-            self._maybe_auto_llm_refine()
-            if on_finish is not None:
-                on_finish()
-
-        def decomp(*_) -> None:
-            job = DecompileFunctionJob(
-                self.instance,
-                self._function.am_obj,
-                cfg=self.instance.cfg,
-                options=self._options.option_and_values,
-                optimization_passes=self._options.selected_passes,
-                peephole_optimizations=self._options.selected_peephole_opts,
-                inline_functions=self.instance.functions_to_inline,
-                vars_must_struct=self.vars_must_struct,
-                on_finish=decomp_ready,
-                blocking=True,
-                regen_clinic=regen_clinic,
-                flavor=flavor,
-            )
-            self.workspace.job_manager.add_job(job)
-
-        if self._function.ran_cca is False and (
-            self._function.prototype is None or self._function.is_prototype_guessed is True
-        ):
-            # run calling convention analysis for this function
-            if self.instance.analysis_configuration:
-                options = self.instance.analysis_configuration["varec"].to_dict()
-            else:
-                options = {}
-            options["workers"] = 0
-            varrec_job = VariableRecoveryJob(self.instance, **options, on_finish=decomp, func_addr=self._function.addr)
-            self.workspace.job_manager.add_job(varrec_job)
-        else:
-            decomp()
+        self.presenter.decompile(
+            clear_prototype=clear_prototype,
+            focus=focus,
+            focus_addr=focus_addr,
+            flavor=flavor,
+            reset_cache=reset_cache,
+            regen_clinic=regen_clinic,
+            on_finish=on_finish,
+        )
 
     def highlight_chunks(self, chunks) -> None:
         color = Conf.pseudocode_highlight_color
@@ -333,47 +290,27 @@ class CodeView(FunctionView):
         being decompiled, follows the pseudocode when it is regenerated, and goes away when
         another function is shown.
         """
-        if copies:
-            self._highlight_layers[layer] = (func_addr, copies)
-        else:
-            self._highlight_layers.pop(layer, None)
-        self._rebuild_pattern_selections()
+        self.presenter.highlight_pattern(func_addr, copies, layer)
 
     def set_pattern_highlight(self, name: str, on: bool) -> None:
         """Band the named pattern's matches in whatever function is shown: the calls the
         outlined ones became, found in the pseudocode itself, and the lines of the rest."""
-        if on:
-            self._highlighted_patterns.add(name)
-        else:
-            self._highlighted_patterns.discard(name)
-        self._rebuild_pattern_selections()
+        self.presenter.set_pattern_highlight(name, on)
 
     def is_pattern_highlighted(self, name: str) -> bool:
-        return name in self._highlighted_patterns
+        return self.presenter.is_pattern_highlighted(name)
 
     @property
     def has_pattern_highlight(self) -> bool:
         """Whether anything is highlighted: a Discover family, a pattern's matches, or either in the disassembly."""
-        return bool(self._highlight_layers or self._highlighted_patterns or self._disasm_pattern_addrs())
+        return self.presenter.has_pattern_highlight
 
     def _disasm_pattern_addrs(self) -> set[int]:
-        disasm = self.workspace.view_manager.first_view_in_category("disassembly")
-        return set(getattr(disasm, "pattern_highlight_addrs", ()))
+        return self.presenter.disasm_pattern_addrs()
 
     def clear_pattern_highlight(self) -> bool:
         """Drop every pattern highlight; returns whether there was any."""
-        had = bool(self._highlight_layers or self._highlighted_patterns)
-        disasm = self.workspace.view_manager.first_view_in_category("disassembly")
-        if disasm is not None and disasm.clear_pattern_highlight():
-            had = True
-        self._highlight_layers.clear()
-        self._highlighted_patterns.clear()
-        self._pattern_selections = []
-        self._apply_extra_selections()
-        self._update_clear_highlights()
-        if had:
-            self.reload_patterns()
-        return had
+        return self.presenter.clear_pattern_highlight()
 
     def _update_clear_highlights(self) -> None:
         if self._clear_highlights_btn is not None:
@@ -386,74 +323,27 @@ class CodeView(FunctionView):
 
     def _highlight_addrs(self) -> set[int]:
         """Every instruction address a highlight layer or a highlighted pattern asks for here."""
-        if self._function.am_none:
-            return set()
-        func_addr = self._function.am_obj.addr
-        addrs: set[int] = set()
-        for layer, (layer_func, copies) in list(self._highlight_layers.items()):
-            if layer_func != func_addr:
-                # another function is on screen
-                del self._highlight_layers[layer]
-                continue
-            addrs.update(*copies)
-        kb = self.instance.kb
-        for name in list(self._highlighted_patterns):
-            if kb is None or name not in kb.patterns:
-                self._highlighted_patterns.discard(name)
-                continue
-            stats = kb.patterns.stats(func_addr, name)
-            if stats is not None:
-                addrs.update(stats.call_addrs)
-                # an outlined match's statements are gone and match nothing; the rest still render
-                addrs.update(*stats.match_addrs)
-        return addrs
+        return self.presenter.highlight_addrs()
 
     def _highlighted_call_names(self) -> set[str]:
-        kb = self.instance.kb
-        names = set()
-        for name in self._highlighted_patterns:
-            stored = kb.patterns.get(name) if kb is not None else None
-            if stored is not None:
-                names.add(stored.pattern.call_name)
-        return names
+        return self.presenter.highlighted_call_names()
 
     def _call_positions(self, call_names: set[str]) -> list[int]:
-        """Where the pseudocode calls any of ``call_names``. An applied pattern is a call to its
-        call name, so this needs neither the outliner pass's numbers nor a new decompilation."""
-        if not call_names or self.codegen.am_none:
-            return []
-        positions = []
-        for pos, elem in self.codegen.am_obj.map_pos_to_node.items():
-            obj = elem.obj
-            if not isinstance(obj, FunctionCallNode):
-                continue
-            target = obj.callee_func.name if obj.callee_func is not None else obj.callee_target
-            if isinstance(target, str) and target in call_names:
-                positions.append(pos)
-        return positions
+        """Where the pseudocode calls any of ``call_names``."""
+        return self.presenter.call_positions(call_names)
 
     def pattern_call_count(self, name: str) -> int:
         """How many times the pseudocode on screen calls the named pattern's call name."""
-        kb = self.instance.kb
-        stored = kb.patterns.get(name) if kb is not None else None
-        if stored is None:
-            return 0
-        return len(self._call_positions({stored.pattern.call_name}))
+        return self.presenter.pattern_call_count(name)
 
     def _rebuild_pattern_selections(self) -> None:
         self._pattern_selections = []
-        addrs = self._highlight_addrs()
-        call_positions = self._call_positions(self._highlighted_call_names())
-        if (addrs or call_positions) and not self.codegen.am_none and self._doc is not None:
+        positions = self.presenter.pattern_highlight_positions()
+        if positions and self._doc is not None:
             lines: dict[int, int] = {}
-            for pos in call_positions:
+            for pos in positions:
                 block = self._doc.findBlock(pos)
                 lines.setdefault(block.blockNumber(), block.position())
-            for pos, elem in self.codegen.am_obj.map_pos_to_node.items():
-                ins = (getattr(elem.obj, "tags", None) or {}).get("ins_addr")
-                if ins in addrs:
-                    block = self._doc.findBlock(pos)
-                    lines.setdefault(block.blockNumber(), block.position())
             for pos in sorted(lines.values()):
                 sel = QTextEdit.ExtraSelection()
                 sel.cursor = self._textedit.textCursor()
@@ -472,16 +362,10 @@ class CodeView(FunctionView):
         """
         A full-width line highlight for every bookmarked address rendered in this function.
         """
-        if self.codegen.am_none or self._doc is None:
+        if self._doc is None:
             return []
         selections = []
-        for bookmark in self.instance.annotations.bookmarks:
-            owner = self._function_at(bookmark.addr)
-            if owner is not None and owner is not self._function.am_obj:
-                continue
-            pos = self._doc.find_closest_node_pos(bookmark.addr)
-            if pos is None:
-                continue
+        for pos in self.presenter.bookmark_positions():
             sel = QTextEdit.ExtraSelection()
             sel.cursor = self._textedit.textCursor()
             sel.cursor.setPosition(pos)
@@ -493,51 +377,10 @@ class CodeView(FunctionView):
 
     def sync_kb_comments(self) -> bool:
         """
-        Mirror ``kb.comments`` for this function into the codegen's statement comments so comments
-        made in the disassembly (or before a re-decompilation) show up in the pseudocode. Returns
-        whether anything changed, i.e. whether a re-render is needed.
-
-        The function's entry address is skipped: the decompiler already renders that one as the
-        function header, and mirroring it would render it a second time as an orphaned comment.
+        Mirror ``kb.comments`` for this function into the codegen's statement comments (see
+        :meth:`CodePresenter.sync_kb_comments`). Returns whether a re-render is needed.
         """
-        if self.codegen.am_none or self._function.am_none:
-            return False
-        kb = self.instance.kb
-        codegen = self.codegen.am_obj
-        stmt_comments = getattr(codegen, "stmt_comments", None)
-        if kb is None or stmt_comments is None:
-            return False
-
-        if self._mirrored_codegen is not codegen:
-            self._mirrored_codegen = codegen
-            self._mirrored_comments = {}
-
-        func = self._function.am_obj
-        low, high = func.addr, func.addr + max(func.size, 1)
-        desired = {
-            addr: text for addr, text in kb.comments.items() if text and addr != func.addr and low <= addr < high
-        }
-
-        changed = False
-        for addr, key in list(self._mirrored_comments.items()):
-            if addr not in desired:
-                if key in stmt_comments:
-                    del stmt_comments[key]
-                    changed = True
-                del self._mirrored_comments[addr]
-
-        for addr, text in desired.items():
-            key = self._mirrored_comments.get(addr)
-            if key is None:
-                # adopt an existing entry written by another path (e.g. the MCP edit tools) rather
-                # than adding a second copy of the same comment
-                floor = _floor_comment_addr(codegen, addr)
-                key = floor if stmt_comments.get(floor) == text else _snap_comment_addr(codegen, addr)
-                self._mirrored_comments[addr] = key
-            if stmt_comments.get(key) != text:
-                stmt_comments[key] = text
-                changed = True
-        return changed
+        return self.presenter.sync_kb_comments()
 
     #
     # Find in view
@@ -547,58 +390,28 @@ class CodeView(FunctionView):
         """
         Open the incremental find bar, seeded with the current selection if there is one.
         """
-        selected = self._textedit.textCursor().selectedText()
-        self._find_bar.activate(selected if selected and " " not in selected else None)
-        self._update_find_matches()
+        self.presenter.show_find_bar()
 
     def find_next(self) -> None:
-        self._step_find_match(1)
+        self.presenter.find_next()
 
     def find_previous(self) -> None:
-        self._step_find_match(-1)
+        self.presenter.find_previous()
 
     def _update_find_matches(self) -> None:
-        pattern = self._find_bar.compile_query()
-        text = self._textedit.toPlainText()
-        self._find_matches = [(m.start(), m.end()) for m in pattern.finditer(text)] if pattern is not None else []
-        self._find_index = -1
-        color = Conf.disasm_view_operand_highlight_color
-        self._find_selections = [self._make_selection(start, end, color) for start, end in self._find_matches]
-        self._apply_extra_selections()
-        if self._find_matches:
-            # jump to the first match at or after the selection start, so that recompiling the
-            # query (typing, toggling case/regex) keeps the current match when it still matches
-            cursor = self._textedit.textCursor()
-            pos = min(cursor.anchor(), cursor.position())
-            index = next((i for i, (s, _) in enumerate(self._find_matches) if s >= pos), 0)
-            self._select_find_match(index)
-        else:
-            self._find_bar.set_match_status(0, 0)
+        self.presenter.update_find_matches()
 
     def _step_find_match(self, delta: int) -> None:
-        if not self._find_matches:
-            self._update_find_matches()
-            if not self._find_matches:
-                return
-            if delta > 0:
-                return
-        self._select_find_match((self._find_index + delta) % len(self._find_matches))
+        if delta > 0:
+            self.presenter.find_next()
+        else:
+            self.presenter.find_previous()
 
     def _select_find_match(self, index: int) -> None:
-        self._find_index = index
-        start, end = self._find_matches[index]
-        cursor = self._textedit.textCursor()
-        cursor.setPosition(start)
-        cursor.setPosition(end, QTextCursor.MoveMode.KeepAnchor)
-        self._textedit.setTextCursor(cursor)
-        self._find_bar.set_match_status(index, len(self._find_matches))
+        self.presenter.select_find_match(index)
 
     def _on_find_bar_closed(self) -> None:
-        self._find_matches = []
-        self._find_index = -1
-        self._find_selections = []
-        self._apply_extra_selections()
-        self._textedit.setFocus()
+        self.presenter.on_find_bar_closed()
 
     def _make_selection(self, start: int, end: int, color) -> QTextEdit.ExtraSelection:
         sel = QTextEdit.ExtraSelection()
@@ -614,71 +427,23 @@ class CodeView(FunctionView):
         )
 
     def variable_manager(self, func_addr: int | Literal["global"] | None = None) -> VariableManagerInternal | None:
-        if self.codegen is None or self.codegen.am_none:
-            return None
-        if func_addr is None and self._function is not None and not self._function.am_none:
-            func_addr = self._function.addr
-        if func_addr is None:
-            return None
-        variables = self.codegen.kb.dec_variables
-        return variables[func_addr] if func_addr in variables else None  # noqa:SIM401
+        return self.presenter.variable_manager(func_addr)
 
     #
     # Event callbacks
     #
 
-    def _on_new_addr(
-        self,
-        already_moved: bool = False,
-        focus: bool = False,
-        **kwargs,  # pylint:disable=unused-argument
-    ) -> None:
-        if already_moved:
-            return
-
-        addr = self.addr.am_obj
-
-        # the address may belong to another function (e.g., jumping back across a call); the nearest rendered
-        # position is only meaningful within the current function
-        func = self._function_at(addr)
-        if func is not None and func is not self._function.am_obj:
-            self._function.am_obj = func
-            self._function.am_event(focus_addr=addr, focus=focus)
-            return
-
-        new_text_pos = self._doc.find_closest_node_pos(addr) if self._doc is not None else None
-        if new_text_pos is None:
-            if func is not None:
-                log.error("There is a block which is in the current function but find_closest_node_pos failed on it")
-            return
-
-        # set the new cursor position
-        textedit = self.textedit
-        cursor = textedit.textCursor()
-        cursor.setPosition(new_text_pos)
-        textedit.setTextCursor(cursor)
-        if focus:
-            textedit.setFocus()
-            self._focus_core(True, None)
+    def _on_new_addr(self, already_moved: bool = False, focus: bool = False, **kwargs) -> None:
+        self.presenter.on_new_addr(already_moved=already_moved, focus=focus, **kwargs)
 
     def _function_at(self, addr: int) -> Function | None:
         """
         The function owning the block that contains addr, or None if unknown.
         """
-        if self.instance.cfb.am_none or self.instance.cfg.am_none:
-            return None
-        try:
-            block_addr, _ = self.instance.cfb.floor_item(addr)
-        except KeyError:
-            return None
-        block = self.instance.cfg.get_any_node(block_addr)
-        if block is None or block.function_address not in self.instance.kb.functions:
-            return None
-        return self.instance.kb.functions[block.function_address]
+        return self.presenter.function_at(addr)
 
-    def _on_new_node(self, **kwargs) -> None:  # pylint: disable=unused-argument
-        self.addr.am_obj = self._textedit.get_src_to_inst()
-        self.addr.am_event(already_moved=True)
+    def _on_new_node(self, **kwargs) -> None:
+        self.presenter.on_new_node(**kwargs)
 
     # pylint: disable=unused-argument
     def reload_patterns(self) -> None:
@@ -719,6 +484,7 @@ class CodeView(FunctionView):
         """
         if self.codegen.am_none:
             self._doc = None
+            self.presenter.rendered = False
             self._textedit.clear()
             return
 
@@ -744,46 +510,10 @@ class CodeView(FunctionView):
 
         self._view_selector.setCurrentText(self.codegen.flavor)
 
-        if already_regenerated:
-            # do not regenerate text
-            pass
-        else:
-            update_var_types = False
-            if event == "retype_variable":
-                dec = self.instance.project.analyses.Decompiler(
-                    self._function.am_obj,
-                    decompile=False,
-                    use_cache=True,
-                )
-                dec_cache = self.instance.kb.decompilations[(self._function.addr, "pseudocode")]
-                new_codegen = dec.reflow_variable_types(dec_cache)
-                # update the cache
-                dec_cache.codegen = new_codegen
+        self.presenter.regenerate_codegen(already_regenerated, event, **kwargs)
 
-                # update self
-                self.codegen.am_obj = new_codegen
-                update_var_types = True
-            elif event == "retype_function":
-                # dropping the variable manager is what makes the new prototype take effect; it also drops every
-                # rename and manual type, so put the snapshot back once the new variables exist
-                user_edits = kwargs.get("user_edits") or {}
-
-                def restore_edits() -> None:
-                    if restore_user_edits(self.instance.kb, self._function.addr, user_edits)[0]:
-                        self.codegen.am_event()
-
-                self.decompile(reset_cache=True, on_finish=restore_edits if user_edits else None)
-                update_var_types = True
-
-            if not update_var_types:
-                # regenerate text in the end
-                self.codegen.regenerate_text()
-            else:
-                # trigger a full analysis
-                self.codegen.cleanup()
-                self.codegen._analyze()
-
-        self._options.dirty = False
+        # the cursor moves as the document is set, and the presenter answers for a document only once it is shown
+        self.presenter.rendered = True
         if self._doc is None:
             self._doc = QCodeDocument(self.codegen)
             self._textedit.setDocument(self._doc)
@@ -809,7 +539,7 @@ class CodeView(FunctionView):
             # restore the scroll position
             self._textedit.verticalScrollBar().setValue(scroll_pos)
 
-        if self.codegen.flavor in {"pseudocode", "rust", "go"}:
+        if self.presenter.shows_options:
             self._options.show()
         else:
             self._options.hide()
@@ -819,114 +549,35 @@ class CodeView(FunctionView):
 
     def _on_new_function(self, focus: bool = False, focus_addr=None, flavor=None, **kwargs) -> None:  # pylint: disable=unused-argument
         # sets a new function. extra args are used in case this operation requires waiting for the decompiler
-        if flavor is None:
-            flavor = self.best_flavor if self.codegen.am_none else self.codegen.flavor
-
-        if not self.codegen.am_none and self._last_function is self._function.am_obj:
-            self._focus_core(focus, focus_addr)
-            return
-        all_flavors = self.instance.kb.decompilations.all_flavors(self._function.addr)
-        self._update_available_views(all_flavors)
-        available = self.instance.kb.decompilations.available_flavors(self._function.addr)
-        should_decompile = True
-        if available:
-            chosen_flavor = flavor if flavor in available else available[0]
-            dec_key = self._function.addr, chosen_flavor
-            dec = self.instance.kb.decompilations[dec_key]
-            cached = dec.codegen if dec is not None else None
-            if cached is not None and not isinstance(cached, DummyStructuredCodeGenerator):
-                should_decompile = False
-                self.codegen.am_obj = cached
-                self.codegen.am_event()
-                self._focus_core(focus, focus_addr)
-                self._last_function = self._function.am_obj
-
-        self.jump_history.jump_to(self._function.addr)
-
-        if should_decompile:
-            self.decompile(focus=focus, focus_addr=focus_addr, flavor=flavor)
-
-        console_view = self.workspace.view_manager.first_view_in_category("console")
-        if console_view is not None:
-            console_view.set_current_function(self._function.am_obj)
+        self.presenter.on_new_function(focus=focus, focus_addr=focus_addr, flavor=flavor, **kwargs)
 
     def _on_cursor_position_changed(self) -> None:
         if self._doc is None:
             return
-
-        cursor = self._textedit.textCursor()
-        pos = cursor.position()
-        selected_node = self._doc.get_node_at_position(pos)
-        if selected_node is not None:
-            # find all related text chunks and highlight them all
-            chunks = self._doc.find_related_text_chunks(selected_node)
-            # highlight these chunks
-            self.highlight_chunks(chunks)
-        else:
-            self.highlight_chunks([])
-
-        self.current_node.am_obj = selected_node
-        self.current_node.am_event()
+        self.presenter.cursor_moved(self._textedit.textCursor().position())
 
     def _navigate_to_function(self, from_addr: int, to_func: Function) -> None:
-        self.jump_history.record_address(from_addr)
-        self.jump_history.jump_to(to_func.addr)
-        self.workspace.decompile_function(to_func, view=self)
+        self.presenter.navigate_to_function(from_addr, to_func)
 
     def _on_mouse_doubleclicked(self) -> None:
         if self._doc is None:
             return
-
-        cursor = self._textedit.textCursor()
-        pos = cursor.position()
-        selected_node = self._doc.get_node_at_position(pos)
-        if selected_node is None:
-            return
-        if isinstance(selected_node, FunctionCallNode):
-            # decompile this new function
-            if selected_node.callee_func is not None:
-                self._navigate_to_function(selected_node.tags["ins_addr"], selected_node.callee_func)
-        elif isinstance(selected_node, ConstantNode):
-            # jump to highlighted constants
-            if selected_node.reference_values is not None and selected_node.value is not None:
-                for v in selected_node.reference_values.values():
-                    if isinstance(v, Function):
-                        self._navigate_to_function(selected_node.tags["ins_addr"], v)
-                        return
-                self.workspace.jump_to(selected_node.value)
-        elif isinstance(selected_node, VariableNode):
-            var = selected_node.variable
-            if var and isinstance(var, SimMemoryVariable):
-                self.workspace.jump_to(var.addr)
-        elif isinstance(selected_node, LabelNode) and "ins_addr" in selected_node.tags:
-            self.workspace.jump_to(selected_node.tags["ins_addr"])
+        self.presenter.activate()
 
     def jump_to(self, addr: int, src_ins_addr=None) -> bool:  # pylint:disable=unused-argument
-        if addr == self.addr.am_obj:
-            return False
-        self.addr.am_obj = addr
-        self.addr.am_event()
-        return True
+        return self.presenter.jump_to(addr, src_ins_addr)
 
     def jump_back(self) -> None:
-        addr = self.jump_history.backtrack()
-        if addr is None:
-            self.close()
-        else:
-            self.jump_to(addr)
+        self.presenter.jump_back()
 
     def popup_jumpto_dialog(self) -> None:
         JumpTo(self, parent=self).show()
 
     def jump_forward(self) -> None:
-        addr = self.jump_history.forwardstep()
-        if addr is not None:
-            self.jump_to(addr)
+        self.presenter.jump_forward()
 
     def jump_to_history_position(self, pos: int) -> None:
-        addr = self.jump_history.step_position(pos)
-        if addr is not None:
-            self.jump_to(addr)
+        self.presenter.jump_to_history_position(pos)
 
     def keyPressEvent(self, event):
         key = event.key()
@@ -939,17 +590,10 @@ class CodeView(FunctionView):
             self.popup_jumpto_dialog()
             return True
         elif key == Qt.Key_Escape:
-            # the first Escape dismisses a pattern highlight; with none shown it navigates back
-            if not self.clear_pattern_highlight():
-                self.jump_back()
+            self.presenter.escape()
             return True
         elif key == Qt.Key_Space and not self.codegen.am_none:
-            flavor = self.codegen.flavor
-            flavors = self.instance.kb.decompilations.available_flavors(self._function.addr)
-            idx = flavors.index(flavor)
-            newidx = (idx + 1) % len(flavors)
-            self.codegen.am_obj = self.instance.kb.decompilations[(self._function.addr, flavors[newidx])].codegen
-            self.codegen.am_event()
+            self.presenter.next_flavor()
             return True
 
         return super().keyPressEvent(event)
@@ -959,11 +603,7 @@ class CodeView(FunctionView):
         The address the disassembly view should show for the current cursor; falls back to the function head when the
         cursor address is unset or points outside the binary (e.g., a synthesized node tagged with address 0).
         """
-        addr = self.addr.am_obj
-        loader = self.instance.project.loader if not self.instance.project.am_none else None
-        if isinstance(addr, int) and addr and (loader is None or loader.find_object_containing(addr) is not None):
-            return addr
-        return self._function.addr if not self._function.am_none else None
+        return self.presenter.disassembly_target_addr()
 
     def _update_available_views(self, available) -> None:
         for _ in range(self._view_selector.count()):
@@ -971,15 +611,7 @@ class CodeView(FunctionView):
         self._view_selector.addItems(available)
 
     def _on_view_selector_changed(self, index) -> None:
-        if not self._function.am_none:
-            new_flavor = self._view_selector.itemText(index)
-            key = self._function.addr, new_flavor
-            if key in self.instance.kb.decompilations:
-                # it's available; just switch
-                self.codegen.am_obj = self.instance.kb.decompilations[key].codegen
-                self.codegen.am_event()
-            else:
-                self.decompile(flavor=new_flavor)
+        self.presenter.select_flavor(self._view_selector.itemText(index))
 
     #
     # Private methods
@@ -998,8 +630,9 @@ class CodeView(FunctionView):
         self._textedit.background = Conf.palette_base
         window.setCentralWidget(self._textedit)
 
-        # decompilation options
+        # decompilation options; the presenter's decompilations use what they say
         self._options = QDecompilationOptions(self, self.instance)
+        self.presenter.options = self._options
         options_dock = QDockWidget("Decompilation Options", self._options)
         window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, options_dock)
         options_dock.setWidget(self._options)
@@ -1073,6 +706,7 @@ class CodeView(FunctionView):
         self._find_bar.find_next.connect(self.find_next)
         self._find_bar.find_previous.connect(self.find_previous)
         self._find_bar.closed.connect(self._on_find_bar_closed)
+        self.presenter.find_bar = self._find_bar
 
         outer_layout = QVBoxLayout()
         outer_layout.addWidget(status_bar)
@@ -1100,51 +734,15 @@ class CodeView(FunctionView):
         """Update the function summary text box from the decompilation cache."""
         if self._summary_textedit is None:
             return
-        if self._function.am_none:
+        summary = self.presenter.function_summary()
+        if summary:
+            self._summary_textedit.setPlainText(summary)
+        else:
             self._summary_textedit.clear()
-            return
-        key = (self._function.addr, "pseudocode")
-        if key in self.instance.kb.decompilations:
-            dec_cache = self.instance.kb.decompilations[key]
-            if dec_cache is not None and getattr(dec_cache, "function_summary", None):
-                self._summary_textedit.setPlainText(dec_cache.function_summary)
-                return
-        self._summary_textedit.clear()
 
     def _maybe_auto_llm_refine(self) -> None:
         """Dispatch LLM refinement jobs for any auto-* options that are enabled."""
-        if self._function.am_none or self.instance.project.am_none:
-            return
-        if self.instance.project.am_obj.llm_client is None:
-            return
-
-        func = self._function.am_obj
-        code_view = self
-
-        def on_finish(*_args, **_kwargs):
-            code_view.codegen.am_event(already_regenerated=True)
-
-        modes: list[str] = []
-        if Conf.llm_auto_rename_variables:
-            modes.append(LLMRefineJob.SUGGEST_VARIABLE_NAMES)
-        if Conf.llm_auto_rename_function:
-            modes.append(LLMRefineJob.SUGGEST_FUNCTION_NAME)
-        if Conf.llm_auto_retype_variables:
-            modes.append(LLMRefineJob.SUGGEST_VARIABLE_TYPES)
-        if Conf.llm_auto_summarize:
-            modes.append(LLMRefineJob.SUMMARIZE)
-
-        for mode in modes:
-            job = LLMRefineJob(self.instance, func, mode=mode, on_finish=on_finish)
-            self.workspace.job_manager.add_job(job)
+        self.presenter.maybe_auto_llm_refine()
 
     def _maybe_preload_callees(self) -> None:
-        if not Conf.llm_preload_callees:
-            return
-        if self._function.am_none or self.instance.project.am_none:
-            return
-        if self.instance.project.am_obj.llm_client is None:
-            return
-
-        job = LLMPreloadCalleesJob(self.instance, self._function.am_obj)
-        self.workspace.job_manager.add_job(job)
+        self.presenter.maybe_preload_callees()

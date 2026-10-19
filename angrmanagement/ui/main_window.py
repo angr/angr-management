@@ -3,36 +3,30 @@ from __future__ import annotations
 
 import logging
 import os
-import pickle
 import time
-import uuid
 from typing import TYPE_CHECKING
 
 import PySide6QtAds as QtAds
-from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer, QUrl
-from PySide6.QtGui import QDesktopServices, QGuiApplication, QIcon, QKeySequence, QShortcut, QWindow
+from PySide6.QtCore import QEvent, QObject, QSize, Qt, QTimer
+from PySide6.QtGui import QIcon, QKeySequence, QShortcut, QWindow
 from PySide6.QtWidgets import (
     QDialog,
-    QFileDialog,
     QMainWindow,
-    QMessageBox,
     QWidget,
 )
 
 from angrmanagement.config import Conf, save_config
 from angrmanagement.consts import IMG_LOCATION
-from angrmanagement.daemon import daemon_conn, daemon_exists, run_daemon_process
-from angrmanagement.daemon.client import ClientService
+from angrmanagement.daemon.client import connect_to_daemon
 from angrmanagement.data.jobs import DependencyAnalysisJob
 from angrmanagement.data.jobs.loading import LoadBinaryJob
 from angrmanagement.data.library_docs import LibraryDocs
 from angrmanagement.data.signatures import init_flirt_signatures
 from angrmanagement.errors import InvalidURLError, UnexpectedStatusCodeError
 from angrmanagement.logic import GlobalInfo
-from angrmanagement.logic.commands import BasicCommand
-from angrmanagement.logic.threads import ExecuteCodeEvent
 from angrmanagement.mcp import MCPServerManager, is_mcp_available
 from angrmanagement.mcp.manager import DEFAULT_HOST, DEFAULT_PATH
+from angrmanagement.present.shell import DOCUMENTATION_URL, register_basic_commands, show_trace_file
 from angrmanagement.ui.dialogs.archive_loader import ArchiveLoaderDialog
 from angrmanagement.ui.dialogs.progress_dialog import ProgressDialog
 from angrmanagement.ui.views import DisassemblyView
@@ -53,6 +47,8 @@ from .menus.file_menu import FileMenu
 from .menus.help_menu import HelpMenu
 from .menus.plugin_menu import PluginMenu
 from .menus.view_menu import ViewMenu
+from .qt_executor import ExecuteCodeEvent, QExecuteCodeEventReceiver  # noqa: F401  # pylint: disable=unused-import
+from .qt_frontend import install_qt_frontend
 from .toolbar_manager import ToolbarManager
 from .toolbars import DebugToolbar, FeatureMapToolbar, FileToolbar
 from .workspace import Workspace
@@ -130,24 +126,6 @@ class ShiftShiftEventFilter(QObject):
         return False
 
 
-class QExecuteCodeEventReceiver(QObject):
-    """
-    A class that receives ExecuteCodeEvent and executes the code on the GUI thread.
-    """
-
-    def event(self, event, /):
-        if not isinstance(event, ExecuteCodeEvent):
-            return False
-        try:
-            event.result = event.execute()
-        except Exception as ex:  # pylint:disable=broad-except
-            event.exception = ex
-            if event.async_:
-                _l.exception("Exception occurred in an async job:")
-        event.event.set()
-        return True
-
-
 class MainWindow(QMainWindow):
     """
     The main window of angr management.
@@ -169,7 +147,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("angr management")
 
         GlobalInfo.main_window = self
-        GlobalInfo.event_receiver = QExecuteCodeEventReceiver()
+        install_qt_frontend()
         self.shown_at_start = show
 
         # initialization
@@ -247,8 +225,7 @@ class MainWindow(QMainWindow):
     def open_mainfile_dialog(self):
         # pylint: disable=assigning-non-slot
         # https://github.com/PyCQA/pylint/issues/3793
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
+        files = GlobalInfo.ui_services.pick_open_files(
             "Open a binary",
             self._get_recent_dir(),
             "All executables (*)"
@@ -256,8 +233,9 @@ class MainWindow(QMainWindow):
             ";;Core Dumps (*.core)"
             ";;angr database (*.adb)"
             ";;Archives (*.zip *.tar *.tar.gz *.tgz *.tar.bz2 *.tbz2 *.tar.xz *.txz)",
+            False,
         )
-        return file_path
+        return files[0] if files else ""
 
     def open_load_plugins_dialog(self) -> None:
         dlg = LoadPlugins(self.workspace.plugins)
@@ -266,15 +244,15 @@ class MainWindow(QMainWindow):
 
     def open_newstate_dialog(self) -> None:
         if self.workspace.main_instance.project.am_none:
-            QMessageBox.critical(self, "Cannot create new states", "Please open a binary to analyze first.")
+            GlobalInfo.ui_services.message(
+                "critical", "Cannot create new states", "Please open a binary to analyze first."
+            )
             return
         new_state_dialog = NewState(self.workspace, self.workspace.main_instance, parent=self, create_simgr=True)
         new_state_dialog.exec_()
 
     def open_doc_link(self) -> None:
-        QDesktopServices.openUrl(
-            QUrl("https://angr-management.readthedocs.io/en/latest/", QUrl.ParsingMode.TolerantMode)
-        )
+        GlobalInfo.ui_services.open_url(DOCUMENTATION_URL)
 
     def open_about_dialog(self) -> None:
         dlg = LoadAboutDialog()
@@ -430,30 +408,8 @@ class MainWindow(QMainWindow):
         if not use_daemon:
             return
 
-        # connect to daemon (if there is one)
-        if not daemon_exists():
-            print("[+] Starting a new daemon.")
-            run_daemon_process()
-            time.sleep(0.2)
-        else:
-            print("[+] Connecting to an existing angr management daemon.")
-
-        while True:
-            try:
-                GlobalInfo.daemon_conn = daemon_conn(service=ClientService)
-            except ConnectionRefusedError:
-                print("[-] Connection failed... try again.")
-                time.sleep(0.4)
-                continue
-            print("[+] Connected to daemon.")
-            break
-
-        from rpyc import BgServingThread  # pylint:disable=import-outside-toplevel
-
-        _ = BgServingThread(GlobalInfo.daemon_conn)
-
-        GlobalInfo.client_id = str(uuid.uuid4())
-        GlobalInfo.daemon_conn.root.register_client(GlobalInfo.client_id)
+        # connect to daemon (if there is one), as the terminal app does
+        connect_to_daemon()
 
     #
     # MCP server
@@ -487,7 +443,7 @@ class MainWindow(QMainWindow):
 
         def report_error(title: str, message: str) -> None:
             if interactive:
-                QMessageBox.critical(self, title, message)
+                GlobalInfo.ui_services.message("critical", title, message)
             else:
                 _l.warning("%s: %s", title, message)
                 self.statusBar().showMessage(f"{title}: {message}", 10000)
@@ -547,7 +503,7 @@ class MainWindow(QMainWindow):
             text = url
             message = f"Copied to clipboard: {url}"
 
-        QGuiApplication.clipboard().setText(text)
+        GlobalInfo.ui_services.set_clipboard_text(text)
         self.statusBar().showMessage(message, 5000)
 
     #
@@ -566,21 +522,21 @@ class MainWindow(QMainWindow):
         supported = scheme.is_url_scheme_supported()
 
         if not registered and supported and not Conf.prompted_for_url_scheme_registration:
-            btn = QMessageBox.question(
-                None,
+            btn = GlobalInfo.ui_services.question(
                 "Setting up angr URL scheme",
                 'angr URL scheme allows "deep linking" from browsers and other applications '
                 "by registering the angr:// protocol to the current user. Do you want to "
                 "register it? You may unregister at any "
                 "time in Preferences.",
-                defaultButton=QMessageBox.StandardButton.Yes,
+                ["Yes", "No"],
+                "Yes",
             )
-            if btn == QMessageBox.StandardButton.Yes:
+            if btn == "Yes":
                 try:
                     AngrUrlScheme().register_url_scheme()
                 except (ValueError, FileNotFoundError) as ex:
-                    QMessageBox.warning(
-                        None,
+                    GlobalInfo.ui_services.message(
+                        "warning",
                         "Error in registering angr URL scheme",
                         "Failed to register the angr URL scheme.\nThe following exception occurred:\n" + str(ex),
                     )
@@ -597,65 +553,7 @@ class MainWindow(QMainWindow):
         """
         Register basic window commands.
         """
-        self.workspace.command_manager.register_commands(
-            [
-                BasicCommand(action.__name__, caption, action)
-                for caption, action in [
-                    ("AI: LLM Refine All", self.llm_refine_all),
-                    ("AI: LLM Suggest Variable Names", self.llm_suggest_variable_names),
-                    ("AI: LLM Suggest Function Name", self.llm_suggest_function_name),
-                    ("AI: LLM Suggest Variable Types", self.llm_suggest_variable_types),
-                    ("AI: LLM Summarize Function", self.llm_summarize_function),
-                    ("AI: Start MCP Server", self.start_mcp_server),
-                    ("AI: Stop MCP Server", self.stop_mcp_server),
-                    ("AI: Copy MCP Server URL", self.copy_mcp_url),
-                    ("Analyze: Decompile", self.decompile_current_function),
-                    ("Analyze: Run Analysis...", self.run_analysis),
-                    ("Bookmarks: Go to next bookmark", self.workspace.goto_next_bookmark),
-                    ("Bookmarks: Toggle bookmark", self.workspace.toggle_bookmark),
-                    ("File: Close project", self.close_project),
-                    ("File: Exit", self.quit),
-                    ("File: Load a new binary...", self.open_file_button),
-                    ("File: Load a new trace...", self.load_trace),
-                    ("File: Load angr database...", self.load_database),
-                    ("File: Load FLIRT signature file...", self.load_signature_button),
-                    ("File: Preferences...", self.preferences),
-                    ("File: Save angr database as...", self.save_database_as),
-                    ("File: Save angr database...", self.save_database),
-                    ("File: Save patched binary as...", self.save_patched_binary_as),
-                    ("Help: About", self.open_about_dialog),
-                    ("Help: Documentation", self.open_doc_link),
-                    ("View: Bookmarks", self.workspace.show_bookmarks_view),
-                    ("View: Breakpoints", self.workspace.show_breakpoints_view),
-                    ("View: Call Explorer", self.workspace.show_call_explorer_view),
-                    ("View: Comments", self.workspace.show_comments_view),
-                    ("View: Console", self.workspace.show_console_view),
-                    ("View: Disassembly (Graph)", self.workspace.show_graph_disassembly_view),
-                    ("View: Disassembly (Linear)", self.workspace.show_linear_disassembly_view),
-                    ("View: Functions", self.workspace.show_functions_view),
-                    ("View: Hex", self.workspace.show_hex_view),
-                    ("View: Function Signatures", self.workspace.show_signatures_view),
-                    ("View: Jobs", self.workspace.show_jobs_view),
-                    ("View: Log", self.workspace.show_log_view),
-                    ("View: MCP History", self.workspace.show_mcp_history_view),
-                    ("View: New Disassembly (Graph)", self.workspace.create_and_show_graph_disassembly_view),
-                    ("View: New Disassembly (Linear)", self.workspace.create_and_show_linear_disassembly_view),
-                    ("View: New Hex", self.workspace.create_and_show_hex_view),
-                    ("View: Patches", self.workspace.show_patches_view),
-                    ("View: Proximity", self.workspace.view_proximity_for_current_function),
-                    ("View: Pseudocode", self.workspace.show_pseudocode_view),
-                    ("View: Registers", self.workspace.show_registers_view),
-                    ("View: Search", self.workspace.show_search_view),
-                    ("View: Stack", self.workspace.show_stack_view),
-                    ("View: States", self.workspace.show_states_view),
-                    ("View: Strings", self.workspace.show_strings_view),
-                    ("View: Symbolic Execution", self.workspace.show_symexec_view),
-                    ("View: Trace map", self.workspace.show_trace_map_view),
-                    ("View: Traces", self.workspace.show_traces_view),
-                    ("View: Types", self.workspace.show_types_view),
-                ]
-            ]
-        )
+        register_basic_commands(self.workspace.command_manager, self)
 
     #
     # Event
@@ -668,21 +566,17 @@ class MainWindow(QMainWindow):
             and not self.workspace.main_instance.project.am_none
             and self.shown_at_start
         ):
-            msgbox = QMessageBox(self)
-            msgbox.setWindowTitle("Save database")
-            msgbox.setText("angr management is about to exit. Do you want to save the database?")
-            msgbox.setIcon(QMessageBox.Icon.Question)
-            msgbox.setWindowIcon(self.windowIcon())
-            msgbox.setStandardButtons(
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
+            r = GlobalInfo.ui_services.question(
+                "Save database",
+                "angr management is about to exit. Do you want to save the database?",
+                ["Yes", "No", "Cancel"],
+                "Yes",
             )
-            msgbox.setDefaultButton(QMessageBox.StandardButton.Yes)
-            r = msgbox.exec_()
 
-            if r == QMessageBox.StandardButton.Cancel:
+            if r == "Cancel":
                 event.ignore()
                 return
-            elif r == QMessageBox.StandardButton.Yes:
+            elif r == "Yes":
                 save_r = self.save_database()
                 if not save_r:
                     # failed to save the database
@@ -736,8 +630,8 @@ class MainWindow(QMainWindow):
         """
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return True
-        QMessageBox.warning(
-            self,
+        GlobalInfo.ui_services.message(
+            "warning",
             "A project is already open",
             "A binary is already loaded. Please close it first (File → Close Project) before opening a new one.",
         )
@@ -746,26 +640,23 @@ class MainWindow(QMainWindow):
     def close_project(self) -> None:
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return
-        msgbox = QMessageBox(self)
-        msgbox.setWindowTitle("Close project")
-        msgbox.setText("Close the current project? Any unsaved analysis will be lost.")
-        msgbox.setIcon(QMessageBox.Icon.Question)
-        msgbox.setWindowIcon(self.windowIcon())
-        msgbox.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        msgbox.setDefaultButton(QMessageBox.StandardButton.No)
-        if msgbox.exec_() != QMessageBox.StandardButton.Yes:
+        answer = GlobalInfo.ui_services.question(
+            "Close project", "Close the current project? Any unsaved analysis will be lost.", ["Yes", "No"], "No"
+        )
+        if answer != "Yes":
             return
         self.workspace.close_project()
 
     def open_trace_file_button(self) -> None:
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
+        files = GlobalInfo.ui_services.pick_open_files(
             "Open a trace file",
             Conf.last_used_directory,
             "All files (*);;Trace files (*.trace);;",
+            False,
         )
-        if not file_path:
+        if not files:
             return
+        file_path = files[0]
         Conf.last_used_directory = os.path.dirname(file_path)
         self.load_trace_file(file_path)
 
@@ -777,36 +668,10 @@ class MainWindow(QMainWindow):
         self.workspace.show_signatures_view()
 
     def load_trace_file(self, file_path) -> None:
-        if isurl(file_path):
-            QMessageBox.critical(
-                self,
-                "Unsupported Action",
-                "Downloading trace files is not yet supported. Please specify a path to a file on disk.",
-            )
-        else:
-            # File
-            if os.path.isfile(file_path):
-                try:
-                    with open(file_path, "rb") as f:
-                        loaded_sim_state = pickle.load(f)
-                        analysis_params = {
-                            "end_state": loaded_sim_state,
-                            "start_addr": None,
-                            "end_addr": None,
-                            "block_addrs": None,
-                        }
-                        self.workspace.view_data_dependency_graph(analysis_params)
-                    self._recent_file(file_path)
-                except pickle.PickleError:
-                    QMessageBox.critical(
-                        self, "Unable to load trace file", "Trace file must contain a serialized SimState."
-                    )
-            else:
-                QMessageBox.critical(
-                    self,
-                    "File not found",
-                    f"angr management cannot open file {file_path}. Please make sure that the file exists.",
-                )
+        if show_trace_file(
+            self.workspace, file_path, lambda title, text: GlobalInfo.ui_services.message("critical", title, text)
+        ):
+            self._recent_file(file_path)
 
     def load_file(self, file_path) -> None:
         if not isurl(file_path):
@@ -837,8 +702,8 @@ class MainWindow(QMainWindow):
                     self._recent_file(file_path)
                     self.workspace.job_manager.add_job(LoadBinaryJob(self.workspace.main_instance, file_path))
             else:
-                QMessageBox.critical(
-                    self,
+                GlobalInfo.ui_services.message(
+                    "critical",
                     "File not found",
                     f"angr management cannot open file {file_path}. Please make sure that the file exists.",
                 )
@@ -846,23 +711,25 @@ class MainWindow(QMainWindow):
             # url
             if not self._ensure_no_open_project():
                 return
-            r = QMessageBox.question(
-                self,
+            r = GlobalInfo.ui_services.question(
                 "Downloading a file",
                 f"Do you want to download a file from {file_path} and open it in angr management?",
-                defaultButton=QMessageBox.StandardButton.Yes,
+                ["Yes", "No"],
+                "Yes",
             )
-            if r == QMessageBox.StandardButton.Yes:
+            if r == "Yes":
                 try:
                     target_path = download_url(file_path, parent=self, to_file=True, file_path=None)
                 except InvalidURLError:
-                    QMessageBox.critical(
-                        self, "Downloading failed", "angr management failed to download the file. The URL is invalid."
+                    GlobalInfo.ui_services.message(
+                        "critical",
+                        "Downloading failed",
+                        "angr management failed to download the file. The URL is invalid.",
                     )
                     return
                 except UnexpectedStatusCodeError as ex:
-                    QMessageBox.critical(
-                        self,
+                    GlobalInfo.ui_services.message(
+                        "critical",
                         "Downloading failed",
                         "angr management failed to retrieve the header of the file. "
                         f"The HTTP request returned an unexpected status code {ex.status_code}.",
@@ -880,15 +747,11 @@ class MainWindow(QMainWindow):
             return
 
         # Open File window
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Load angr database",
-            ".",
-            "angr databases (*.adb)",
-        )
+        files = GlobalInfo.ui_services.pick_open_files("Load angr database", ".", "angr databases (*.adb)", False)
 
-        if not file_path:
+        if not files:
             return
+        file_path = files[0]
 
         self._load_database(file_path)
 
@@ -910,11 +773,8 @@ class MainWindow(QMainWindow):
             default_database_path = os.path.normpath(self.workspace.main_instance.project.filename) + ".adb"
 
         # Open File window
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "Save angr database",
-            default_database_path,
-            "angr databases (*.adb)",
+        file_path = GlobalInfo.ui_services.pick_save_file(
+            "Save angr database", default_database_path, "angr databases (*.adb)"
         )
 
         if not file_path:
@@ -929,8 +789,7 @@ class MainWindow(QMainWindow):
         if self.workspace.main_instance is None or self.workspace.main_instance.project.am_none:
             return
 
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
+        file_path = GlobalInfo.ui_services.pick_save_file(
             "Save patched binary as...",
             self.workspace.main_instance.project.loader.main_object.binary
             + ".patched",  # FIXME: this will not work if we are loading from an angrdb
@@ -943,10 +802,10 @@ class MainWindow(QMainWindow):
                 f.write(b)
 
     def load_trace(self) -> None:
-        file_path, _ = QFileDialog.getOpenFileName(self, "Load trace", ".", "bintrace (*.trace)")
-        if not file_path:
+        files = GlobalInfo.ui_services.pick_open_files("Load trace", ".", "bintrace (*.trace)", False)
+        if not files:
             return
-        self.workspace.load_trace_from_path(file_path)
+        self.workspace.load_trace_from_path(files[0])
 
     def preferences(self) -> None:
         pref = Preferences(self.workspace, parent=self)

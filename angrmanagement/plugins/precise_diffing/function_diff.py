@@ -17,6 +17,12 @@ if TYPE_CHECKING:
     from angrmanagement.ui.views import DisassemblyView
 
 
+def function_supergraph(view):
+    """The supergraph of the function a disassembly view shows: the Qt view's graph, or the terminal view's."""
+    flow_graph = getattr(view, "_flow_graph", None) or view.flow_graph
+    return flow_graph.function_graph.supergraph
+
+
 class FunctionDiff:
     """
     A class to represent a diff of two functions, which may either be part of a larger disassembly view or not.
@@ -241,8 +247,8 @@ class BFSFunctionDiff(FunctionDiff):
         **kwargs,
     ) -> None:
         super().__init__(func_base, func_rev, **kwargs)
-        self.base_cfg = view_base._flow_graph.function_graph.supergraph
-        self.rev_cfg = view_rev._flow_graph.function_graph.supergraph
+        self.base_cfg = function_supergraph(view_base)
+        self.rev_cfg = function_supergraph(view_rev)
         self.base_insns = self._linear_asm_from_function(func_base, disas=self.disas_base, as_dict=True)
         self.rev_insns = self._linear_asm_from_function(func_rev, disas=self.disas_rev, as_dict=True)
         self.compute_function_diff()

@@ -3,13 +3,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from angr.analyses.decompiler.known_patterns import PAnyStmt, dsl
-from angr.analyses.decompiler.known_patterns.edit import describe
 from PySide6.QtCore import QPoint, QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QPen, QTransform
 from PySide6.QtWidgets import QGraphicsSimpleTextItem, QMenu
 
 from angrmanagement.config import Conf
+from angrmanagement.present.patterns import LEAF_KINDS, node_detail, node_label
 from angrmanagement.utils.graph_layouter import GraphLayouter
 
 from .qgraph import QZoomableDraggableGraphicsView
@@ -34,61 +33,6 @@ _FILL = {
     "expr": QColor(0xFF, 0xF8, 0xE1),
     "wildcard-expr": QColor(0xE0, 0xE0, 0xE0),
 }
-
-
-def _bytes(n: int) -> str:
-    return f"{n} byte" if n == 1 else f"{n} bytes"
-
-
-def _callee(names: frozenset[str]) -> str:
-    return "|".join(sorted(names)) or "*"
-
-
-def node_label(node: PatternNode) -> str:
-    """The AIL class a node matches, then what it constrains; describe() for the rest."""
-    if isinstance(node, dsl.PAnyStmt):
-        label = "Statement (any)"
-    elif isinstance(node, dsl.PAssign):
-        label = "Assignment"
-    elif isinstance(node, dsl.PStore):
-        label = "Store" + (f" {_bytes(node.size)}" if node.size is not None else "")
-    elif isinstance(node, dsl.PCallStmt):
-        label = "Call " + _callee(node.call.names)
-    elif isinstance(node, dsl.PCondJump):
-        label = "ConditionalJump"
-    elif isinstance(node, dsl.PReturn):
-        label = "Return" if node.values is not None else "Return (any values)"
-    elif isinstance(node, dsl.PAny):
-        label = "Expression (any)"
-    elif isinstance(node, dsl.PVVar):
-        label = "VirtualVariable" + (f" {node.bits} bits" if node.bits is not None else "")
-    elif isinstance(node, dsl.PConst):
-        if node.symbol is not None:
-            label = f"Const &{node.symbol}"
-        elif node.value is not None:
-            label = f"Const {node.value:#x}" if node.value >= 0 else f"Const {node.value}"
-        else:
-            label = "Const (any)"
-    elif isinstance(node, (dsl.PBinOp, dsl.PUnaryOp)):
-        ops = node.op if isinstance(node.op, str) else "|".join(sorted(node.op))
-        label = f"{'BinaryOp' if isinstance(node, dsl.PBinOp) else 'UnaryOp'} {ops}"
-    elif isinstance(node, dsl.PLoad):
-        label = "Load" + (f" {_bytes(node.size)}" if node.size is not None else "")
-    elif isinstance(node, dsl.PConv):
-        sizes = f" {node.from_bits} to {node.to_bits} bits" if node.from_bits and node.to_bits else ""
-        label = "Convert" + sizes
-    elif isinstance(node, dsl.PExtract):
-        label = "Extract" + (f" {node.bits} bits" if node.bits is not None else "")
-    elif isinstance(node, dsl.PCall):
-        label = "Call " + _callee(node.names)
-    elif isinstance(node, dsl.PPhi):
-        label = "Phi"
-    elif isinstance(node, dsl.PITE):
-        label = "ITE"
-    else:
-        return describe(node)
-    name = getattr(node, "name", None)
-    return f"{label} [{name}]" if name else label
 
 
 class QPatternNode(QCachedGraphicsItem):
@@ -126,20 +70,7 @@ class QPatternNode(QCachedGraphicsItem):
         return self._view.selected_path == self.path
 
     def _detail_text(self) -> str:
-        node = self.node
-        if self.kind in ("required", "optional", "wildcard"):
-            weight = node.weight  # type: ignore[union-attr]
-            parts = [self.kind]
-            if weight != 1.0:
-                parts.append(f"weight {weight:g}")
-            if isinstance(node, PAnyStmt):
-                return ", ".join(parts)
-            if self.path in self._view.collapsed:
-                parts.append("collapsed")
-            return ", ".join(parts)
-        if self.path in self._view.collapsed:
-            return "collapsed"
-        return ""
+        return node_detail(self.node, self.kind, self.path in self._view.collapsed)
 
     #
     # events
@@ -181,8 +112,7 @@ class QPatternNode(QCachedGraphicsItem):
     @property
     def failed(self) -> bool:
         """The leaf failed verification in the occurrence selected in the match table."""
-        is_leaf = self.kind in ("required", "optional", "wildcard")
-        return is_leaf and self._view.leaf_index(self.path) in self._view.failed_leaves
+        return self.kind in LEAF_KINDS and self._view.leaf_index(self.path) in self._view.failed_leaves
 
     def paint(self, painter, option, widget) -> None:  # pylint:disable=unused-argument
         painter.setBrush(_FILL[self.kind])

@@ -1,74 +1,49 @@
 from __future__ import annotations
 
-import functools
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QAbstractTableModel, QSize, Qt
-from PySide6.QtGui import QAction, QCursor, QFont
-from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableView, QVBoxLayout
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QCursor, QFont
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView, QVBoxLayout
 
 from angrmanagement.config import Conf
-from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
-from angrmanagement.logic.debugger import DebuggerWatcher
+from angrmanagement.data.breakpoint import BreakpointType
+from angrmanagement.present.stack import StackPresenter, StackTableModel
+from angrmanagement.ui.widgets.qt_table import QtTableModelAdapter
 
 from .view import InstanceView
 
 if TYPE_CHECKING:
     import angr
     import PySide6
+    from PySide6.QtWidgets import QMenu
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
 
 
-class QStackTableModel(QAbstractTableModel):
+class QStackTableModel(QtTableModelAdapter):
     """
-    Stack table model.
+    Stack table model: a Qt model over a :class:`~angrmanagement.present.stack.StackTableModel`.
     """
 
-    Headers = ["Offset", "Value"]
-    COL_OFFSET = 0
-    COL_VALUE = 1
+    Headers = StackTableModel.Headers
+    COL_OFFSET = StackTableModel.COL_OFFSET
+    COL_VALUE = StackTableModel.COL_VALUE
 
-    def __init__(self, log_widget: QStackTableWidget = None) -> None:
-        super().__init__()
+    table_model: StackTableModel
+
+    def __init__(self, log_widget: QStackTableWidget | None = None, table_model: StackTableModel | None = None) -> None:
+        super().__init__(table_model if table_model is not None else StackTableModel(), None, False)
         self._log_widget = log_widget
-        self.state: angr.SimState = None
 
-    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
-        return 0 if self.state is None else 15
+    @property
+    def state(self) -> angr.SimState | None:
+        return self.table_model.state
 
-    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
-        return len(self.Headers)
-
-    def headerData(self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...) -> Any:  # pylint:disable=unused-argument
-        if role != Qt.ItemDataRole.DisplayRole:
-            return None
-        if section < len(self.Headers):
-            return self.Headers[section]
-        return None
-
-    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
-        if not index.isValid():
-            return None
-        row = index.row()
-        col = index.column()
-        if role == Qt.ItemDataRole.DisplayRole:
-            return self._get_column_text(row, col)
-        else:
-            return None
-
-    def _get_column_text(self, row, col: int) -> Any:
-        width = self.state.arch.bits // 8
-        offset = row * width
-        mapping = {
-            QStackTableModel.COL_OFFSET: lambda x: str(offset),
-            QStackTableModel.COL_VALUE: lambda x: repr(self.state.stack_read(offset, width)),
-        }
-        func = mapping.get(col)
-        if func is None:
-            return None
-        return func(row)
+    @state.setter
+    def state(self, state: angr.SimState | None) -> None:
+        self.table_model.set_state(state)
 
 
 class QStackTableWidget(QTableView):
@@ -79,6 +54,7 @@ class QStackTableWidget(QTableView):
     def __init__(self, stack_view) -> None:
         super().__init__()
         self.stack_view = stack_view
+        self.presenter: StackPresenter = stack_view.presenter
 
         hheader = self.horizontalHeader()
         hheader.setVisible(True)
@@ -91,7 +67,7 @@ class QStackTableWidget(QTableView):
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
-        self.model: QStackTableModel = QStackTableModel(self)
+        self.model: QStackTableModel = QStackTableModel(self, self.presenter.model)
         self.setModel(self.model)
 
         font = QFont(Conf.disasm_font)
@@ -99,22 +75,9 @@ class QStackTableWidget(QTableView):
 
         hheader.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
 
-        self._dbg_manager = stack_view.instance.debugger_mgr
-        self._dbg_watcher = DebuggerWatcher(self._on_debugger_state_updated, self._dbg_manager.debugger)
-        self._on_debugger_state_updated()
-
     #
     # Events
     #
-
-    def closeEvent(self, event) -> None:
-        self._dbg_watcher.shutdown()
-        super().closeEvent(event)
-
-    def _on_debugger_state_updated(self) -> None:
-        dbg = self._dbg_manager.debugger
-        self.model.state = None if dbg.am_none else dbg.simstate
-        self.model.layoutChanged.emit()
 
     def contextMenuEvent(self, _: PySide6.QtGui.QContextMenuEvent) -> None:
         if not self.selectedIndexes():
@@ -127,34 +90,18 @@ class QStackTableWidget(QTableView):
         """
         Set breakpoint at current cursor.
         """
-        state = self.model.state
-        if state is None or not state.regs.sp.concrete:
-            return
-
         selected = self.selectedIndexes()
         if not selected:
             return
-
-        row = selected[0].row()
-        width = state.arch.bits // 8
-        offset = row * width + state.solver.eval(state.regs.sp)
-        self.stack_view.instance.breakpoint_mgr.add_breakpoint(Breakpoint(bp_type, offset, width))
+        self.presenter.set_breakpoint(selected[0].row(), bp_type)
 
     def _get_breakpoint_submenu(self) -> QMenu:
         """
         Get context menu to add new breakpoints.
         """
-        mnu = QMenu("Set &breakpoint", self)
-        act = QAction("Break on &Execute", mnu)
-        act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Execute))
-        mnu.addAction(act)
-        act = QAction("Break on &Read", mnu)
-        act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Read))
-        mnu.addAction(act)
-        act = QAction("Break on &Write", mnu)
-        act.triggered.connect(functools.partial(self._set_breakpoint, BreakpointType.Write))
-        mnu.addAction(act)
-        return mnu
+        selected = self.selectedIndexes()
+        row = selected[0].row() if selected else 0
+        return self.presenter.breakpoint_menu(row).qmenu(cached=False)
 
 
 class StackView(InstanceView):
@@ -162,8 +109,16 @@ class StackView(InstanceView):
     Stack table view.
     """
 
+    presenter: StackPresenter
+
     def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        super().__init__("stack", workspace, default_docking_position, instance)
+        super().__init__(
+            "stack",
+            workspace,
+            default_docking_position,
+            instance,
+            StackPresenter(workspace, instance, default_docking_position),
+        )
 
         self.base_caption = "Stack"
         self._tbl_widget: QStackTableWidget | None = None
@@ -176,6 +131,10 @@ class StackView(InstanceView):
 
     def reload(self) -> None:
         pass
+
+    def closeEvent(self, event) -> None:
+        self.presenter.close()
+        super().closeEvent(event)
 
     @staticmethod
     def minimumSizeHint():

@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QRectF
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
+from angrmanagement.present.block_tree.disasm_nodes import FunctionCommentNode
+
 from .qgraph_object import QCachedGraphicsItem
 
 if TYPE_CHECKING:
@@ -22,8 +24,17 @@ class QFunctionCommentBanner(QCachedGraphicsItem):
 
     COMMENT_PREFIX = "; "
 
-    def __init__(self, instance: Instance, func_addr: int, config: ConfigurationManager, parent=None) -> None:
+    def __init__(
+        self,
+        instance: Instance,
+        func_addr: int,
+        config: ConfigurationManager,
+        parent=None,
+        node: FunctionCommentNode | None = None,
+    ) -> None:
         super().__init__(parent=parent)
+        #: the comment's lines
+        self.node = node if node is not None else FunctionCommentNode(instance, func_addr)
         self.instance = instance
         self.func_addr = func_addr
         self._config = config
@@ -39,6 +50,7 @@ class QFunctionCommentBanner(QCachedGraphicsItem):
     #
 
     def refresh(self) -> None:
+        self.node.refresh()
         self._init_widgets()
 
     def setVisible(self, visible: bool) -> None:
@@ -58,14 +70,10 @@ class QFunctionCommentBanner(QCachedGraphicsItem):
             item.setParentItem(None)
         self._text_items = []
 
-        text = None
-        if self.instance.kb is not None:
-            text = self.instance.annotations.function_comment(self.func_addr)
-
         x, y = 0, 0
-        if text:
-            for line in text.split("\n"):
-                item = QGraphicsSimpleTextItem(self.COMMENT_PREFIX + line, self)
+        if self.node.text_lines:
+            for line in self.node.text_lines:
+                item = QGraphicsSimpleTextItem(line, self)
                 item.setFont(self._config.disasm_font)
                 item.setBrush(self._config.disasm_view_comment_color)
                 item.setPos(0, y)

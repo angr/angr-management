@@ -11,8 +11,8 @@ from .debugger import Debugger
 if TYPE_CHECKING:
     from angr import SimState
 
+    from angrmanagement.logic.workspace import BaseWorkspace
     from angrmanagement.ui.widgets.qsimulation_managers import QSimulationManagers
-    from angrmanagement.ui.workspace import Workspace
 
 
 _l = logging.getLogger(name=__name__)
@@ -23,7 +23,7 @@ class SimulationDebugger(Debugger):
     Simulation debugger.
     """
 
-    def __init__(self, sim_mgrs: QSimulationManagers, workspace: Workspace) -> None:
+    def __init__(self, sim_mgrs: QSimulationManagers, workspace: BaseWorkspace) -> None:
         super().__init__(workspace)
         self._sim_mgr_view: QSimulationManagers = sim_mgrs
         self._sim_mgr = sim_mgrs.simgr

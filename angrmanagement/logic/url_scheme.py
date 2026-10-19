@@ -5,8 +5,6 @@ import pathlib
 import subprocess
 import sys
 
-from PySide6.QtCore import QSettings
-
 from angrmanagement.utils.env import app_path
 
 
@@ -60,6 +58,8 @@ class AngrUrlScheme:
     #
 
     def _register_url_scheme_windows(self) -> None:
+        from PySide6.QtCore import QSettings  # pylint:disable=import-outside-toplevel
+
         app_path_ = app_path(pythonw=True)
 
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
@@ -81,12 +81,16 @@ class AngrUrlScheme:
         reg.endGroup()
 
     def _unregister_url_scheme_windows(self) -> None:
+        from PySide6.QtCore import QSettings  # pylint:disable=import-outside-toplevel
+
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
         reg = QSettings(reg_path, QSettings.Format.NativeFormat)
 
         reg.remove("")
 
     def _is_url_scheme_registered_windows(self):
+        from PySide6.QtCore import QSettings  # pylint:disable=import-outside-toplevel
+
         reg_path = self.WIN_REG_PATH.format(self.URL_SCHEME)
         reg = QSettings(reg_path, QSettings.Format.NativeFormat)
 

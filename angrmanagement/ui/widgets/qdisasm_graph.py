@@ -3,14 +3,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from angr.analyses.decompiler.utils import to_ail_supergraph
 from PySide6.QtCore import QEvent, QPointF, QRect, QRectF, Qt, QTimeLine
 from PySide6.QtWidgets import QFrame
 
 from angrmanagement.config import Conf
 from angrmanagement.logic.threads import needs_gui_thread
-from angrmanagement.utils import get_out_branches
-from angrmanagement.utils.cache import SmartLRUCache
 from angrmanagement.utils.cfg import categorize_edges
 from angrmanagement.utils.graph_layouter import GraphLayouter
 
@@ -79,8 +76,8 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
         self.blocks = []
         self.entry_block: QGraphBlock | None = None
-        self._ail_disasms = SmartLRUCache(maxsize=1024)
-        self._disasms = SmartLRUCache(maxsize=1024)
+        #: the instructions selected when the layout was put off until CFG recovery is done, selected again then
+        self._deferred_selection: set[int] = set()
 
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
@@ -122,7 +119,9 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
     def reload(self, old_infodock: InfoDock | None = None) -> None:
         # if there is an instruction in selection, we will want to select that instruction again after reloading this
         # view.
-        selected_insns = old_infodock.selected_insns.am_obj if old_infodock is not None else set()
+        selected_insns = set(old_infodock.selected_insns.am_obj) if old_infodock is not None else set()
+        selected_insns |= self._deferred_selection
+        self._deferred_selection = set()
 
         self._reset_scene()
         # _reset_scene() destroyed the C++ objects of the old block widgets; never keep a stale reference around
@@ -137,36 +136,42 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
         scene = self.scene()
         assert self.instance.kb is not None
 
-        if self._disassembly_level is DisassemblyLevel.AIL:
-            func = self._function_graph.function
-            try:
-                # always check if decompiler has cached a clinic object first
-                self.disasm = self.instance.kb.decompilations[(func.addr, "pseudocode")].clinic
-            except (KeyError, AttributeError):
-                try:
-                    self.disasm = self._ail_disasms[func.addr]
-                except KeyError:
-                    self.disasm = self._ail_disasms[func.addr] = self.instance.project.analyses.Clinic(func)
+        # CFG recovery may still be adding to this function: if it does not stop for us, lay it out when it is done
+        with self.disasm_view.presenter.reading_functions(retry=self.reload) as granted:
+            if not granted:
+                self._deferred_selection = selected_insns
+                self._minimap.reload_target_scene()
+                return
+            self._make_blocks(scene)
 
-            self._supergraph = to_ail_supergraph(self.disasm.cc_graph)
+        if self.entry_block is None and self.blocks:
+            # no supernode starts exactly at the function address: the entry block may have been merged behind a
+            # lower-addressed block in the supergraph, or pruned. fall back to the block containing the function
+            # address, or the first block
+            self.entry_block = self._insaddr_to_block.get(self._function_graph.function.addr, self.blocks[0])
 
-            def nodefunc(n):
-                return self._supergraph.nodes[n]["original_nodes"]
+        self.request_relayout()
+        self._update_scene_boundary()
 
-            def branchfunc(supernode):
-                return None
+        # determine initial view focus point
+        self._reset_view()
 
-            has_idx = True
-        else:
-            include_ir = self._disassembly_level is DisassemblyLevel.LifterIR
-            addr = self._function_graph.function.addr
-            cache_key = (addr, include_ir)
-            try:
-                self.disasm = self._disasms[cache_key]
-            except KeyError:
-                self.disasm = self._disasms[cache_key] = self.instance.project.analyses.Disassembly(
-                    function=self._function_graph.function, include_ir=include_ir
-                )
+        # select the old instructions
+        for insn_addr in selected_insns:
+            self.infodock.select_instruction(insn_addr, unique=False, use_animation=False)
+
+        self._minimap.reload_target_scene()
+
+    def _make_blocks(self, scene) -> None:
+        """Make the blocks of the function graph's supergraph and add them to ``scene``."""
+        assert self._function_graph is not None
+        # the presenter keeps the analyses shown, by function and level
+        presenter = self.disasm_view.presenter
+        self.disasm = presenter.graph_disasm(self._function_graph.function, self._disassembly_level)
+        self._supergraph, nodefunc, branchfunc, has_idx = presenter.supergraph_of(
+            self._function_graph, self.disasm, self._disassembly_level
+        )
+        if self._disassembly_level is not DisassemblyLevel.AIL:
             view = self.disasm_view.workspace.view_manager.first_view_in_category("console")
             if view is not None:
                 from angrmanagement.ui.views import ConsoleView  # pylint: disable=import-outside-toplevel
@@ -177,13 +182,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
                         "disasm": self.disasm,
                     }
                 )
-            self._supergraph = self._function_graph.supergraph
-
-            def nodefunc(n):
-                return n.cfg_nodes
-
-            branchfunc = get_out_branches
-            has_idx = False
 
         for n in self._supergraph.nodes():
             block = QGraphBlock(
@@ -204,25 +202,6 @@ class QDisassemblyGraph(QDisassemblyBaseControl, QZoomableDraggableGraphicsView)
 
             for insn_addr in block.addr_to_insns:
                 self._insaddr_to_block[insn_addr] = block
-
-        if self.entry_block is None and self.blocks:
-            # no supernode starts exactly at the function address: the entry block may have been merged behind a
-            # lower-addressed block in the supergraph, or pruned. fall back to the block containing the function
-            # address, or the first block
-            self.entry_block = self._insaddr_to_block.get(self._function_graph.function.addr, self.blocks[0])
-
-        self.request_relayout()
-        self._update_scene_boundary()
-
-        # determine initial view focus point
-        self._reset_view()
-
-        # select the old instructions
-        assert selected_insns is not None
-        for insn_addr in selected_insns:
-            self.infodock.select_instruction(insn_addr, unique=False, use_animation=False)
-
-        self._minimap.reload_target_scene()
 
     @needs_gui_thread
     def refresh(self) -> None:

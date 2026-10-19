@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-import base64
-import socket
 from typing import TYPE_CHECKING
 
-from angr import claripy
-from angr.storage.file import SimPacketsStream
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, QSize, Qt
 from PySide6.QtGui import QColor, QContextMenuEvent, QIntValidator
 from PySide6.QtWidgets import (
@@ -21,13 +17,13 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from angrmanagement.present.symexec import SOCKET_FAMILIES, SOCKET_TYPES, convert_socket_data, socket_ident
+
 if TYPE_CHECKING:
     from angrmanagement.data.instance import Instance
 
-_socket_families_wanted = ["AF_INET", "AF_INET6", "AF_UNIX", "AF_CAN", "AF_PACKET", "AF_RDS"]
-
-socket_family = {s: getattr(socket, s) for s in _socket_families_wanted if s in dir(socket)}
-socket_type = {"SOCK_STREAM": socket.SOCK_STREAM, "SOCK_DGRAM": socket.SOCK_DGRAM, "SOCK_RAW": socket.SOCK_RAW}
+socket_family = SOCKET_FAMILIES
+socket_type = SOCKET_TYPES
 
 
 class SocketItem:  # pylint: disable=no-self-use, unused-argument
@@ -238,21 +234,11 @@ class SocketModel(QAbstractItemModel):
                 ret[socket_info.ident] = tmp
         return ret
 
-    def convert_ident(self, ident):
-        return ("socket", socket_family[ident[0]], socket_type[ident[1]], 0, int(ident[2]))
+    def convert_ident(self, ident):  # pylint: disable=no-self-use
+        return socket_ident(ident)
 
     def convert(self):
-        data = self.get_data()
-        ret = {}
-        for k, v in data.items():
-            ident = k.split(", ")
-            if ident[0] == "Accept":
-                ident = ("accept", self.convert_ident(ident[1:]), int(ident[4]))
-            else:
-                ident = self.convert_ident(ident)
-            content = [claripy.BVV(base64.b64decode(x)) for x in v]
-            ret[ident] = (SimPacketsStream("socket read", content=content), SimPacketsStream("socket write"))
-        return ret
+        return convert_socket_data(self.get_data())
 
 
 class SocketView(QTreeView):

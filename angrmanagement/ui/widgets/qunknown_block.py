@@ -6,6 +6,7 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
 from angrmanagement.config import Conf
+from angrmanagement.present.block_tree.disasm_nodes import UnknownNode
 
 from .qgraph_object import QCachedGraphicsItem
 
@@ -15,14 +16,26 @@ if TYPE_CHECKING:
 
 
 class QUnknownBlock(QCachedGraphicsItem):
+    """
+    Undecoded bytes in the linear view: the text items of an UnknownNode.
+    """
+
     LINEAR_INSTRUCTION_OFFSET = 120
     DEFAULT_TEXT = "Unknown"
     BYTES_PER_LINE = 16
 
     def __init__(
-        self, instance: Instance, addr: int, bytes_, parent=None, disasm_view: DisassemblyView | None = None
+        self,
+        instance: Instance,
+        addr: int,
+        bytes_,
+        parent=None,
+        disasm_view: DisassemblyView | None = None,
+        node: UnknownNode | None = None,
     ) -> None:
         super().__init__(parent=parent)
+        #: the byte lines' text
+        self.node = node if node is not None else UnknownNode(addr, bytes_)
 
         self.instance = instance
         self.addr = addr
@@ -80,9 +93,7 @@ class QUnknownBlock(QCachedGraphicsItem):
             # determine the address of the clicked line
             line_height = self._byte_lines[0].boundingRect().height() if self._byte_lines else 0
             line_idx = int(event.pos().y() // line_height) if line_height > 0 else 0
-            addr = self.addr + max(line_idx, 0) * self.BYTES_PER_LINE
-            if self.bytes:
-                addr = min(addr, self.addr + len(self.bytes) - 1)
+            addr = self.node.addr_of_line(line_idx)
             self._disasm_view.unknown_block_context_menu(addr, event.screenPos().toPoint())
             event.accept()
             return
@@ -94,41 +105,17 @@ class QUnknownBlock(QCachedGraphicsItem):
 
     def _init_widgets(self) -> None:
         # Address
-        self._addr_text = f"{self.addr:08x}"
+        self._addr_text = self.node.addr_text
         self._addr_item = QGraphicsSimpleTextItem(self._addr_text, self)
         self._addr_item.setBrush(Conf.disasm_view_node_address_color)
         self._addr_item.setFont(Conf.disasm_font)
 
         # Bytes
         self._byte_lines = []
-        if self.bytes:
-            line = ""
-            for i, b in enumerate(self.bytes):
-                line += f"{b:02x} "
-                if i > 0 and (i + 1) % 16 == 0:
-                    o = QGraphicsSimpleTextItem(line, self)
-                    o.setFont(Conf.disasm_font)
-                    o.setBrush(Conf.disasm_view_unprintable_byte_color)
-                    self._byte_lines.append(o)
-                    line = ""
-
-                    if len(self._byte_lines) > 100:
-                        o = QGraphicsSimpleTextItem("Remaining lines are omitted", self)
-                        o.setFont(Conf.disasm_font)
-                        o.setBrush(Conf.disasm_view_unprintable_byte_color)
-                        self._byte_lines.append(o)
-                        break
-
-            if line:
-                o = QGraphicsSimpleTextItem(line, self)
-                o.setFont(Conf.disasm_font)
-                o.setBrush(Conf.disasm_view_unprintable_byte_color)
-                self._byte_lines.append(o)
-
-        else:
-            o = QGraphicsSimpleTextItem(QUnknownBlock.DEFAULT_TEXT, self)
-            o.setBrush(Conf.disasm_view_unprintable_byte_color)
+        for line in self.node.byte_lines:
+            o = QGraphicsSimpleTextItem(line, self)
             o.setFont(Conf.disasm_font)
+            o.setBrush(Conf.disasm_view_unprintable_byte_color)
             self._byte_lines.append(o)
 
         self._layout_items_and_update_size()

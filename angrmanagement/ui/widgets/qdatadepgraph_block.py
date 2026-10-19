@@ -7,6 +7,7 @@ from angr.analyses.data_dep import ConstantDepNode, TmpDepNode
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from angrmanagement.config import Conf
+from angrmanagement.present.data_dep import instruction_text, node_tooltip
 
 from .qgraph_object import QCachedGraphicsItem
 
@@ -74,9 +75,10 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
     def _init_widgets(self) -> None:
         self._y_off = 0
 
-        if not isinstance(self._node, ConstantDepNode):
+        tooltip = node_tooltip(self._node)
+        if tooltip is not None:
             # ConstantDepNodes already display their value, by default
-            self.setToolTip(f"Value: {hex(self._node.value)}")
+            self.setToolTip(tooltip)
 
         # Display the instruction, if applicable
         self._header_text = str(self._node)
@@ -88,11 +90,7 @@ class QDataDepGraphBlock(QCachedGraphicsItem):
         header_font.setBold(True)
         self._header_text_item.setFont(header_font)
 
-        self._instruction_text = (
-            f"{hex(self._instr.address)}: {self._instr.mnemonic} {self._instr.op_str}"
-            if self._instr
-            else f"{hex(self._node.ins_addr)}:{self._node.stmt_idx}"
-        )  # TODO: Reset else to ''
+        self._instruction_text = instruction_text(self._node, self._instr)
         self._instruction_text_item = self._build_simple_text_item(self._instruction_text)
         if self._instruction_text:
             self._y_off += self._instruction_text_item.boundingRect().height() + 3

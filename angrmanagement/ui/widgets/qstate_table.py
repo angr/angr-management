@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING
 
-import angr
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QAbstractItemView, QMenu, QTableWidget, QTableWidgetItem
 
+from angrmanagement.present.symexec import copied_state_name, state_row
 from angrmanagement.ui.dialogs.new_state import NewState
 from angrmanagement.utils.namegen import NameGenerator
 
@@ -29,24 +28,7 @@ class QStateTableItem(QTableWidgetItem):
     def widgets(self):
         state = self.state
 
-        name = state.gui_data.name
-        base_name = state.gui_data.base_name
-        is_changed = "No" if state.gui_data.is_original else "Yes"
-        mode = state.mode
-        address = f"{state.addr:x}" if isinstance(state.addr, int) else "Symbolic"
-        state_options = {o for o, v in state.options._options.items() if v is True}
-        options_plus = state_options - angr.sim_options.modes[mode]
-        options_minus = angr.sim_options.modes[mode] - state_options
-        options = " ".join([" ".join("+" + o for o in options_plus), " ".join("-" + o for o in options_minus)])
-
-        widgets = [
-            QTableWidgetItem(name),
-            QTableWidgetItem(address),
-            QTableWidgetItem(is_changed),
-            QTableWidgetItem(base_name),
-            QTableWidgetItem(mode),
-            QTableWidgetItem(options),
-        ]
+        widgets = [QTableWidgetItem(text) for text in state_row(state)]
 
         if state.gui_data.is_base:
             color = QColor(0, 0, 0x80)
@@ -171,22 +153,4 @@ class QStateTable(QTableWidget):
         :rtype:                     str
         """
 
-        m = re.match(r"^([\s\S]*) copy\s*(\d*)$", current_name)
-
-        if m:
-            # ends with copy
-            ctr_str = m.group(2)
-            ctr = int(ctr_str) + 1 if ctr_str else 1
-
-            current_name = m.group(1)
-            name = f"{current_name} copy {ctr}"
-        else:
-            ctr = 0
-            name = current_name + " copy"
-
-        # Increment the counter until there is no conflict with existing names
-        all_names = {s.gui_data.name for s in self.states}
-        while name in all_names:
-            ctr += 1
-            name = f"{current_name} copy {ctr}"
-        return name
+        return copied_state_name(current_name, (s.gui_data.name for s in self.states))

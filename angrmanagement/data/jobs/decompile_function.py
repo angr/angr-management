@@ -32,4 +32,9 @@ class DecompileFunctionJob(InstanceJob):
             progress_callback=ctx.set_progress,
         )
 
-        GlobalInfo.main_window.workspace.plugins.decompile_callback(self.function)
+        # the workspace of the job manager running the job: a workspace without a window has no main window
+        workspace = ctx.workspace
+        if workspace is None and GlobalInfo.main_window is not None:
+            workspace = GlobalInfo.main_window.workspace
+        if workspace is not None:
+            workspace.plugins.decompile_callback(self.function)

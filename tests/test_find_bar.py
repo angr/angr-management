@@ -7,6 +7,7 @@ from __future__ import annotations
 import os
 import unittest
 from collections import Counter
+from typing import Any
 from unittest.mock import patch
 
 import angr
@@ -103,6 +104,23 @@ class TestDisassemblyFindBar(FindBarTestCase):
         self.disasm._find_bar.close_bar()
         assert self.disasm._find_matches == []
         assert self.disasm._find_bar.isHidden()
+
+    def test_find_bar_open_follows_the_bar(self):
+        presenter = self.disasm.presenter
+        assert not presenter.find_bar_open()
+        self.disasm.show_find_bar()
+        assert presenter.find_bar_open()
+        find_bar: Any = self.disasm._find_bar
+        find_bar.close_bar()
+        assert not presenter.find_bar_open()
+
+    def test_close_focuses_the_shown_control(self):
+        self.disasm.show_find_bar()
+        find_bar: Any = self.disasm._find_bar
+        find_bar._query_box.setText("mov")
+        with patch.object(self.disasm._flow_graph, "setFocus") as set_focus:
+            find_bar.close_bar()
+        set_focus.assert_called_once_with()
 
     def test_no_match_clears_highlights(self):
         self.disasm.show_find_bar()

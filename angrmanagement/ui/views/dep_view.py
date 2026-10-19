@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-import networkx
-from angr import SIM_PROCEDURES
-from angr.code_location import ExternalCodeLocation
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QHBoxLayout
 
+from angrmanagement.present.dependencies import DependencyNode, dependency_graph, is_shown
+from angrmanagement.present.graphs import convert_graph
 from angrmanagement.ui.widgets.qdep_graph import QDependencyGraph
 from angrmanagement.ui.widgets.qdepgraph_block import QDepGraphBlock
 
 from .view import InstanceView
 
 if TYPE_CHECKING:
+    import networkx
     from angr.knowledge_plugins.key_definitions.atoms import Atom
     from angr.knowledge_plugins.key_definitions.definition import Definition
 
@@ -93,44 +93,21 @@ class DependencyView(InstanceView):
     def _convert_node(self, node: Definition, converted: dict[Definition, QDepGraphBlock]) -> QDepGraphBlock | None:
         if node in converted:
             return converted[node]
-
-        # skip external
-        if isinstance(node.codeloc, ExternalCodeLocation):
+        if not is_shown(self.instance.project, node):
             return None
-
-        if self.instance.project.is_hooked(node.codeloc.block_addr):
-            hook = self.instance.project.hooked_by(node.codeloc.block_addr)
-            if isinstance(
-                hook,
-                SIM_PROCEDURES["stubs"]["UnresolvableJumpTarget"] | SIM_PROCEDURES["stubs"]["UnresolvableCallTarget"],
-            ):
-                return None
-
         new_node = QDepGraphBlock(False, self, definition=node, addr=node.codeloc.ins_addr)
         converted[node] = new_node
         return new_node
 
     # def _is_edge_in_graph(self):
     def _create_ui_graph(self) -> networkx.DiGraph:
-        g = networkx.DiGraph()
-        source_node = QDepGraphBlock(False, self, atom=self.sink_atom, addr=self.sink_ins_addr)
-        g.add_node(source_node)
-        all_graphs = networkx.compose_all(self.closures.values())
-        converted = {}
+        graph, _sink = dependency_graph(self.instance.project, self.closures or {}, self.sink_atom, self.sink_ins_addr)
+        blocks: dict[DependencyNode, QDepGraphBlock] = {}
 
-        for node_ in all_graphs.nodes:
-            node = self._convert_node(node_, converted)
-            if node is not None:
-                g.add_node(node)
-            # this is a hack - we only want our sink as the only root of the dependency tree
-            # TODO: Figure out why
-            if all_graphs.out_degree[node_] == 0:
-                g.add_edge(node, source_node)
+        def convert(node: DependencyNode, _converted) -> QDepGraphBlock:
+            if node not in blocks:
+                fields: dict[str, Any] = {"definition": node.definition, "atom": node.atom, "addr": node.addr}
+                blocks[node] = QDepGraphBlock(False, self, **fields)
+            return blocks[node]
 
-        for src_, dst_ in all_graphs.edges:
-            src = self._convert_node(src_, converted)
-            dst = self._convert_node(dst_, converted)
-            if src is not None and dst is not None:
-                g.add_edge(src, dst)
-
-        return g
+        return convert_graph(graph, convert)

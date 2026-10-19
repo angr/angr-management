@@ -1,26 +1,25 @@
 from __future__ import annotations
 
 import logging
+import queue
 import sys
+import threading
 import time
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QObject, QThread, Signal, Slot
-from PySide6.QtWidgets import QApplication
+# JobCancelled is defined beside Job so that a job module can import it while this module is importing the jobs
+from angrmanagement.data.jobs.job import Job, JobCancelled, JobState
 
-from angrmanagement.data.jobs.job import Job, JobState
+from . import GlobalInfo
+from .signal import Signal
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from angrmanagement.ui.workspace import Workspace
+    from angrmanagement.logic.workspace import BaseWorkspace
 
 
 log = logging.getLogger(__name__)
-
-
-class JobCancelled(BaseException):
-    """Raised when a job is cancelled."""
 
 
 class JobContext:
@@ -39,6 +38,11 @@ class JobContext:
         self._last_reported_percentage = 0.0
         self._last_text = ""
 
+    @property
+    def workspace(self) -> BaseWorkspace | None:
+        """The workspace whose job manager runs the job, or None."""
+        return self._job_worker.job_manager.workspace
+
     def set_progress(self, percentage: float, text: str = "", ignore_cancel: bool = False) -> None:
         if self._job.state == JobState.CANCELLED and not ignore_cancel:
             raise JobCancelled
@@ -54,19 +58,16 @@ class JobContext:
             self._job_worker.job_progressed.emit(self._job, percentage, text)
 
 
-class Worker(QObject):
-    """Executes jobs."""
-
-    job_starting = Signal(Job)
-    job_progressed = Signal(Job, float, str)
-    job_exception = Signal(Job, BaseException)
-    job_finished = Signal(Job)
+class Worker:
+    """Executes jobs. Its signals are emitted on the worker thread and delivered on the UI thread."""
 
     def __init__(self, job_manager: JobManager):
-        super().__init__()
         self.job_manager = job_manager
+        self.job_starting = Signal(Job, name="job_starting")
+        self.job_progressed = Signal(Job, float, str, name="job_progressed")
+        self.job_exception = Signal(Job, BaseException, name="job_exception")
+        self.job_finished = Signal(Job, name="job_finished")
 
-    @Slot(Job)
     def execute_job(self, job: Job) -> None:
         if job.state != JobState.PENDING:
             return
@@ -98,47 +99,66 @@ class Worker(QObject):
             self.job_exception.emit(job, e)
 
 
-class JobManager(QObject):
-    """Manages job execution in a worker thread."""
+class JobManager:
+    """
+    Manages job execution in a worker thread.
 
-    workspace: Workspace
+    Jobs run one at a time, in the order they were added, on a daemon thread. The signals and ``Job.finish`` are
+    delivered on the UI thread through ``GlobalInfo.executor``.
+    """
+
+    workspace: BaseWorkspace | None
     jobs: list[Job]
     job_worker_exception_callback: Callable[[Job, BaseException], None] | None
 
-    job_added = Signal(Job)
-    job_starting = Signal(Job)
-    job_progressed = Signal(Job, float, str)
-    job_exception = Signal(Job, BaseException)
-    job_finished = Signal(Job)
-
-    _worker_thread: QThread
+    _worker_thread: threading.Thread
     _worker: Worker
 
-    def __init__(self, workspace: Workspace):
-        super().__init__()
-
+    def __init__(self, workspace: BaseWorkspace | None):
         self.workspace = workspace
         self.jobs = []
         self._current_job: Job | None = None
         self.job_worker_exception_callback = None
 
-        self._worker_thread = QThread()
+        self.job_added = Signal(Job, name="job_added")
+        self.job_starting = Signal(Job, name="job_starting")
+        self.job_progressed = Signal(Job, float, str, name="job_progressed")
+        self.job_exception = Signal(Job, BaseException, name="job_exception")
+        self.job_finished = Signal(Job, name="job_finished")
+
+        # the thread creating the job manager is the UI thread; fix the default executor's owner before the worker
+        # thread can be the first to ask for it
+        _ = GlobalInfo.executor
+
+        self._queue: queue.SimpleQueue[Job | None] = queue.SimpleQueue()
+        self._stopping = False
         self._worker = Worker(self)
-        self._worker.moveToThread(self._worker_thread)
         self._worker.job_starting.connect(self._on_job_starting)
         self._worker.job_progressed.connect(self._on_job_progress)
         self._worker.job_exception.connect(self._on_job_exception)
         self._worker.job_finished.connect(self._on_job_finished)
-        self.job_added.connect(self._worker.execute_job)
+        self._worker_thread = threading.Thread(target=self._run_worker, name="angr management job worker", daemon=True)
         self._worker_thread.start()
 
+    def _run_worker(self) -> None:
+        while True:
+            job = self._queue.get()
+            if job is None or self._stopping:
+                return
+            self._worker.execute_job(job)
+
     def quit(self):
-        self._worker_thread.quit()
-        self._worker_thread.wait()
+        """Stop the worker thread once the running job, if any, returns. Jobs still waiting do not run."""
+        self._stopping = True
+        self._queue.put(None)
+        if self._worker_thread is not threading.current_thread():
+            self._worker_thread.join()
 
     def add_job(self, job: Job) -> None:
         self.jobs.append(job)
+        # announce the job before the worker can start it, so job_added reaches listeners before job_starting
         self.job_added.emit(job)
+        self._queue.put(job)
 
     @staticmethod
     def cancel_job(job: Job) -> None:
@@ -156,13 +176,16 @@ class JobManager(QObject):
         """
         Wait until self.jobs has stayed empty for `wait_period` seconds.
 
-        One job may add another upon completion, so an empty list alone does not mean done; events keep
-        being processed meanwhile so such follow-up jobs get queued. The exit checks the list at that
+        One job may add another upon completion, so an empty list alone does not mean done; the UI executor
+        keeps being pumped meanwhile so such follow-up jobs get queued. The exit checks the list at that
         instant, not only the clock: a worker holding the GIL can delay this thread past any deadline.
+
+        Call it on the UI thread: it is what runs the jobs' finish handlers in a headless process.
         """
         last_has_job = time.monotonic()
+        executor = GlobalInfo.executor
         while True:
-            QApplication.processEvents()
+            executor.process_pending()
             now = time.monotonic()
             if self.jobs:
                 last_has_job = now
@@ -194,10 +217,12 @@ class JobManager(QObject):
         self.job_exception.emit(job, e)
 
     def _on_job_finished(self, job):
-        job.finish()  # Job finished handler (GUI thread only)
-
-        if job in self.jobs:
-            self.jobs.remove(job)
-
-        self._current_job = None
-        self.job_finished.emit(job)
+        try:
+            job.finish()  # Job finished handler (GUI thread only)
+        finally:
+            # a finish handler that raises must not leave the job listed, or join_all_jobs never returns, and the
+            # frontend is still told the job ended, so it can clear its progress display
+            if job in self.jobs:
+                self.jobs.remove(job)
+            self._current_job = None
+            self.job_finished.emit(job)

@@ -2,20 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from angr.analyses.decompiler.structured_codegen import (
-    ClosingObjectNode,
-    ConstantNode,
-    FunctionCallNode,
-    FunctionNode,
-    LabelNode,
-    StructFieldNode,
-    VariableNode,
-)
-from angr.sim_type import SimType
 from PySide6.QtGui import QTextDocument
 from PySide6.QtWidgets import QPlainTextDocumentLayout
 
 from angrmanagement.config import Conf
+from angrmanagement.present.code import closest_node_pos, node_at_position, related_text_chunks, stmt_node_at_position
 
 if TYPE_CHECKING:
     from angr.analyses.decompiler.structured_codegen.base import BaseStructuredCodeGenerator
@@ -53,15 +44,7 @@ class QCodeDocument(QTextDocument):
         return self._codegen.map_pos_to_node
 
     def get_node_at_position(self, pos):
-        if self._codegen is None or self._codegen.am_none:
-            return None
-        if self._codegen.map_pos_to_node is not None:
-            n = self._codegen.map_pos_to_node.get_node(pos)
-            if n is None:
-                n = self._codegen.map_pos_to_node.get_node(pos - 1)
-            return n
-
-        return None
+        return node_at_position(self._codegen, pos)
 
     def get_stmt_node_at_position(self, pos):
         """
@@ -69,104 +52,19 @@ class QCodeDocument(QTextDocument):
         Finds the node based on the position given (usually related to the mouse location).
         The function can return any valid Cxxx class inside the angr decompiler.
 
-        Algorithm: O(n)
-        This algorithm will search the position map by alternating between extended it's left and right search
-        until we either hit the EOL or newline on the left and right. We stop either side searching once we
-        hit a newline or EOL as well. In addition, we keep a special case for when the cursor is off the screen
-        to simply put it back on the screen.
+        It searches left and right of ``pos`` in turn until a newline or the end of the text on each side (see
+        :func:`angrmanagement.present.code.stmt_node_at_position`).
 
         :param pos:
         :return:
         """
-
-        if self._codegen is None or self._codegen.am_none or self._codegen.map_pos_to_addr is None:
-            return None
-
-        n = self._codegen.map_pos_to_addr.get_node(pos)
-
-        # if we can't find a node at the current position, start the algorithm search
-        # from the left and right iteratively.
-        if n is None:
-            # special case where cursor is off the screen, reposition to before the end
-            length = len(self._codegen.text) - 4 if pos >= len(self._codegen.text) - 2 else pos - 1
-
-            r = pos + 1
-            inc_l = not self._pos_is_newline_or_oob(length)
-            inc_r = not self._pos_is_newline_or_oob(r)
-
-            # iterate until we hit start or end of document
-            while inc_l or inc_r:
-                # continue left search if we are still at a valid char
-                if inc_l:
-                    n = self._codegen.map_pos_to_addr.get_node(length)
-                    if n is not None:
-                        break
-                    length -= 1
-                    inc_l = not self._pos_is_newline_or_oob(length)
-
-                # continue right search if we are still at a valid char
-                if inc_r:
-                    n = self._codegen.map_pos_to_addr.get_node(r)
-                    if n is not None:
-                        break
-                    r += 1
-                    inc_r = not self._pos_is_newline_or_oob(r)
-
-        return n
+        return stmt_node_at_position(self._codegen, pos)
 
     def find_closest_node_pos(self, ins_addr):
-        if self._codegen is None or self._codegen.am_none:
-            return None
-        return self._codegen.map_addr_to_pos.get_nearest_pos(ins_addr)
+        return closest_node_pos(self._codegen, ins_addr)
 
     def find_related_text_chunks(self, node):
-        if self._codegen is None or self._codegen.am_none or self._codegen.map_ast_to_pos is None:
-            return None
-
-        if isinstance(node, ConstantNode):
-            starts = self._codegen.map_ast_to_pos.get(node.value, None)
-            if starts is None:
-                return []
-
-        elif isinstance(node, VariableNode):
-            if node.unified_variable is not None:
-                starts = self._codegen.map_ast_to_pos.get(node.unified_variable, None)
-            else:
-                starts = self._codegen.map_ast_to_pos.get(node.variable, None)
-            if starts is None:
-                return []
-
-        elif isinstance(node, FunctionCallNode):
-            starts = self._codegen.map_ast_to_pos.get(
-                node.callee_func if node.callee_func is not None else node.callee_target, None
-            )
-            if starts is None:
-                return []
-
-        elif isinstance(node, StructFieldNode):
-            key = (node.struct_type, node.offset)
-            starts = self._codegen.map_ast_to_pos.get(key, None)
-
-            if starts is None:
-                return []
-
-        elif isinstance(node, ClosingObjectNode | FunctionNode | SimType | LabelNode):
-            starts = self._codegen.map_ast_to_pos.get(node, None)
-
-            if starts is None:
-                return []
-
-        else:
-            # Unsupported
-            return []
-
-        chunks = []
-        for start in starts:
-            elem = self._codegen.map_pos_to_node.get_element(start)
-            if elem is None:
-                continue
-            chunks.append((elem.start, elem.length + elem.start))
-        return chunks
+        return related_text_chunks(self._codegen, node)
 
     #
     #   Private Helper Functions

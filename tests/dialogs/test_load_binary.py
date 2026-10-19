@@ -2,12 +2,13 @@
 Test cases for the LoadBinary dialog.
 """
 
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use,protected-access
 
 from __future__ import annotations
 
 import os
 import unittest
+from unittest.mock import patch
 
 import cle
 from common import create_qapp, test_location  # pylint: disable=import-error
@@ -54,6 +55,29 @@ class TestLoadBinaryBlobAddresses(unittest.TestCase):
             assert not dialog.option_widgets[name].isEnabled()
         assert dialog.option_widgets["base_addr"].text() == hex(partial_ld.main_object.mapped_base)
         assert dialog.option_widgets["entry_addr"].text() == hex(partial_ld.main_object.entry)
+
+        dialog.close()
+
+
+class TestLoadBinaryValidation(unittest.TestCase):
+    """A selection that fails validation sets no load options, so cancelling afterwards loads nothing."""
+
+    def setUp(self) -> None:
+        create_qapp()
+
+    def test_an_invalid_address_leaves_no_partial_options(self) -> None:
+        partial_ld = cle.Loader(BINARY_PATH, main_opts={"backend": "blob", "arch": "x86"})
+        dialog = make_dialog(partial_ld)
+        base_addr_checkbox = dialog._base_addr_checkbox
+        assert base_addr_checkbox is not None
+        base_addr_checkbox.setChecked(True)
+        dialog.option_widgets["base_addr"].setText("not hex")
+
+        with patch("PySide6.QtWidgets.QMessageBox.critical") as critical:
+            dialog._on_ok_clicked()
+        critical.assert_called_once()
+        assert dialog.load_options is None
+        assert dialog.simos is None
 
         dialog.close()
 

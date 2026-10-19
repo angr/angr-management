@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from angrmanagement.data.instance import Instance
-    from angrmanagement.ui.workspace import Workspace
+    from angrmanagement.logic.workspace import BaseWorkspace
 
 
 class Debugger:
@@ -16,9 +16,9 @@ class Debugger:
     Provides a generic interface with common debugger operations to control program execution and inspect program state.
     """
 
-    def __init__(self, workspace: Workspace) -> None:
+    def __init__(self, workspace: BaseWorkspace) -> None:
         super().__init__()
-        self.workspace: Workspace = workspace
+        self.workspace: BaseWorkspace = workspace
         self.instance: Instance = workspace.main_instance
         self.state_changed: EventSentinel = EventSentinel()
 

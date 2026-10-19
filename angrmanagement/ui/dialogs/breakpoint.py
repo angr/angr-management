@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
+from angrmanagement.present.dialogs import breakpoint_size
 from angrmanagement.ui.widgets import QAddressInput
 
 if TYPE_CHECKING:
@@ -66,8 +67,9 @@ class BreakpointDialog(QDialog):
         self._type_radio_group.button(self.breakpoint.type.value).setChecked(True)
 
         layout.addWidget(QLabel("Address:", self), row, 0, Qt.AlignmentFlag.AlignRight)
+        # the box takes the instance, whose knowledge base it searches for a function name or a label
         self._address_box = QAddressInput(
-            self._on_address_changed, self.workspace, parent=self, default=f"{self.breakpoint.addr:#x}"
+            self._on_address_changed, self.workspace.main_instance, parent=self, default=f"{self.breakpoint.addr:#x}"
         )
         layout.addWidget(self._address_box, row, 1)
         row += 1
@@ -108,11 +110,7 @@ class BreakpointDialog(QDialog):
         self._status_label.style().polish(self._status_label)
 
     def _get_size(self):
-        try:
-            return int(self._size_box.text(), 0)
-        except ValueError:
-            pass
-        return None
+        return breakpoint_size(self._size_box.text())
 
     #
     # Event handlers

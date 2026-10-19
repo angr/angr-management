@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QHBoxLayout, QHeaderView, QLabel, QTreeView, QTree
 from angrmanagement.config import Conf
 from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.logic.debugger.bintrace import BintraceDebugger
+from angrmanagement.present.call_explorer import NO_FUNCTION, call_name, current_function, replay_before, replay_into
 
 from .view import InstanceView
 
@@ -51,8 +52,7 @@ class CallTreeItem(QStandardItem):
     """
 
     def __init__(self, function, event) -> None:
-        name = hex(function) if isinstance(function, int) else function.name
-        super().__init__(name)
+        super().__init__(call_name(function))
         self.function: int | Function = function
         self.event: TraceEvent = event
         self.populated: bool = False
@@ -128,8 +128,7 @@ class CallExplorerView(InstanceView):
         self._inhibit_update = True
 
         # Replay up to just before call
-        dbg = self.instance.debugger_mgr.debugger
-        dbg.replay_to_event(dbg._btrace.get_prev_exec_event(item.event, vcpu=dbg._trace_dbg.vcpu))
+        replay_before(self.instance.debugger_mgr.debugger, item.event)
 
         self._inhibit_update = original_inhibit
 
@@ -139,9 +138,7 @@ class CallExplorerView(InstanceView):
         """
         item = self._model.itemFromIndex(index)
         # Replay after the jump, jumping into the called function
-        # FIXME: Doesn't consider proper selected debugger, assumes bintrace
-        dbg = self.instance.debugger_mgr.debugger
-        dbg.replay_to_event(dbg._btrace.get_next_exec_event(item.event, vcpu=dbg._trace_dbg.vcpu))
+        replay_into(self.instance.debugger_mgr.debugger, item.event)
 
     def _on_item_expanded(self, index) -> None:
         """
@@ -166,12 +163,7 @@ class CallExplorerView(InstanceView):
             return
 
         dbg = self._dbg_watcher.debugger
-        if isinstance(dbg.am_obj, BintraceDebugger):
-            func = dbg.get_current_function()
-            if func is not None:
-                func = func[0]
-        else:
-            func = None
+        func = current_function(dbg.am_obj)
 
         if func is self._last_updated_func:
             return
@@ -187,4 +179,4 @@ class CallExplorerView(InstanceView):
             self._reset_function_label()
 
     def _reset_function_label(self) -> None:
-        self._top_level_function_level.setText("Current function: Unknown")
+        self._top_level_function_level.setText(NO_FUNCTION)

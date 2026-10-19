@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING
 
 from angr.knowledge_plugins import Function
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout
 
+from angrmanagement.present.strings import StringsPresenter
 from angrmanagement.ui.widgets.qfunction_combobox import QFunctionComboBox
 from angrmanagement.ui.widgets.qstring_table import QStringTable
 
@@ -20,15 +20,23 @@ if TYPE_CHECKING:
 
 
 class StringsView(InstanceView):
+    """The strings the CFG found, all or those of one function, with a filter."""
+
+    presenter: StringsPresenter
+
     def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        super().__init__("strings", workspace, default_docking_position, instance)
+        super().__init__(
+            "strings",
+            workspace,
+            default_docking_position,
+            instance,
+            StringsPresenter(workspace, instance, default_docking_position),
+        )
 
         self.base_caption = "Strings"
 
         self._string_table: QStringTable
         self._function_list: QFunctionComboBox
-
-        self._selected_function = None
 
         self._init_widgets()
         self.reload()
@@ -36,13 +44,16 @@ class StringsView(InstanceView):
     def sizeHint(self):
         return QSize(400, 800)
 
+    @property
+    def _selected_function(self):
+        return self.presenter.selected_function
+
     def reload(self) -> None:
         if self.instance.kb is None:
             return
         self._function_list.functions = self.instance.kb.functions
-        self._string_table.cfg = self.instance.cfg
-        self._string_table.xrefs = self.instance.project.kb.xrefs
-        self._string_table.function = self._selected_function
+        self.presenter.reload()
+        self._string_table.fast_resize()
 
     def select_function(self, function) -> None:
         self._function_list.select_function(function)
@@ -54,10 +65,10 @@ class StringsView(InstanceView):
     def _on_function_selected(self, function) -> None:
         if isinstance(function, str) and function == "all":
             # all functions
-            self._selected_function = None
+            self.presenter.selected_function = None
 
         elif isinstance(function, Function):
-            self._selected_function = function
+            self.presenter.selected_function = function
 
         self.reload()
 
@@ -69,24 +80,10 @@ class StringsView(InstanceView):
         :return:
         """
 
-        if len(self.workspace.view_manager.views_by_category["disassembly"]) == 1:
-            disasm_view = self.workspace.view_manager.first_view_in_category("disassembly")
-        else:
-            disasm_view = self.workspace.view_manager.current_view_in_category("disassembly")
-        if disasm_view is not None:
-            disasm_view.jump_to(s.addr)
-            disasm_view.select_label(s.addr)
-            self.workspace.view_manager.raise_view(disasm_view)
+        self.presenter.select_string(s)
 
     def on_filter_change(self, **kwargs) -> None:  # pylint: disable=unused-argument
-        pattern = self._filter_string.text()
-        regex = self._regex_checkbox.isChecked()
-        if regex:
-            try:
-                pattern = re.compile(pattern)
-            except re.error:
-                return
-        self._string_table.filter_string = pattern
+        self.presenter.set_filter(self._filter_string.text(), regex=self._regex_checkbox.isChecked())
 
     #
     # Private methods
@@ -112,7 +109,9 @@ class StringsView(InstanceView):
         function_layout.setContentsMargins(3, 3, 3, 3)
         function_layout.setSpacing(3)
 
-        self._string_table = QStringTable(self.instance, self, selection_callback=self._on_string_selected)
+        self._string_table = QStringTable(
+            self.instance, self, selection_callback=self._on_string_selected, strings_model=self.presenter.model
+        )
 
         layout = QVBoxLayout()
         layout.addLayout(function_layout)

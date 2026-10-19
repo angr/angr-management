@@ -10,7 +10,6 @@ from angr.analyses.decompiler.structured_codegen import (
 from angr.knowledge_plugins import KnowledgeBasePlugin
 
 from angrmanagement.plugins import BasePlugin
-from angrmanagement.ui.views import CodeView
 
 
 class PoisonKnowledge(KnowledgeBasePlugin):
@@ -129,16 +128,20 @@ class PoisonPlugin(BasePlugin):
             self.knowledge.local_poison[func].add(callee)
         else:
             self.knowledge.local_poison[func].discard(callee)
-        if isinstance(self.workspace.view_manager.current_tab, CodeView):
-            self.workspace.view_manager.current_tab.decompile()
+        self._redecompile()
 
     def set_poison_global(self, callee, value) -> None:
         if value:
             self.knowledge.global_poison.add(callee)
         else:
             self.knowledge.global_poison.discard(callee)
-        if isinstance(self.workspace.view_manager.current_tab, CodeView):
-            self.workspace.view_manager.current_tab.decompile()
+        self._redecompile()
+
+    def _redecompile(self) -> None:
+        """Decompile the pseudocode view in front again, in either frontend, so the poison shows."""
+        current = self.workspace.view_manager.current_tab
+        if current is not None and getattr(current, "category", None) == "pseudocode":
+            current.decompile()
 
     @staticmethod
     def _poison_to_string(a_set):

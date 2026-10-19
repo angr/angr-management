@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QVBoxLayout
 
+from angrmanagement.present.comments import CommentsPresenter
 from angrmanagement.ui.widgets.qcomment_table import QCommentTable
 
 from .view import InstanceView
@@ -19,16 +20,21 @@ class CommentsView(InstanceView):
     Lists every comment in the project, live-updating as comments are added and removed.
     """
 
+    presenter: CommentsPresenter
+
     def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        super().__init__("comments", workspace, default_docking_position, instance)
+        super().__init__(
+            "comments",
+            workspace,
+            default_docking_position,
+            instance,
+            CommentsPresenter(workspace, instance, default_docking_position),
+        )
         self.base_caption = "Comments"
 
         self._comment_table: QCommentTable
 
         self._init_widgets()
-
-        self.instance.annotations.comments.am_subscribe(self._on_comments_changed)
-        self.instance.cfg.am_subscribe(self._on_comments_changed)
 
         self.width_hint = 500
         self.height_hint = 0
@@ -47,8 +53,7 @@ class CommentsView(InstanceView):
         self._comment_table.reload()
 
     def closeEvent(self, event) -> None:
-        self.instance.annotations.comments.am_unsubscribe(self._on_comments_changed)
-        self.instance.cfg.am_unsubscribe(self._on_comments_changed)
+        self.presenter.close()
         super().closeEvent(event)
 
     #
@@ -63,7 +68,7 @@ class CommentsView(InstanceView):
     #
 
     def _init_widgets(self) -> None:
-        self._comment_table = QCommentTable(self, self.workspace, self.instance)
+        self._comment_table = QCommentTable(self, self.workspace, self.instance, self.presenter)
         layout = QVBoxLayout()
         layout.addWidget(self._comment_table)
         layout.setContentsMargins(0, 0, 0, 0)

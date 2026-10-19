@@ -1,82 +1,45 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QAbstractTableModel, QSize, Qt
-from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableView, QVBoxLayout
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QTableView, QVBoxLayout
 
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointManager, BreakpointType
+from angrmanagement.present.breakpoints import BreakpointsPresenter, BreakpointsTableModel
 from angrmanagement.ui.dialogs import BreakpointDialog
+from angrmanagement.ui.widgets.qt_table import QtTableModelAdapter
 
 from .view import InstanceView
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    import PySide6
-
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
 
 
-class QBreakpointTableModel(QAbstractTableModel):
+class QBreakpointTableModel(QtTableModelAdapter):
     """
-    Breakpoint table model.
+    Breakpoint table model: a Qt model over a :class:`~angrmanagement.present.breakpoints.BreakpointsTableModel`.
     """
 
-    Headers = ["Type", "Address", "Size", "Comment"]
-    COL_TYPE = 0
-    COL_ADDR = 1
-    COL_SIZE = 2
-    COL_COMMENT = 3
+    Headers = BreakpointsTableModel.Headers
+    COL_TYPE = BreakpointsTableModel.COL_TYPE
+    COL_ADDR = BreakpointsTableModel.COL_ADDR
+    COL_SIZE = BreakpointsTableModel.COL_SIZE
+    COL_COMMENT = BreakpointsTableModel.COL_COMMENT
 
-    def __init__(self, breakpoint_mgr: BreakpointManager) -> None:
-        super().__init__()
+    table_model: BreakpointsTableModel
+
+    def __init__(self, breakpoint_mgr: BreakpointManager, table_model: BreakpointsTableModel | None = None) -> None:
+        super().__init__(table_model if table_model is not None else BreakpointsTableModel(breakpoint_mgr), None, False)
         self.breakpoint_mgr = breakpoint_mgr
-        self.breakpoint_mgr.breakpoints.am_subscribe(self._on_breakpoints_updated)
+        self._owns_table_model = table_model is None
 
-    def _on_breakpoints_updated(self, **kwargs) -> None:  # pylint:disable=unused-argument
-        self.beginResetModel()
-        self.endResetModel()
-
-    def rowCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
-        return len(self.breakpoint_mgr.breakpoints)
-
-    def columnCount(self, parent: PySide6.QtCore.QModelIndex = ...) -> int:  # pylint:disable=unused-argument
-        return len(self.Headers)
-
-    def headerData(self, section: int, orientation: PySide6.QtCore.Qt.Orientation, role: int = ...) -> Any:  # pylint:disable=unused-argument
-        if role != Qt.ItemDataRole.DisplayRole:
-            return None
-        if section < len(self.Headers):
-            return self.Headers[section]
-        return None
-
-    def data(self, index: PySide6.QtCore.QModelIndex, role: int = ...) -> Any:
-        if not index.isValid():
-            return None
-        row = index.row()
-        if row >= len(self.breakpoint_mgr.breakpoints):
-            return None
-        col = index.column()
-        if role == Qt.ItemDataRole.DisplayRole:
-            return self._get_column_text(self.breakpoint_mgr.breakpoints[row], col)
-        else:
-            return None
-
-    def _get_column_text(self, bp: Breakpoint, column: int) -> str:
-        if column == self.COL_TYPE:
-            return {BreakpointType.Execute: "Execute", BreakpointType.Read: "Read", BreakpointType.Write: "Write"}.get(
-                bp.type
-            )
-        elif column == self.COL_ADDR:
-            return f"{bp.addr:#08x}"
-        elif column == self.COL_SIZE:
-            return f"{bp.size:#x}"
-        elif column == self.COL_COMMENT:
-            return bp.comment
-        else:
-            raise AssertionError
+    def shutdown(self) -> None:
+        if self._owns_table_model:
+            self.table_model.shutdown()
 
 
 class QBreakpointTableWidget(QTableView):
@@ -84,10 +47,13 @@ class QBreakpointTableWidget(QTableView):
     Breakpoint table widget.
     """
 
-    def __init__(self, breakpoint_mgr: BreakpointManager, workspace: Workspace) -> None:
+    def __init__(
+        self, breakpoint_mgr: BreakpointManager, workspace: Workspace, presenter: BreakpointsPresenter | None = None
+    ) -> None:
         super().__init__()
         self.workspace = workspace
         self.breakpoint_mgr = breakpoint_mgr
+        self.presenter = presenter
 
         hheader = self.horizontalHeader()
         hheader.setVisible(True)
@@ -99,7 +65,9 @@ class QBreakpointTableWidget(QTableView):
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
-        self.model: QBreakpointTableModel = QBreakpointTableModel(self.breakpoint_mgr)
+        self.model: QBreakpointTableModel = QBreakpointTableModel(
+            self.breakpoint_mgr, presenter.model if presenter is not None else None
+        )
         self.setModel(self.model)
 
         for col in range(len(QBreakpointTableModel.Headers)):
@@ -115,23 +83,19 @@ class QBreakpointTableWidget(QTableView):
         self.model.shutdown()
         super().closeEvent(event)
 
+    def _selected_breakpoints(self) -> list[Breakpoint]:
+        return self.model.table_model.objects(i.row() for i in self.selectedIndexes())
+
     def contextMenuEvent(self, event) -> None:
-        selected_rows = {i.row() for i in self.selectedIndexes()}
-        breakpoints = [self.breakpoint_mgr.breakpoints[r] for r in selected_rows]
-        menu = QMenu("", self)
-        if len(breakpoints):
-            if len(breakpoints) == 1:
-                menu.addAction("Edit breakpoint", lambda: self.edit_breakpoint(breakpoints[0]))
-            menu.addAction(
-                "Remove breakpoint" + ("s" if len(breakpoints) > 1 else ""),
-                lambda: self.remove_breakpoints(breakpoints),
-            )
-            menu.addSeparator()
-        menu.addAction("New breakpoint", self.new_breakpoint)
-        menu.exec_(event.globalPos())
+        breakpoints = self._selected_breakpoints()
+        if self.presenter is not None:
+            menu = self.presenter.breakpoints_menu(breakpoints, edit=self.edit_breakpoint, new=self.new_breakpoint)
+            menu.qmenu(cached=False).exec_(event.globalPos())
 
     def _on_cell_double_click(self, index) -> None:
-        self.edit_breakpoint(self.breakpoint_mgr.breakpoints[index.row()])
+        bp = self.model.table_model.row(index.row())
+        if bp is not None:
+            self.edit_breakpoint(bp)
 
     def new_breakpoint(self) -> None:
         bp = Breakpoint(BreakpointType.Execute, 0)
@@ -151,8 +115,16 @@ class BreakpointsView(InstanceView):
     Breakpoints table view.
     """
 
+    presenter: BreakpointsPresenter
+
     def __init__(self, workspace: Workspace, default_docking_position: str, instance: Instance) -> None:
-        super().__init__("breakpoints", workspace, default_docking_position, instance)
+        super().__init__(
+            "breakpoints",
+            workspace,
+            default_docking_position,
+            instance,
+            BreakpointsPresenter(workspace, instance, default_docking_position),
+        )
         self.base_caption = "Breakpoints"
         self._tbl_widget: QBreakpointTableWidget | None = None
         self._init_widgets()
@@ -161,12 +133,16 @@ class BreakpointsView(InstanceView):
     def reload(self) -> None:
         pass
 
+    def closeEvent(self, event) -> None:
+        self.presenter.close()
+        super().closeEvent(event)
+
     @staticmethod
     def minimumSizeHint():
         return QSize(200, 200)
 
     def _init_widgets(self) -> None:
         vlayout = QVBoxLayout()
-        self._tbl_widget = QBreakpointTableWidget(self.instance.breakpoint_mgr, self.workspace)
+        self._tbl_widget = QBreakpointTableWidget(self.instance.breakpoint_mgr, self.workspace, self.presenter)
         vlayout.addWidget(self._tbl_widget)
         self.setLayout(vlayout)

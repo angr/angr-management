@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 
 from angrmanagement.config import Conf
 from angrmanagement.data.breakpoint import Breakpoint, BreakpointType
+from angrmanagement.logic import GlobalInfo
 from angrmanagement.ui.dialogs.jumpto import JumpTo
 from angrmanagement.ui.views.hex_view import (
     BreakpointHighlightRegion,
@@ -36,6 +37,19 @@ from angrmanagement.ui.views.hex_view import (
     HexView,
     PatchHighlightRegion,
 )
+
+
+class TestHexViewModuleNames(unittest.TestCase):
+    """The module's public names, which other modules import from it."""
+
+    def test_public_names_import(self):
+        from angrmanagement.present import hexdump  # pylint: disable=import-outside-toplevel
+        from angrmanagement.ui.views import hex_view  # pylint: disable=import-outside-toplevel
+
+        for name in hex_view.__all__:
+            assert hasattr(hex_view, name), name
+        assert "HexDataProvider" in hex_view.__all__
+        assert hex_view.HexDataProvider is hexdump.HexDataProvider
 
 
 class HexGraphicsObjectTestCase(unittest.TestCase):
@@ -953,15 +967,7 @@ class TestPatchHighlightRegion(unittest.TestCase):
     def test_revert_with_prompt_confirmed(self):
         """revert_with_prompt reverts patch when user confirms."""
         region = self._make_region()
-        yes_sentinel = 1
-        with patch("angrmanagement.ui.views.hex_view.QMessageBox") as mock_msg_cls:
-            mock_msg_cls.StandardButton.Yes = yes_sentinel
-            mock_msg_cls.StandardButton.Cancel = 2
-            mock_msg_cls.Icon.Question = 0
-            mock_dlg = MagicMock()
-            mock_dlg.exec_.return_value = yes_sentinel
-            mock_msg_cls.return_value = mock_dlg
-
+        with patch.object(GlobalInfo.ui_services, "question", return_value="Yes"):
             region.revert_with_prompt()
 
             pm: Any = region.view.instance.patches  # type: ignore[union-attr]
@@ -970,16 +976,7 @@ class TestPatchHighlightRegion(unittest.TestCase):
     def test_revert_with_prompt_cancelled(self):
         """revert_with_prompt does nothing when user cancels."""
         region = self._make_region()
-        yes_sentinel = 1
-        cancel_sentinel = 2
-        with patch("angrmanagement.ui.views.hex_view.QMessageBox") as mock_msg_cls:
-            mock_msg_cls.StandardButton.Yes = yes_sentinel
-            mock_msg_cls.StandardButton.Cancel = cancel_sentinel
-            mock_msg_cls.Icon.Question = 0
-            mock_dlg = MagicMock()
-            mock_dlg.exec_.return_value = cancel_sentinel
-            mock_msg_cls.return_value = mock_dlg
-
+        with patch.object(GlobalInfo.ui_services, "question", return_value="Cancel"):
             region.revert_with_prompt()
 
             pm: Any = region.view.instance.patches  # type: ignore[union-attr]
@@ -1336,15 +1333,7 @@ class TestHexViewPatching(TestHexViewBase):
         self.hex_view.inner_widget.hex.set_cursor(addr)
         self.hex_view.inner_widget.hex.update_active_highlight_regions()
 
-        yes_sentinel = 1
-        with patch("angrmanagement.ui.views.hex_view.QMessageBox") as mock_msg_cls:
-            mock_msg_cls.StandardButton.Yes = yes_sentinel
-            mock_msg_cls.StandardButton.Cancel = 2
-            mock_msg_cls.Icon.Question = 0
-            mock_dlg = MagicMock()
-            mock_dlg.exec_.return_value = yes_sentinel
-            mock_msg_cls.return_value = mock_dlg
-
+        with patch.object(GlobalInfo.ui_services, "question", return_value="Yes"):
             self.hex_view.revert_selected_patches()
 
             patches = self.instance.project.kb.patches.get_all_patches(addr, 1)
@@ -1359,16 +1348,7 @@ class TestHexViewPatching(TestHexViewBase):
 
         self.hex_view.inner_widget.hex.set_cursor(addr)
 
-        yes_sentinel = 1
-        cancel_sentinel = 2
-        with patch("angrmanagement.ui.views.hex_view.QMessageBox") as mock_msg_cls:
-            mock_msg_cls.StandardButton.Yes = yes_sentinel
-            mock_msg_cls.StandardButton.Cancel = cancel_sentinel
-            mock_msg_cls.Icon.Question = 0
-            mock_dlg = MagicMock()
-            mock_dlg.exec_.return_value = cancel_sentinel
-            mock_msg_cls.return_value = mock_dlg
-
+        with patch.object(GlobalInfo.ui_services, "question", return_value="Cancel"):
             self.hex_view.revert_selected_patches()
 
             patches = self.instance.project.kb.patches.get_all_patches(addr, 1)
@@ -2576,6 +2556,34 @@ class TestHexViewSynchronizedViews(TestHexViewBase):
         self.hex_view.on_synchronized_view_group_changed()
         assert self.hex_view.inner_widget.hex.always_show_cursor is False
 
+    def test_synchronize_with_submenu(self):
+        """The 'Synchronize with' submenu offers the other views and joins the chosen group."""
+        other = HexView(self.workspace, "center", self.instance)
+        self.workspace.add_view(other)
+        try:
+            menu = self.hex_view.get_synchronize_with_submenu()
+            actions = {a.text(): a for a in menu.actions()}
+            assert other.caption in actions, list(actions)
+            action = actions[other.caption]
+            assert action.isCheckable() and not action.isChecked()
+            action.trigger()
+            assert self.hex_view.sync_state is other.sync_state
+            assert self.hex_view in other.sync_state.views
+            # the menu built now shows the group as chosen
+            menu = self.hex_view.get_synchronize_with_submenu()
+            checked = [a.text() for a in menu.actions() if a.isChecked()]
+            assert checked == [other.caption]
+        finally:
+            self.hex_view.desync()
+            self.workspace.remove_view(other)
+
+    def test_synchronize_with_submenu_without_other_views(self):
+        """With no other synchronized view the submenu says so."""
+        with patch.object(self.workspace.view_manager, "views", [self.hex_view]):
+            menu = self.hex_view.get_synchronize_with_submenu()
+        assert [a.text() for a in menu.actions()] == ["None available"]
+        assert not menu.actions()[0].isEnabled()
+
     def test_on_synchronized_highlight_regions_changed(self):
         """on_synchronized_highlight_regions_changed updates sync highlights."""
         self.hex_view.on_synchronized_highlight_regions_changed()
@@ -2859,6 +2867,14 @@ class TestHexViewFindBar(AngrManagementTestCase):
         assert self.view._find_bar.isHidden()
         self.view.show_find_bar()
         assert not self.view._find_bar.isHidden()
+
+    def test_find_bar_is_open_follows_the_bar(self):
+        bar = self.view._find_bar
+        assert bar is not None and not self.view.find_bar_is_open()
+        self.view.show_find_bar()
+        assert self.view.find_bar_is_open()
+        bar.close_bar()
+        assert not self.view.find_bar_is_open()
 
     def test_hex_pattern_search(self):
         self.view.show_find_bar()

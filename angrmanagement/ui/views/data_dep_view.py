@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from angr.analyses.data_dep import MemDepNode, RegDepNode, TmpDepNode
-
-# noinspection PyPackageRequirements
-from networkx import DiGraph
+from angr.analyses.data_dep import MemDepNode, RegDepNode
 
 # noinspection PyPackageRequirements
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from angrmanagement.present.data_dep import graph_has_tmp_nodes
+from angrmanagement.present.graphs import convert_graph
 from angrmanagement.ui.dialogs.data_dep_graph_search import QDataDepGraphSearch
 from angrmanagement.ui.widgets.qdatadep_graph import QDataDepGraph
 from angrmanagement.ui.widgets.qdatadepgraph_block import QDataDepGraphBlock
@@ -21,6 +20,7 @@ if TYPE_CHECKING:
     from angr.analyses import DataDependencyGraphAnalysis
     from angr.analyses.data_dep import BaseDepNode
     from capstone import CsInsn
+    from networkx import DiGraph
 
     from angrmanagement.data.instance import Instance
     from angrmanagement.ui.workspace import Workspace
@@ -198,29 +198,13 @@ class DataDepView(InstanceView):
         return converted.setdefault(node, QDataDepGraphBlock(False, self, node, instr))
 
     def _create_ui_graph(self) -> DiGraph:
-        g = DiGraph()
-
-        converted = {}
-        for dep_node in self._data_dep_graph.nodes():
-            node = self._convert_node(dep_node, converted)
-            if node:
-                g.add_node(node)
-
-        for n0, n1 in self._data_dep_graph.edges():
-            n0_ = self._convert_node(n0, converted)
-            n1_ = self._convert_node(n1, converted)
-
-            g.add_edge(n0_, n1_)
-
-        return g
+        return convert_graph(self._data_dep_graph, self._convert_node)
 
     def _graph_has_tmp_nodes(self) -> bool:
         """
         Returns whether or not the given graph has temp nodes
         """
-        if not self._data_dep_graph:
-            return False
-        return any(node for node in self._data_dep_graph.nodes if isinstance(node, TmpDepNode))
+        return graph_has_tmp_nodes(self._data_dep_graph)
 
     def use_subgraph(self, block: QDataDepGraphBlock, backwards: bool) -> None:
         dep_node = block.node

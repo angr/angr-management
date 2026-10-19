@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 from angrmanagement.config import Conf
 from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.logic.debugger.bintrace import BintraceDebugger
+from angrmanagement.present.trace_map import addr_from_pos, pos_from_addr, trace_position
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -66,20 +67,7 @@ class TraceMapItem(QGraphicsItem):
         self.on_debugger_state_updated()
 
     def on_debugger_state_updated(self) -> None:
-        self._addr = 0
-        self._total_size = 0
-        self._checkpoints = []
-
-        if isinstance(self._dbg_watcher.debugger.am_obj, BintraceDebugger):
-            # FIXME: Expose trace info as TraceDebugger abstraction between Debugger<>BintraceDebugger
-            dbg = self._dbg_watcher.debugger.am_obj
-            t = dbg._trace.trace
-            s = dbg._trace_dbg.state
-            if s and s.event_count >= 0:
-                self._addr = s.event_count
-                self._total_size = t.get_num_events()
-                self._checkpoints = [s.event_count for s in t.checkpoints]
-
+        self._addr, self._total_size, self._checkpoints = trace_position(self._dbg_watcher.debugger.am_obj)
         self.refresh()
 
     @property
@@ -120,16 +108,13 @@ class TraceMapItem(QGraphicsItem):
         """
         Get scene X coordinate from address, or None if it could not be mapped.
         """
-        if self._total_size == 0 or addr > self._total_size:
-            return None
-        return int(addr / self._total_size * self._width)
+        return pos_from_addr(addr, self._total_size, self._width)
 
     def _get_addr_from_pos(self, pos: int) -> int | None:
         """
         Get address from scene X coordinate, or None if it could not be mapped.
         """
-        offset = int(pos * self._total_size // self._width)
-        return offset
+        return addr_from_pos(pos, self._total_size, self._width)
 
     def _create_line_indicator(
         self, addr: int, item_map, color=Qt.GlobalColor.yellow, show_frontier: bool = False, z=None, z_frontier=None

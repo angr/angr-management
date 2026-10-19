@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import os
 import typing
 
-from angr.storage.file import SimFileDescriptor
-from PySide6.QtWidgets import QComboBox, QFileDialog, QFrame, QPushButton, QTextEdit, QVBoxLayout
+from PySide6.QtWidgets import QComboBox, QFrame, QPushButton, QTextEdit, QVBoxLayout
+
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.present.symexec import STD_FDS, fd_choices, fd_text
 
 if typing.TYPE_CHECKING:
     from angr.sim_state import SimState
@@ -18,11 +19,7 @@ class QFileDescriptorViewer(QFrame):
     Display content of a file descriptor ( include stdin/stdout/stderr ) for the selected state.
     """
 
-    STD = {
-        0: "stdin",
-        1: "stdout",
-        2: "stderr",
-    }
+    STD = STD_FDS
 
     def __init__(self, state, parent, workspace: Workspace) -> None:
         super().__init__(parent)
@@ -46,14 +43,13 @@ class QFileDescriptorViewer(QFrame):
         if self._state.am_none:
             return
         self._current_fd = fd
-        self.textedit.setPlainText(self._state.posix.dumps(fd).decode("ascii", "ignore").replace("\x00", "\\x00"))
+        self.textedit.setPlainText(fd_text(self._state, fd))
 
     def save_as(self) -> None:
         if self._state.am_none or self._current_fd is None:
             return
-        filename, folder = QFileDialog.getSaveFileName(self, "Save content to ...", "", "Any file (*);")
-        if filename and folder:
-            save_to = os.path.join(folder, filename)
+        save_to = GlobalInfo.ui_services.pick_save_file("Save content to ...", "", "Any file (*);")
+        if save_to:
             with open(save_to, "wb") as f:
                 f.write(self._state.posix.dumps(self._current_fd))
 
@@ -80,10 +76,5 @@ class QFileDescriptorViewer(QFrame):
         if self.select_fd is None:
             self._init_widgets()
         self.select_fd.clear()
-        for fd, simfile in self._state.posix.fd.items():
-            if fd in self.STD:
-                self.select_fd.addItem(self.STD[fd])
-            elif isinstance(simfile, SimFileDescriptor):
-                self.select_fd.addItem(str(simfile.file.name))
-            else:
-                self.select_fd.addItem(str(simfile))
+        for _fd, name in fd_choices(self._state):
+            self.select_fd.addItem(name)

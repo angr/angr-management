@@ -11,7 +11,7 @@ import sys
 import time
 import warnings
 
-from PySide6.QtCore import QThread, QTimer
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
 from . import __version__
@@ -170,6 +170,11 @@ def start_management(
 
     splash.setProgress(0.1, "Loading configuration")
 
+    # the headless core reaches the GUI thread, the configuration's Qt values and the user through GlobalInfo
+    from .ui.qt_frontend import install_qt_frontend
+
+    install_qt_frontend()
+
     from .config import Conf
 
     # try to import the initial configuration for the install
@@ -201,7 +206,6 @@ def start_management(
     angr.procedures.definitions.load_all_definitions()
 
     splash.setProgress(0.9, "Initializing main window")
-    GlobalInfo.gui_thread = QThread.currentThread()
     file_to_open = filepath if filepath else None
     if mcp_port is not None:
         Conf.mcp_server_port = mcp_port

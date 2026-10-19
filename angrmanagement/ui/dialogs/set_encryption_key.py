@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-import ast
-import base64
-from enum import IntEnum
-
 from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
@@ -16,23 +12,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from angrmanagement.data.load_options import key_to_hex
+from angrmanagement.present.dialogs import EncKeyFormat, parse_encryption_key
 
-class EncKeyFormat(IntEnum):
-    """
-    The format that an encryption key is entered in.
-    """
-
-    BASE64 = 0
-    BYTESTRING = 1
-    ASCII = 2
-    HEX = 3
-
-
-def key_to_hex(key: bytes) -> str:
-    """
-    Render a key the way this dialog expects it to be typed back in.
-    """
-    return " ".join(f"{x:02x}" for x in key)
+__all__ = ["EncKeyFormat", "SetEncryptionKeyDialog", "key_to_hex"]
 
 
 class SetEncryptionKeyDialog(QDialog):
@@ -137,27 +120,7 @@ class SetEncryptionKeyDialog(QDialog):
             key_box.setText(self._initial_text)
             key_box.selectAll()
 
-    @staticmethod
-    def _parse_hex(txt: str) -> bytes | None:
-        """
-        Parse a hexadecimal key. Accepts an optional 0x prefix and whitespace, ':' or '-' separators.
-        """
-        digits = txt.strip()
-        if digits[:2].lower() == "0x":
-            digits = digits[2:]
-        for separator in " \t:-":
-            digits = digits.replace(separator, "")
-        if not digits or len(digits) % 2 != 0:
-            return None
-        try:
-            return bytes.fromhex(digits)
-        except ValueError:
-            return None
-
     def _get_enckey(self, txt: str) -> bytes | None:
-        if not txt:
-            return None
-
         key_format = None
         if self._hex_radio.isChecked():
             key_format = EncKeyFormat.HEX
@@ -167,54 +130,7 @@ class SetEncryptionKeyDialog(QDialog):
             key_format = EncKeyFormat.BYTESTRING
         elif self._ascii_radio.isChecked():
             key_format = EncKeyFormat.ASCII
-
-        # parse it as a hexadecimal string. this is attempted before base64 because hex-shaped text is also valid
-        # base64 more often than not, and it is far likelier to have been meant as hex.
-        if key_format is None or key_format == EncKeyFormat.HEX:
-            key = self._parse_hex(txt)
-            if key is not None:
-                return key
-            if key_format == EncKeyFormat.HEX:
-                return None
-
-        # parse it as a base64 string
-        if key_format is None or key_format == EncKeyFormat.BASE64:
-            try:
-                key = base64.b64decode(txt, validate=True)
-                # it works!
-                return key
-            except (ValueError, TypeError):
-                # can't be parsed as a base64 string
-                pass
-            if key_format == EncKeyFormat.BASE64:
-                return None
-
-        # parse it as a Python byte string. accept both a complete literal and the escaped content of one.
-        if key_format is None or key_format == EncKeyFormat.BYTESTRING:
-            candidates = [txt] if txt.startswith(('b"', "b'")) else []
-            candidates.append(f'b"{txt}"')
-            for candidate in candidates:
-                try:
-                    key = ast.literal_eval(candidate)
-                except (SyntaxError, ValueError, MemoryError, RecursionError):
-                    continue
-                if isinstance(key, bytes):
-                    return key
-
-            if key_format == EncKeyFormat.BYTESTRING:
-                return None
-
-        # encode it as a normal string
-        if key_format is None or key_format == EncKeyFormat.ASCII:
-            try:
-                return txt.encode("ascii")
-            except UnicodeEncodeError:
-                pass
-            if key_format == EncKeyFormat.ASCII:
-                return None
-
-        # everything has failed
-        return None
+        return parse_encryption_key(txt, key_format)
 
     #
     # Event handlers

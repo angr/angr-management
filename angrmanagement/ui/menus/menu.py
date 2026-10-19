@@ -1,170 +1,97 @@
+"""
+Qt rendering of the menus in angrmanagement.present.menus.
+
+``Menu``, ``MenuEntry`` and ``MenuSeparator`` are re-exported from there, so existing imports keep working.
+:func:`to_qmenu` builds a QMenu from a ``Menu``.
+"""
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QIcon, QKeySequence
 from PySide6.QtWidgets import QMenu
 
+from angrmanagement.present.menus import Menu, MenuEntry, MenuSeparator, normalize_entry
+from angrmanagement.ui.icons import icon as named_icon
+
 if TYPE_CHECKING:
-    from PySide6.QtGui import QIcon
+    from collections.abc import Iterable
+
+__all__ = ["Menu", "MenuEntry", "MenuSeparator", "qicon_for", "qkeysequence_for", "to_qmenu", "translate_element"]
 
 
-class MenuEntry:
-    _qaction: QAction | None
-
-    def __init__(
-        self,
-        caption,
-        action,
-        shortcut=None,
-        checkable: bool = False,
-        checked: bool = False,
-        enabled: bool = True,
-        key=None,
-        role: QAction.MenuRole = QAction.MenuRole.NoRole,
-        icon: QIcon | None = None,
-    ) -> None:
-        self.caption = caption
-        self.action = action
-        self.shortcut = shortcut
-        self.checkable = checkable
-        self.checked_initially = checked
-        self.enabled = enabled
-        self.key = key
-        self.icon = icon
-
-        self._qaction = None
-        self._role = role
-
-    def set_qaction(self, qaction: QAction) -> None:
-        self._qaction = qaction
-        self._enable(self.enabled)
-
-    def enable(self) -> None:
-        self._enable(True)
-
-    def disable(self) -> None:
-        self._enable(False)
-
-    def _enable(self, b: bool) -> None:
-        self.enabled = b
-        if self._qaction is not None:
-            self._qaction.setEnabled(b)
-
-    @property
-    def checked(self):
-        if self._qaction is None or not self.checkable:
-            return False
-        return self._qaction.isChecked()
-
-    @checked.setter
-    def checked(self, checked: bool) -> None:
-        if self._qaction is not None:
-            self._qaction.setChecked(checked)
+def qkeysequence_for(shortcut: Any) -> QKeySequence:
+    """A QKeySequence for a shortcut given as a Qt-style string or already as a key sequence."""
+    if isinstance(shortcut, QKeySequence):
+        return shortcut
+    return QKeySequence(shortcut)
 
 
-class MenuSeparator:
-    def __init__(self) -> None:
-        pass
+def qicon_for(icon: Any) -> QIcon | None:
+    """A QIcon for an icon given by name or already as a QIcon."""
+    if icon is None or isinstance(icon, QIcon):
+        return icon
+    return named_icon(icon)
 
 
-class Menu:
-    def __init__(self, caption, children=(), parent=None) -> None:
-        self.parent = parent
-        self.caption = caption
+def to_qmenu(menu: Menu, parent=None, extra_entries: Iterable[Any] | None = None) -> QMenu:
+    """Build a QMenu holding the entries of ``menu`` followed by ``extra_entries``."""
+    qmenu = QMenu(menu.caption, parent) if parent is not None else QMenu(menu.caption)
+    for entry in list(menu.entries) + list(extra_entries or ()):
+        translate_element(qmenu, entry)
+    return qmenu
 
-        self.entries = []
-        self._keyed_entries = None
 
-        self._qmenu: QMenu | None = None
-
-        for child in children:
-            self.add(child)
-
-    def qmenu(self, extra_entries=None, cached: bool = True):
-        if extra_entries is None:
-            extra_entries = []
-
-        if cached and not extra_entries and self._qmenu is not None:
-            # in order to use the cached result, must not have extra entries
-            return self._qmenu
-
-        menu = QMenu(self.caption, self.parent) if self.parent is not None else QMenu(self.caption)
-
-        for entry in self.entries + extra_entries:
-            self.translate_element(menu, entry)
-
-        # in order to cache the result, must not have extra entries
-        if not extra_entries:
-            self._qmenu = menu
-
-        return menu
-
-    @staticmethod
-    def translate_element(menu, entry, index=None):
-        if index is None:
+def translate_element(menu: QMenu, entry: Any, index: int | None = None) -> None:
+    """Add one menu element to the QMenu ``menu``, before the action at ``index`` if given."""
+    if index is None:
+        before = None
+    else:
+        try:
+            before = menu.actions()[index]
+        except IndexError:
             before = None
+
+    entry = normalize_entry(entry)
+
+    if isinstance(entry, MenuEntry):
+        action = QAction(entry.caption, menu)
+        qicon = qicon_for(entry.icon)
+        if qicon:
+            action.setIcon(qicon)
+        action.triggered.connect(entry.action)
+        entry.set_qaction(action)
+
+        if entry.shortcut is not None:
+            action.setShortcut(qkeysequence_for(entry.shortcut))
+        if entry.checkable:
+            action.setCheckable(True)
+            action.setChecked(entry.checked_initially)
+
+        if before is None:
+            menu.addAction(action)
         else:
-            try:
-                before = menu.actions()[index]
-            except IndexError:
-                before = None
-
-        if entry is None:
-            entry = MenuSeparator()
-        elif type(entry) is tuple and len(entry) == 2 and callable(entry[1]):
-            entry = MenuEntry(*entry)
-        elif type(entry) is tuple and len(entry) == 2 and hasattr(entry[1], "__iter__"):
-            entry = Menu(*entry)
-
-        if isinstance(entry, MenuEntry):
-            action = QAction(entry.caption, menu)
-            if entry.icon:
-                action.setIcon(entry.icon)
-            action.triggered.connect(entry.action)
-            entry.set_qaction(action)
-
-            if entry.shortcut is not None:
-                action.setShortcut(entry.shortcut)
-            if entry.checkable:
-                action.setCheckable(True)
-                action.setChecked(entry.checked_initially)
-
-            if before is None:
-                menu.addAction(action)
-            else:
-                menu.insertAction(before, action)
-        elif isinstance(entry, MenuSeparator):
-            if before is None:
-                menu.addSeparator()
-            else:
-                menu.insertSeparator(before)
-        elif isinstance(entry, Menu):
-            if before is None:
-                menu.addMenu(entry.qmenu())
-            else:
-                menu.insertMenu(before, entry.qmenu())
-        elif isinstance(entry, QMenu):
-            if before is None:
-                menu.addMenu(entry)
-            else:
-                menu.insertMenu(before, entry)
-        elif isinstance(entry, QAction):
-            if before is None:
-                menu.addAction(entry)
-            else:
-                menu.insertAction(before, entry)
+            menu.insertAction(before, action)
+    elif isinstance(entry, MenuSeparator):
+        if before is None:
+            menu.addSeparator()
         else:
-            raise TypeError("Unsupported type", type(entry))
-
-    def add(self, action, index=None) -> None:
-        if index is None:
-            index = len(self.entries)
-        self.entries.insert(index, action)
-        if self._qmenu is not None:
-            self.translate_element(self._qmenu, action, index)
-
-    def remove(self, action) -> None:
-        self.entries.remove(action)
-        if self._qmenu is not None and isinstance(action, MenuEntry):
-            self._qmenu.removeAction(action._qaction)
+            menu.insertSeparator(before)
+    elif isinstance(entry, Menu):
+        if before is None:
+            menu.addMenu(entry.qmenu())
+        else:
+            menu.insertMenu(before, entry.qmenu())
+    elif isinstance(entry, QMenu):
+        if before is None:
+            menu.addMenu(entry)
+        else:
+            menu.insertMenu(before, entry)
+    elif isinstance(entry, QAction):
+        if before is None:
+            menu.addAction(entry)
+        else:
+            menu.insertAction(before, entry)
+    else:
+        raise TypeError("Unsupported type", type(entry))

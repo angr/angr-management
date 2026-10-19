@@ -13,19 +13,18 @@ from PySide6.QtWidgets import (
     QLabel,
     QListWidget,
     QListWidgetItem,
-    QMessageBox,
     QSplitter,
     QVBoxLayout,
 )
 
 from angrmanagement.consts import IMG_LOCATION
-from angrmanagement.data.analysis_options import (
-    AnalysesConfiguration,
-    AnalysisOption,
-    BoolAnalysisOption,
-    ChoiceAnalysisOption,
-    IntAnalysisOption,
-    StringAnalysisOption,
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.present.analysis_options import (
+    LANGUAGE_DEPENDENT_ANALYSES,
+    RUST_DEPENDENT_ANALYSES,
+    is_language_option,
+    option_row,
+    set_language,
 )
 from angrmanagement.ui.widgets.qproperty_editor import (
     BoolPropertyItem,
@@ -38,41 +37,25 @@ from angrmanagement.ui.widgets.qproperty_editor import (
 )
 
 if TYPE_CHECKING:
+    from angrmanagement.data.analysis_options import (
+        AnalysesConfiguration,
+        AnalysisOption,
+    )
     from angrmanagement.ui.workspace import Workspace
 
 
-#: language -> (display name, analyses enabled by default only for binaries of that language)
-LANGUAGE_DEPENDENT_ANALYSES: dict[str, tuple[str, tuple[str, ...]]] = {
-    "rust": ("Rust", ("rust_symbol_recovery", "rust_typedb_loader")),
-    "go": ("Go", ("go_globals_recovery",)),
-}
-RUST_DEPENDENT_ANALYSES = LANGUAGE_DEPENDENT_ANALYSES["rust"][1]
-
-
 def map_option_to_property(option: AnalysisOption):
-    if isinstance(option, BoolAnalysisOption):
-        return BoolPropertyItem(option.display_name, option.value, description=option.tooltip, option=option)
-    elif isinstance(option, IntAnalysisOption):
+    """The property editor item of ``option``, from the row the terminal's option sheet shows too."""
+    row = option_row(option)
+    if row.kind == "bool":
+        return BoolPropertyItem(row.label, row.value, description=row.description, option=option)
+    if row.kind == "int":
         return IntPropertyItem(
-            option.display_name,
-            option.value,
-            minimum=option.minimum_value if option.minimum_value is not None else -(2**31),
-            maximum=option.maximum_value if option.maximum_value is not None else (2**31 - 1),
-            description=option.tooltip,
-            option=option,
+            row.label, row.value, minimum=row.minimum, maximum=row.maximum, description=row.description, option=option
         )
-    elif isinstance(option, ChoiceAnalysisOption):
-        return ComboPropertyItem(
-            option.display_name,
-            option.value,
-            option.choices,
-            description=option.tooltip,
-            option=option,
-        )
-    elif isinstance(option, StringAnalysisOption):
-        return TextPropertyItem(option.display_name, option.value, description=option.tooltip, option=option)
-    else:
-        raise ValueError("Mapper not implemented")
+    if row.kind == "choice":
+        return ComboPropertyItem(row.label, row.value, dict(row.choices), description=row.description, option=option)
+    return TextPropertyItem(row.label, row.value, description=row.description, option=option)
 
 
 class AnalysisOptionsDialog(QDialog):
@@ -188,56 +171,22 @@ class AnalysisOptionsDialog(QDialog):
 
         def on_value_changed(prop, value):
             prop.extra["option"].value = value
-            if analysis.name == "overview" and prop.extra["option"].name == "languages":
+            if is_language_option(analysis, prop.extra["option"]):
                 self._on_language_changed(value)
 
         model.valueChanged.connect(on_value_changed)
         self._options_tree.setModel(model)
 
     def _on_language_changed(self, language) -> None:
-        try:
-            overview = self._analyses.by_name("overview")
-        except KeyError:
-            overview = None
-        if overview is not None and not overview.instance.project.am_none:
-            overview.instance.project._languages = [language]
-
-        for lang, (lang_name, names) in LANGUAGE_DEPENDENT_ANALYSES.items():
-            self._prompt_language_analyses(language == lang, lang_name, names)
-
-    def _prompt_language_analyses(self, want_enabled: bool, lang_name: str, names: tuple[str, ...]) -> None:
-        targets = []
-        for name in names:
-            try:
-                config = self._analyses.by_name(name)
-            except KeyError:
+        for prompt in set_language(self._analyses, language):
+            reply = GlobalInfo.ui_services.question(prompt.title, prompt.text, ["Yes", "No"], "Yes")
+            if reply != "Yes":
                 continue
-            if config.enabled != want_enabled:
-                targets.append(config)
-
-        if not targets:
-            return
-
-        action_word = "enable" if want_enabled else "disable"
-        display_names = ", ".join(c.display_name for c in targets)
-        reply = QMessageBox.question(
-            self,
-            f"{action_word.capitalize()} {lang_name}-specific analyses?",
-            f"The selected language is {lang_name if want_enabled else 'not ' + lang_name}. "
-            f"Would you like to {action_word} the following {lang_name}-specific "
-            f"{'analyses' if len(targets) > 1 else 'analysis'}?\n\n"
-            f"{display_names}",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes,
-        )
-        if reply != QMessageBox.StandardButton.Yes:
-            return
-
-        for config in targets:
-            config.enabled = want_enabled
-            item = self._items_by_name.get(config.name)
-            if item is not None:
-                item.setCheckState(Qt.CheckState.Checked if want_enabled else Qt.CheckState.Unchecked)
+            prompt.apply()
+            for config in prompt.targets:
+                item = self._items_by_name.get(config.name)
+                if item is not None:
+                    item.setCheckState(Qt.CheckState.Checked if prompt.want_enabled else Qt.CheckState.Unchecked)
 
     #
     # Event handlers
@@ -250,3 +199,7 @@ class AnalysisOptionsDialog(QDialog):
 
     def _on_run_clicked(self) -> None:
         self.accept()
+
+
+# the language tables moved to angrmanagement.present.analysis_options; they stay importable from here
+__all__ = ["LANGUAGE_DEPENDENT_ANALYSES", "RUST_DEPENDENT_ANALYSES", "AnalysisOptionsDialog", "map_option_to_property"]

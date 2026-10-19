@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import networkx as nx
 from angr.knowledge_plugins.functions import Function
-from PySide6.QtGui import QColor
+
+from angrmanagement.config.color import Color
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
@@ -15,14 +16,14 @@ _l = logging.getLogger(name=__name__)
 
 
 class AFLQemuBitmap:
-    HIT_COLOR = QColor(0xEE, 0xFF, 0xEE)
-    MISS_COLOR = QColor(0x99, 0x00, 0x00, 0x30)
-    FUNCTION_NOT_VISITED_COLOR = QColor(0x99, 0x00, 0x00, 0x20)
+    HIT_COLOR = Color(0xEE, 0xFF, 0xEE)
+    MISS_COLOR = Color(0x99, 0x00, 0x00, 0x30)
+    FUNCTION_NOT_VISITED_COLOR = Color(0x99, 0x00, 0x00, 0x20)
     BUCKET_COLORS = [
-        QColor(0xEF, 0x65, 0x48, 0x20),
-        QColor(0xFC, 0x8D, 0x59, 0x60),
-        QColor(0xFD, 0xBB, 0x84, 0x60),
-        QColor(0xFD, 0xD4, 0x9E, 0x60),
+        Color(0xEF, 0x65, 0x48, 0x20),
+        Color(0xFC, 0x8D, 0x59, 0x60),
+        Color(0xFD, 0xBB, 0x84, 0x60),
+        Color(0xFD, 0xD4, 0x9E, 0x60),
     ]
 
     def __init__(self, workspace: Workspace, bitmap, base_addr, bits_inverted: bool = False) -> None:
@@ -190,6 +191,10 @@ class AFLQemuBitmap:
         return hitcount_graph
 
     def _calc_function_info(self, func) -> None:
+        # the function tables give a proxy of the function (FunctionTableEntry), which has no blocks
+        if not hasattr(func, "block_addrs"):
+            workspace: Any = self.workspace
+            func = workspace.main_instance.kb.functions.get_by_addr(func.addr)
         node_hitcounts = self._node_hitcounts[func]
 
         block_addrs = list(func.block_addrs)

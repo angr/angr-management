@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from typing import Any
+
+from angrmanagement.present.feature_map import jump_to_feature_addr
 from angrmanagement.ui.widgets.qfeature_map import QFeatureMap
 
 from .toolbar import Toolbar
@@ -8,8 +11,8 @@ from .toolbar_dock import ToolBarDockWidget
 
 class FeatureMapToolbar(Toolbar):
     """
-    Displays the current feature map. Monitors most recently focused view via instance.activate_view_state to show
-    cursors on the feature map, and allows selection in the feature map to control location of active view.
+    Displays the current feature map, which shows the cursors of the most recently focused view, and allows selection
+    in the feature map to control location of active view.
     """
 
     def __init__(self, window) -> None:
@@ -19,13 +22,11 @@ class FeatureMapToolbar(Toolbar):
         self._is_subscribed = False
 
     def _subscribe_events(self) -> None:
-        self.window.workspace.main_instance.active_view_state.am_subscribe(self._on_view_state_updated)
         self._feature_map.addr.am_subscribe(self._on_feature_map_addr_selected)
         self._is_subscribed = True
 
     def _unsubscribe_events(self) -> None:
         if self._is_subscribed:
-            self.window.workspace.main_instance.active_view_state.am_unsubscribe(self._on_view_state_updated)
             self._feature_map.addr.am_unsubscribe(self._on_feature_map_addr_selected)
 
     def qtoolbar(self):
@@ -37,16 +38,9 @@ class FeatureMapToolbar(Toolbar):
 
     def shutdown(self) -> None:
         self._unsubscribe_events()
+        if self._feature_map is not None:
+            self._feature_map.shutdown()
 
     def _on_feature_map_addr_selected(self) -> None:
-        target_view = self.window.workspace.view_manager.most_recently_focused_view
-        if hasattr(target_view, "jump_to"):
-            addr = self._feature_map.addr.am_obj
-            if addr is not None:
-                target_view.jump_to(addr)
-
-    def _on_view_state_updated(self) -> None:
-        vs = self.window.workspace.main_instance.active_view_state
-        if vs.am_none:
-            return
-        self._feature_map.set_cursor_addrs(vs.cursors)
+        addr: Any = self._feature_map.addr.am_obj
+        jump_to_feature_addr(self.window.workspace, addr)

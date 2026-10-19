@@ -201,12 +201,15 @@ class CFGGenerationJob(InstanceJob):
         if self._on_cfb_available is not None:
             gui_thread_schedule_async(self._on_cfb_available, args=(temp_cfb,))
 
-        cfg = self.instance.project.analyses.CFG(
-            progress_callback=functools.partial(self._progress_callback, ctx),
-            low_priority=True,
-            cfb=temp_cfb,
-            **self.cfg_args,
-        )
+        # the views read the partial result on the UI thread while the recovery adds to it; they wait on the gate
+        # for the recovery to stop at one of its callbacks
+        with self.instance.analysis_gate.running():
+            cfg = self.instance.project.analyses.CFG(
+                progress_callback=functools.partial(self._progress_callback, ctx),
+                low_priority=True,
+                cfb=temp_cfb,
+                **self.cfg_args,
+            )
         # if the job was cancelled, the CFG recovery was gracefully aborted and returned a finalized partial model;
         # remember the state it did not get to process so that the user may resume the recovery later
         aborted_state = getattr(cfg, "resume_state", None)
@@ -235,6 +238,8 @@ class CFGGenerationJob(InstanceJob):
     #
 
     def _progress_callback(self, ctx: JobContext, percentage, text: str | None = None, cfg=None) -> None:
+        # CFGFast reports progress between its steps: a reader waiting on the gate may read now
+        self.instance.analysis_gate.pause_point()
         if self.state == JobState.CANCELLED:
             # gracefully abort the CFG recovery instead of raising JobCancelled: the analysis finalizes the partially
             # recovered model, run() returns normally, and the partial result gets published
@@ -264,6 +269,8 @@ class CFGGenerationJob(InstanceJob):
         self.instance.cfb = cfb
 
     def _on_cfb_object_added(self, addr: int, obj) -> None:
+        # called as each block lands in the blanket, between the recovery's steps
+        self.instance.analysis_gate.pause_point()
         self._pending_cfb_objs.append((addr, obj))
         if time.monotonic() - self._last_cfb_event >= MIN_CFB_EVENT_INTERVAL:
             self._flush_cfb_objects()

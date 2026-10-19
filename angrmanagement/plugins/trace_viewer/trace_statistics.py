@@ -9,7 +9,8 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any
 
 from angr.errors import SimEngineError
-from PySide6.QtGui import QColor
+
+from angrmanagement.config.color import Color
 
 if TYPE_CHECKING:
     from angrmanagement.ui.workspace import Workspace
@@ -49,7 +50,7 @@ class ObjectAndBase:
 
 
 class TraceStatistics:
-    BBL_EMPTY_COLOR = QColor("white")
+    BBL_EMPTY_COLOR = Color(255, 255, 255)
 
     def __init__(self, workspace: Workspace, trace, baddr) -> None:
         self.workspace = workspace
@@ -247,7 +248,7 @@ class TraceStatistics:
         r = random.randint(0, 255)
         g = random.randint(0, 255)
         b = random.randint(0, 255)
-        return QColor(r, g, b)
+        return Color(r, g, b)
 
     def _get_position(self, addr: int, i):
         return self._positions[addr][i]

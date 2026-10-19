@@ -7,6 +7,7 @@ from PySide6.QtGui import QBrush, QPainter
 from PySide6.QtWidgets import QGraphicsSimpleTextItem
 
 from angrmanagement.config import Conf
+from angrmanagement.present.block_tree.disasm_nodes import LabelNode
 
 from .qgraph_object import QCachedGraphicsItem
 
@@ -15,10 +16,26 @@ if TYPE_CHECKING:
 
 
 class QBlockLabel(QCachedGraphicsItem):
+    """
+    A label line on the scene: the text items of a LabelNode.
+    """
+
     ADDR_SPACING = 10
 
-    def __init__(self, addr: int, text: str, config, disasm_view, instance: Instance, infodock, parent=None) -> None:
+    def __init__(
+        self,
+        addr: int,
+        text: str,
+        config,
+        disasm_view,
+        instance: Instance,
+        infodock,
+        parent=None,
+        node: LabelNode | None = None,
+    ) -> None:
         super().__init__(parent=parent)
+        #: the label's text
+        self.node = node if node is not None else LabelNode(addr, text, infodock)
 
         self.instance = instance
         self.addr = addr
@@ -48,7 +65,7 @@ class QBlockLabel(QCachedGraphicsItem):
         painter.setFont(self._config.code_font)
 
         # background
-        if self.infodock.is_label_selected(self.addr):
+        if self.node.selected:
             highlight_color = Conf.disasm_view_label_highlight_color
             painter.setBrush(highlight_color)
             painter.setPen(highlight_color)
@@ -60,13 +77,10 @@ class QBlockLabel(QCachedGraphicsItem):
 
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
-            self.infodock.select_label(self.addr)
+            self.node.activate("left")
         elif event.button() == Qt.MouseButton.RightButton:
-            # unselect all other labels
-            self.infodock.unselect_all_labels()
-            # select this label
-            self.infodock.select_label(self.addr)
-            # show context menu
+            # select this label alone, then show the context menu
+            self.node.activate("right")
             self.infodock.disasm_view.label_context_menu(self.addr, event.screenPos())
 
     #
@@ -75,13 +89,13 @@ class QBlockLabel(QCachedGraphicsItem):
 
     def _init_widgets(self) -> None:
         # address
-        self._addr = f"{self.addr:08x}"
+        self._addr = self.node.addr_text
         self._addr_item = QGraphicsSimpleTextItem(self)
         self._addr_item.setBrush(QBrush(self._config.disasm_view_node_address_color))
         self._addr_item.setFont(self._config.disasm_font)
         self._addr_item.setText(self._addr)
 
-        self._text_item = QGraphicsSimpleTextItem(self.text, self)
+        self._text_item = QGraphicsSimpleTextItem(self.node.text, self)
         self._text_item.setBrush(Conf.disasm_view_label_color)
         self._text_item.setFont(self._config.disasm_font)
 

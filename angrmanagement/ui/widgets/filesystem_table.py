@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QAbstractItemView, QFileDialog, QHeaderView, QMenu, QTableWidget, QTableWidgetItem
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QMenu, QTableWidget, QTableWidgetItem
+
+from angrmanagement.logic import GlobalInfo
 
 
 class QFileSystemTable(QTableWidget):
@@ -48,17 +50,12 @@ class QFileSystemTable(QTableWidget):
         self.setItem(row, 1, QTableWidgetItem(""))
 
     def _action_select_file(self) -> None:
-        file_path, succ = QFileDialog.getOpenFileName(
-            self,
-            "Open a real file",
-            "",
-            "All executables (*)",
-        )
-        if succ:
-            self.setItem(self.currentRow(), 1, QTableWidgetItem(file_path))
+        files = GlobalInfo.ui_services.pick_open_files("Open a real file", "", "All executables (*)", False)
+        if files:
+            self.setItem(self.currentRow(), 1, QTableWidgetItem(files[0]))
 
     def _action_select_dir(self) -> None:
-        dir_path = QFileDialog.getExistingDirectory(self, "Select a directory")
+        dir_path = GlobalInfo.ui_services.pick_directory("Select a directory", "", resolve_symlinks=True)
         if dir_path:
             self.setItem(self.currentRow(), 1, QTableWidgetItem(dir_path))
 

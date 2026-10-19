@@ -2,16 +2,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from angr.sim_type import SimStruct, SimTypeBottom, SimUnion, TypeRef
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QBrush, QColor, QPainter
-from PySide6.QtWidgets import QMessageBox, QSizePolicy, QWidget
+from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from angrmanagement.config import Conf
+from angrmanagement.logic import GlobalInfo
+from angrmanagement.present.types import ParsedTypes, edit_typedef, stript, typedef_lines, typedef_text
 from angrmanagement.ui.dialogs.type_editor import CTypeEditor, edit_field
 
 if TYPE_CHECKING:
     from angr.knowledge_plugins.types import TypesStore
+    from angr.sim_type import TypeRef
 
     from angrmanagement.ui import views
 
@@ -43,29 +45,8 @@ class QCTypeDef(QWidget):
         if self.type._arch is None:
             raise TypeError("Must provide SimTypes with arches to QTypeDef")
 
-        self.text = f"typedef {self.type.type.c_repr(name=self.type.name, full=1)};"
-        self.lines = self.text.split("\n")
-        fields = None
-        offsets = None
-        for i, line in enumerate(self.lines):
-            type_size = self.type.size if not isinstance(self.type.type, SimTypeBottom) else 0
-            if i == 0:
-                prefix = f"{type_size // self.type._arch.byte_width:08x}"
-            elif isinstance(self.type.type, SimUnion):
-                prefix = "00000000"
-            elif isinstance(self.type.type, SimStruct):
-                fieldno = i - 1
-                if fields is None:
-                    fields = list(self.type.type.fields)
-                    offsets = self.type.type.offsets
-                if fieldno < len(fields):
-                    prefix = f"{offsets[fields[fieldno]]:08x}"
-                else:
-                    prefix = f"{type_size // self.type._arch.byte_width:08x}"
-            else:
-                raise TypeError(f"I don't know why a {type(self.type.type)} renders with more than one line")
-
-            self.lines[i] = f"{prefix}  {line}"
+        self.text = typedef_text(self.type)
+        self.lines = typedef_lines(self.type)
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         height = len(self.lines) * LINE_HEIGHT + LINE_HEIGHT // 2
@@ -128,19 +109,13 @@ class QCTypeDef(QWidget):
         )
         dialog.exec_()
         if dialog.main_result:
-            name, ty = dialog.main_result[0]
-            if name is not None and stript(name) != stript(self.type.name):
-                if name in self.all_types:
-                    QMessageBox.warning(None, "Duplicate type name", f"The name {name} is already taken.")
-                else:
-                    # TODO handle the struct/union aliases properly
-                    self.all_types.rename(self.type.name, stript(name))
-            self.type.type = ty
+            warning = edit_typedef(self.all_types, self.type, ParsedTypes(dialog.main_result))
+            if warning is not None:
+                GlobalInfo.ui_services.message("warning", "Duplicate type name", warning)
             if self.editor is not None:
                 self.editor.reload()
             else:
                 self.refresh()
 
 
-def stript(s):
-    return s.removeprefix("struct ").removeprefix("union ")
+__all__ = ["QCTypeDef", "stript"]

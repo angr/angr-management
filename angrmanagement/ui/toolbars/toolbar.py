@@ -4,6 +4,8 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QToolBar
 
+from angrmanagement.ui.menus.menu import qicon_for
+
 from .toolbar_action import ToolbarAction, ToolbarSplitter
 
 
@@ -46,10 +48,9 @@ class Toolbar:
             toolbar.addSeparator()
             return None
         elif isinstance(action, ToolbarAction):
-            if action.icon is not None:
-                act = QAction(action.icon, action.name, toolbar)
-            else:
-                act = QAction(action.name, toolbar)
+            # an icon may be given by name, as plugins' TOOLBAR_BUTTONS can
+            qicon = qicon_for(action.icon)
+            act = QAction(qicon, action.name, toolbar) if qicon is not None else QAction(action.name, toolbar)
             if action.triggered is not None:
                 act.triggered.connect(action.triggered)
             if action.tooltip:

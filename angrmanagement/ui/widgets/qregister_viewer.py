@@ -7,6 +7,7 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QScrollArea, QSizePolicy, QVBoxLayout
 
 from angrmanagement.config import Conf
+from angrmanagement.present.symexec import ARCH_REGISTERS
 
 from .qast_viewer import QASTViewer
 
@@ -17,123 +18,9 @@ log = logging.getLogger(__name__)
 
 
 class QRegisterViewer(QFrame):
-    ARCH_REGISTERS = {
-        "X86": {"common": ["eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi", "eip"]},
-        "AMD64": {
-            "common": [
-                "rax",
-                "rcx",
-                "rdx",
-                "rbx",
-                "rsp",
-                "rbp",
-                "rsi",
-                "rdi",
-                "rip",
-                "r8",
-                "r9",
-                "r10",
-                "r11",
-                "r12",
-                "r13",
-                "r14",
-                "r15",
-            ]
-        },
-        "MIPS32": {
-            "common": [
-                "v0",
-                "v1",
-                "a0",
-                "a1",
-                "a2",
-                "a3",
-                "t0",
-                "t1",
-                "t2",
-                "t3",
-                "t4",
-                "t5",
-                "t6",
-                "t7",
-                "t8",
-                "t9",
-                "s0",
-                "s1",
-                "s2",
-                "s3",
-                "s4",
-                "s5",
-                "s6",
-                "s7",
-                "s8",
-                "gp",
-                "sp",
-                "ra",
-                "pc",
-            ]
-        },
-        "ARM": {
-            "common": [
-                "r0",
-                "r1",
-                "r2",
-                "r3",
-                "r4",
-                "r5",
-                "r6",
-                "r7",
-                "r8",
-                "r9",
-                "r10",
-                "r11",
-                "r12",
-                "sp",
-                "lr",
-                "pc",
-            ]
-        },
-        "AARCH64": {
-            "common": [
-                "x0",
-                "x1",
-                "x2",
-                "x3",
-                "x4",
-                "x5",
-                "x6",
-                "x7",
-                "x8",
-                "x9",
-                "x10",
-                "x11",
-                "x12",
-                "x13",
-                "x14",
-                "x15",
-                "x16",
-                "x17",
-                "x18",
-                "x19",
-                "x20",
-                "x21",
-                "x22",
-                "x23",
-                "x24",
-                "x25",
-                "x26",
-                "x27",
-                "x28",
-                "x29",
-                "x30",
-                "sp",
-                "pc",
-            ]
-        },
-    }
+    """The registers of the selected state."""
 
-    ARCH_REGISTERS["ARMEL"] = ARCH_REGISTERS["ARM"]
-    ARCH_REGISTERS["ARMHF"] = ARCH_REGISTERS["ARM"]
+    ARCH_REGISTERS = ARCH_REGISTERS
 
     def __init__(self, state, parent, workspace: Workspace) -> None:
         super().__init__(parent)
@@ -149,7 +36,7 @@ class QRegisterViewer(QFrame):
     # Overridden methods
     #
 
-    def sizeHint(self):
+    def sizeHint(self):  # pylint: disable=no-self-use
         return QSize(100, 100)
 
     #

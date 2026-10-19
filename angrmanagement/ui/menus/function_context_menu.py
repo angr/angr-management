@@ -1,48 +1,43 @@
+"""
+The function table's context menu as a Qt menu.
+
+Deprecated: the entries now come from :func:`angrmanagement.present.functions.function_context_menu`, which the
+function table uses directly. This class is kept so that code importing it keeps working.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 from angrmanagement.data.annotations import CommentKind
-from angrmanagement.logic import GlobalInfo
+from angrmanagement.present.functions import function_context_menu
 from angrmanagement.ui.dialogs.set_comment import SetComment
 
-from .menu import Menu, MenuEntry
+from .menu import Menu
 
 if TYPE_CHECKING:
+    from angr.knowledge_plugins.functions import Function
+
     from angrmanagement.ui.workspace import Workspace
 
 
 class FunctionContextMenu(Menu):
+    """The context menu of the functions given to :meth:`set`."""
+
     def __init__(self, workspace: Workspace, parent) -> None:
         super().__init__("Function", parent=parent)
         self.workspace = workspace
-
         self.funcs = []
-
-        # TODO add Rename, Change Type, xrefs, etc
 
     def set(self, funcs):
         self.funcs = funcs
         return self
 
-    def _edit_function_comment(self) -> None:
-        if not self.funcs:
-            return
-        addr = self.funcs[0].addr
-        self.workspace.main_instance.annotations.set_kind(addr, CommentKind.FUNCTION)
-        SetComment(self.workspace, addr, parent=self.parent).exec_()
+    def _edit_function_comment(self, func: Function) -> None:
+        self.workspace.main_instance.annotations.set_kind(func.addr, CommentKind.FUNCTION)
+        SetComment(self.workspace, func.addr, parent=self.parent).exec_()
 
-    def qmenu(self, extra_entries=None):
-        self.entries = []
-        if len(self.funcs):
-            self.entries.append(
-                MenuEntry("Show Function Info", lambda: self.workspace.show_function_info(self.funcs[0]))
-            )
-            self.entries.append(MenuEntry("Edit Function Comment...", self._edit_function_comment))
-        if extra_entries is None:
-            extra_entries = ()
-        return super().qmenu(
-            extra_entries=list(GlobalInfo.main_window.workspace.plugins.build_context_menu_functions(self.funcs))
-            + list(extra_entries),
-            cached=False,
-        )
+    def qmenu(self, extra_entries=None, cached: bool = False):
+        menu = function_context_menu(self.workspace, self.funcs, edit_comment=self._edit_function_comment)
+        self.entries = list(menu.entries) if menu is not None else []
+        return super().qmenu(extra_entries=extra_entries, cached=cached)

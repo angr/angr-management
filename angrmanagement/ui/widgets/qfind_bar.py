@@ -43,6 +43,10 @@ class QFindBar(QWidget):
     #
 
     @property
+    def is_open(self) -> bool:
+        return not self.isHidden()
+
+    @property
     def query(self) -> str:
         return self._query_box.text()
 

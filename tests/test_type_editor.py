@@ -87,6 +87,20 @@ class TestTypeEditor(ProjectOpenTestCase):
         assert self.project.kb.types["wawa"].type.size == 32
         assert self.project.kb.types["foo"].type.size == 96
 
+    def test_a_type_defined_twice_disables_ok(self):
+        from angrmanagement.ui.dialogs.type_editor import (  # pylint: disable=import-outside-toplevel,redefined-outer-name
+            CTypeEditor,
+        )
+
+        editor = CTypeEditor(None, self.project.arch, multiline=True)
+        editor.setText("struct b {int a;};")
+        assert editor._ok_button is not None and editor._ok_button.isEnabled()
+        assert [name for name, _ty in editor.main_result] == ["struct b"]
+        # angr raises "Redefining body of struct b"; the editor refuses the text as it does a parse error
+        editor.setText("struct b {int a;}; struct b {int c;};")
+        assert not editor._ok_button.isEnabled()
+        assert isinstance(editor.main_result, list) and not editor.main_result
+
 
 if __name__ == "__main__":
     unittest.main()
