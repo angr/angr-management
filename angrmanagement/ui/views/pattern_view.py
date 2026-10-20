@@ -439,7 +439,7 @@ class PatternView(InstanceView):
             return None
         if dec.ail_graph is None or dec.codegen is None:
             return None
-        entry = next((b for b in dec.ail_graph if b.addr == func.addr and b.idx is None), None)
+        entry = next((b for b in dec.ail_graph if b.addr == func.addr and b.idx == 0), None)
         if entry is None:
             return None
         stream = tokenize_for_templates(dec.ail_graph, entry, kb=self.instance.kb)
