@@ -24,7 +24,7 @@ def isurl(uri) -> bool:
 
 def download_url(url, parent=None, to_file: bool = True, file_path=None, use_proxies: bool = True):
     if not isurl(url):
-        raise TypeError("The given URL %s is not a valid URL.", url)
+        raise TypeError(f"The given URL {url} is not a valid URL.")
 
     r = urllib.parse.urlparse(url)
     basename = os.path.basename(r.path)
