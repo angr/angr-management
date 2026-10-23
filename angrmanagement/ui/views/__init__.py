@@ -18,6 +18,7 @@ from .patches_view import PatchesView
 from .pattern_view import PatternView
 from .proximity_view import ProximityView
 from .registers_view import RegistersView
+from .runtime_view import RuntimeView
 from .search_view import SearchView
 from .signatures_view import SignaturesView
 from .stack_view import StackView
@@ -48,6 +49,7 @@ __all__ = [
     "PatchesView",
     "ProximityView",
     "RegistersView",
+    "RuntimeView",
     "SearchView",
     "StackView",
     "StatesView",
