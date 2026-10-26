@@ -59,7 +59,7 @@ class JumpHistory:
         if self._pos < len(self._history) - 1:
             self._pos += 1
 
-        if self._pos < len(self._history):
+        if 0 <= self._pos < len(self._history):
             return self._history[self._pos]
         else:
             return None
