@@ -22,6 +22,7 @@ Table of Contents
    :maxdepth: 2
 
    quickstart
+   runtime_debugger
    mcp_server
    development/index
 

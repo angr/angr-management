@@ -12,6 +12,7 @@ from angrmanagement.logic.threads import gui_thread_schedule_async
 
 from .edit_tools import register_edit_tools
 from .history import MCPHistoryMiddleware
+from .runtime_tools import register_runtime_tools
 from .tools import (
     register_project_tools,
     register_read_tools,
@@ -91,6 +92,7 @@ def create_server(workspace: Workspace) -> FastMCP:
     register_read_tools(server, workspace)
     register_view_tools(server, workspace)
     register_edit_tools(server, workspace)
+    register_runtime_tools(server, workspace)
 
     _install_history_recorder(server, workspace)
 

@@ -643,7 +643,7 @@ def register_view_tools(server: FastMCP, workspace: Workspace) -> None:
         if focus:
             gui_thread_schedule_async(workspace.decompile_function, (func,))
         elif key not in kb.decompilations:
-            _submit_background_decompilation(workspace, func)
+            gui_thread_schedule_async(_submit_background_decompilation, (workspace, func))
 
         deadline = time.monotonic() + timeout_seconds
         while time.monotonic() < deadline:

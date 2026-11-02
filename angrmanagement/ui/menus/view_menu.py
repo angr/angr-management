@@ -143,6 +143,7 @@ class ViewMenu(Menu):
                 MenuEntry("Symbolic &Execution", main_window.workspace.show_symexec_view),
                 MenuEntry("S&ymbolic States", main_window.workspace.show_states_view),
                 MenuEntry("&Registers", main_window.workspace.show_registers_view),
+                MenuEntry("&Runtime Debugger", main_window.workspace.show_runtime_view, icon=icon("runtime-view")),
                 MenuEntry("&Stack", main_window.workspace.show_stack_view),
                 MenuEntry("&Breakpoints", main_window.workspace.show_breakpoints_view),
                 MenuEntry("&Call Explorer", main_window.workspace.show_call_explorer_view),
