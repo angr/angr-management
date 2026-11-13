@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from common import AngrManagementTestCase, ProjectOpenTestCase
+from PySide6.QtWidgets import QScrollArea
 
 from angrmanagement.ui.views import (
     BookmarksView,
@@ -80,6 +81,11 @@ class TestViewsOpen(AngrManagementTestCase):
 
     def test_registers_view(self):
         self.main.workspace.show_view("registers", RegistersView)
+
+    def test_runtime_view(self):
+        view = self.main.workspace.show_runtime_view()
+        dock = self.main.workspace.view_manager.view_to_dock[view]
+        self.assertIsNone(dock.findChild(QScrollArea))
 
     def test_stack_view(self):
         self.main.workspace.show_view("stack", StackView)

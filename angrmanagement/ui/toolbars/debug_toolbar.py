@@ -108,6 +108,10 @@ class DebugToolbar(Toolbar):
 
         self._new_dbg_menu = QMenu(self._cached)
 
+        self._new_dbg_runtime = QAction("Live process (GDB)...", self._new_dbg_menu)
+        self._new_dbg_runtime.triggered.connect(self.workspace.show_runtime_view)
+        self._new_dbg_menu.addAction(self._new_dbg_runtime)
+
         self._new_dbg_sim = QAction("New simulation...", self._new_dbg_menu)
         self._new_dbg_sim.triggered.connect(self.workspace.main_window.open_newstate_dialog)
         self._new_dbg_menu.addAction(self._new_dbg_sim)

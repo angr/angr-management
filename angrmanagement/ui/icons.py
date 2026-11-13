@@ -32,6 +32,7 @@ NAME_TO_QTAWESOME_NAME = {
     "preferences": "fa6s.gear",
     "pseudocode-view": "msc.json",
     "run-analysis": "mdi.arrow-right-drop-circle",
+    "runtime-view": "mdi.bug",
     "search": "fa5s.search",
     "search-view": "fa5s.search",
     "strings-view": "msc.symbol-string",
