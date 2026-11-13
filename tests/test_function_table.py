@@ -96,6 +96,24 @@ class TestFunctionTableIncrementalRefresh(AngrManagementTestCase):
         assert removed not in self._raw()
         assert self._rows() == [a for a in incremental if a != removed]
 
+    def test_add_and_remove_in_one_refresh(self):
+        addrs = self._add(3)
+        self.table.function_manager = self.funcs
+        # the function count does not change
+        del self.funcs[addrs[0]]
+        new = self._add(1)
+        self.table.refresh()
+        assert sorted(self._raw()) == sorted(self.funcs.function_addrs_set.copy())
+        assert addrs[0] not in self._raw() and new[0] in self._raw()
+
+    def test_reload_on_invalid_cursor(self):
+        self._add(3)
+        self.table.function_manager = self.funcs
+        self.funcs.clear()
+        new = self._add(2)
+        self.table.refresh()
+        assert self._raw() == new
+
 
 if __name__ == "__main__":
     unittest.main()

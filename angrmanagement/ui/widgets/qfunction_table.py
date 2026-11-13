@@ -545,7 +545,7 @@ class QFunctionTableView(QFastTableView):
         self.context_menu_requested.connect(self._on_context_menu_requested)
         self.key_pressed.connect(self._on_key_pressed)
 
-    def refresh(self, added_funcs: set[int] | None = None, removed_funcs: set[int] | None = None) -> None:
+    def refresh(self, added_funcs: Iterable[int] | None = None, removed_funcs: set[int] | None = None) -> None:
         if self._functions is None:
             return
         if added_funcs:
@@ -654,8 +654,8 @@ class QFunctionTable(QWidget):
         self._toolbar: FunctionTableToolbar
         self._status_label: QLabel
 
-        self._last_known_func_addrs: set[int] = set()
-        self._function_count = None
+        # function_manager.changes_since() cursor of the loaded function list
+        self._changes_cursor: tuple[int, int] | None = None
 
         self._init_widgets(selection_callback)
 
@@ -670,14 +670,12 @@ class QFunctionTable(QWidget):
         return None
 
     @function_manager.setter
-    def function_manager(self, v):
-        self._function_count = len(v) if v is not None else 0
-        if self._table_view is not None:
-            self._table_view.function_manager = v
-        else:
+    def function_manager(self, v: FunctionManager | None):
+        if self._table_view is None:
             raise ValueError("QFunctionTableView is uninitialized.")
-        func_list = self._table_view._model.func_list
-        self._last_known_func_addrs = {func.addr for func in func_list} if func_list else set()
+        # take the cursor before listing: a function added in between is reported again and skipped by the model
+        self._changes_cursor = v.changes_cursor() if v is not None else None
+        self._table_view.function_manager = v
         self.filter_functions(self._filter_box.text())
         self.update_displayed_function_count()
 
@@ -686,17 +684,16 @@ class QFunctionTable(QWidget):
     #
 
     def refresh(self) -> None:
-        if self.function_manager is None:
+        fm = self.function_manager
+        if fm is None:
             return
-
-        if self._function_count != len(self.function_manager):
-            # the number of functions has increased - we need to update the table
-            added_funcs, removed_funcs = self._updated_functions(self.function_manager)
-        else:
-            added_funcs, removed_funcs = None, None
-
-        self._table_view.refresh(added_funcs=added_funcs, removed_funcs=removed_funcs)
-        self._function_count = len(self._last_known_func_addrs)
+        changes = fm.changes_since(self._changes_cursor) if self._changes_cursor is not None else None
+        if changes is None:
+            # the function manager's address index was replaced or cleared
+            self.function_manager = fm
+            return
+        added_funcs, removed_funcs, self._changes_cursor = changes
+        self._table_view.refresh(added_funcs=added_funcs, removed_funcs=set(removed_funcs))
         self.update_displayed_function_count()
 
     def show_filter_box(self, prefix: str = "") -> None:
@@ -770,15 +767,6 @@ class QFunctionTable(QWidget):
         layout.setSpacing(0)
 
         self.setLayout(layout)
-
-    def _updated_functions(self, function_manager: FunctionManager) -> tuple[set[int], set[int]]:
-        if len(self._last_known_func_addrs) == len(function_manager.function_addrs_set):
-            return set(), set()
-        new_func_addrs_set = function_manager.function_addrs_set.copy()
-        added = new_func_addrs_set.difference(self._last_known_func_addrs)
-        removed = self._last_known_func_addrs.difference(new_func_addrs_set)
-        self._last_known_func_addrs = new_func_addrs_set
-        return added, removed
 
     #
     # Events
