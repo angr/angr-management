@@ -109,6 +109,8 @@ class FeatureMapItem(QGraphicsItem):
 
     ZVALUE_HOVER = 1
     ZVALUE_CURSOR = 2
+    # bound on the lazy-LOD queue; beyond it the queue is applied right away
+    MAX_PENDING_FINE_INTERVALS = 1 << 20
 
     def __init__(self, instance: Instance, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -144,7 +146,11 @@ class FeatureMapItem(QGraphicsItem):
         self._refresh_palette()
 
         self._nbits_per_lod: list[int] = [13, 12, 8, 6, 4, 0]
+        # LODs at or after this index are updated lazily during CFG recovery
+        self._first_lazy_lod: int = next(i for i, nbits in enumerate(self._nbits_per_lod) if nbits <= 4)
         self._cfb_feature_maps: list[TaggedIntervalMap]
+        # coalesced intervals not yet added to the lazy LODs
+        self._pending_fine_intervals: list[tuple[int, int, int]] = []
         self._cfb_feature_maps_lock: Lock = Lock()
         self._clear_cfb_feature_maps()
 
@@ -212,8 +218,11 @@ class FeatureMapItem(QGraphicsItem):
                 # coalescing at full resolution first leaves every LOD's result unchanged
                 pieces = TaggedIntervalMap.coalesce(intervals)
                 with self._cfb_feature_maps_lock:
-                    for fm in self._cfb_feature_maps:
+                    for fm in self._cfb_feature_maps[: self._first_lazy_lod]:
                         fm.add_many(pieces)
+                    self._pending_fine_intervals.extend(pieces)
+                    if len(self._pending_fine_intervals) > self.MAX_PENDING_FINE_INTERVALS:
+                        self._flush_pending_fine_lods()
 
             if (
                 added
@@ -227,6 +236,27 @@ class FeatureMapItem(QGraphicsItem):
 
     def _clear_cfb_feature_maps(self) -> None:
         self._cfb_feature_maps = [TaggedIntervalMap(nbits) for nbits in self._nbits_per_lod]
+        self._pending_fine_intervals = []
+
+    def _flush_pending_fine_lods(self) -> None:
+        """
+        Add the queued intervals to the lazy LODs. The caller holds _cfb_feature_maps_lock.
+        """
+        if self._pending_fine_intervals:
+            pending = self._pending_fine_intervals
+            self._pending_fine_intervals = []
+            for fm in self._cfb_feature_maps[self._first_lazy_lod :]:
+                fm.add_many(pending)
+
+    def _get_feature_map(self, lod: int) -> TaggedIntervalMap:
+        """
+        Feature map of the given LOD, with queued intervals applied. The caller holds _cfb_feature_maps_lock.
+        """
+        if lod < 0:
+            lod += len(self._cfb_feature_maps)
+        if lod >= self._first_lazy_lod:
+            self._flush_pending_fine_lods()
+        return self._cfb_feature_maps[lod]
 
     def _build_cfb_feature_maps(self) -> None:
         if self.instance.cfb.am_none:
@@ -438,7 +468,7 @@ class FeatureMapItem(QGraphicsItem):
             item_count_in_region = 0
 
             with self._cfb_feature_maps_lock:
-                to_draw = list(self._cfb_feature_maps[lod].irange(min_obj_addr, max_obj_addr))
+                to_draw = list(self._get_feature_map(lod).irange(min_obj_addr, max_obj_addr))
 
             for addr, size, tags in to_draw:
                 if not size or not tags:

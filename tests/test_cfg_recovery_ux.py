@@ -15,8 +15,10 @@ from PySide6.QtWidgets import QMessageBox
 from angrmanagement.data.jobs import CFGGenerationJob
 from angrmanagement.data.jobs.job import JobState
 from angrmanagement.data.object_container import ObjectContainer
+from angrmanagement.data.tagged_interval_map import TaggedIntervalMap
 from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.ui.widgets.qblock import QLinearBlock
+from angrmanagement.ui.widgets.qfeature_map import FeatureMapItem, _get_tags_for_item
 
 if TYPE_CHECKING:
     from angr.knowledge_base import KnowledgeBase
@@ -474,6 +476,57 @@ class TestAskBeforeNavigating(CfgRecoveryUxTestCase):
         assert questions
         disasm_view = self.disassembly_view()
         assert disasm_view._current_view is disasm_view._linear_viewer
+
+
+class TestFeatureMapLods(CfgRecoveryUxTestCase):
+    @staticmethod
+    def tagged_intervals(objs) -> list[tuple[int, int, int]]:
+        out = []
+        for addr, obj in objs:
+            tags = _get_tags_for_item(obj)
+            if tags is not None and obj.size:
+                out.append((addr, obj.size, tags))
+        return out
+
+    @staticmethod
+    def sequential_maps(item: FeatureMapItem, intervals) -> list[dict[int, int]]:
+        maps = [TaggedIntervalMap(nbits) for nbits in item._nbits_per_lod]
+        for fm in maps:
+            for addr, size, tags in intervals:
+                fm.add(addr, size, tags)
+        return [dict(fm._map) for fm in maps]
+
+    def test_lazy_fine_lods_match_sequential_adds(self):
+        batches = []
+
+        def record(**kwargs):
+            if "objects_added" in kwargs:
+                batches.append(list(kwargs["objects_added"]))
+
+        self.cfb_container.am_subscribe(record)
+        try:
+            self.run_cfg_job()
+        finally:
+            self.cfb_container.am_unsubscribe(record)
+        assert batches
+
+        item = FeatureMapItem(self.instance)
+        try:
+            # replay the recovery's events
+            item._clear_cfb_feature_maps()
+            for batch in batches:
+                item._on_cfb_event(objects_added=batch)
+            expected = self.sequential_maps(item, self.tagged_intervals(o for b in batches for o in b))
+            lazy = item._first_lazy_lod
+            assert item._pending_fine_intervals
+            assert [dict(fm._map) for fm in item._cfb_feature_maps[:lazy]] == expected[:lazy]
+            assert all(not fm._map for fm in item._cfb_feature_maps[lazy:])
+            with item._cfb_feature_maps_lock:
+                assert dict(item._get_feature_map(-1)._map) == expected[-1]
+            assert not item._pending_fine_intervals
+            assert [dict(fm._map) for fm in item._cfb_feature_maps] == expected
+        finally:
+            self.cfb_container.am_unsubscribe(item._on_cfb_event)
 
 
 if __name__ == "__main__":
