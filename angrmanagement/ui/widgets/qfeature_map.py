@@ -201,15 +201,19 @@ class FeatureMapItem(QGraphicsItem):
     def _on_cfb_event(self, **kwargs) -> None:
         if "objects_added" in kwargs:  # Called by task thread
             objs = kwargs.get("objects_added")
-            added = False
-            with self._cfb_feature_maps_lock:
-                for addr, item in objs:
-                    tags = _get_tags_for_item(item)
-                    if tags is None or item.size is None:
-                        continue
+            intervals = []
+            for addr, item in objs:
+                tags = _get_tags_for_item(item)
+                if tags is None or item.size is None:
+                    continue
+                intervals.append((addr, item.size, tags))
+            added = bool(intervals)
+            if added:
+                # coalescing at full resolution first leaves every LOD's result unchanged
+                pieces = TaggedIntervalMap.coalesce(intervals)
+                with self._cfb_feature_maps_lock:
                     for fm in self._cfb_feature_maps:
-                        fm.add(addr, item.size, tags)
-                    added = True
+                        fm.add_many(pieces)
 
             if (
                 added

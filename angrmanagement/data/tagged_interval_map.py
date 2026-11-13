@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from sortedcontainers import SortedDict
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
 
 
 class TaggedIntervalMap:
@@ -58,6 +58,126 @@ class TaggedIntervalMap:
         for affected_addr in self._map.irange(start_addr, end_addr, inclusive=(True, False)):
             self._map[affected_addr] |= tags
         self._eliminate_extraneous_stops(start_addr, end_addr)
+
+    def add_many(self, intervals: Iterable[tuple[int, int, int]]) -> None:
+        """
+        Add (addr, size, tags) intervals. The resulting map equals the one built by calling add() on each of them.
+
+        The batch is binned, sorted and merged into disjoint pieces first, then each piece updates the map once.
+        """
+        for addr, size, tags in self.coalesce(intervals, self._nbits):
+            self._or_range(addr, addr + size, tags)
+
+    @staticmethod
+    def coalesce(intervals: Iterable[tuple[int, int, int]], nbits: int = 0) -> list[tuple[int, int, int]]:
+        """
+        Bin (addr, size, tags) intervals to 2^nbits and merge them into sorted, disjoint (addr, size, tags) pieces with
+        tags OR'd where they overlap. Adjacent pieces have different tags or a gap between them. Coalescing at a finer
+        binning first does not change what a coarser map gets from add_many().
+        """
+        max_bin_offset = (1 << nbits) - 1
+        mask = ~max_bin_offset
+        binned = []
+        for addr, size, tags in intervals:
+            assert addr >= 0 and size >= 0 and tags != 0
+            if size:
+                binned.append(((addr & mask), (addr + size + max_bin_offset) & mask, tags))
+        if not binned:
+            return []
+        binned.sort()
+
+        # merge overlapping or adjacent intervals of each tag value
+        runs: dict[int, list[list[int]]] = {}
+        for start, end, tags in binned:
+            tag_runs = runs.get(tags)
+            if tag_runs is None:
+                runs[tags] = [[start, end]]
+            else:
+                last = tag_runs[-1]
+                if start <= last[1]:
+                    if end > last[1]:
+                        last[1] = end
+                else:
+                    tag_runs.append([start, end])
+        if len(runs) == 1:
+            ((tags, tag_runs),) = runs.items()
+            return [(start, end - start, tags) for start, end in tag_runs]
+
+        # sweep over the runs; runs of one tag value are disjoint, so each tag value is active at most once
+        events = []
+        for tags, tag_runs in runs.items():
+            for start, end in tag_runs:
+                events.append((start, 1, tags))
+                events.append((end, 0, tags))
+        events.sort()
+        pieces: list[tuple[int, int, int]] = []
+        active: set[int] = set()
+        cur_tags = 0
+        cur_start = 0
+        i = 0
+        n = len(events)
+        while i < n:
+            pos = events[i][0]
+            while i < n and events[i][0] == pos:
+                _, is_start, tags = events[i]
+                if is_start:
+                    active.add(tags)
+                else:
+                    active.discard(tags)
+                i += 1
+            new_tags = 0
+            for tags in active:
+                new_tags |= tags
+            if new_tags != cur_tags:
+                if cur_tags:
+                    pieces.append((cur_start, pos - cur_start, cur_tags))
+                cur_tags = new_tags
+                cur_start = pos
+        return pieces
+
+    def _or_range(self, start: int, end: int, tags: int) -> None:
+        """
+        OR `tags` into [start, end) (already binned) and keep the map canonical: no adjacent stops with equal tags.
+        """
+        m = self._map
+        floor_key = next(m.irange(maximum=start, reverse=True), None)
+        at_start = 0 if floor_key is None else m[floor_key]
+        inner = list(m.irange(start, end, inclusive=(False, False)))
+        if not inner and at_start | tags == at_start:
+            return  # already covered
+
+        if floor_key == start:
+            before = next(m.irange(maximum=start, inclusive=(True, False), reverse=True), None)
+            prev_tags = 0 if before is None else m[before]
+        else:
+            prev_tags = at_start
+        at_end = m[end] if end in m else (m[inner[-1]] if inner else at_start)
+
+        # start stop
+        new_tags = at_start | tags
+        if new_tags == prev_tags:
+            if floor_key == start:
+                del m[start]
+        else:
+            if floor_key != start or at_start != new_tags:
+                m[start] = new_tags
+            prev_tags = new_tags
+        # stops inside the range
+        for addr in inner:
+            old_tags = m[addr]
+            new_tags = old_tags | tags
+            if new_tags == prev_tags:
+                del m[addr]
+            else:
+                if new_tags != old_tags:
+                    m[addr] = new_tags
+                prev_tags = new_tags
+        # end stop keeps the tags that were in effect at `end`
+        if end in m:
+            if m[end] == prev_tags:
+                del m[end]
+        elif at_end != prev_tags:
+            m[end] = at_end
 
     def _insert_stop(self, addr: int) -> None:
         """
