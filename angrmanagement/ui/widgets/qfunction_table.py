@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from angr.analyses.code_tagging import CodeTags
 from angr.rust.utils.demangler import demangle as rust_demangle
 from angr.utils.library import get_cpp_function_name
-from PySide6.QtCore import SIGNAL, QAbstractTableModel, QEvent, Qt
+from PySide6.QtCore import QAbstractTableModel, QEvent, Qt
 from PySide6.QtGui import QAction, QBrush, QCursor, QPalette
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -27,6 +27,8 @@ from angrmanagement.ui.toolbars import FunctionTableToolbar
 from angrmanagement.ui.widgets.qfast_table_view import QFastTableView
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     import PySide6
     import PySide6.QtCore
     import PySide6.QtGui
@@ -136,8 +138,10 @@ class QFunctionTableModel(QAbstractTableModel):
     def __init__(self, workspace: Workspace, instance: Instance, table_view: QFunctionTableView, func_list) -> None:
         super().__init__()
 
+        # _raw_func_list holds every entry; _func_list holds the filtered entries, or None without an active filter
         self._func_list: list[FunctionTableEntry] | None = None
         self._raw_func_list: list[FunctionTableEntry] | None = func_list
+        self._raw_addrs: set[int] = {f.addr for f in func_list} if func_list is not None else set()
         self.workspace = workspace
         self.instance = instance
         self.table_view = table_view
@@ -163,6 +167,7 @@ class QFunctionTableModel(QAbstractTableModel):
     def func_list(self, v) -> None:
         self._func_list = None
         self._raw_func_list = v
+        self._raw_addrs = {f.addr for f in v} if v is not None else set()
         self._data_cache.clear()
         self.filter(self.table_view.filter_text, show_alignment=self.table_view.show_alignment_functions)
 
@@ -182,16 +187,57 @@ class QFunctionTableModel(QAbstractTableModel):
                 # incremental filtering
                 base_func_list = self._func_list
             self._func_list = [
-                func
-                for func in base_func_list
-                if self._func_match_keyword(func, keyword, extra_columns=extra_columns)
-                and (show_alignment or not func.is_alignment)
+                func for func in base_func_list if self._func_visible(func, keyword, show_alignment, extra_columns)
             ]
 
         self._last_filter_keyword = keyword
         self._last_show_alignment = show_alignment
+        self._rows_changed()
+
+    def add_functions(self, addrs: Iterable[int]) -> None:
+        """
+        Append entries for the given function addresses, skipping those already in the table (QFunctionTable reports
+        entries hidden at load time as added). Only the new entries are matched against the current filter.
+        """
+        if self._raw_func_list is None:
+            self.func_list = [FunctionTableEntry(self.table_view.function_manager, addr) for addr in addrs]
+            return
+        funcman = self.table_view.function_manager
+        raw_addrs = self._raw_addrs
+        new_entries = [FunctionTableEntry(funcman, addr) for addr in addrs if addr not in raw_addrs]
+        self._raw_func_list.extend(new_entries)
+        raw_addrs.update(f.addr for f in new_entries)
+
+        keyword = self.table_view.filter_text
+        show_alignment = self.table_view.show_alignment_functions
+        if keyword != self._last_filter_keyword or show_alignment != self._last_show_alignment:
+            # the filter changed without filter() being called
+            self.filter(keyword, show_alignment=show_alignment)
+            return
+        if self._func_list is not None:
+            extra_columns = self.workspace.plugins.count_func_columns()
+            self._func_list.extend(
+                f for f in new_entries if self._func_visible(f, keyword, show_alignment, extra_columns)
+            )
+        self._rows_changed()
+
+    def remove_functions(self, addrs: set[int]) -> None:
+        if self._raw_func_list is None:
+            return
+        self._raw_func_list = [f for f in self._raw_func_list if f.addr not in addrs]
+        self._raw_addrs.difference_update(addrs)
+        if self._func_list is not None:
+            self._func_list = [f for f in self._func_list if f.addr not in addrs]
+        self._rows_changed()
+
+    def _rows_changed(self) -> None:
         self._data_cache.clear()
-        self.emit(SIGNAL("layoutChanged()"))  # type: ignore
+        self.layoutChanged.emit()
+
+    def _func_visible(self, func: FunctionTableEntry, keyword: str, show_alignment: bool, extra_columns: int) -> bool:
+        return self._func_match_keyword(func, keyword, extra_columns=extra_columns) and (
+            show_alignment or not func.is_alignment
+        )
 
     def clear_data_cache(self):
         self._data_cache = {}
@@ -294,11 +340,15 @@ class QFunctionTableModel(QAbstractTableModel):
         if self.func_list is None:
             return
         self.layoutAboutToBeChanged.emit()
-        self.func_list = sorted(
-            self.func_list,
-            key=lambda f: self._get_column_data(f, column),
-            reverse=order == Qt.SortOrder.DescendingOrder,
-        )
+        reverse = order == Qt.SortOrder.DescendingOrder
+        if self._raw_func_list is not None:
+            self._raw_func_list = sorted(
+                self._raw_func_list, key=lambda f: self._get_column_data(f, column), reverse=reverse
+            )
+        if self._func_list is not None:
+            # sort the filtered list too instead of re-filtering, which keeps the hidden entries in the raw list
+            self._func_list = sorted(self._func_list, key=lambda f: self._get_column_data(f, column), reverse=reverse)
+        self._data_cache.clear()
         self.layoutChanged.emit()
 
     #
@@ -499,16 +549,9 @@ class QFunctionTableView(QFastTableView):
         if self._functions is None:
             return
         if added_funcs:
-            new_funcs = []
-            for addr in added_funcs:
-                f_ = FunctionTableEntry(self._functions, addr)
-                new_funcs.append(f_)
-            if self._model.func_list is None:
-                self._model.func_list = new_funcs
-            else:
-                self._model.func_list += new_funcs
-        if removed_funcs and self._model.func_list:
-            self._model.func_list = [f_ for f_ in self._model.func_list if f_.addr not in removed_funcs]
+            self._model.add_functions(added_funcs)
+        if removed_funcs:
+            self._model.remove_functions(removed_funcs)
         self.viewport_update()
 
     def changeEvent(self, event):  # type: ignore
