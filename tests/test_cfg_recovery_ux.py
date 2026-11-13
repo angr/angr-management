@@ -528,6 +528,17 @@ class TestFeatureMapLods(CfgRecoveryUxTestCase):
         finally:
             self.cfb_container.am_unsubscribe(item._on_cfb_event)
 
+    def test_reload_matches_sequential_adds(self):
+        self.run_cfg_job()
+        item = FeatureMapItem(self.instance)  # builds its maps from the final CFB
+        try:
+            expected = self.sequential_maps(item, self.tagged_intervals(self.instance.cfb._blanket.items()))
+            assert expected[-1]
+            assert not item._pending_fine_intervals
+            assert [dict(fm._map) for fm in item._cfb_feature_maps] == expected
+        finally:
+            self.cfb_container.am_unsubscribe(item._on_cfb_event)
+
 
 if __name__ == "__main__":
     unittest.main(argv=sys.argv)

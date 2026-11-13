@@ -37,20 +37,21 @@ if TYPE_CHECKING:
 log = logging.getLogger(name=__name__)
 
 
+_MEMORY_DATA_TAG_BITS = {
+    MemoryDataSort.String: 2,
+    MemoryDataSort.UnicodeString: 2,
+}
+
+
 def _get_tags_for_item(item) -> int | None:
     """
     Generate bit mask based for the type of item provided, or None if it could not be mapped.
     """
     if isinstance(item, Block):
-        b = 0
-    elif isinstance(item, MemoryData):
-        b = {
-            MemoryDataSort.String: 2,
-            MemoryDataSort.UnicodeString: 2,
-        }.get(item.sort, 1)
-    else:
-        return None
-    return 1 << b
+        return 1
+    if isinstance(item, MemoryData):
+        return 1 << _MEMORY_DATA_TAG_BITS.get(item.sort, 1)
+    return None
 
 
 def _get_feature_tag_colors() -> list[QColor]:
@@ -264,36 +265,33 @@ class FeatureMapItem(QGraphicsItem):
 
         self._clear_cfb_feature_maps()
 
-        num_items = 0
+        intervals = []
         time_start = time.time()
         try:
             for addr, item in self.instance.cfb._blanket.items():  # FIXME: Don't access protected member of CFB
-                if not getattr(item, "size", None):
-                    continue
                 tags = _get_tags_for_item(item)
-                if tags is None:
+                if tags is None or not item.size:
                     continue
-                self._cfb_feature_maps[-1].add(addr, item.size, tags)
-                num_items += 1
+                intervals.append((addr, item.size, tags))
         except (RuntimeError, KeyError, IndexError):
             # the CFB may be mutated by the CFG recovery job thread while we iterate over it; keep what we have
             # collected so far - a following objects_added event will repaint
             pass
+        self._cfb_feature_maps[-1].add_many(intervals)
         time_end = time.time()
         log.debug(
             "Reduced %d items in CFB to %d in %.4f s",
-            num_items,
+            len(intervals),
             len(self._cfb_feature_maps[-1]._map),
             time_end - time_start,
         )
 
+        # each coarser LOD from the next finer one
         for i in range(len(self._cfb_feature_maps) - 2, -1, -1):
             time_start = time.time()
             fm_in = self._cfb_feature_maps[i + 1]
             fm_out = self._cfb_feature_maps[i]
-            for addr, size, tags in fm_in.irange():
-                if tags != 0:
-                    fm_out.add(addr, size, tags)
+            fm_out.add_many((addr, size, tags) for addr, size, tags in fm_in.irange() if tags != 0)
             time_end = time.time()
             log.debug(
                 "%d bit fm: Reduced %d items to %d in %.4f s",
