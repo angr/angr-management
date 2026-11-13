@@ -251,6 +251,39 @@ class TestLiveViewportUpdates(CfgRecoveryUxTestCase):
         disasm_view._refresh_linear_viewer_on_objects_added([(entry, SimpleNamespace(size=None))])
 
 
+class TestCfbObjectEvents(CfgRecoveryUxTestCase):
+    def test_objects_added_events_match_per_object_callbacks(self):
+        def desc(addr, obj):
+            return addr, type(obj).__name__, obj.size
+
+        delivered = []
+
+        def on_cfb_event(**kwargs):
+            if "objects_added" in kwargs:
+                delivered.extend(desc(a, o) for a, o in kwargs["objects_added"])
+
+        self.cfb_container.am_subscribe(on_cfb_event)
+        try:
+            self.run_cfg_job()
+        finally:
+            self.cfb_container.am_unsubscribe(on_cfb_event)
+
+        # the same recovery outside of angr management, one callback per object
+        proj = angr.Project(self.binary, auto_load_libs=False)
+        expected = []
+        cfb = proj.analyses.CFB(
+            exclude_region_types={"kernel", "tls"}, on_object_added=lambda a, o: expected.append(desc(a, o))
+        )
+        proj.analyses.CFG(
+            progress_callback=lambda *args, **kwargs: None,
+            low_priority=True,
+            cfb=cfb,
+            **CFGGenerationJob.DEFAULT_CFG_ARGS,
+        )
+        assert expected
+        assert delivered == expected
+
+
 class TestBlanketNonOverlap(CfgRecoveryUxTestCase):
     def test_blanket_nonoverlapping_after_completed_recovery(self):
         workspace = self.main.workspace

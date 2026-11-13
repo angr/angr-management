@@ -194,7 +194,7 @@ class CFGGenerationJob(InstanceJob):
         exclude_region_types = {"kernel", "tls"}
         # create a temporary CFB for displaying partially analyzed binary during CFG recovery
         temp_cfb = self.instance.project.analyses.CFB(
-            exclude_region_types=exclude_region_types, on_object_added=self._on_cfb_object_added
+            exclude_region_types=exclude_region_types, on_objects_added=self._on_cfb_objects_added
         )
         self._cfb = temp_cfb
 
@@ -263,8 +263,8 @@ class CFGGenerationJob(InstanceJob):
         self.instance.cfg = cfg_model
         self.instance.cfb = cfb
 
-    def _on_cfb_object_added(self, addr: int, obj) -> None:
-        self._pending_cfb_objs.append((addr, obj))
+    def _on_cfb_objects_added(self, objs: list[tuple[int, object]]) -> None:
+        self._pending_cfb_objs.extend(objs)
         if time.monotonic() - self._last_cfb_event >= MIN_CFB_EVENT_INTERVAL:
             self._flush_cfb_objects()
 
