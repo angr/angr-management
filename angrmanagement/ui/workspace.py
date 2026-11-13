@@ -86,8 +86,10 @@ if TYPE_CHECKING:
 _l = logging.getLogger(__name__)
 T = TypeVar("T")
 
-# during CFG recovery, refresh the views every max(CFG_REFRESH_MIN_INTERVAL, CFG_REFRESH_COST_FACTOR * last cost) s
+# during CFG recovery, refresh the views every CFG_REFRESH_COST_FACTOR * last cost s, clamped to
+# [CFG_REFRESH_MIN_INTERVAL, CFG_REFRESH_MAX_INTERVAL]; the cap keeps one outlier (a GC pause) from stalling updates
 CFG_REFRESH_MIN_INTERVAL = 0.3
+CFG_REFRESH_MAX_INTERVAL = 3.0
 CFG_REFRESH_COST_FACTOR = 10
 
 
@@ -213,7 +215,9 @@ class Workspace:
                     reloaded = True
 
             # back off when refreshing gets expensive so that the GUI thread does not starve the CFG thread
-            time.sleep(max(CFG_REFRESH_MIN_INTERVAL, CFG_REFRESH_COST_FACTOR * last_cost[0]))
+            time.sleep(
+                min(CFG_REFRESH_MAX_INTERVAL, max(CFG_REFRESH_MIN_INTERVAL, CFG_REFRESH_COST_FACTOR * last_cost[0]))
+            )
             if cfg_job.state not in {JobState.PENDING, JobState.RUNNING}:
                 break
 
