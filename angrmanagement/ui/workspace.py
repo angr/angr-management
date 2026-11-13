@@ -86,6 +86,10 @@ if TYPE_CHECKING:
 _l = logging.getLogger(__name__)
 T = TypeVar("T")
 
+# during CFG recovery, refresh the views every max(CFG_REFRESH_MIN_INTERVAL, CFG_REFRESH_COST_FACTOR * last cost) s
+CFG_REFRESH_MIN_INTERVAL = 0.3
+CFG_REFRESH_COST_FACTOR = 10
+
 
 class Workspace:
     """
@@ -190,26 +194,26 @@ class Workspace:
         """
         Reload once and then refresh in a loop, while the CFG job is running
         """
+        categories = ["disassembly", "functions"]
+        # GUI-thread cost of the last refresh; written on the GUI thread, read here
+        last_cost = [0.0]
+
+        def timed_refresh() -> None:
+            start = time.perf_counter()
+            self.refresh(categories=categories)
+            last_cost[0] = time.perf_counter() - start
+
         reloaded = False
         while True:
             if not self.main_instance.cfg.am_none:
                 if reloaded:
-                    gui_thread_schedule_async(
-                        self.refresh,
-                        kwargs={
-                            "categories": ["disassembly", "functions"],
-                        },
-                    )
+                    gui_thread_schedule_async(timed_refresh)
                 else:
-                    gui_thread_schedule_async(
-                        self.reload,
-                        kwargs={
-                            "categories": ["disassembly", "functions"],
-                        },
-                    )
+                    gui_thread_schedule_async(self.reload, kwargs={"categories": categories})
                     reloaded = True
 
-            time.sleep(0.3)
+            # back off when refreshing gets expensive so that the GUI thread does not starve the CFG thread
+            time.sleep(max(CFG_REFRESH_MIN_INTERVAL, CFG_REFRESH_COST_FACTOR * last_cost[0]))
             if cfg_job.state not in {JobState.PENDING, JobState.RUNNING}:
                 break
 
