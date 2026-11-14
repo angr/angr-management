@@ -28,6 +28,7 @@ from angrmanagement.data.jobs import (
     VariableRecoveryConfiguration,
     VariableRecoveryJob,
 )
+from angrmanagement.utils.memory import release_freed_heap
 
 
 class AnalysisManager(QObject):
@@ -143,6 +144,8 @@ class AnalysisManager(QObject):
         self.workspace.main_instance.cfb.am_event()
         self.workspace.main_instance.cfg.am_event()
         self.cfg_generated.emit()
+        # CFG recovery freed gigabytes on large binaries that glibc would otherwise keep in the heap
+        release_freed_heap()
 
     def _on_cc_recovered(self, func_addr: int) -> None:
         self.cc_recovered.emit(func_addr)
