@@ -560,6 +560,8 @@ class TestLazyCfbEvents(CfgRecoveryUxTestCase):
         assert payloads and all(isinstance(p, CFBObjectBatch) for p in payloads)
         # the feature map and the disassembly view read intervals only: no event object was created
         assert all(not p._chunks for p in payloads)
+        # the feature map asks for blocks and memory data only
+        assert all(any(mask is not None for mask in p._intervals) for p in payloads)
 
         # feature maps from intervals equal those from the objects
         item = FeatureMapItem(self.instance)

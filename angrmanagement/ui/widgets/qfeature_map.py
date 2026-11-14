@@ -55,6 +55,10 @@ def _get_tags_for_item(item) -> int | None:
     return None
 
 
+# the CFBlanket classes that have feature-map tags (see _get_tags_for_class)
+_FEATURE_MAP_CLASSES = (CFBlanket.CLASS_BLOCK, CFBlanket.CLASS_MD)
+
+
 def _get_tags_for_class(cls: int, sort: str | None) -> int | None:
     """
     _get_tags_for_item for an item that CFBlanket.intervals() describes by class and MemoryData sort.
@@ -223,7 +227,7 @@ class FeatureMapItem(QGraphicsItem):
             intervals = []
             if isinstance(objs, CFBObjectBatch):
                 # without creating the objects
-                for addr, size, cls, sort in objs.intervals():
+                for addr, size, cls, sort in objs.intervals(classes=_FEATURE_MAP_CLASSES):
                     tags = _get_tags_for_class(cls, sort)
                     if tags is None or size is None:
                         continue
@@ -288,7 +292,7 @@ class FeatureMapItem(QGraphicsItem):
         intervals = []
         time_start = time.time()
         # one atomic read, safe while the CFG recovery job thread adds objects
-        for addr, size, cls, sort in self.instance.cfb.intervals():
+        for addr, size, cls, sort in self.instance.cfb.intervals(classes=_FEATURE_MAP_CLASSES):
             tags = _get_tags_for_class(cls, sort)
             if tags is None or not size:
                 continue
