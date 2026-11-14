@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import angr
+from angr.analyses.cfg.cfb import CFBObjectBatch
 from common import AngrManagementTestCase, test_location
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QMessageBox
@@ -19,6 +20,7 @@ from angrmanagement.data.tagged_interval_map import TaggedIntervalMap
 from angrmanagement.ui.views import DisassemblyView
 from angrmanagement.ui.widgets.qblock import QLinearBlock
 from angrmanagement.ui.widgets.qfeature_map import FeatureMapItem, _get_tags_for_item
+from angrmanagement.utils import memory as memory_mod
 
 if TYPE_CHECKING:
     from angr.knowledge_base import KnowledgeBase
@@ -538,6 +540,88 @@ class TestFeatureMapLods(CfgRecoveryUxTestCase):
             assert [dict(fm._map) for fm in item._cfb_feature_maps] == expected
         finally:
             self.cfb_container.am_unsubscribe(item._on_cfb_event)
+
+
+class TestLazyCfbEvents(CfgRecoveryUxTestCase):
+    """CFB events reach AM as lazy batches; the final CFB is the temporary one, finalized."""
+
+    def test_events_are_read_as_intervals(self):
+        payloads = []
+
+        def record(**kwargs):
+            if "objects_added" in kwargs:
+                payloads.append(kwargs["objects_added"])
+
+        self.cfb_container.am_subscribe(record)
+        try:
+            self.run_cfg_job()
+        finally:
+            self.cfb_container.am_unsubscribe(record)
+        assert payloads and all(isinstance(p, CFBObjectBatch) for p in payloads)
+        # the feature map and the disassembly view read intervals only: no event object was created
+        assert all(not p._chunks for p in payloads)
+
+        # feature maps from intervals equal those from the objects
+        item = FeatureMapItem(self.instance)
+        try:
+            item._clear_cfb_feature_maps()
+            for p in payloads:
+                item._on_cfb_event(objects_added=p)
+            with item._cfb_feature_maps_lock:
+                from_intervals = [dict(item._get_feature_map(i)._map) for i in range(len(item._cfb_feature_maps))]
+            item._clear_cfb_feature_maps()
+            for p in payloads:
+                item._on_cfb_event(objects_added=list(p))
+            with item._cfb_feature_maps_lock:
+                from_objects = [dict(item._get_feature_map(i)._map) for i in range(len(item._cfb_feature_maps))]
+            assert from_intervals == from_objects and from_intervals[-1]
+        finally:
+            self.cfb_container.am_unsubscribe(item._on_cfb_event)
+
+    def test_final_cfb_is_finalized_temp(self):
+        temps = []
+        orig = self.main.workspace.analysis_manager._on_cfg_recovery_started
+
+        def started(cfb):
+            temps.append(cfb)
+            orig(cfb)
+
+        self.main.workspace.analysis_manager._on_cfg_recovery_started = started
+        self.run_cfg_job()
+        final = self.cfb_container.am_obj
+        assert temps and final is temps[-1]
+        assert final._on_objects_added_callback is None
+        fresh = self.proj.analyses.CFB(kb=self.kb, exclude_region_types={"kernel", "tls"})
+        assert final.intervals() == fresh.intervals()
+
+    def test_linear_viewer_refresh_uses_spans(self):
+        view = self.disassembly_view()
+        self.run_cfg_job()
+        cfb = self.cfb_container.am_obj
+        lv = view._linear_viewer
+        view._current_view = lv
+        addr, size, _, _ = next(i for i in cfb.intervals() if i[1])
+        calls = []
+        lv.refresh_objects = lambda: calls.append(1)
+        lv.visible_addr_range = lambda: (addr, addr + size)
+        # a batch whose span is visible triggers a refresh, without creating its objects
+        joined = CFBObjectBatch(cfb, [cfb._blanket.items()[:0] + [(addr, cfb[addr])]])
+        view._refresh_linear_viewer_on_objects_added(joined)
+        assert calls == [1]
+        lv.visible_addr_range = lambda: (0, 1)
+        view._refresh_linear_viewer_on_objects_added(joined)
+        assert calls == [1]
+
+    def test_release_freed_heap(self):
+        if sys.platform == "linux" and memory_mod.platform.libc_ver()[0] == "glibc":
+            assert memory_mod.release_freed_heap()
+        orig = memory_mod.platform.libc_ver
+        memory_mod.platform.libc_ver = lambda *a, **k: ("musl", "1.2")
+        try:
+            # never loads a libc that may lack malloc_trim
+            assert not memory_mod.release_freed_heap()
+        finally:
+            memory_mod.platform.libc_ver = orig
 
 
 if __name__ == "__main__":

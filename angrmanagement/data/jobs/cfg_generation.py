@@ -224,8 +224,8 @@ class CFGGenerationJob(InstanceJob):
         # resume state still describes the remaining unprocessed work of the cancelled recovery - keep it
         self._flush_cfb_objects()
         self._cfb = None
-        # Build the real one
-        cfb = self.instance.project.analyses.CFB(kb=cfg.kb, exclude_region_types=exclude_region_types)
+        # Build the real one: the temporary blanket the UI already shows is rebuilt in place
+        cfb = temp_cfb.finalize(kb=cfg.kb, exclude_region_types=exclude_region_types)
 
         return cfg.model, cfb
 
