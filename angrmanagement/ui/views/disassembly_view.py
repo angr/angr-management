@@ -7,6 +7,7 @@ import time
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
+from angr.analyses.cfg.cfb import CFBObjectBatch
 from angr.block import Block
 from angr.knowledge_plugins.cfg import MemoryData
 from archinfo.arch_arm import get_real_address_if_arm, is_arm_arch
@@ -430,7 +431,12 @@ class DisassemblyView(SynchronizedFunctionView):
         if addr_range is None:
             return
         range_start, range_end = addr_range
-        if any(addr < range_end and addr + max(obj.size or 1, 1) > range_start for addr, obj in objects):
+        if isinstance(objects, CFBObjectBatch):
+            # spans without creating the objects
+            spans = ((addr, size) for addr, size, _, _ in objects.intervals())
+        else:
+            spans = ((addr, obj.size) for addr, obj in objects)
+        if any(addr < range_end and addr + max(size or 1, 1) > range_start for addr, size in spans):
             self._linear_viewer.refresh_objects()
 
     def on_synchronized_cursor_address_changed(self) -> None:

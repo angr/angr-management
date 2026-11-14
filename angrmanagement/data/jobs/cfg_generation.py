@@ -7,6 +7,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 import angr
+from angr.analyses.cfg.cfb import CFBObjectBatch
 
 from angrmanagement.data.analysis_options import (
     AnalysisConfiguration,
@@ -186,7 +187,8 @@ class CFGGenerationJob(InstanceJob):
         self.cfg_args = cfg_args
         self._cfb = None
         self._last_refresh: float = 0.0
-        self._pending_cfb_objs: list[tuple[int, object]] = []
+        # batches not yet published; objects in them are created only if a consumer reads them
+        self._pending_cfb_batches: list[CFBObjectBatch] = []
         self._last_cfb_event: float = 0.0
         self._abort_requested: bool = False
 
@@ -263,14 +265,14 @@ class CFGGenerationJob(InstanceJob):
         self.instance.cfg = cfg_model
         self.instance.cfb = cfb
 
-    def _on_cfb_objects_added(self, objs: list[tuple[int, object]]) -> None:
-        self._pending_cfb_objs.extend(objs)
+    def _on_cfb_objects_added(self, batch: CFBObjectBatch) -> None:
+        self._pending_cfb_batches.append(batch)
         if time.monotonic() - self._last_cfb_event >= MIN_CFB_EVENT_INTERVAL:
             self._flush_cfb_objects()
 
     def _flush_cfb_objects(self) -> None:
         self._last_cfb_event = time.monotonic()
-        if self._pending_cfb_objs:
-            objs = self._pending_cfb_objs
-            self._pending_cfb_objs = []
-            self.instance.cfb.am_event(objects_added=objs)
+        if self._pending_cfb_batches:
+            batches = self._pending_cfb_batches
+            self._pending_cfb_batches = []
+            self.instance.cfb.am_event(objects_added=CFBObjectBatch.concat(batches))

@@ -6,6 +6,7 @@ from threading import Lock
 from typing import TYPE_CHECKING
 
 import cle
+from angr.analyses.cfg.cfb import CFBlanket, CFBObjectBatch
 from angr.block import Block
 from angr.knowledge_plugins.cfg import MemoryData, MemoryDataSort
 from PySide6.QtCore import QEvent, QMarginsF, QPoint, QPointF, QRectF, QSize, Qt
@@ -51,6 +52,17 @@ def _get_tags_for_item(item) -> int | None:
         return 1
     if isinstance(item, MemoryData):
         return 1 << _MEMORY_DATA_TAG_BITS.get(item.sort, 1)
+    return None
+
+
+def _get_tags_for_class(cls: int, sort: str | None) -> int | None:
+    """
+    _get_tags_for_item for an item that CFBlanket.intervals() describes by class and MemoryData sort.
+    """
+    if cls == CFBlanket.CLASS_BLOCK:
+        return 1
+    if cls == CFBlanket.CLASS_MD:
+        return 1 << _MEMORY_DATA_TAG_BITS.get(sort, 1)
     return None
 
 
@@ -209,11 +221,19 @@ class FeatureMapItem(QGraphicsItem):
         if "objects_added" in kwargs:  # Called by task thread
             objs = kwargs.get("objects_added")
             intervals = []
-            for addr, item in objs:
-                tags = _get_tags_for_item(item)
-                if tags is None or item.size is None:
-                    continue
-                intervals.append((addr, item.size, tags))
+            if isinstance(objs, CFBObjectBatch):
+                # without creating the objects
+                for addr, size, cls, sort in objs.intervals():
+                    tags = _get_tags_for_class(cls, sort)
+                    if tags is None or size is None:
+                        continue
+                    intervals.append((addr, size, tags))
+            else:
+                for addr, item in objs:
+                    tags = _get_tags_for_item(item)
+                    if tags is None or item.size is None:
+                        continue
+                    intervals.append((addr, item.size, tags))
             added = bool(intervals)
             if added:
                 # coalescing at full resolution first leaves every LOD's result unchanged
@@ -267,16 +287,12 @@ class FeatureMapItem(QGraphicsItem):
 
         intervals = []
         time_start = time.time()
-        try:
-            for addr, item in self.instance.cfb._blanket.items():  # FIXME: Don't access protected member of CFB
-                tags = _get_tags_for_item(item)
-                if tags is None or not item.size:
-                    continue
-                intervals.append((addr, item.size, tags))
-        except (RuntimeError, KeyError, IndexError):
-            # the CFB may be mutated by the CFG recovery job thread while we iterate over it; keep what we have
-            # collected so far - a following objects_added event will repaint
-            pass
+        # one atomic read, safe while the CFG recovery job thread adds objects
+        for addr, size, cls, sort in self.instance.cfb.intervals():
+            tags = _get_tags_for_class(cls, sort)
+            if tags is None or not size:
+                continue
+            intervals.append((addr, size, tags))
         self._cfb_feature_maps[-1].add_many(intervals)
         time_end = time.time()
         log.debug(
