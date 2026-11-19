@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from angr.errors import AngrAIError
 from PySide6.QtWidgets import QMessageBox
 
+from angrmanagement.config import Conf
 from angrmanagement.logic import GlobalInfo
 from angrmanagement.logic.threads import gui_thread_schedule_async
 
@@ -65,10 +66,13 @@ class LLMRefineJob(InstanceJob):
         llm_client = project.llm_client
         if llm_client is None:
             log.warning("LLMRefineJob: no LLM client configured")
-            gui_thread_schedule_async(
-                self._show_error_msgbox,
-                ("No LLM client is configured. Please configure an LLM client first in Preferences -> LLM.",),
-            )
+            if Conf.llm_model:
+                message = (
+                    'LLM support requires additional packages. Install them with "pip install angr-management[llm]".'
+                )
+            else:
+                message = "No LLM client is configured. Please configure an LLM client first in Preferences -> LLM."
+            gui_thread_schedule_async(self._show_error_msgbox, (message,))
             return
 
         # get cached decompilation

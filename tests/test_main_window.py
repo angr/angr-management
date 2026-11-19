@@ -205,6 +205,31 @@ class TestOpenCloseGuards(AngrManagementTestCase):
         assert not instance.project.am_none
 
 
+class TestLLMRefineMissingPackages(AngrManagementTestCase):
+    """A configured model whose client cannot be built reports the missing packages, not a missing model."""
+
+    def test_refine_reports_missing_llm_packages(self):
+        original_model = Conf.llm_model
+        Conf.llm_model = "openai:gpt-4o"
+        try:
+            instance = self.main.workspace.main_instance
+            with patch("angr.llm_client.LLMClient", side_effect=ImportError("No module named 'pydantic_ai'")):
+                instance.project.am_obj = angr.Project(
+                    os.path.join(test_location, "x86_64", "fauxware"), auto_load_libs=False
+                )
+                instance.project.am_event()
+                self.main.workspace.job_manager.join_all_jobs()
+            assert instance.project.am_obj.llm_client is None
+
+            with patch("angrmanagement.ui.workspace.QMessageBox.warning") as warn:
+                self.main.workspace._llm_refine_current_function("all")
+            message = warn.call_args.args[2]
+            assert "pip install angr-management[llm]" in message
+            assert "No LLM client configured" not in message
+        finally:
+            Conf.llm_model = original_model
+
+
 class TestMCPAutostart(AngrManagementTestCase):
     """Autostarting the MCP server must never block startup or pop a modal dialog."""
 
