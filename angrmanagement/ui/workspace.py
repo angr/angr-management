@@ -767,11 +767,13 @@ class Workspace:
 
         project = self.main_instance.project.am_obj
         if project.llm_client is None:
-            QMessageBox.warning(
-                self._main_window,
-                "LLM Refine",
-                "No LLM client configured.\n\nGo to File \u2192 Preferences \u2192 LLM to set a model.",
-            )
+            if Conf.llm_model:
+                message = (
+                    'LLM support requires additional packages.\n\nInstall them with "pip install angr-management[llm]".'
+                )
+            else:
+                message = "No LLM client configured.\n\nGo to File \u2192 Preferences \u2192 LLM to set a model."
+            QMessageBox.warning(self._main_window, "LLM Refine", message)
             return
 
         code_view: CodeView | None = self.view_manager.first_view_in_category("pseudocode")
