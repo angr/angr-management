@@ -35,7 +35,7 @@ from angrmanagement.mcp import MCPServerManager, is_mcp_available
 from angrmanagement.mcp.manager import DEFAULT_HOST, DEFAULT_PATH
 from angrmanagement.ui.dialogs.archive_loader import ArchiveLoaderDialog
 from angrmanagement.ui.dialogs.progress_dialog import ProgressDialog
-from angrmanagement.ui.views import DisassemblyView
+from angrmanagement.ui.views import DisassemblyView, RuntimeView
 from angrmanagement.ui.widgets.qam_status_bar import QAmStatusBar
 from angrmanagement.utils.archive import is_archive
 from angrmanagement.utils.io import download_url, isurl
@@ -648,6 +648,7 @@ class MainWindow(QMainWindow):
                     ("View: Search", self.workspace.show_search_view),
                     ("View: Stack", self.workspace.show_stack_view),
                     ("View: States", self.workspace.show_states_view),
+                    ("View: Runtime Debugger", self.workspace.show_runtime_view),
                     ("View: Strings", self.workspace.show_strings_view),
                     ("View: Symbolic Execution", self.workspace.show_symexec_view),
                     ("View: Trace map", self.workspace.show_trace_map_view),
@@ -692,6 +693,10 @@ class MainWindow(QMainWindow):
         for plugin in list(self.workspace.plugins.active_plugins.values()):
             self.workspace.plugins.deactivate_plugin(plugin)
         self.workspace.job_manager.quit()
+        for view in self.workspace.view_manager.views:
+            if isinstance(view, RuntimeView):
+                view.shutdown(wait=True)
+        self.workspace.runtime.close()
 
         if self.mcp_server_manager is not None:
             self.mcp_server_manager.stop(timeout=2)

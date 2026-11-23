@@ -34,6 +34,7 @@ from angrmanagement.logic.analysis_manager import AnalysisManager
 from angrmanagement.logic.commands import CommandManager
 from angrmanagement.logic.debugger import DebuggerWatcher
 from angrmanagement.logic.debugger.bintrace import BintraceDebugger
+from angrmanagement.logic.debugger.gdb import GDBRuntime
 from angrmanagement.logic.debugger.simgr import SimulationDebugger
 from angrmanagement.logic.jobmanager import JobCancelled, JobManager
 from angrmanagement.logic.threads import gui_thread_schedule_async, needs_gui_thread
@@ -65,6 +66,7 @@ from .views import (
     PatternView,
     ProximityView,
     RegistersView,
+    RuntimeView,
     SearchView,
     SignaturesView,
     StackView,
@@ -112,6 +114,7 @@ class Workspace:
         self._nav_tracking_suppress_count: int = 0
 
         self._main_instance = Instance()
+        self.runtime = GDBRuntime()
 
         self.analysis_manager: AnalysisManager = AnalysisManager(self)
         self.analysis_manager.cfg_generated.connect(self.on_cfg_generated)
@@ -1015,6 +1018,12 @@ class Workspace:
 
     def show_registers_view(self) -> None:
         self.show_view("registers", RegistersView, position="right")
+
+    def show_runtime_view(self) -> RuntimeView:
+        view = self._get_or_create_view("runtime", RuntimeView)
+        self.raise_view(view)
+        view.setFocus()
+        return view
 
     def show_stack_view(self) -> None:
         self.show_view("stack", StackView, position="right")

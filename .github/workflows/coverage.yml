@@ -5,6 +5,7 @@ on:
     branches:
       - master
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   workflow_dispatch:
 
 concurrency:
@@ -22,6 +23,10 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4
       - uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2
       - uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v6
+      - name: Resolve pull request dependencies
+        run: uv run --no-project --no-sync --python 3.12 python -P .github/scripts/resolve-uv-sources.py
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Restore test durations cache
         uses: actions/cache/restore@v4
         with:
@@ -29,7 +34,7 @@ jobs:
           key: cov-test-durations-${{ github.sha }}
           restore-keys: cov-test-durations-
       - name: Build
-        run: uv sync --managed-python -v -p 3.12 --all-groups
+        run: uv sync --managed-python -v -p 3.12 --all-groups --extra llm
       - name: Archive environment
         run: tar -cpf /tmp/env.tzst --absolute-names --zstd $PWD $UV_CACHE_DIR $UV_PYTHON_INSTALL_DIR
       - name: Upload environment artifact
@@ -52,6 +57,8 @@ jobs:
         run: |
           sudo apt-get update;
           sudo apt-get install -y \
+            gdb \
+            gdbserver \
             libfuse2 \
             libegl1 \
             libxkbcommon-x11-0 \
